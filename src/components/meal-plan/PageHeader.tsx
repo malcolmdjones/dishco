@@ -37,7 +37,10 @@ const PageHeader: React.FC<PageHeaderProps> = ({ onOpenVault, onOpenWeekOverview
         </div>
       </div>
       
-      <PageHeaderContent />
+      <PageHeaderContent 
+        onOpenVault={onOpenVault} 
+        onOpenWeekOverview={onOpenWeekOverview} 
+      />
     </div>
   );
 };

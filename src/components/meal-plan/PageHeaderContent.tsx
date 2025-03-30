@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-interface PageHeaderContentProps {
+export interface PageHeaderContentProps {
   onOpenVault: () => void;
   onOpenWeekOverview: () => void;
 }
