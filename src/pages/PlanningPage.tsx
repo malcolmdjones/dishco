@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from 'lucide-react';
@@ -47,47 +48,55 @@ const PlanningPage = () => {
         {/* Nutrition Summary */}
         <div className="bg-white rounded-xl p-4 shadow-sm animate-slide-up">
           <h2 className="text-lg font-semibold mb-4">Today's Nutrition</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <Progress 
-              type="circular" 
-              size="sm"
-              value={dailyNutrition.calories} 
-              max={dailyNutrition.totalCalories}
-              showValue={true}
-              valueSuffix=""
-              label="Calories"
-              status="default"
-            />
-            <Progress 
-              type="circular" 
-              size="sm"
-              value={dailyNutrition.protein} 
-              max={dailyNutrition.totalProtein}
-              showValue={true}
-              valueSuffix="g"
-              label="Protein"
-              status="default"
-            />
-            <Progress 
-              type="circular" 
-              size="sm"
-              value={dailyNutrition.carbs} 
-              max={dailyNutrition.totalCarbs}
-              showValue={true}
-              valueSuffix="g"
-              label="Carbs"
-              status="default"
-            />
-            <Progress 
-              type="circular" 
-              size="sm"
-              value={dailyNutrition.fat} 
-              max={dailyNutrition.totalFat}
-              showValue={true}
-              valueSuffix="g"
-              label="Fat"
-              status="default"
-            />
+          <div className="grid grid-cols-2 gap-6">
+            <div className="flex justify-center">
+              <Progress 
+                type="circular" 
+                size="sm"
+                value={dailyNutrition.calories} 
+                max={dailyNutrition.totalCalories}
+                showValue={true}
+                valueSuffix=""
+                label="Calories"
+                status="default"
+              />
+            </div>
+            <div className="flex justify-center">
+              <Progress 
+                type="circular" 
+                size="sm"
+                value={dailyNutrition.protein} 
+                max={dailyNutrition.totalProtein}
+                showValue={true}
+                valueSuffix="g"
+                label="Protein"
+                status="default"
+              />
+            </div>
+            <div className="flex justify-center">
+              <Progress 
+                type="circular" 
+                size="sm"
+                value={dailyNutrition.carbs} 
+                max={dailyNutrition.totalCarbs}
+                showValue={true}
+                valueSuffix="g"
+                label="Carbs"
+                status="default"
+              />
+            </div>
+            <div className="flex justify-center">
+              <Progress 
+                type="circular" 
+                size="sm"
+                value={dailyNutrition.fat} 
+                max={dailyNutrition.totalFat}
+                showValue={true}
+                valueSuffix="g"
+                label="Fat"
+                status="default"
+              />
+            </div>
           </div>
           <p className="mt-4 text-sm text-dishco-text-light">
             Track your daily macros and stay on top of your nutrition goals.
