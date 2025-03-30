@@ -1,3 +1,4 @@
+
 export interface Recipe {
   id: string;
   name: string;
@@ -12,13 +13,36 @@ export interface Recipe {
   };
   ingredients: string[];
   instructions: string[];
+  requiresBlender?: boolean;
+  requiresCooking?: boolean;
 }
+
+export interface DayPlan {
+  day: string;
+  meals: {
+    breakfast: Recipe | null;
+    lunch: Recipe | null;
+    dinner: Recipe | null;
+    snacks: Recipe[];
+  };
+}
+
+export type WeeklyMealPlan = DayPlan[];
 
 export interface UserGoals {
   calories: number;
   protein: number;
   carbs: number;
   fat: number;
+}
+
+export interface GroceryItem {
+  id: string;
+  name: string;
+  category: string;
+  quantity: number;
+  unit: string;
+  checked: boolean;
 }
 
 export const defaultGoals: UserGoals = {
@@ -38,6 +62,7 @@ export const recipes: Recipe[] = [
     macros: { calories: 350, protein: 25, carbs: 10, fat: 23 },
     ingredients: ['2 eggs', 'Spinach', 'Mushrooms', 'Cheddar cheese'],
     instructions: ['Whisk eggs', 'Add veggies', 'Cook until set'],
+    requiresCooking: true
   },
   {
     id: '2',
@@ -48,6 +73,7 @@ export const recipes: Recipe[] = [
     macros: { calories: 280, protein: 8, carbs: 25, fat: 18 },
     ingredients: ['Toast', 'Avocado', 'Red pepper flakes'],
     instructions: ['Toast bread', 'Mash avocado', 'Spread on toast'],
+    requiresCooking: true
   },
   {
     id: '3',
@@ -58,6 +84,7 @@ export const recipes: Recipe[] = [
     macros: { calories: 320, protein: 12, carbs: 45, fat: 12 },
     ingredients: ['Oats', 'Milk', 'Berries', 'Nuts'],
     instructions: ['Mix ingredients', 'Refrigerate overnight', 'Enjoy cold'],
+    requiresBlender: true
   },
   {
     id: '4',
@@ -68,6 +95,7 @@ export const recipes: Recipe[] = [
     macros: { calories: 400, protein: 30, carbs: 30, fat: 20 },
     ingredients: ['Chicken', 'Mayonnaise', 'Lettuce', 'Tomato'],
     instructions: ['Mix chicken with mayo', 'Add lettuce and tomato', 'Serve on bread'],
+    requiresCooking: true
   },
   {
     id: '5',
@@ -78,6 +106,7 @@ export const recipes: Recipe[] = [
     macros: { calories: 380, protein: 15, carbs: 50, fat: 15 },
     ingredients: ['Quinoa', 'Black beans', 'Corn', 'Avocado'],
     instructions: ['Cook quinoa', 'Mix with beans and corn', 'Top with avocado'],
+    requiresCooking: true
   },
   {
     id: '6',
@@ -88,6 +117,7 @@ export const recipes: Recipe[] = [
     macros: { calories: 320, protein: 20, carbs: 40, fat: 8 },
     ingredients: ['Lentils', 'Carrots', 'Celery', 'Vegetable broth'],
     instructions: ['Sauté veggies', 'Add lentils and broth', 'Simmer until lentils are tender'],
+    requiresCooking: true
   },
   {
     id: '7',
@@ -98,6 +128,7 @@ export const recipes: Recipe[] = [
     macros: { calories: 450, protein: 40, carbs: 10, fat: 30 },
     ingredients: ['Salmon', 'Asparagus', 'Lemon', 'Olive oil'],
     instructions: ['Season salmon', 'Roast asparagus', 'Bake salmon with lemon'],
+    requiresCooking: true
   },
   {
     id: '8',
@@ -108,6 +139,7 @@ export const recipes: Recipe[] = [
     macros: { calories: 420, protein: 35, carbs: 25, fat: 20 },
     ingredients: ['Chicken', 'Broccoli', 'Peppers', 'Soy sauce'],
     instructions: ['Stir-fry chicken', 'Add veggies', 'Season with soy sauce'],
+    requiresCooking: true
   },
   {
     id: '9',
@@ -118,6 +150,7 @@ export const recipes: Recipe[] = [
     macros: { calories: 480, protein: 32, carbs: 30, fat: 26 },
     ingredients: ['Beef', 'Taco shells', 'Salsa', 'Guacamole'],
     instructions: ['Cook beef', 'Fill taco shells', 'Top with salsa and guacamole'],
+    requiresCooking: true
   },
   {
     id: '10',
@@ -128,6 +161,7 @@ export const recipes: Recipe[] = [
     macros: { calories: 200, protein: 7, carbs: 25, fat: 10 },
     ingredients: ['Banana', 'Peanut butter'],
     instructions: ['Slice banana', 'Spread peanut butter', 'Enjoy'],
+    requiresBlender: false
   },
   {
     id: '11',
@@ -138,6 +172,7 @@ export const recipes: Recipe[] = [
     macros: { calories: 150, protein: 15, carbs: 10, fat: 5 },
     ingredients: ['Greek yogurt', 'Honey', 'Granola'],
     instructions: ['Mix yogurt with honey', 'Top with granola', 'Enjoy'],
+    requiresBlender: true
   },
   {
     id: '12',
@@ -148,6 +183,7 @@ export const recipes: Recipe[] = [
     macros: { calories: 180, protein: 5, carbs: 20, fat: 10 },
     ingredients: ['Apple', 'Almond butter'],
     instructions: ['Slice apple', 'Spread almond butter', 'Enjoy'],
+    requiresBlender: false
   },
   {
     id: '13',
@@ -158,6 +194,7 @@ export const recipes: Recipe[] = [
     macros: { calories: 220, protein: 6, carbs: 20, fat: 14 },
     ingredients: ['Nuts', 'Seeds', 'Dried fruit'],
     instructions: ['Mix ingredients', 'Enjoy'],
+    requiresBlender: false
   },
 ];
 
@@ -202,4 +239,95 @@ export const calculateDailyMacros = (meals: {
   }
 
   return { calories, protein, carbs, fat };
+};
+
+// Function to generate a mock meal plan for the week
+export const generateMockMealPlan = (): WeeklyMealPlan => {
+  const breakfastOptions = recipes.filter(recipe => recipe.type === 'breakfast');
+  const lunchOptions = recipes.filter(recipe => recipe.type === 'lunch');
+  const dinnerOptions = recipes.filter(recipe => recipe.type === 'dinner');
+  const snackOptions = recipes.filter(recipe => recipe.type === 'snack');
+  
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  
+  return days.map(day => {
+    return {
+      day,
+      meals: {
+        breakfast: breakfastOptions[Math.floor(Math.random() * breakfastOptions.length)],
+        lunch: lunchOptions[Math.floor(Math.random() * lunchOptions.length)],
+        dinner: dinnerOptions[Math.floor(Math.random() * dinnerOptions.length)],
+        snacks: [
+          snackOptions[Math.floor(Math.random() * snackOptions.length)],
+          Math.random() > 0.5 ? snackOptions[Math.floor(Math.random() * snackOptions.length)] : null
+        ].filter(Boolean) as Recipe[]
+      }
+    };
+  });
+};
+
+// Generate a grocery list based on a meal plan
+export const generateGroceryList = (mealPlan: WeeklyMealPlan): GroceryItem[] => {
+  // Simulate a grocery list based on the meal plan ingredients
+  const allIngredients: string[] = [];
+  
+  mealPlan.forEach(day => {
+    // Add breakfast ingredients
+    if (day.meals.breakfast) {
+      allIngredients.push(...day.meals.breakfast.ingredients);
+    }
+    
+    // Add lunch ingredients
+    if (day.meals.lunch) {
+      allIngredients.push(...day.meals.lunch.ingredients);
+    }
+    
+    // Add dinner ingredients
+    if (day.meals.dinner) {
+      allIngredients.push(...day.meals.dinner.ingredients);
+    }
+    
+    // Add snack ingredients
+    day.meals.snacks.forEach(snack => {
+      allIngredients.push(...snack.ingredients);
+    });
+  });
+  
+  // Count occurrences of each ingredient
+  const ingredientCount = allIngredients.reduce((acc, ingredient) => {
+    const simpleIngredient = ingredient.split(' ').slice(1).join(' '); // Remove quantity
+    acc[simpleIngredient] = (acc[simpleIngredient] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  // Create grocery items from ingredients
+  const groceryItems: GroceryItem[] = Object.entries(ingredientCount).map(([name, count], index) => {
+    // Assign a category based on the ingredient name (simplified)
+    let category = 'Other';
+    if (/milk|cheese|yogurt|cream/.test(name.toLowerCase())) {
+      category = 'Dairy';
+    } else if (/apple|banana|berry|fruit|orange/.test(name.toLowerCase())) {
+      category = 'Fruits';
+    } else if (/spinach|lettuce|carrot|vegetable|broccoli|pepper/.test(name.toLowerCase())) {
+      category = 'Vegetables';
+    } else if (/chicken|beef|salmon|fish|meat/.test(name.toLowerCase())) {
+      category = 'Meat & Seafood';
+    } else if (/bread|oat|rice|pasta|quinoa/.test(name.toLowerCase())) {
+      category = 'Grains';
+    } else if (/oil|sauce|salt|pepper|spice/.test(name.toLowerCase())) {
+      category = 'Condiments';
+    }
+    
+    return {
+      id: `item-${index}`,
+      name,
+      category,
+      quantity: count,
+      unit: 'item(s)',
+      checked: false,
+    };
+  });
+  
+  // Sort by category
+  return groceryItems.sort((a, b) => a.category.localeCompare(b.category));
 };
