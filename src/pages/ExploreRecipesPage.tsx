@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Filter, ChevronDown, X } from 'lucide-react';
+import { ArrowLeft, Search, Filter, ChevronDown, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -21,8 +22,10 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { recipes, Recipe } from '@/data/mockData';
+import { Recipe } from '@/data/mockData';
 import RecipeViewer from '@/components/RecipeViewer';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 // Define filter types
 type PriceRange = '$' | '$$' | '$$$';
@@ -47,11 +50,13 @@ interface Filters {
 
 const ExploreRecipesPage = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [visibleRecipes, setVisibleRecipes] = useState<Recipe[]>([]);
+  const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const recipesPerPage = 8;
@@ -71,9 +76,61 @@ const ExploreRecipesPage = () => {
   const [filtersApplied, setFiltersApplied] = useState(false);
   const [activeFilterCount, setActiveFilterCount] = useState(0);
   
+  // Fetch recipes from Supabase
+  const fetchRecipes = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('recipes')
+        .select(`
+          *,
+          recipe_ingredients(*),
+          recipe_instructions(*),
+          recipe_equipment(*)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Format recipes to match Recipe type
+      const formattedRecipes: Recipe[] = data.map(dbRecipe => ({
+        id: dbRecipe.id,
+        name: dbRecipe.name,
+        type: dbRecipe.meal_type?.toLowerCase() || 'other',
+        description: dbRecipe.description || '',
+        ingredients: dbRecipe.recipe_ingredients?.map(ing => ing.name) || [],
+        instructions: dbRecipe.recipe_instructions?.map(inst => inst.instruction) || [],
+        prepTime: dbRecipe.prep_time || 0,
+        cookTime: dbRecipe.cook_time || 0,
+        servings: dbRecipe.servings || 1,
+        macros: {
+          calories: dbRecipe.calories || 0,
+          protein: dbRecipe.protein || 0,
+          carbs: dbRecipe.carbs || 0,
+          fat: dbRecipe.fat || 0
+        },
+        imageSrc: dbRecipe.image_url || '/placeholder.svg'
+      }));
+      
+      setAllRecipes(formattedRecipes);
+      applyFiltersAndSearch(formattedRecipes);
+    } catch (error) {
+      console.error('Error fetching recipes:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch recipes',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   // Effect to load initial recipes
   useEffect(() => {
-    loadMoreRecipes(true);
+    fetchRecipes();
   }, []);
   
   // Effect to detect filter changes
@@ -92,20 +149,84 @@ const ExploreRecipesPage = () => {
     setActiveFilterCount(count);
   }, [filters]);
   
+  // Apply filters and search to recipes
+  const applyFiltersAndSearch = (recipes = allRecipes) => {
+    // Filter recipes based on current filters and search query
+    const filteredRecipes = recipes.filter(recipe => {
+      // Search query filter
+      if (searchQuery && !recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+          !recipe.description.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false;
+      }
+      
+      // Meal type filter
+      if (filters.mealType.length > 0 && !filters.mealType.includes(recipe.type as MealType)) {
+        return false;
+      }
+      
+      // Calorie range filter
+      if (filters.calories.length > 0) {
+        const calories = recipe.macros.calories;
+        const matchesCalorieRange = filters.calories.some(range => {
+          const [min, max] = range.split('-').map(Number);
+          if (max) {
+            return calories >= min && calories <= max;
+          } else {
+            return calories >= min;
+          }
+        });
+        if (!matchesCalorieRange) return false;
+      }
+      
+      // High protein filter
+      if (filters.highProtein && recipe.macros.protein < 20) {
+        return false;
+      }
+      
+      // Cook time filter - simplified implementation
+      if (filters.cookTime.length > 0) {
+        const cookTime = recipe.cookTime;
+        const matchesCookTime = filters.cookTime.some(timeRange => {
+          if (timeRange === 'quick') return cookTime <= 15;
+          if (timeRange === 'medium') return cookTime > 15 && cookTime <= 30;
+          if (timeRange === 'long') return cookTime > 30;
+          return false;
+        });
+        if (!matchesCookTime) return false;
+      }
+      
+      // For other filters, we'll need more data in the recipe schema
+      // This is a simplified implementation
+      
+      return true;
+    });
+    
+    // Paginate the filtered recipes
+    const startIndex = 0;
+    const endIndex = recipesPerPage;
+    const paginatedRecipes = filteredRecipes.slice(startIndex, endIndex);
+    
+    setVisibleRecipes(paginatedRecipes);
+    setPage(1);
+    setHasMore(endIndex < filteredRecipes.length);
+  };
+  
   // Load more recipes with pagination
-  const loadMoreRecipes = (reset = false) => {
+  const loadMoreRecipes = () => {
     setLoading(true);
     
-    // Simulate API call delay
     setTimeout(() => {
-      const startIndex = reset ? 0 : (page - 1) * recipesPerPage;
-      const endIndex = startIndex + recipesPerPage;
-      
       // Filter recipes based on current filters and search query
-      const filteredRecipes = recipes.filter(recipe => {
+      const filteredRecipes = allRecipes.filter(recipe => {
+        // Apply the same filters as in applyFiltersAndSearch
         // Search query filter
         if (searchQuery && !recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
             !recipe.description.toLowerCase().includes(searchQuery.toLowerCase())) {
+          return false;
+        }
+        
+        // Meal type filter
+        if (filters.mealType.length > 0 && !filters.mealType.includes(recipe.type as MealType)) {
           return false;
         }
         
@@ -115,19 +236,15 @@ const ExploreRecipesPage = () => {
         return true;
       });
       
+      const startIndex = page * recipesPerPage;
+      const endIndex = startIndex + recipesPerPage;
       const newRecipes = filteredRecipes.slice(startIndex, endIndex);
       
-      if (reset) {
-        setVisibleRecipes(newRecipes);
-        setPage(1);
-      } else {
-        setVisibleRecipes(prev => [...prev, ...newRecipes]);
-        setPage(prev => prev + 1);
-      }
-      
+      setVisibleRecipes(prev => [...prev, ...newRecipes]);
+      setPage(prev => prev + 1);
       setHasMore(endIndex < filteredRecipes.length);
       setLoading(false);
-    }, 500);
+    }, 300);
   };
   
   // Handle search input change
@@ -137,7 +254,7 @@ const ExploreRecipesPage = () => {
   
   // Apply search filter
   const handleSearch = () => {
-    loadMoreRecipes(true);
+    applyFiltersAndSearch();
   };
   
   // Handle recipe selection
@@ -149,7 +266,7 @@ const ExploreRecipesPage = () => {
   // Apply all filters
   const applyFilters = () => {
     setFiltersApplied(true);
-    loadMoreRecipes(true);
+    applyFiltersAndSearch();
   };
   
   // Reset all filters
@@ -165,7 +282,9 @@ const ExploreRecipesPage = () => {
       dietary: []
     });
     setFiltersApplied(false);
-    loadMoreRecipes(true);
+    setSearchQuery('');
+    // Reset and re-fetch recipes
+    fetchRecipes();
   };
   
   // Toggle filter item
@@ -470,58 +589,54 @@ const ExploreRecipesPage = () => {
         </div>
       )}
       
+      {/* Loading state */}
+      {loading && visibleRecipes.length === 0 && (
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
+          <p>Loading recipes...</p>
+        </div>
+      )}
+      
       {/* Recipe Grid */}
-      <div className="grid grid-cols-2 gap-4">
-        {visibleRecipes.map(recipe => (
-          <div 
-            key={recipe.id} 
-            className="bg-white rounded-lg overflow-hidden shadow-sm cursor-pointer"
-            onClick={() => handleRecipeClick(recipe)}
-          >
-            <div className="aspect-square bg-gray-100 overflow-hidden">
-              <img 
-                src={recipe.imageSrc} 
-                alt={recipe.name} 
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="p-3">
-              <h3 className="font-medium text-sm line-clamp-1">{recipe.name}</h3>
-              <div className="flex justify-between items-center mt-1">
-                <span className="text-sm text-gray-600">{recipe.macros.calories} cal</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">
-                    {recipe.macros.protein}g protein
+      {!loading && visibleRecipes.length > 0 && (
+        <div className="grid grid-cols-2 gap-4">
+          {visibleRecipes.map(recipe => (
+            <div 
+              key={recipe.id} 
+              className="bg-white rounded-lg overflow-hidden shadow-sm cursor-pointer"
+              onClick={() => handleRecipeClick(recipe)}
+            >
+              <div className="aspect-square bg-gray-100 overflow-hidden">
+                <img 
+                  src={recipe.imageSrc} 
+                  alt={recipe.name} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-3">
+                <h3 className="font-medium text-sm line-clamp-1">{recipe.name}</h3>
+                <div className="flex justify-between items-center mt-1">
+                  <span className="text-sm text-gray-600">{recipe.macros.calories} cal</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">
+                      {recipe.macros.protein}g protein
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-800 rounded">
+                    {recipe.type}
                   </span>
+                  {/* Additional tags would go here */}
                 </div>
               </div>
-              <div className="flex flex-wrap gap-1 mt-2">
-                <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-800 rounded">
-                  {recipe.type}
-                </span>
-                {/* Additional tags would go here */}
-              </div>
             </div>
-          </div>
-        ))}
-      </div>
-      
-      {/* Load More Button */}
-      {hasMore && (
-        <div className="mt-6 text-center">
-          <Button 
-            variant="outline" 
-            onClick={() => loadMoreRecipes()} 
-            disabled={loading}
-            className="w-full"
-          >
-            {loading ? 'Loading...' : 'Load More Recipes'}
-          </Button>
+          ))}
         </div>
       )}
       
       {/* No Results Message */}
-      {visibleRecipes.length === 0 && !loading && (
+      {!loading && visibleRecipes.length === 0 && (
         <div className="text-center py-10">
           <p className="text-gray-500">No recipes found matching your criteria.</p>
           <Button 
@@ -530,6 +645,20 @@ const ExploreRecipesPage = () => {
             className="mt-2"
           >
             Clear filters and try again
+          </Button>
+        </div>
+      )}
+      
+      {/* Load More Button */}
+      {!loading && hasMore && visibleRecipes.length > 0 && (
+        <div className="mt-6 text-center">
+          <Button 
+            variant="outline" 
+            onClick={loadMoreRecipes} 
+            disabled={loading}
+            className="w-full"
+          >
+            {loading ? 'Loading...' : 'Load More Recipes'}
           </Button>
         </div>
       )}

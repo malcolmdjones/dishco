@@ -1,4 +1,7 @@
 
+// We'll update the existing recipe scraper to improve instruction formatting with AI
+// This adds a step to clean up and correct recipe instructions using OpenAI
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import * as cheerio from "https://esm.sh/cheerio@1.0.0-rc.12";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
@@ -233,6 +236,85 @@ serve(async (req) => {
       }
     }
     
+    // If we have instructions but they're in one big chunk or poorly formatted, use AI to clean them up
+    if (recipeData.instructions.length > 0) {
+      // Check if we need to improve the instructions formatting
+      const needsFormatting = recipeData.instructions.some(instruction => 
+        instruction.length > 200 || // Too long
+        instruction.includes('Step') || // Contains "Step X:" which we want to remove
+        /^\d+\./.test(instruction) // Starts with a number and period, which we want to clean up
+      );
+      
+      if (needsFormatting) {
+        try {
+          // Get OpenAI API key from environment variable
+          const openAIKey = Deno.env.get('OPENAI_API_KEY');
+          
+          if (openAIKey) {
+            console.log("Using AI to improve instruction formatting");
+            
+            const instructionsText = recipeData.instructions.join("\n");
+            
+            const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${openAIKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: [
+                  {
+                    role: 'system',
+                    content: 'You are a helpful assistant that formats recipe instructions into clear, concise, step-by-step instructions. Remove any numbering or "Step X:" prefixes. Correct grammar and spelling issues. Format as a clean array of instructions, with one step per array item. Be concise but comprehensive.'
+                  },
+                  {
+                    role: 'user',
+                    content: `Here are recipe instructions that need to be cleaned up and formatted:\n\n${instructionsText}\n\nPlease return ONLY a JSON array of strings, where each string is a single step.`
+                  }
+                ],
+                temperature: 0.3,
+              })
+            });
+            
+            if (aiResponse.ok) {
+              const aiData = await aiResponse.json();
+              try {
+                // Parse the JSON array from the AI's response
+                const formattedInstructions = JSON.parse(aiData.choices[0].message.content);
+                if (Array.isArray(formattedInstructions) && formattedInstructions.length > 0) {
+                  recipeData.instructions = formattedInstructions;
+                  console.log("Successfully formatted instructions with AI");
+                }
+              } catch (parseError) {
+                console.error("Error parsing AI response:", parseError);
+                // If we can't parse the JSON, try to extract an array from the text
+                const content = aiData.choices[0].message.content;
+                const match = content.match(/\[\s*".*"\s*\]/s);
+                if (match) {
+                  try {
+                    const extractedArray = JSON.parse(match[0]);
+                    if (Array.isArray(extractedArray) && extractedArray.length > 0) {
+                      recipeData.instructions = extractedArray;
+                      console.log("Successfully extracted instructions from AI response");
+                    }
+                  } catch (extractError) {
+                    console.error("Error extracting array from AI response:", extractError);
+                  }
+                }
+              }
+            } else {
+              console.error("Error from OpenAI API:", await aiResponse.text());
+            }
+          } else {
+            console.log("OpenAI API key not found, skipping instruction formatting");
+          }
+        } catch (aiError) {
+          console.error("Error using AI for instruction formatting:", aiError);
+        }
+      }
+    }
+    
     // Estimate equipment needed based on instructions
     const commonEquipment = [
       'oven', 'stove', 'stovetop', 'grill', 'microwave', 'blender', 
@@ -434,6 +516,29 @@ async function storeRecipeInDatabase(supabase: any, recipeData: RecipeData, user
   try {
     // Use local image URL if available, otherwise use original URL
     const imageUrl = recipeData.localImageUrl || recipeData.imageUrl;
+    
+    // Determine meal type if not already set
+    if (!recipeData.mealType) {
+      const name = recipeData.name.toLowerCase();
+      const description = (recipeData.description || '').toLowerCase();
+      
+      if (name.includes('breakfast') || name.includes('oatmeal') || name.includes('pancake') || 
+          description.includes('breakfast') || name.includes('waffle') || name.includes('muffin')) {
+        recipeData.mealType = 'breakfast';
+      } else if (name.includes('lunch') || name.includes('sandwich') || name.includes('wrap') ||
+                description.includes('lunch') || name.includes('salad')) {
+        recipeData.mealType = 'lunch';
+      } else if (name.includes('dinner') || name.includes('supper') || 
+                description.includes('dinner') || name.includes('casserole')) {
+        recipeData.mealType = 'dinner';
+      } else if (name.includes('snack') || name.includes('appetizer') || 
+                description.includes('snack') || name.includes('bite')) {
+        recipeData.mealType = 'snack';
+      } else {
+        // Default to other if we can't determine
+        recipeData.mealType = 'other';
+      }
+    }
     
     // First, insert the main recipe
     const { data: recipe, error: recipeError } = await supabase

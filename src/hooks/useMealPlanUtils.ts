@@ -65,7 +65,7 @@ export const useMealPlanUtils = () => {
           instructions: dbRecipe.recipe_instructions?.map(inst => inst.instruction) || [],
           prepTime: dbRecipe.prep_time || 0,
           cookTime: dbRecipe.cook_time || 0,
-          servings: dbRecipe.servings || 1, // Add the missing servings property with a default value
+          servings: dbRecipe.servings || 1,
           macros: {
             calories: dbRecipe.calories || 0,
             protein: dbRecipe.protein || 0,
@@ -81,17 +81,27 @@ export const useMealPlanUtils = () => {
       // Set the recipes in state
       if (formattedRecipes.length > 0) {
         setDbRecipes(formattedRecipes);
+        console.log('Using database recipes:', formattedRecipes.length);
       } else {
         // Fallback to mock recipes if no database recipes are available
-        setDbRecipes(mockRecipes);
-        console.log('No database recipes found, using mock recipes');
+        setDbRecipes([]);
+        toast({
+          title: "No Recipes Found",
+          description: "Please add recipes in the Recipe Management page.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Error fetching recipes:', error);
-      // Fallback to mock recipes in case of error
-      setDbRecipes(mockRecipes);
+      // Fallback to empty recipes in case of error
+      setDbRecipes([]);
+      toast({
+        title: "Error Loading Recipes",
+        description: "Please check your connection and try again.",
+        variant: "destructive"
+      });
     }
-  }, []);
+  }, [toast]);
 
   // Check for a plan to copy from session storage
   useEffect(() => {
@@ -160,6 +170,17 @@ export const useMealPlanUtils = () => {
         await fetchDbRecipes();
       }
       
+      // Check if we have recipes to work with
+      if (dbRecipes.length === 0) {
+        toast({
+          title: "No Recipes Available",
+          description: "Please add recipes in the Recipe Management page first.",
+          variant: "destructive"
+        });
+        setIsGenerating(false);
+        return;
+      }
+      
       // Prepare locked meals data
       const currentLockedMeals: {[key: string]: any} = {};
       if (mealPlan[currentDay]) {
@@ -191,7 +212,7 @@ export const useMealPlanUtils = () => {
         body: {
           userGoals,
           lockedMeals: currentLockedMeals,
-          availableRecipes: dbRecipes.length > 0 ? dbRecipes : mockRecipes,
+          availableRecipes: dbRecipes,
           currentDay,
         },
       });
@@ -246,12 +267,21 @@ export const useMealPlanUtils = () => {
   
   // Fallback method if AI fails
   const fallbackMealGeneration = () => {
+    if (dbRecipes.length === 0) {
+      toast({
+        title: "No Recipes Available",
+        description: "Please add recipes in the Recipe Management page first.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setTimeout(() => {
       setMealPlan(prevPlan => {
         const newPlan = [...prevPlan];
         const currentPlanDay = { ...newPlan[currentDay] };
         
-        const availableRecipes = dbRecipes.length > 0 ? dbRecipes : mockRecipes;
+        const availableRecipes = dbRecipes;
         
         // Filter recipes by meal type
         const breakfastRecipes = availableRecipes.filter(r => r.type === 'breakfast');

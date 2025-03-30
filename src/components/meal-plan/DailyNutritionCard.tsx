@@ -1,13 +1,30 @@
 
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { AlertTriangle } from 'lucide-react';
+import { InfoIcon } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface DailyNutritionCardProps {
-  dayTotals: any;
-  userGoals: any;
-  exceedsGoals: any;
+  dayTotals: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  userGoals: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  exceedsGoals: {
+    any: boolean;
+    exceeds: {
+      calories: boolean;
+      protein: boolean;
+      carbs: boolean;
+      fat: boolean;
+    };
+  };
 }
 
 const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
@@ -15,80 +32,102 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
   userGoals,
   exceedsGoals
 }) => {
-  // Calculate percentage of goal reached for each macro
-  const caloriePercent = Math.min(Math.round((dayTotals.calories / userGoals.calories) * 100), 100);
-  const proteinPercent = Math.min(Math.round((dayTotals.protein / userGoals.protein) * 100), 100);
-  const carbsPercent = Math.min(Math.round((dayTotals.carbs / userGoals.carbs) * 100), 100);
-  const fatPercent = Math.min(Math.round((dayTotals.fat / userGoals.fat) * 100), 100);
-  
+  const { toast } = useToast();
+
+  const handleInfoClick = () => {
+    toast({
+      title: "Nutrition Information",
+      description: "These values show your daily nutrition totals compared to your goals.",
+    });
+  };
+
+  // Calculate percentages for progress bars
+  const getPercentage = (current: number, goal: number) => {
+    const percentage = (current / goal) * 100;
+    return Math.min(percentage, 100); // Cap at 100%
+  };
+
+  // Get color based on percentage and if it exceeds goals
+  const getColorClass = (nutrient: 'calories' | 'protein' | 'carbs' | 'fat') => {
+    if (exceedsGoals.exceeds[nutrient]) return "bg-red-500";
+    
+    const percentage = getPercentage(dayTotals[nutrient], userGoals[nutrient]);
+    if (percentage >= 90) return "bg-green-500";
+    if (percentage >= 70) return "bg-green-400";
+    return "bg-gray-300";
+  };
+
   return (
-    <Card className="mb-6">
-      <CardContent className="p-4">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="font-medium text-lg">Daily Nutrition</h3>
-          {exceedsGoals.any && (
-            <div className="flex items-center text-amber-500 text-sm">
-              <AlertTriangle size={16} className="mr-1" />
-              <span>Exceeds daily goals</span>
-            </div>
-          )}
+    <div className="bg-white rounded-lg p-4 shadow-sm mb-6">
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="font-medium">Daily Nutrition</h2>
+        <button onClick={handleInfoClick} className="text-gray-400">
+          <InfoIcon size={16} />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-4 gap-4">
+        {/* Calories */}
+        <div className="text-center">
+          <div className="mb-1">
+            <span className="text-lg font-semibold">{dayTotals.calories}</span>
+            <span className="text-xs text-gray-500 ml-1">/ {userGoals.calories}</span>
+          </div>
+          <div className="h-1.5 bg-gray-100 rounded-full mb-1 w-full">
+            <div 
+              className={`h-full rounded-full ${getColorClass('calories')}`}
+              style={{ width: `${getPercentage(dayTotals.calories, userGoals.calories)}%` }}
+            ></div>
+          </div>
+          <p className="text-xs text-gray-500">Calories</p>
         </div>
-        
-        <div className="grid grid-cols-4 gap-6">
-          <div className="space-y-2">
-            <div className="text-center">
-              <div className="text-3xl font-semibold">{dayTotals.calories}</div>
-              <div className="text-gray-400 text-sm">/ {userGoals.calories}</div>
-            </div>
-            <Progress 
-              value={caloriePercent} 
-              className="h-2 bg-gray-100"
-              indicatorClassName={exceedsGoals.exceeds.calories ? "bg-amber-500" : "bg-yellow-400"}
-            />
-            <div className="text-sm text-center mt-1">Calories</div>
+
+        {/* Protein */}
+        <div className="text-center">
+          <div className="mb-1">
+            <span className="text-lg font-semibold">{dayTotals.protein}g</span>
+            <span className="text-xs text-gray-500 ml-1">/ {userGoals.protein}g</span>
           </div>
-          
-          <div className="space-y-2">
-            <div className="text-center">
-              <div className="text-3xl font-semibold">{dayTotals.protein}g</div>
-              <div className="text-gray-400 text-sm">/ {userGoals.protein}g</div>
-            </div>
-            <Progress 
-              value={proteinPercent} 
-              className="h-2 bg-gray-100"
-              indicatorClassName={exceedsGoals.exceeds.protein ? "bg-amber-500" : "bg-blue-400"}
-            />
-            <div className="text-sm text-center mt-1">Protein</div>
+          <div className="h-1.5 bg-gray-100 rounded-full mb-1 w-full">
+            <div 
+              className={`h-full rounded-full ${getColorClass('protein')}`}
+              style={{ width: `${getPercentage(dayTotals.protein, userGoals.protein)}%` }}
+            ></div>
           </div>
-          
-          <div className="space-y-2">
-            <div className="text-center">
-              <div className="text-3xl font-semibold">{dayTotals.carbs}g</div>
-              <div className="text-gray-400 text-sm">/ {userGoals.carbs}g</div>
-            </div>
-            <Progress 
-              value={carbsPercent} 
-              className="h-2 bg-gray-100"
-              indicatorClassName={exceedsGoals.exceeds.carbs ? "bg-amber-500" : "bg-yellow-400"}
-            />
-            <div className="text-sm text-center mt-1">Carbs</div>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="text-center">
-              <div className="text-3xl font-semibold">{dayTotals.fat}g</div>
-              <div className="text-gray-400 text-sm">/ {userGoals.fat}g</div>
-            </div>
-            <Progress 
-              value={fatPercent} 
-              className="h-2 bg-gray-100"
-              indicatorClassName={exceedsGoals.exceeds.fat ? "bg-amber-500" : "bg-purple-400"}
-            />
-            <div className="text-sm text-center mt-1">Fat</div>
-          </div>
+          <p className="text-xs text-gray-500">Protein</p>
         </div>
-      </CardContent>
-    </Card>
+
+        {/* Carbs */}
+        <div className="text-center">
+          <div className="mb-1">
+            <span className="text-lg font-semibold">{dayTotals.carbs}g</span>
+            <span className="text-xs text-gray-500 ml-1">/ {userGoals.carbs}g</span>
+          </div>
+          <div className="h-1.5 bg-gray-100 rounded-full mb-1 w-full">
+            <div 
+              className={`h-full rounded-full ${getColorClass('carbs')}`}
+              style={{ width: `${getPercentage(dayTotals.carbs, userGoals.carbs)}%` }}
+            ></div>
+          </div>
+          <p className="text-xs text-gray-500">Carbs</p>
+        </div>
+
+        {/* Fat */}
+        <div className="text-center">
+          <div className="mb-1">
+            <span className="text-lg font-semibold">{dayTotals.fat}g</span>
+            <span className="text-xs text-gray-500 ml-1">/ {userGoals.fat}g</span>
+          </div>
+          <div className="h-1.5 bg-gray-100 rounded-full mb-1 w-full">
+            <div 
+              className={`h-full rounded-full ${getColorClass('fat')}`}
+              style={{ width: `${getPercentage(dayTotals.fat, userGoals.fat)}%` }}
+            ></div>
+          </div>
+          <p className="text-xs text-gray-500">Fat</p>
+        </div>
+      </div>
+    </div>
   );
 };
 

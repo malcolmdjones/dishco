@@ -1,20 +1,55 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, User, Mail, Lock, Bell, Globe, Moon, LogOut } from 'lucide-react';
+import { ArrowLeft, User, Mail, Bell, Globe, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 const AccountSettingsPage = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [settings, setSettings] = useState({
     notifications: true,
-    darkMode: false,
     emailUpdates: true,
     mealReminders: true,
     metricUnits: false
   });
+  const [profile, setProfile] = useState({
+    username: '',
+    email: ''
+  });
+
+  // Fetch user profile
+  useEffect(() => {
+    if (user) {
+      // Set email from auth
+      setProfile(prev => ({
+        ...prev,
+        email: user.email || ''
+      }));
+      
+      // Fetch profile data if available
+      const fetchProfile = async () => {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', user.id)
+          .single();
+        
+        if (!error && data) {
+          setProfile(prev => ({
+            ...prev,
+            username: data.username || user.email?.split('@')[0] || 'User'
+          }));
+        }
+      };
+      
+      fetchProfile();
+    }
+  }, [user]);
 
   const handleToggle = (setting: keyof typeof settings) => {
     setSettings(prev => ({
@@ -26,6 +61,49 @@ const AccountSettingsPage = () => {
       title: "Setting Updated",
       description: `${setting} has been ${settings[setting] ? 'disabled' : 'enabled'}.`,
     });
+  };
+
+  const handleProfileEditClick = () => {
+    toast({
+      title: "Coming Soon",
+      description: "Edit Profile functionality will be available in the next update.",
+    });
+  };
+
+  const handleEmailChangeClick = () => {
+    toast({
+      title: "Coming Soon",
+      description: "Change Email functionality will be available in the next update.",
+    });
+  };
+
+  const handlePasswordChangeClick = () => {
+    toast({
+      title: "Coming Soon",
+      description: "Change Password functionality will be available in the next update.",
+    });
+  };
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully signed out.",
+      });
+      
+      // Redirect to home or login page
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast({
+        title: "Error",
+        description: "An error occurred while signing out. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -47,21 +125,21 @@ const AccountSettingsPage = () => {
             <User size={28} className="text-white" />
           </div>
           <div>
-            <h2 className="font-bold text-lg">John Doe</h2>
-            <p className="text-dishco-text-light">john.doe@example.com</p>
+            <h2 className="font-bold text-lg">{profile.username}</h2>
+            <p className="text-dishco-text-light">{profile.email}</p>
           </div>
         </div>
         <div className="space-y-3">
-          <Button variant="outline" className="w-full justify-start">
+          <Button variant="outline" className="w-full justify-start" onClick={handleProfileEditClick}>
             <User size={18} className="mr-2" />
             Edit Profile
           </Button>
-          <Button variant="outline" className="w-full justify-start">
+          <Button variant="outline" className="w-full justify-start" onClick={handleEmailChangeClick}>
             <Mail size={18} className="mr-2" />
             Change Email
           </Button>
-          <Button variant="outline" className="w-full justify-start">
-            <Lock size={18} className="mr-2" />
+          <Button variant="outline" className="w-full justify-start" onClick={handlePasswordChangeClick}>
+            <User size={18} className="mr-2" />
             Change Password
           </Button>
         </div>
@@ -83,20 +161,6 @@ const AccountSettingsPage = () => {
             <Switch
               checked={settings.notifications}
               onCheckedChange={() => handleToggle('notifications')}
-            />
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Moon size={20} className="mr-3 text-dishco-primary" />
-              <div>
-                <p className="font-medium">Dark Mode</p>
-                <p className="text-sm text-dishco-text-light">Switch to dark theme</p>
-              </div>
-            </div>
-            <Switch
-              checked={settings.darkMode}
-              onCheckedChange={() => handleToggle('darkMode')}
             />
           </div>
           
@@ -148,10 +212,7 @@ const AccountSettingsPage = () => {
       <Button 
         variant="outline" 
         className="w-full border-gray-300"
-        onClick={() => toast({
-          title: "Not Implemented",
-          description: "Logout functionality will be available in the production version.",
-        })}
+        onClick={handleLogout}
       >
         <LogOut size={18} className="mr-2" />
         <span>Log Out</span>
