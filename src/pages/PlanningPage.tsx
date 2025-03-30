@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ArrowLeft, ArrowRight, Book, BookOpen, Calendar, CheckCircle, CookingPot, Info, Lock, Maximize2, RefreshCw, Save, Unlock, Zap } from 'lucide-react';
 import { calculateDailyMacros, defaultGoals, generateMockMealPlan, recipes } from '../data/mockData';
@@ -6,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer';
 import { format, addDays } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -29,7 +28,6 @@ const PlanningPage = () => {
   const dailyMacros = calculateDailyMacros(currentDayPlan.meals);
   const goals = defaultGoals;
 
-  // Calculate percentages for progress bars
   const percentages = {
     calories: Math.min(100, (dailyMacros.calories / goals.calories) * 100),
     protein: Math.min(100, (dailyMacros.protein / goals.protein) * 100),
@@ -37,7 +35,6 @@ const PlanningPage = () => {
     fat: Math.min(100, (dailyMacros.fat / goals.fat) * 100),
   };
 
-  // Generate actual calendar dates starting from today
   const calendarDates = Array.from({ length: 7 }, (_, i) => addDays(new Date(), i));
 
   const handleLockMeal = (mealType: string, mealId: string) => {
@@ -54,16 +51,12 @@ const PlanningPage = () => {
   };
 
   const handleRegeneratePlan = () => {
-    // In a real app, this would call the AI to regenerate the plan
-    // Here we'll just generate new random meals while keeping locked ones
     const newPlan = generateMockMealPlan();
     
-    // Preserve locked meals
     const updatedPlan = mealPlan.map((day, index) => {
       const newDay = newPlan[index];
       const updatedMeals = { ...newDay.meals };
       
-      // Check each meal type
       ['breakfast', 'lunch', 'dinner'].forEach((mealType) => {
         const mealKey = `${mealType}-${day.meals[mealType]?.id}`;
         if (lockedMeals[mealKey]) {
@@ -71,7 +64,6 @@ const PlanningPage = () => {
         }
       });
       
-      // Check snacks
       if (day.meals.snacks) {
         updatedMeals.snacks = day.meals.snacks.map((snack, snackIndex) => {
           const snackKey = `snacks-${snack?.id}-${snackIndex}`;
@@ -94,7 +86,6 @@ const PlanningPage = () => {
   };
 
   const handleSavePlan = () => {
-    // In a real app, this would save to the backend
     toast({
       title: "Plan Saved",
       description: "Your meal plan has been saved successfully.",
@@ -115,12 +106,86 @@ const PlanningPage = () => {
   };
   
   const handleAddFromVault = (recipe: any) => {
-    // In a real app, this would add the recipe to the current day's meal plan
+    const updatedMealPlan = [...mealPlan];
+    const currentDay = { ...updatedMealPlan[activeDay] };
+    
+    if (!currentDay.meals.breakfast) {
+      currentDay.meals.breakfast = recipe;
+    } else if (!currentDay.meals.lunch) {
+      currentDay.meals.lunch = recipe;
+    } else if (!currentDay.meals.dinner) {
+      currentDay.meals.dinner = recipe;
+    } else {
+      if (!currentDay.meals.snacks) {
+        currentDay.meals.snacks = [];
+      }
+      currentDay.meals.snacks.push(recipe);
+    }
+    
+    updatedMealPlan[activeDay] = currentDay;
+    setMealPlan(updatedMealPlan);
+    
     toast({
       title: "Recipe Added",
       description: `${recipe.name} added to your meal plan.`,
     });
     setIsVaultOpen(false);
+  };
+
+  const handleNavigateToDay = (dayIndex: number) => {
+    setActiveDay(dayIndex);
+    setIsWeekOverviewOpen(false);
+  };
+
+  const [draggedMeal, setDraggedMeal] = useState<{type: string, meal: any, index?: number} | null>(null);
+  
+  const handleDragStart = (mealType: string, meal: any, index?: number) => {
+    setDraggedMeal({ type: mealType, meal, index });
+  };
+  
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+  
+  const handleDrop = (targetType: string, targetIndex?: number) => {
+    if (!draggedMeal) return;
+    
+    if (draggedMeal.type === targetType && draggedMeal.index === targetIndex) {
+      setDraggedMeal(null);
+      return;
+    }
+    
+    const updatedMealPlan = [...mealPlan];
+    const currentDay = { ...updatedMealPlan[activeDay] };
+    const updatedMeals = { ...currentDay.meals };
+    
+    if (draggedMeal.type === 'snacks') {
+      if (updatedMeals.snacks && draggedMeal.index !== undefined) {
+        updatedMeals.snacks = updatedMeals.snacks.filter((_, i) => i !== draggedMeal.index);
+      }
+    } else {
+      updatedMeals[draggedMeal.type] = null;
+    }
+    
+    if (targetType === 'snacks') {
+      if (!updatedMeals.snacks) {
+        updatedMeals.snacks = [];
+      }
+      updatedMeals.snacks.push(draggedMeal.meal);
+    } else {
+      updatedMeals[targetType] = draggedMeal.meal;
+    }
+    
+    currentDay.meals = updatedMeals;
+    updatedMealPlan[activeDay] = currentDay;
+    
+    setMealPlan(updatedMealPlan);
+    setDraggedMeal(null);
+    
+    toast({
+      title: "Meal Moved",
+      description: `${draggedMeal.meal.name} moved to ${targetType === 'snacks' ? 'snacks' : targetType}.`,
+    });
   };
 
   return (
@@ -132,7 +197,6 @@ const PlanningPage = () => {
         </div>
         
         <div className="flex gap-2">
-          {/* Weekly Overview Button */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -149,7 +213,6 @@ const PlanningPage = () => {
             </TooltipContent>
           </Tooltip>
           
-          {/* Recipe Vault Button */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -168,7 +231,6 @@ const PlanningPage = () => {
         </div>
       </header>
 
-      {/* Day Selection */}
       <div className="flex items-center justify-between mb-4">
         <button 
           onClick={() => navigateDay(-1)} 
@@ -195,7 +257,6 @@ const PlanningPage = () => {
         </button>
       </div>
 
-      {/* Daily Macros Summary Card */}
       <div className="bg-white rounded-xl shadow-md p-4 mb-6 animate-slide-up">
         <h2 className="text-lg font-semibold mb-3">Daily Nutrition</h2>
         <div className="space-y-3">
@@ -293,35 +354,62 @@ const PlanningPage = () => {
         </div>
       </div>
 
-      {/* Meals Section */}
       <div className="space-y-4 mb-6">
-        <MealCard 
-          title="Breakfast" 
-          meal={currentDayPlan.meals.breakfast}
-          isLocked={lockedMeals[`breakfast-${currentDayPlan.meals.breakfast?.id}`]}
-          onLockToggle={() => handleLockMeal('breakfast', currentDayPlan.meals.breakfast?.id)}
-          onViewRecipe={() => handleOpenRecipeDetails(currentDayPlan.meals.breakfast)}
-        />
+        <div 
+          className="drop-target"
+          onDragOver={handleDragOver}
+          onDrop={() => handleDrop('breakfast')}
+        >
+          <MealCard 
+            title="Breakfast" 
+            meal={currentDayPlan.meals.breakfast}
+            isLocked={lockedMeals[`breakfast-${currentDayPlan.meals.breakfast?.id}`]}
+            onLockToggle={() => handleLockMeal('breakfast', currentDayPlan.meals.breakfast?.id)}
+            onViewRecipe={() => handleOpenRecipeDetails(currentDayPlan.meals.breakfast)}
+            onDragStart={() => currentDayPlan.meals.breakfast && handleDragStart('breakfast', currentDayPlan.meals.breakfast)}
+            draggable={!!currentDayPlan.meals.breakfast}
+          />
+        </div>
         
-        <MealCard 
-          title="Lunch" 
-          meal={currentDayPlan.meals.lunch}
-          isLocked={lockedMeals[`lunch-${currentDayPlan.meals.lunch?.id}`]}
-          onLockToggle={() => handleLockMeal('lunch', currentDayPlan.meals.lunch?.id)}
-          onViewRecipe={() => handleOpenRecipeDetails(currentDayPlan.meals.lunch)}
-        />
+        <div 
+          className="drop-target"
+          onDragOver={handleDragOver}
+          onDrop={() => handleDrop('lunch')}
+        >
+          <MealCard 
+            title="Lunch" 
+            meal={currentDayPlan.meals.lunch}
+            isLocked={lockedMeals[`lunch-${currentDayPlan.meals.lunch?.id}`]}
+            onLockToggle={() => handleLockMeal('lunch', currentDayPlan.meals.lunch?.id)}
+            onViewRecipe={() => handleOpenRecipeDetails(currentDayPlan.meals.lunch)}
+            onDragStart={() => currentDayPlan.meals.lunch && handleDragStart('lunch', currentDayPlan.meals.lunch)}
+            draggable={!!currentDayPlan.meals.lunch}
+          />
+        </div>
         
-        <MealCard 
-          title="Dinner" 
-          meal={currentDayPlan.meals.dinner}
-          isLocked={lockedMeals[`dinner-${currentDayPlan.meals.dinner?.id}`]}
-          onLockToggle={() => handleLockMeal('dinner', currentDayPlan.meals.dinner?.id)}
-          onViewRecipe={() => handleOpenRecipeDetails(currentDayPlan.meals.dinner)}
-        />
+        <div 
+          className="drop-target"
+          onDragOver={handleDragOver}
+          onDrop={() => handleDrop('dinner')}
+        >
+          <MealCard 
+            title="Dinner" 
+            meal={currentDayPlan.meals.dinner}
+            isLocked={lockedMeals[`dinner-${currentDayPlan.meals.dinner?.id}`]}
+            onLockToggle={() => handleLockMeal('dinner', currentDayPlan.meals.dinner?.id)}
+            onViewRecipe={() => handleOpenRecipeDetails(currentDayPlan.meals.dinner)}
+            onDragStart={() => currentDayPlan.meals.dinner && handleDragStart('dinner', currentDayPlan.meals.dinner)}
+            draggable={!!currentDayPlan.meals.dinner}
+          />
+        </div>
         
         <div>
           <h3 className="font-medium mb-2">Snacks</h3>
-          <div className="space-y-3">
+          <div 
+            className="space-y-3 drop-target"
+            onDragOver={handleDragOver}
+            onDrop={() => handleDrop('snacks')}
+          >
             {currentDayPlan.meals.snacks?.map((snack, index) => (
               snack && (
                 <MealCard 
@@ -331,6 +419,8 @@ const PlanningPage = () => {
                   isLocked={lockedMeals[`snacks-${snack?.id}-${index}`]}
                   onLockToggle={() => handleLockMeal(`snacks-${snack?.id}`, index.toString())}
                   onViewRecipe={() => handleOpenRecipeDetails(snack)}
+                  onDragStart={() => handleDragStart('snacks', snack, index)}
+                  draggable={true}
                   isSnack={true}
                 />
               )
@@ -339,7 +429,6 @@ const PlanningPage = () => {
         </div>
       </div>
 
-      {/* Action Buttons */}
       <div className="grid grid-cols-2 gap-4">
         <Button 
           onClick={handleRegeneratePlan} 
@@ -360,7 +449,6 @@ const PlanningPage = () => {
         </Button>
       </div>
 
-      {/* Recipe Details Drawer */}
       <Drawer open={isRecipeDrawerOpen} onOpenChange={setIsRecipeDrawerOpen}>
         <DrawerContent className="max-h-[90vh] overflow-y-auto">
           {selectedMeal && (
@@ -462,7 +550,6 @@ const PlanningPage = () => {
         </DrawerContent>
       </Drawer>
 
-      {/* Weekly Overview Dialog */}
       <Dialog open={isWeekOverviewOpen} onOpenChange={setIsWeekOverviewOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -477,7 +564,11 @@ const PlanningPage = () => {
           
           <div className="space-y-6 pt-2">
             {mealPlan.map((day, index) => (
-              <div key={index} className="border rounded-lg p-3">
+              <div 
+                key={index} 
+                className="border rounded-lg p-3 cursor-pointer hover:border-dishco-primary transition-colors"
+                onClick={() => handleNavigateToDay(index)}
+              >
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="font-semibold">{days[index]}</h3>
                   <span className="text-sm text-dishco-text-light">
@@ -498,13 +589,19 @@ const PlanningPage = () => {
                     <span className="w-24 font-medium">Dinner:</span>
                     <span className="line-clamp-1">{day.meals.dinner?.name || "None scheduled"}</span>
                   </div>
-                  <div className="flex items-center text-sm">
-                    <span className="w-24 font-medium">Snacks:</span>
-                    <span className="line-clamp-1">
-                      {day.meals.snacks?.length 
-                        ? `${day.meals.snacks.length} items` 
-                        : "None scheduled"}
-                    </span>
+                  <div className="flex flex-col text-sm">
+                    <div className="flex">
+                      <span className="w-24 font-medium">Snacks:</span>
+                    </div>
+                    {day.meals.snacks && day.meals.snacks.length > 0 ? (
+                      <ul className="list-disc pl-8 mt-1">
+                        {day.meals.snacks.map((snack, snackIndex) => (
+                          <li key={snackIndex} className="line-clamp-1">{snack.name}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <span className="pl-24">None scheduled</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -513,7 +610,6 @@ const PlanningPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Recipe Vault Sheet */}
       <Sheet open={isVaultOpen} onOpenChange={setIsVaultOpen}>
         <SheetContent className="w-full sm:max-w-md overflow-y-auto">
           <SheetHeader>
@@ -562,14 +658,20 @@ interface MealCardProps {
   isLocked: boolean;
   onLockToggle: () => void;
   onViewRecipe: () => void;
+  onDragStart: () => void;
+  draggable: boolean;
   isSnack?: boolean;
 }
 
 const MealCard: React.FC<MealCardProps> = ({ 
-  title, meal, isLocked, onLockToggle, onViewRecipe, isSnack = false 
+  title, meal, isLocked, onLockToggle, onViewRecipe, onDragStart, draggable, isSnack = false 
 }) => {
   return meal ? (
-    <div className={`bg-white rounded-xl shadow-md overflow-hidden ${!isSnack ? 'animate-bounce-in' : 'animate-scale-in'}`}>
+    <div 
+      className={`bg-white rounded-xl shadow-md overflow-hidden ${!isSnack ? 'animate-bounce-in' : 'animate-scale-in'}`}
+      draggable={draggable}
+      onDragStart={onDragStart}
+    >
       <div className="relative">
         <img 
           src={meal.imageSrc} 
@@ -578,7 +680,6 @@ const MealCard: React.FC<MealCardProps> = ({
         />
         
         <div className="absolute top-2 right-2 flex space-x-1">
-          {/* Lock/Unlock Button */}
           <button 
             onClick={onLockToggle}
             className="p-1 bg-white bg-opacity-80 rounded-full shadow-sm"
@@ -590,7 +691,6 @@ const MealCard: React.FC<MealCardProps> = ({
             )}
           </button>
           
-          {/* View Recipe Button */}
           <button 
             onClick={onViewRecipe}
             className="p-1 bg-white bg-opacity-80 rounded-full shadow-sm"
@@ -599,7 +699,6 @@ const MealCard: React.FC<MealCardProps> = ({
           </button>
         </div>
         
-        {/* Recipe Feature Icons */}
         <div className="absolute bottom-2 left-2 flex space-x-1">
           {meal.requiresBlender && (
             <Tooltip>
@@ -642,7 +741,6 @@ const MealCard: React.FC<MealCardProps> = ({
         <p className="mt-1 font-semibold">{meal.name}</p>
         <p className="text-sm text-dishco-text-light line-clamp-2 mt-1">{meal.description}</p>
         
-        {/* Macro Pills */}
         <div className="flex mt-3 space-x-2">
           <span className="macro-pill macro-pill-protein">P: {meal.macros.protein}g</span>
           <span className="macro-pill macro-pill-carbs">C: {meal.macros.carbs}g</span>
@@ -662,7 +760,6 @@ const MealCard: React.FC<MealCardProps> = ({
   );
 };
 
-// Plus icon component for the MealCard
 const Plus = ({ size, className }) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
