@@ -147,31 +147,44 @@ const HomePage = () => {
     return Promise.resolve();
   };
   
-  // Function to mark a meal as consumed
-  const handleMarkAsConsumed = (meal: Meal) => {
-    if (meal.consumed) {
-      return; // Already consumed
-    }
-    
+  // Function to toggle meal consumption
+  const handleToggleConsumed = (meal: Meal) => {
     // Update the meal
     const updatedMeals = todaysMeals.map(m => 
-      m.id === meal.id ? { ...m, consumed: true } : m
+      m.id === meal.id ? { ...m, consumed: !m.consumed } : m
     );
     setTodaysMeals(updatedMeals);
     
-    // Update nutrition
-    setDailyNutrition(prev => ({
-      ...prev,
-      calories: prev.calories + meal.recipe.macros.calories,
-      protein: prev.protein + meal.recipe.macros.protein,
-      carbs: prev.carbs + meal.recipe.macros.carbs,
-      fat: prev.fat + meal.recipe.macros.fat
-    }));
-    
-    toast({
-      title: "Meal logged",
-      description: `${meal.name} has been marked as consumed.`
-    });
+    // Update nutrition based on whether meal was consumed or unconsumed
+    if (!meal.consumed) {
+      // Add nutrition values
+      setDailyNutrition(prev => ({
+        ...prev,
+        calories: prev.calories + meal.recipe.macros.calories,
+        protein: prev.protein + meal.recipe.macros.protein,
+        carbs: prev.carbs + meal.recipe.macros.carbs,
+        fat: prev.fat + meal.recipe.macros.fat
+      }));
+      
+      toast({
+        title: "Meal logged",
+        description: `${meal.name} has been marked as consumed.`
+      });
+    } else {
+      // Subtract nutrition values
+      setDailyNutrition(prev => ({
+        ...prev,
+        calories: Math.max(0, prev.calories - meal.recipe.macros.calories),
+        protein: Math.max(0, prev.protein - meal.recipe.macros.protein),
+        carbs: Math.max(0, prev.carbs - meal.recipe.macros.carbs),
+        fat: Math.max(0, prev.fat - meal.recipe.macros.fat)
+      }));
+      
+      toast({
+        title: "Meal unlogged",
+        description: `${meal.name} has been unmarked as consumed.`
+      });
+    }
   };
   
   // Color definitions for macros
@@ -352,10 +365,9 @@ const HomePage = () => {
                     variant={meal.consumed ? "outline" : "outline"}
                     size="sm"
                     className={`w-full ${meal.consumed ? 'text-green-600 border-green-600' : ''}`}
-                    onClick={() => handleMarkAsConsumed(meal)}
-                    disabled={meal.consumed}
+                    onClick={() => handleToggleConsumed(meal)}
                   >
-                    {meal.consumed ? 'Consumed' : 'Mark as consumed'}
+                    {meal.consumed ? 'Consumed ✓' : 'Mark as consumed'}
                   </Button>
                 </div>
               </div>

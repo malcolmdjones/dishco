@@ -1,23 +1,28 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar } from 'lucide-react';
+import { Calendar, ArrowRight, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { recipes } from '@/data/mockData';
 
 const PlanningPage = () => {
   const { toast } = useToast();
-  const [dailyNutrition, setDailyNutrition] = useState({
-    calories: 800,
-    totalCalories: 2000,
-    protein: 60,
-    totalProtein: 150,
-    carbs: 80,
-    totalCarbs: 200,
-    fat: 30,
-    totalFat: 65
-  });
+  const [loading, setLoading] = useState(false);
+
+  const handleGeneratePlan = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      toast({
+        title: "Meal Plan Generated",
+        description: "Your customized meal plan for the week has been created!",
+      });
+    }, 1500);
+  };
+
+  // Get a selection of 4 recipes for display
+  const recipeSelection = recipes.slice(0, 4);
 
   return (
     <div className="animate-fade-in">
@@ -45,79 +50,48 @@ const PlanningPage = () => {
           </div>
         </div>
 
-        {/* Nutrition Summary */}
-        <div className="bg-white rounded-xl p-4 shadow-sm animate-slide-up">
-          <h2 className="text-lg font-semibold mb-4">Today's Nutrition</h2>
-          <div className="grid grid-cols-2 gap-6">
-            <div className="flex justify-center">
-              <Progress 
-                type="circular" 
-                size="sm"
-                value={dailyNutrition.calories} 
-                max={dailyNutrition.totalCalories}
-                showValue={true}
-                valueSuffix=""
-                label="Calories"
-                status="default"
-              />
-            </div>
-            <div className="flex justify-center">
-              <Progress 
-                type="circular" 
-                size="sm"
-                value={dailyNutrition.protein} 
-                max={dailyNutrition.totalProtein}
-                showValue={true}
-                valueSuffix="g"
-                label="Protein"
-                status="default"
-              />
-            </div>
-            <div className="flex justify-center">
-              <Progress 
-                type="circular" 
-                size="sm"
-                value={dailyNutrition.carbs} 
-                max={dailyNutrition.totalCarbs}
-                showValue={true}
-                valueSuffix="g"
-                label="Carbs"
-                status="default"
-              />
-            </div>
-            <div className="flex justify-center">
-              <Progress 
-                type="circular" 
-                size="sm"
-                value={dailyNutrition.fat} 
-                max={dailyNutrition.totalFat}
-                showValue={true}
-                valueSuffix="g"
-                label="Fat"
-                status="default"
-              />
-            </div>
-          </div>
-          <p className="mt-4 text-sm text-dishco-text-light">
-            Track your daily macros and stay on top of your nutrition goals.
-          </p>
-        </div>
+        {/* Generate Meal Plan Button */}
+        <Button 
+          className="w-full py-6 text-lg font-medium"
+          disabled={loading}
+          onClick={handleGeneratePlan}
+        >
+          {loading ? 'Generating...' : 'Generate a Meal Plan'} 
+          {!loading && <ArrowRight className="ml-2" />}
+        </Button>
 
-        {/* Meal Suggestions */}
+        {/* Discover Recipes */}
         <div className="bg-white rounded-xl p-4 shadow-sm animate-slide-up">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Meal Suggestions</h2>
-            <Link to="/saved-recipes">
-              <Button variant="ghost" size="sm" className="text-xs">Explore Recipes</Button>
+            <h2 className="text-xl font-semibold">
+              <span className="text-[#FF6B6B]">Dish</span>
+              <span className="text-[#6B66FF]">cover</span> Recipes
+            </h2>
+            <Link to="/explore-recipes">
+              <Button variant="ghost" size="sm">Explore Recipes</Button>
             </Link>
           </div>
-          <p className="text-sm text-dishco-text-light">
+          <p className="text-sm text-dishco-text-light mb-4">
             Discover new and exciting meal ideas tailored to your preferences.
           </p>
-          {/* Placeholder for meal suggestions */}
-          <div className="mt-4 text-center">
-            <Calendar size={48} className="mx-auto text-gray-300" />
-            <p className="text-gray-400">Coming soon: Personalized meal suggestions</p>
+          
+          <div className="grid grid-cols-2 gap-4">
+            {recipeSelection.map((recipe) => (
+              <div key={recipe.id} className="cursor-pointer">
+                <div className="bg-gray-100 rounded-lg aspect-square mb-2 flex items-center justify-center overflow-hidden">
+                  <img 
+                    src={recipe.imageSrc} 
+                    alt={recipe.name} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <h3 className="font-medium text-sm line-clamp-1">{recipe.name}</h3>
+                <div className="flex justify-between items-center mt-1">
+                  <span className="text-sm text-gray-600">{recipe.macros.calories} cal</span>
+                  <span className="text-xs text-blue-600">{recipe.type}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
