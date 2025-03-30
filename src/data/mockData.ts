@@ -1,4 +1,3 @@
-
 export interface Recipe {
   id: string;
   name: string;
@@ -115,6 +114,8 @@ export const generateGroceryList = (mealPlan: MealPlanDay[]): GroceryItem[] => {
   const groceryItems: GroceryItem[] = [];
   
   // This is a placeholder implementation
+  // Usually, it would parse recipes from the meal plan and extract ingredients
+  
   return groceryItems;
 };
 
