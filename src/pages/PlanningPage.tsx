@@ -1,15 +1,40 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar, ArrowRight, Search } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { recipes } from '@/data/mockData';
+import { format, startOfWeek, addDays } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 const PlanningPage = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [activePlan, setActivePlan] = useState<any>(null);
+  const [weekDays, setWeekDays] = useState<Date[]>([]);
+
+  useEffect(() => {
+    // Generate current week days
+    const today = new Date();
+    const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Start on Monday
+    const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+    setWeekDays(days);
+
+    // Check for active plan in session storage
+    const storedPlan = sessionStorage.getItem('activePlan');
+    if (storedPlan) {
+      try {
+        const parsedPlan = JSON.parse(storedPlan);
+        setActivePlan(parsedPlan);
+      } catch (error) {
+        console.error('Error parsing active plan:', error);
+      }
+    }
+  }, []);
 
   const handleGeneratePlan = () => {
     navigate('/create-meal-plan');
@@ -34,14 +59,45 @@ const PlanningPage = () => {
               <Button variant="ghost" size="sm" className="text-xs">View Saved Plans</Button>
             </Link>
           </div>
-          <p className="text-sm text-dishco-text-light">
-            Here's a summary of your planned meals for the week.
-          </p>
-          {/* Placeholder for weekly calendar/summary */}
-          <div className="mt-4 text-center">
-            <Calendar size={48} className="mx-auto text-gray-300" />
-            <p className="text-gray-400">Coming soon: Weekly meal plan view</p>
-          </div>
+          
+          {activePlan ? (
+            <div className="mt-2">
+              <h3 className="font-medium mb-2">{activePlan.name || "Current Plan"}</h3>
+              <div className="grid grid-cols-7 gap-1 text-center">
+                {weekDays.map((day, index) => {
+                  const dayPlan = activePlan.days && activePlan.days[index];
+                  const hasData = dayPlan && 
+                    (dayPlan.meals.breakfast || dayPlan.meals.lunch || dayPlan.meals.dinner);
+                  
+                  return (
+                    <div 
+                      key={index}
+                      className={`p-2 rounded-md ${hasData ? 'bg-green-50' : 'bg-gray-50'}`}
+                    >
+                      <p className="text-xs font-medium">{format(day, 'EEE')}</p>
+                      <p className="text-sm">{format(day, 'd')}</p>
+                      {hasData && (
+                        <div className="w-2 h-2 bg-green-500 rounded-full mx-auto mt-1"></div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <Calendar size={36} className="mx-auto text-gray-300 mb-2" />
+              <p className="text-gray-400 mb-2">No active meal plan</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-xs"
+                onClick={() => navigate('/saved-plans')}
+              >
+                Activate a plan
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Generate Meal Plan Button */}

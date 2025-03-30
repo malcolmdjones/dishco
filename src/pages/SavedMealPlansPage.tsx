@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Trash2, ChevronRight, Plus, Pencil, Info } from 'lucide-react';
+import { ArrowLeft, Calendar, Trash2, ChevronRight, Plus, Pencil, BookOpen, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,8 +15,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
+import PlanDetailView from '@/components/PlanDetailView';
 import { Database } from '@/integrations/supabase/types';
 import { Json } from '@/integrations/supabase/types';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 
 type SavedMealPlan = {
   id: string;
@@ -40,6 +42,8 @@ const SavedMealPlansPage = () => {
   const [newDescription, setNewDescription] = useState('');
   const [isSelectingStartDate, setIsSelectingStartDate] = useState(false);
   const [selectedDay, setSelectedDay] = useState(0); // 0 = Today, 1 = Tomorrow, etc.
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [planDetailOpen, setPlanDetailOpen] = useState(false);
 
   useEffect(() => {
     fetchSavedPlans();
@@ -111,14 +115,17 @@ const SavedMealPlansPage = () => {
   const confirmActivatePlan = () => {
     if (!selectedPlan) return;
 
+    // Store the selected date as the start date
+    const startDate = selectedDate ? selectedDate : new Date();
+    
     sessionStorage.setItem('activePlan', JSON.stringify({
       ...selectedPlan.plan_data,
-      startDay: selectedDay
+      startDate: startDate.toISOString()
     }));
     
     toast({
       title: "Plan Activated",
-      description: "This meal plan is now your active plan for the week.",
+      description: "This meal plan is now your active plan starting from " + format(startDate, 'MMMM d, yyyy'),
     });
     
     setIsSelectingStartDate(false);
@@ -127,7 +134,7 @@ const SavedMealPlansPage = () => {
 
   const handleViewPlan = (plan: SavedMealPlan) => {
     setSelectedPlan(plan);
-    setIsViewingPlan(true);
+    setPlanDetailOpen(true);
   };
 
   const handleRename = (plan: SavedMealPlan) => {
@@ -199,19 +206,20 @@ const SavedMealPlansPage = () => {
     plan.plan_data.days.forEach((day, dayIndex) => {
       ['breakfast', 'lunch', 'dinner'].forEach((mealType) => {
         if (day.meals[mealType]?.id) {
-          lockedMeals[`${mealType}-${day.meals[mealType].id}`] = true;
+          lockedMeals[`${dayIndex}-${mealType}`] = true;
         }
       });
       
       if (day.meals.snacks) {
         day.meals.snacks.forEach((snack: any, snackIndex: number) => {
           if (snack?.id) {
-            lockedMeals[`snacks-${snack.id}-${snackIndex}`] = true;
+            lockedMeals[`${dayIndex}-snack-${snackIndex}`] = true;
           }
         });
       }
     });
     
+    // Save plan data and locked meals to session storage
     sessionStorage.setItem('planToCopy', JSON.stringify(plan.plan_data));
     sessionStorage.setItem('lockedMeals', JSON.stringify(lockedMeals));
     
@@ -220,7 +228,7 @@ const SavedMealPlansPage = () => {
       description: "You can now edit a copy of this meal plan with all meals locked by default.",
     });
     
-    navigate('/planning');
+    navigate('/create-meal-plan');
   };
 
   const calculateDayNutrition = (day: any) => {
@@ -293,7 +301,7 @@ const SavedMealPlansPage = () => {
               <div className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start">
-                    <Calendar size={20} className="text-dishco-primary mr-3 mt-1" />
+                    <BookOpen size={20} className="text-dishco-primary mr-3 mt-1" />
                     <div>
                       <h3 className="font-medium">{plan.name}</h3>
                       <p className="text-xs text-dishco-text-light">
@@ -357,141 +365,13 @@ const SavedMealPlansPage = () => {
         )}
       </div>
 
-      <Dialog open={isViewingPlan} onOpenChange={setIsViewingPlan}>
-        <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Calendar size={18} className="text-dishco-primary" />
-              {selectedPlan?.name}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedPlan?.plan_data.description || 'Custom meal plan'}
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedPlan && (
-            <div className="space-y-6">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-medium mb-3">Nutrition Overview</h3>
-                <div className="grid grid-cols-4 gap-3">
-                  <div className="flex flex-col items-center">
-                    <div className="w-16 h-16 mb-2">
-                      <CircularProgressbar
-                        value={75}
-                        text={`${calculateDayNutrition(selectedPlan.plan_data.days[0]).calories}`}
-                        styles={buildStyles({
-                          textSize: '28px',
-                          pathColor: '#FFF4D7',
-                          textColor: '#3C3C3C',
-                          trailColor: '#F9F9F9',
-                        })}
-                      />
-                    </div>
-                    <span className="text-xs text-center">Calories</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="w-16 h-16 mb-2">
-                      <CircularProgressbar
-                        value={65}
-                        text={`${calculateDayNutrition(selectedPlan.plan_data.days[0]).protein}g`}
-                        styles={buildStyles({
-                          textSize: '28px',
-                          pathColor: '#DBE9FE',
-                          textColor: '#3C3C3C',
-                          trailColor: '#F9F9F9',
-                        })}
-                      />
-                    </div>
-                    <span className="text-xs text-center">Protein</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="w-16 h-16 mb-2">
-                      <CircularProgressbar
-                        value={80}
-                        text={`${calculateDayNutrition(selectedPlan.plan_data.days[0]).carbs}g`}
-                        styles={buildStyles({
-                          textSize: '28px',
-                          pathColor: '#FEF9C3',
-                          textColor: '#3C3C3C',
-                          trailColor: '#F9F9F9',
-                        })}
-                      />
-                    </div>
-                    <span className="text-xs text-center">Carbs</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="w-16 h-16 mb-2">
-                      <CircularProgressbar
-                        value={60}
-                        text={`${calculateDayNutrition(selectedPlan.plan_data.days[0]).fat}g`}
-                        styles={buildStyles({
-                          textSize: '28px',
-                          pathColor: '#F3E8FF',
-                          textColor: '#3C3C3C',
-                          trailColor: '#F9F9F9',
-                        })}
-                      />
-                    </div>
-                    <span className="text-xs text-center">Fat</span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="font-medium mb-3">Day 1 Meals</h3>
-                <div className="space-y-3">
-                  {selectedPlan.plan_data.days[0].meals.breakfast && (
-                    <MealPreviewCard 
-                      title="Breakfast" 
-                      meal={selectedPlan.plan_data.days[0].meals.breakfast} 
-                    />
-                  )}
-                  {selectedPlan.plan_data.days[0].meals.lunch && (
-                    <MealPreviewCard 
-                      title="Lunch" 
-                      meal={selectedPlan.plan_data.days[0].meals.lunch} 
-                    />
-                  )}
-                  {selectedPlan.plan_data.days[0].meals.dinner && (
-                    <MealPreviewCard 
-                      title="Dinner" 
-                      meal={selectedPlan.plan_data.days[0].meals.dinner} 
-                    />
-                  )}
-                  {selectedPlan.plan_data.days[0].meals.snacks && 
-                    selectedPlan.plan_data.days[0].meals.snacks.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium mb-2">Snacks</h4>
-                      <div className="space-y-2">
-                        {selectedPlan.plan_data.days[0].meals.snacks.map((snack: any, i: number) => (
-                          snack && <MealPreviewCard key={i} meal={snack} isSnack />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex justify-between">
-                <Button 
-                  variant="outline" 
-                  onClick={() => handleCopyAndEdit(selectedPlan)}
-                >
-                  Copy & Edit
-                </Button>
-                <Button 
-                  onClick={() => {
-                    setIsViewingPlan(false);
-                    handleActivate(selectedPlan.id);
-                  }}
-                >
-                  Use This Plan
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {selectedPlan && (
+        <PlanDetailView
+          plan={selectedPlan}
+          isOpen={planDetailOpen}
+          onClose={() => setPlanDetailOpen(false)}
+        />
+      )}
 
       <Dialog open={isRenaming} onOpenChange={setIsRenaming}>
         <DialogContent className="sm:max-w-[425px]">
@@ -545,104 +425,30 @@ const SavedMealPlansPage = () => {
           </DialogHeader>
           
           <div className="py-4">
-            <div className="space-y-2">
-              {[0, 1, 2, 3, 4, 5, 6].map((day) => (
-                <div 
-                  key={day}
-                  className={`p-3 border rounded-lg cursor-pointer flex justify-between items-center ${
-                    selectedDay === day ? 'border-dishco-primary bg-dishco-primary bg-opacity-5' : ''
-                  }`}
-                  onClick={() => setSelectedDay(day)}
-                >
-                  <div>
-                    <p className="font-medium">
-                      {day === 0 ? 'Today' : day === 1 ? 'Tomorrow' : `In ${day} days`}
-                    </p>
-                    <p className="text-sm text-dishco-text-light">
-                      {format(new Date(Date.now() + day * 24 * 60 * 60 * 1000), 'EEEE, MMM d')}
-                    </p>
-                  </div>
-                  {selectedDay === day && (
-                    <div className="h-4 w-4 rounded-full bg-dishco-primary"></div>
-                  )}
-                </div>
-              ))}
+            <div className="flex justify-center mb-4">
+              <CalendarComponent
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                className="p-3 pointer-events-auto"
+              />
             </div>
+            
+            <p className="text-center mb-4 text-sm">
+              Selected start date: <span className="font-medium">{selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : 'None'}</span>
+            </p>
           </div>
           
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setIsSelectingStartDate(false)}>
               Cancel
             </Button>
-            <Button onClick={confirmActivatePlan}>
+            <Button onClick={confirmActivatePlan} disabled={!selectedDate}>
               Start Plan
             </Button>
           </div>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-};
-
-interface MealPreviewCardProps {
-  title?: string;
-  meal: any;
-  isSnack?: boolean;
-}
-
-const MealPreviewCard: React.FC<MealPreviewCardProps> = ({ title, meal, isSnack = false }) => {
-  const [showDetails, setShowDetails] = useState(false);
-
-  return (
-    <div className="border rounded-lg overflow-hidden">
-      <div className="flex items-center p-0">
-        <div className="w-16 h-16 flex-shrink-0">
-          <img 
-            src={meal.imageSrc || '/placeholder.svg'} 
-            alt={meal.name} 
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="p-3 flex-1">
-          {title && !isSnack && <p className="text-xs text-dishco-text-light">{title}</p>}
-          <h4 className="font-medium">{meal.name}</h4>
-          <div className="flex space-x-2 mt-1">
-            <span className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded">P: {meal.macros.protein}g</span>
-            <span className="text-xs px-1.5 py-0.5 bg-yellow-50 text-yellow-600 rounded">C: {meal.macros.carbs}g</span>
-            <span className="text-xs px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded">F: {meal.macros.fat}g</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="ml-auto h-6 p-0 text-xs"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowDetails(!showDetails);
-              }}
-            >
-              <Info size={14} className="mr-1" />
-              Details
-            </Button>
-          </div>
-        </div>
-      </div>
-      
-      {showDetails && (
-        <div className="border-t p-3 bg-gray-50 text-sm">
-          <h5 className="font-medium mb-2">Ingredients</h5>
-          <ul className="list-disc list-inside text-sm space-y-1 mb-3">
-            {meal.ingredients?.map((ingredient: string, i: number) => (
-              <li key={i}>{ingredient}</li>
-            ))}
-          </ul>
-          
-          <h5 className="font-medium mb-2">Instructions</h5>
-          <ol className="list-decimal list-inside text-sm space-y-1">
-            {meal.instructions?.map((step: string, i: number) => (
-              <li key={i}>{step}</li>
-            ))}
-          </ol>
-        </div>
-      )}
     </div>
   );
 };

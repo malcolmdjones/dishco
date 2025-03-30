@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
-import { X } from 'lucide-react';
+import { X, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import RecipeDetail from './RecipeDetail';
 import { calculateDailyMacros } from '@/data/mockData';
@@ -28,7 +28,7 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
   const validActiveDay = Math.min(activeDay, plan.days.length - 1);
   
   // Get daily macros safely
-  const dailyMacros = plan.days[validActiveDay] && plan.days[validActiveDay].meals
+  const dailyMacros = plan.days && plan.days[validActiveDay] && plan.days[validActiveDay].meals
     ? calculateDailyMacros(plan.days[validActiveDay].meals)
     : { calories: 0, protein: 0, carbs: 0, fat: 0 };
   
@@ -70,12 +70,14 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
   };
 
   // Ensure we have meals for the active day
-  const currentDayMeals = plan.days[validActiveDay]?.meals || {
-    breakfast: null,
-    lunch: null,
-    dinner: null,
-    snacks: []
-  };
+  const currentDayMeals = plan.days && plan.days[validActiveDay] && plan.days[validActiveDay].meals 
+    ? plan.days[validActiveDay].meals 
+    : {
+        breakfast: null,
+        lunch: null,
+        dinner: null,
+        snacks: []
+      };
 
   return (
     <>

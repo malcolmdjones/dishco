@@ -27,9 +27,35 @@ export const useMealPlanUtils = () => {
     getUserGoals();
   }, []);
 
-  // Initialize or generate meal plan
+  // Check for a plan to copy from session storage
   useEffect(() => {
-    if (mealPlan.length === 0) {
+    const storedPlan = sessionStorage.getItem('planToCopy');
+    const storedLockedMeals = sessionStorage.getItem('lockedMeals');
+    
+    if (storedPlan && storedLockedMeals) {
+      try {
+        const parsedPlan = JSON.parse(storedPlan);
+        const parsedLockedMeals = JSON.parse(storedLockedMeals);
+        
+        if (parsedPlan.days && Array.isArray(parsedPlan.days)) {
+          setMealPlan(parsedPlan.days.map((day: any) => ({
+            date: day.date || new Date().toISOString(),
+            meals: day.meals || {
+              breakfast: null,
+              lunch: null,
+              dinner: null,
+              snacks: [null, null]
+            }
+          })));
+          
+          setLockedMeals(parsedLockedMeals);
+        }
+      } catch (error) {
+        console.error('Error parsing copied plan data:', error);
+        generateFullMealPlan(); // Fallback
+      }
+    } else if (mealPlan.length === 0) {
+      // Initialize if no copied plan and no meal plan yet
       generateFullMealPlan();
     }
   }, [userGoals]);
