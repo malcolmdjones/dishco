@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CookingPot, Zap, Blend, Search, Filter, Plus } from 'lucide-react';
 import { recipes, Recipe } from '@/data/mockData';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface RecipeVaultDialogProps {
   isOpen: boolean;
@@ -67,7 +68,7 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>Recipe Vault</DialogTitle>
           <DialogDescription>Browse and select recipes from your collection</DialogDescription>
@@ -85,7 +86,7 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
                 className="pl-9"
               />
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-wrap">
               <Button 
                 variant={selectedType === null ? "default" : "outline"} 
                 size="sm"
@@ -107,54 +108,56 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
           </div>
           
           {/* Recipe list */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {filteredRecipes.map((recipe) => (
-              <div 
-                key={recipe.id} 
-                className="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer"
-                onClick={() => {
-                  onSelectRecipe(recipe, targetMealType, targetMealIndex);
-                  onClose();
-                }}
-              >
-                <div className="flex justify-between items-start">
-                  <h3 className="font-medium">{recipe.name}</h3>
-                  <div className="flex gap-1">
-                    {recipe.requiresBlender && (
-                      <span className="text-gray-500" title="Requires blender">
-                        <Blend size={14} />
-                      </span>
-                    )}
-                    {recipe.requiresCooking && (
-                      <span className="text-gray-500" title="Requires cooking">
-                        <CookingPot size={14} />
-                      </span>
-                    )}
-                    {recipe.cookTime && recipe.cookTime <= 15 && (
-                      <span className="text-amber-500" title="Quick to prepare">
-                        <Zap size={14} />
-                      </span>
-                    )}
+          <ScrollArea className="h-[50vh] pr-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pr-2">
+              {filteredRecipes.map((recipe) => (
+                <div 
+                  key={recipe.id} 
+                  className="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer"
+                  onClick={() => {
+                    onSelectRecipe(recipe, targetMealType, targetMealIndex);
+                    onClose();
+                  }}
+                >
+                  <div className="flex justify-between items-start">
+                    <h3 className="font-medium">{recipe.name}</h3>
+                    <div className="flex gap-1">
+                      {recipe.requiresBlender && (
+                        <span className="text-gray-500" title="Requires blender">
+                          <Blend size={14} />
+                        </span>
+                      )}
+                      {recipe.requiresCooking && (
+                        <span className="text-gray-500" title="Requires cooking">
+                          <CookingPot size={14} />
+                        </span>
+                      )}
+                      {recipe.cookTime && recipe.cookTime <= 15 && (
+                        <span className="text-amber-500" title="Quick to prepare">
+                          <Zap size={14} />
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-500 line-clamp-2 mb-2">{recipe.description}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded">
+                      {recipe.type.charAt(0).toUpperCase() + recipe.type.slice(1)}
+                    </span>
+                    <span className="text-xs bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded">
+                      {recipe.macros.calories} kcal
+                    </span>
                   </div>
                 </div>
-                <p className="text-sm text-gray-500 line-clamp-2 mb-2">{recipe.description}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded">
-                    {recipe.type.charAt(0).toUpperCase() + recipe.type.slice(1)}
-                  </span>
-                  <span className="text-xs bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded">
-                    {recipe.macros.calories} kcal
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          {filteredRecipes.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-gray-500">No recipes found. Try adjusting your search.</p>
+              ))}
             </div>
-          )}
+          
+            {filteredRecipes.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No recipes found. Try adjusting your search.</p>
+              </div>
+            )}
+          </ScrollArea>
         </div>
       </DialogContent>
     </Dialog>

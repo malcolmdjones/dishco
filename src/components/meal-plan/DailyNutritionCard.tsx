@@ -37,10 +37,10 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
       <CardContent className="pt-6">
         <h2 className="text-lg font-semibold mb-4">Daily Nutrition</h2>
         
-        <div className="space-y-4">
+        <div className="grid grid-cols-4 gap-4">
           {/* Calories */}
           <div>
-            <div className="flex justify-between mb-1">
+            <div className="flex flex-col mb-1">
               <span className="text-sm text-gray-700">Calories</span>
               <div className="flex items-baseline gap-1">
                 <span className="text-base font-semibold">{dayTotals.calories}</span>
@@ -57,7 +57,7 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
           
           {/* Protein */}
           <div>
-            <div className="flex justify-between mb-1">
+            <div className="flex flex-col mb-1">
               <span className="text-sm text-gray-700">Protein</span>
               <div className="flex items-baseline gap-1">
                 <span className="text-base font-semibold">{dayTotals.protein}g</span>
@@ -74,7 +74,7 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
           
           {/* Carbs */}
           <div>
-            <div className="flex justify-between mb-1">
+            <div className="flex flex-col mb-1">
               <span className="text-sm text-gray-700">Carbs</span>
               <div className="flex items-baseline gap-1">
                 <span className="text-base font-semibold">{dayTotals.carbs}g</span>
@@ -91,7 +91,7 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
           
           {/* Fat */}
           <div>
-            <div className="flex justify-between mb-1">
+            <div className="flex flex-col mb-1">
               <span className="text-sm text-gray-700">Fat</span>
               <div className="flex items-baseline gap-1">
                 <span className="text-base font-semibold">{dayTotals.fat}g</span>
