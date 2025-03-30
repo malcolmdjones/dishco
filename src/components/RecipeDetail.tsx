@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Heart } from 'lucide-react';
@@ -29,11 +28,12 @@ const RecipeDetail: React.FC<RecipeDetailProps> = ({
   const recipe = recipes.find(r => r.id === recipeId);
 
   useEffect(() => {
-    // If isSaved prop is not provided, check from database
-    if (propIsSaved === undefined) {
-      checkIfSaved();
-    } else {
+    // If isSaved prop is provided, use it
+    if (propIsSaved !== undefined) {
       setIsSaved(propIsSaved);
+    } else {
+      // Otherwise check from database
+      checkIfSaved();
     }
   }, [recipeId, propIsSaved]);
 
@@ -42,15 +42,14 @@ const RecipeDetail: React.FC<RecipeDetailProps> = ({
       const { data, error } = await supabase
         .from('saved_recipes')
         .select('*')
-        .eq('recipe_id', recipeId)
-        .single();
+        .eq('recipe_id', recipeId);
       
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error checking if recipe is saved:', error);
         return;
       }
       
-      setIsSaved(!!data);
+      setIsSaved(data && data.length > 0);
     } catch (error) {
       console.error('Error checking if recipe is saved:', error);
     }
@@ -108,7 +107,7 @@ const RecipeDetail: React.FC<RecipeDetailProps> = ({
   
   if (!recipe) {
     return (
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+      <div className={`fixed inset-0 bg-black/50 z-50 flex items-center justify-center ${className}`}>
         <div className="bg-white rounded-xl p-6 max-w-md w-full max-h-[85vh] overflow-y-auto">
           <p>Recipe not found</p>
           <Button onClick={onClose} className="mt-4 w-full">Close</Button>

@@ -458,7 +458,7 @@ const PlanningPage = () => {
       <div className="bg-white rounded-xl shadow-md p-4 mb-6 animate-slide-up">
         <h2 className="text-lg font-semibold mb-4">Daily Nutrition</h2>
         <div className="flex justify-between items-center">
-          <div className="flex-1 flex flex-col items-center">
+          <div className="flex-1 flex flex-col items-center justify-center">
             <div className="w-20 h-20">
               <CircularProgressbar
                 value={percentages.calories}
@@ -471,12 +471,12 @@ const PlanningPage = () => {
                 })}
               />
             </div>
-            <span className="text-xs text-center mt-1">
+            <span className="text-xs text-center mt-2">
               {dailyMacros.calories} / {goals.calories} Cal
             </span>
           </div>
 
-          <div className="flex-1 flex flex-col items-center">
+          <div className="flex-1 flex flex-col items-center justify-center">
             <div className="w-20 h-20">
               <CircularProgressbar
                 value={percentages.protein}
@@ -489,12 +489,12 @@ const PlanningPage = () => {
                 })}
               />
             </div>
-            <span className="text-xs text-center mt-1 text-amber-600">
+            <span className="text-xs text-center mt-2 text-amber-600">
               {dailyMacros.protein}g / {goals.protein}g
             </span>
           </div>
 
-          <div className="flex-1 flex flex-col items-center">
+          <div className="flex-1 flex flex-col items-center justify-center">
             <div className="w-20 h-20">
               <CircularProgressbar
                 value={percentages.carbs}
@@ -507,12 +507,12 @@ const PlanningPage = () => {
                 })}
               />
             </div>
-            <span className="text-xs text-center mt-1">
+            <span className="text-xs text-center mt-2">
               {dailyMacros.carbs}g / {goals.carbs}g
             </span>
           </div>
 
-          <div className="flex-1 flex flex-col items-center">
+          <div className="flex-1 flex flex-col items-center justify-center">
             <div className="w-20 h-20">
               <CircularProgressbar
                 value={percentages.fat}
@@ -525,7 +525,7 @@ const PlanningPage = () => {
                 })}
               />
             </div>
-            <span className="text-xs text-center mt-1 text-green-600">
+            <span className="text-xs text-center mt-2 text-green-600">
               {dailyMacros.fat}g / {goals.fat}g
             </span>
           </div>
@@ -810,7 +810,7 @@ const MealCard: React.FC<MealCardProps> = ({
 }) => {
   return (
     <div 
-      className={`bg-white rounded-xl shadow-md overflow-hidden ${!isSnack ? 'animate-bounce-in' : 'animate-scale-in'}`}
+      className={`bg-white rounded-xl shadow-md overflow-hidden ${isLocked ? 'border-2 border-green-500' : ''} ${!isSnack ? 'animate-bounce-in' : 'animate-scale-in'}`}
       draggable={draggable}
       onDragStart={onDragStart}
     >
@@ -824,10 +824,10 @@ const MealCard: React.FC<MealCardProps> = ({
         <div className="absolute top-2 right-2 flex space-x-1">
           <button 
             onClick={onLockToggle}
-            className="p-1 bg-white bg-opacity-80 rounded-full shadow-sm"
+            className={`p-1 bg-white bg-opacity-80 rounded-full shadow-sm ${isLocked ? 'bg-green-100' : ''}`}
           >
             {isLocked ? (
-              <Lock size={18} className="text-dishco-primary" />
+              <Lock size={18} className="text-green-500" />
             ) : (
               <Unlock size={18} className="text-dishco-text-light" />
             )}
