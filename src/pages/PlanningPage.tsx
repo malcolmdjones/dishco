@@ -69,6 +69,8 @@ const PlanningPage = () => {
   const loadSavedPlan = () => {
     const planToCopy = sessionStorage.getItem('planToCopy');
     const savedLockedMeals = sessionStorage.getItem('lockedMeals');
+    const activatePlanDate = sessionStorage.getItem('activatePlanDate');
+    const activatePlanData = sessionStorage.getItem('activatePlanData');
     
     if (planToCopy) {
       try {
@@ -95,6 +97,30 @@ const PlanningPage = () => {
         sessionStorage.removeItem('lockedMeals');
       } catch (error) {
         console.error('Error parsing locked meals:', error);
+      }
+    }
+    
+    if (activatePlanDate && activatePlanData) {
+      try {
+        const parsedData = JSON.parse(activatePlanData);
+        if (parsedData.days && Array.isArray(parsedData.days)) {
+          setMealPlan(parsedData.days);
+          
+          const startDate = new Date(activatePlanDate);
+          const dayOfWeek = startDate.getDay();
+          const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+          setActiveDay(adjustedDay);
+          
+          toast({
+            title: "Plan Activated",
+            description: "Your meal plan has been activated starting today.",
+          });
+          
+          sessionStorage.removeItem('activatePlanDate');
+          sessionStorage.removeItem('activatePlanData');
+        }
+      } catch (error) {
+        console.error('Error activating meal plan:', error);
       }
     }
   };
