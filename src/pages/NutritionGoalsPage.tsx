@@ -78,7 +78,7 @@ const NutritionGoalsPage = () => {
             protein: goals.protein,
             carbs: goals.carbs,
             fat: goals.fat,
-            updated_at: new Date()
+            updated_at: new Date().toISOString() // Fixed: Convert Date to ISO string
           })
           .eq('id', recordId);
       } else {
