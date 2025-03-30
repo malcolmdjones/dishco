@@ -2,11 +2,12 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
-import { X, BookOpen } from 'lucide-react';
+import { X, BookOpen, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import RecipeDetail from './RecipeDetail';
 import { calculateDailyMacros } from '@/data/mockData';
 import { Progress } from '@/components/ui/progress';
+import { useToast } from '@/hooks/use-toast';
 
 interface PlanDetailViewProps {
   plan: any;
@@ -15,52 +16,61 @@ interface PlanDetailViewProps {
 }
 
 const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }) => {
+  const { toast } = useToast();
   const [activeDay, setActiveDay] = useState(0);
   const [selectedRecipe, setSelectedRecipe] = useState<any>(null);
   const [isRecipeDetailOpen, setIsRecipeDetailOpen] = useState(false);
 
   // Early return if plan is not available
-  if (!plan || !plan.days || !Array.isArray(plan.days) || plan.days.length === 0) {
+  if (!plan || !plan.plan_data) {
+    return null;
+  }
+
+  // Extract days from plan data
+  const days = plan.plan_data && plan.plan_data.days ? plan.plan_data.days : [];
+  
+  // Early return if no days data
+  if (!Array.isArray(days) || days.length === 0) {
     return null;
   }
 
   // Ensure activeDay is within valid range
-  const validActiveDay = Math.min(activeDay, plan.days.length - 1);
+  const validActiveDay = Math.min(activeDay, days.length - 1);
   
   // Get daily macros safely
-  const dailyMacros = plan.days && plan.days[validActiveDay] && plan.days[validActiveDay].meals
-    ? calculateDailyMacros(plan.days[validActiveDay].meals)
+  const dailyMacros = days && days[validActiveDay] && days[validActiveDay].meals
+    ? calculateDailyMacros(days[validActiveDay].meals)
     : { calories: 0, protein: 0, carbs: 0, fat: 0 };
   
   // Calculate average calories safely
   const averageCalories = Math.round(
-    plan.days.reduce((sum: number, day: any) => {
+    days.reduce((sum: number, day: any) => {
       if (!day || !day.meals) return sum;
       const dayMacros = calculateDailyMacros(day.meals);
       return sum + dayMacros.calories;
-    }, 0) / (plan.days.length || 1) // Avoid division by zero
+    }, 0) / (days.length || 1) // Avoid division by zero
   );
   
   // Calculate total macros safely
   const totalMacros = {
-    protein: Math.round(plan.days.reduce((sum: number, day: any) => {
+    protein: Math.round(days.reduce((sum: number, day: any) => {
       if (!day || !day.meals) return sum;
       const dayMacros = calculateDailyMacros(day.meals);
       return sum + dayMacros.protein;
-    }, 0) / (plan.days.length || 1)),
-    carbs: Math.round(plan.days.reduce((sum: number, day: any) => {
+    }, 0) / (days.length || 1)),
+    carbs: Math.round(days.reduce((sum: number, day: any) => {
       if (!day || !day.meals) return sum;
       const dayMacros = calculateDailyMacros(day.meals);
       return sum + dayMacros.carbs;
-    }, 0) / (plan.days.length || 1)),
-    fat: Math.round(plan.days.reduce((sum: number, day: any) => {
+    }, 0) / (days.length || 1)),
+    fat: Math.round(days.reduce((sum: number, day: any) => {
       if (!day || !day.meals) return sum;
       const dayMacros = calculateDailyMacros(day.meals);
       return sum + dayMacros.fat;
-    }, 0) / (plan.days.length || 1)),
+    }, 0) / (days.length || 1)),
   };
   
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   
   const handleOpenRecipe = (recipe: any) => {
     if (recipe) {
@@ -70,8 +80,8 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
   };
 
   // Ensure we have meals for the active day
-  const currentDayMeals = plan.days && plan.days[validActiveDay] && plan.days[validActiveDay].meals 
-    ? plan.days[validActiveDay].meals 
+  const currentDayMeals = days && days[validActiveDay] && days[validActiveDay].meals 
+    ? days[validActiveDay].meals 
     : {
         breakfast: null,
         lunch: null,
@@ -94,7 +104,7 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
           </DialogHeader>
           
           <div className="space-y-6">
-            <p className="text-dishco-text-light">{plan.description}</p>
+            <p className="text-dishco-text-light">{plan.plan_data?.description || "No description available"}</p>
             
             <div className="bg-muted/30 p-4 rounded-lg space-y-3">
               <h3 className="font-medium">Average Daily Nutrition</h3>
@@ -136,7 +146,7 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
             
             <div className="space-y-2">
               <div className="flex overflow-x-auto pb-2 space-x-2">
-                {plan.days.map((day: any, index: number) => (
+                {days.map((day: any, index: number) => (
                   <Button
                     key={index}
                     variant={validActiveDay === index ? "default" : "outline"}
@@ -144,13 +154,13 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
                     onClick={() => setActiveDay(index)}
                     className="flex-shrink-0"
                   >
-                    {days[index % 7]}
+                    {dayNames[index % 7]}
                   </Button>
                 ))}
               </div>
               
               <div className="border rounded-md p-4 space-y-4">
-                <h3 className="font-medium">Day {validActiveDay + 1}: {days[validActiveDay % 7]}</h3>
+                <h3 className="font-medium">Day {validActiveDay + 1}: {dayNames[validActiveDay % 7]}</h3>
                 
                 <div className="space-y-3">
                   <div>

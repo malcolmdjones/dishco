@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Trash2, ChevronRight, Plus, Pencil, BookOpen, Info } from 'lucide-react';
@@ -41,15 +40,15 @@ const SavedMealPlansPage = () => {
   const [newPlanName, setNewPlanName] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [isSelectingStartDate, setIsSelectingStartDate] = useState(false);
-  const [selectedDay, setSelectedDay] = useState(0); // 0 = Today, 1 = Tomorrow, etc.
+  const [selectedDay, setSelectedDay] = useState(0);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [planDetailOpen, setPlanDetailOpen] = useState(false);
 
   useEffect(() => {
-    fetchSavedPlans();
+    fetchPlans();
   }, []);
 
-  const fetchSavedPlans = async () => {
+  const fetchPlans = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -82,69 +81,14 @@ const SavedMealPlansPage = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('saved_meal_plans')
-        .delete()
-        .eq('id', id);
-      
-      if (error) {
-        console.error('Error deleting meal plan:', error);
-        return;
-      }
-      
-      setSavedPlans(savedPlans.filter(plan => plan.id !== id));
-      toast({
-        title: "Plan Deleted",
-        description: "The meal plan has been removed from your saved plans.",
-      });
-    } catch (error) {
-      console.error('Error deleting meal plan:', error);
-    }
-  };
-
-  const handleActivate = (id: string) => {
-    const planToActivate = savedPlans.find(plan => plan.id === id);
-    if (!planToActivate) return;
-
-    setSelectedPlan(planToActivate);
-    setIsSelectingStartDate(true);
-  };
-
-  const confirmActivatePlan = () => {
-    if (!selectedPlan) return;
-
-    // Store the selected date as the start date
-    const startDate = selectedDate ? selectedDate : new Date();
-    
-    sessionStorage.setItem('activePlan', JSON.stringify({
-      ...selectedPlan.plan_data,
-      startDate: startDate.toISOString()
-    }));
-    
-    toast({
-      title: "Plan Activated",
-      description: "This meal plan is now your active plan starting from " + format(startDate, 'MMMM d, yyyy'),
-    });
-    
-    setIsSelectingStartDate(false);
-    navigate('/planning');
-  };
-
-  const handleViewPlan = (plan: SavedMealPlan) => {
-    setSelectedPlan(plan);
-    setPlanDetailOpen(true);
-  };
-
-  const handleRename = (plan: SavedMealPlan) => {
+  const handleEditPlan = (plan) => {
     setSelectedPlan(plan);
     setNewPlanName(plan.name);
     setNewDescription(plan.plan_data.description || '');
     setIsRenaming(true);
   };
 
-  const savePlanRename = async () => {
+  const handleUpdatePlan = async () => {
     if (!selectedPlan || !newPlanName.trim()) return;
 
     try {
@@ -198,29 +142,81 @@ const SavedMealPlansPage = () => {
     }
   };
 
-  const handleCopyAndEdit = (plan: SavedMealPlan) => {
-    if (!plan.plan_data.days) return;
+  const handleDeletePlan = (id) => {
+    try {
+      const { error } = await supabase
+        .from('saved_meal_plans')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Error deleting meal plan:', error);
+        return;
+      }
+      
+      setSavedPlans(savedPlans.filter(plan => plan.id !== id));
+      toast({
+        title: "Plan Deleted",
+        description: "The meal plan has been removed from your saved plans.",
+      });
+    } catch (error) {
+      console.error('Error deleting meal plan:', error);
+    }
+  };
+
+  const confirmDeletePlan = async () => {
+    if (!selectedPlan) return;
+
+    try {
+      const { error } = await supabase
+        .from('saved_meal_plans')
+        .delete()
+        .eq('id', selectedPlan.id);
+      
+      if (error) {
+        console.error('Error deleting meal plan:', error);
+        return;
+      }
+      
+      setSavedPlans(savedPlans.filter(plan => plan.id !== selectedPlan.id));
+      toast({
+        title: "Plan Deleted",
+        description: "The meal plan has been removed from your saved plans.",
+      });
+    } catch (error) {
+      console.error('Error deleting meal plan:', error);
+    }
+  };
+
+  const handleViewPlanDetails = (plan) => {
+    setSelectedPlan(plan);
+    setPlanDetailOpen(true);
+  };
+
+  const handleCopyAndEdit = (plan) => {
+    sessionStorage.setItem('planToCopy', JSON.stringify(plan.plan_data));
     
-    const lockedMeals: {[key: string]: boolean} = {};
-    
-    plan.plan_data.days.forEach((day, dayIndex) => {
-      ['breakfast', 'lunch', 'dinner'].forEach((mealType) => {
-        if (day.meals[mealType]?.id) {
-          lockedMeals[`${dayIndex}-${mealType}`] = true;
+    const lockedMeals = {};
+    if (plan.plan_data && plan.plan_data.days) {
+      plan.plan_data.days.forEach((day, dayIndex) => {
+        if (day && day.meals) {
+          ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
+            if (day.meals[mealType]) {
+              lockedMeals[`${dayIndex}-${mealType}`] = true;
+            }
+          });
+          
+          if (day.meals.snacks && Array.isArray(day.meals.snacks)) {
+            day.meals.snacks.forEach((snack, snackIndex) => {
+              if (snack) {
+                lockedMeals[`${dayIndex}-snack-${snackIndex}`] = true;
+              }
+            });
+          }
         }
       });
-      
-      if (day.meals.snacks) {
-        day.meals.snacks.forEach((snack: any, snackIndex: number) => {
-          if (snack?.id) {
-            lockedMeals[`${dayIndex}-snack-${snackIndex}`] = true;
-          }
-        });
-      }
-    });
+    }
     
-    // Save plan data and locked meals to session storage
-    sessionStorage.setItem('planToCopy', JSON.stringify(plan.plan_data));
     sessionStorage.setItem('lockedMeals', JSON.stringify(lockedMeals));
     
     toast({
@@ -231,8 +227,50 @@ const SavedMealPlansPage = () => {
     navigate('/create-meal-plan');
   };
 
-  const calculateDayNutrition = (day: any) => {
-    return calculateDailyMacros(day.meals);
+  const handleActivatePlan = (id) => {
+    const planToActivate = savedPlans.find(plan => plan.id === id);
+    if (!planToActivate) return;
+
+    setSelectedPlan(planToActivate);
+    setIsSelectingStartDate(true);
+  };
+
+  const confirmActivatePlan = () => {
+    if (!selectedPlan) return;
+
+    const startDate = selectedDate ? selectedDate : new Date();
+    
+    sessionStorage.setItem('activePlan', JSON.stringify({
+      ...selectedPlan.plan_data,
+      startDate: startDate.toISOString()
+    }));
+    
+    toast({
+      title: "Plan Activated",
+      description: "This meal plan is now your active plan starting from " + format(startDate, 'MMMM d, yyyy'),
+    });
+    
+    setIsSelectingStartDate(false);
+    navigate('/planning');
+  };
+
+  const calculateTotalCalories = (days) => {
+    if (!days || !Array.isArray(days) || days.length === 0) return 0;
+    
+    let total = 0;
+    days.forEach(day => {
+      if (!day || !day.meals) return;
+      
+      total += day.meals.breakfast?.macros?.calories || 0;
+      total += day.meals.lunch?.macros?.calories || 0;
+      total += day.meals.dinner?.macros?.calories || 0;
+      if (day.meals.snacks && Array.isArray(day.meals.snacks)) {
+        day.meals.snacks.forEach(snack => {
+          total += snack?.macros?.calories || 0;
+        });
+      }
+    });
+    return Math.round(total / (days.length || 1));
   };
 
   if (savedPlans.length === 0 && !loading) {
@@ -296,7 +334,7 @@ const SavedMealPlansPage = () => {
             <div 
               key={plan.id} 
               className="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer"
-              onClick={() => handleViewPlan(plan)}
+              onClick={() => handleViewPlanDetails(plan)}
             >
               <div className="p-4">
                 <div className="flex items-start justify-between">
@@ -319,7 +357,7 @@ const SavedMealPlansPage = () => {
                       className="p-1.5 rounded-full hover:bg-gray-100"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleRename(plan);
+                        handleEditPlan(plan);
                       }}
                     >
                       <Pencil size={16} />
@@ -328,7 +366,7 @@ const SavedMealPlansPage = () => {
                       className="p-1.5 rounded-full hover:bg-gray-100"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDelete(plan.id);
+                        handleDeletePlan(plan.id);
                       }}
                     >
                       <Trash2 size={16} />
@@ -353,7 +391,7 @@ const SavedMealPlansPage = () => {
                     className="text-xs"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleActivate(plan.id);
+                      handleActivatePlan(plan.id);
                     }}
                   >
                     Use This Plan <ChevronRight size={14} className="ml-1" />
@@ -408,7 +446,7 @@ const SavedMealPlansPage = () => {
             <Button variant="outline" onClick={() => setIsRenaming(false)}>
               Cancel
             </Button>
-            <Button onClick={savePlanRename}>
+            <Button onClick={handleUpdatePlan}>
               Save Changes
             </Button>
           </div>
