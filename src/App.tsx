@@ -10,6 +10,11 @@ import PlanningPage from "./pages/PlanningPage";
 import GroceryListPage from "./pages/GroceryListPage";
 import MorePage from "./pages/MorePage";
 import NotFound from "./pages/NotFound";
+import LogMealPage from "./pages/LogMealPage";
+import NutritionGoalsPage from "./pages/NutritionGoalsPage";
+import SavedRecipesPage from "./pages/SavedRecipesPage";
+import AccountSettingsPage from "./pages/AccountSettingsPage";
+import SavedPlansPage from "./pages/SavedPlansPage";
 
 const queryClient = new QueryClient();
 
@@ -24,11 +29,12 @@ const App = () => (
           <Route path="/planning" element={<AppLayout><PlanningPage /></AppLayout>} />
           <Route path="/grocery" element={<AppLayout><GroceryListPage /></AppLayout>} />
           <Route path="/more" element={<AppLayout><MorePage /></AppLayout>} />
-          {/* Placeholder routes for More page sub-pages */}
-          <Route path="/saved-recipes" element={<AppLayout><ComingSoonPage title="Saved Recipes" /></AppLayout>} />
+          <Route path="/log-meal" element={<AppLayout><LogMealPage /></AppLayout>} />
+          <Route path="/saved-plans" element={<AppLayout><SavedPlansPage /></AppLayout>} />
+          <Route path="/saved-recipes" element={<AppLayout><SavedRecipesPage /></AppLayout>} />
           <Route path="/add-recipe" element={<AppLayout><ComingSoonPage title="Add External Recipe" /></AppLayout>} />
-          <Route path="/nutrition-goals" element={<AppLayout><ComingSoonPage title="Nutrition Goals" /></AppLayout>} />
-          <Route path="/settings" element={<AppLayout><ComingSoonPage title="Account Settings" /></AppLayout>} />
+          <Route path="/nutrition-goals" element={<AppLayout><NutritionGoalsPage /></AppLayout>} />
+          <Route path="/settings" element={<AppLayout><AccountSettingsPage /></AppLayout>} />
           {/* Catch-all route for 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>

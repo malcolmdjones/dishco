@@ -1,11 +1,14 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, ArrowRight, Lock, LucideIcon } from 'lucide-react';
+import { Plus, ArrowRight, Lock, LucideIcon, Check } from 'lucide-react';
 import { calculateDailyMacros, defaultGoals, recipes } from '../data/mockData';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 const HomePage = () => {
+  const { toast } = useToast();
   const [todayMeals, setTodayMeals] = useState({
     breakfast: recipes.find(r => r.id === '2'), // Avocado Toast
     lunch: recipes.find(r => r.id === '4'),     // Chicken Salad
@@ -16,7 +19,26 @@ const HomePage = () => {
     ],
   });
 
-  const dailyMacros = calculateDailyMacros(todayMeals);
+  const [consumedMeals, setConsumedMeals] = useState({
+    breakfast: false,
+    lunch: false,
+    dinner: false,
+    snacks: [false, false]
+  });
+
+  // Calculate macros only for consumed meals
+  const calculateConsumedMacros = () => {
+    const consumed = {
+      breakfast: consumedMeals.breakfast ? todayMeals.breakfast : null,
+      lunch: consumedMeals.lunch ? todayMeals.lunch : null,
+      dinner: consumedMeals.dinner ? todayMeals.dinner : null,
+      snacks: todayMeals.snacks?.filter((_, index) => consumedMeals.snacks[index]) || []
+    };
+    
+    return calculateDailyMacros(consumed);
+  };
+
+  const dailyMacros = calculateConsumedMacros();
   const goals = defaultGoals;
 
   // Calculate percentages for progress bars
@@ -31,6 +53,24 @@ const HomePage = () => {
     if (percentage > 100) return 'bg-dishco-error';
     if (percentage > 90) return 'bg-dishco-accent';
     return 'bg-dishco-primary';
+  };
+
+  const handleMealConsumed = (mealType: string, index?: number) => {
+    if (mealType === 'snacks' && typeof index === 'number') {
+      const newSnacks = [...consumedMeals.snacks];
+      newSnacks[index] = !newSnacks[index];
+      setConsumedMeals({...consumedMeals, snacks: newSnacks});
+    } else {
+      setConsumedMeals({
+        ...consumedMeals,
+        [mealType]: !consumedMeals[mealType as keyof typeof consumedMeals]
+      });
+    }
+    
+    toast({
+      title: "Meal tracking updated",
+      description: "Your nutrition progress has been updated.",
+    });
   };
 
   return (
@@ -95,22 +135,22 @@ const HomePage = () => {
         <MealSection 
           title="Breakfast" 
           meal={todayMeals.breakfast} 
-          time="7:00 - 9:00 AM" 
-          completed={false}
+          completed={consumedMeals.breakfast}
+          onConsumed={() => handleMealConsumed('breakfast')}
         />
         
         <MealSection 
           title="Lunch" 
           meal={todayMeals.lunch} 
-          time="12:00 - 2:00 PM" 
-          completed={false}
+          completed={consumedMeals.lunch}
+          onConsumed={() => handleMealConsumed('lunch')}
         />
         
         <MealSection 
           title="Dinner" 
           meal={todayMeals.dinner} 
-          time="6:00 - 8:00 PM" 
-          completed={false}
+          completed={consumedMeals.dinner}
+          onConsumed={() => handleMealConsumed('dinner')}
         />
         
         <div>
@@ -122,8 +162,8 @@ const HomePage = () => {
                   key={index}
                   title={`Snack ${index + 1}`} 
                   meal={snack} 
-                  time={index === 0 ? "10:00 AM" : "3:00 PM"} 
-                  completed={false}
+                  completed={consumedMeals.snacks[index]}
+                  onConsumed={() => handleMealConsumed('snacks', index)}
                   isSnack={true}
                 />
               )
@@ -144,13 +184,13 @@ const HomePage = () => {
 interface MealSectionProps {
   title: string;
   meal: any;
-  time: string;
   completed: boolean;
+  onConsumed: () => void;
   isSnack?: boolean;
 }
 
 const MealSection: React.FC<MealSectionProps> = ({ 
-  title, meal, time, completed, isSnack = false 
+  title, meal, completed, onConsumed, isSnack = false 
 }) => {
   return meal ? (
     <div className={`bg-white rounded-xl shadow-sm overflow-hidden ${!isSnack ? 'animate-bounce-in' : 'animate-scale-in'}`}>
@@ -172,13 +212,28 @@ const MealSection: React.FC<MealSectionProps> = ({
           <div className="flex justify-between items-start">
             <div>
               <h3 className="font-medium text-sm">{title}</h3>
-              <p className="text-sm text-dishco-text-light">{time}</p>
             </div>
             <div className="bg-dishco-secondary bg-opacity-20 rounded-full px-2 py-0.5">
               <span className="text-xs font-medium">{meal.macros.calories} kcal</span>
             </div>
           </div>
           <p className="mt-1 font-medium">{meal.name}</p>
+          
+          <Button 
+            onClick={onConsumed}
+            variant={completed ? "default" : "outline"}
+            size="sm"
+            className="mt-2"
+          >
+            {completed ? (
+              <>
+                <Check size={16} className="mr-1" />
+                Consumed
+              </>
+            ) : (
+              "Mark as consumed"
+            )}
+          </Button>
         </div>
       </div>
       

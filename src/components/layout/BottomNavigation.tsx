@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, ShoppingCart, Calendar, MoreHorizontal } from 'lucide-react';
+import { Home, ShoppingCart, Calendar, MoreHorizontal, PlusCircle } from 'lucide-react';
 
 const BottomNavigation = () => {
   const location = useLocation();
@@ -17,6 +17,12 @@ const BottomNavigation = () => {
       name: 'Planning',
       icon: <Calendar size={24} />,
       path: '/planning',
+    },
+    {
+      name: 'Log Meal',
+      icon: <PlusCircle size={30} className="text-dishco-primary" />,
+      path: '/log-meal',
+      isCenter: true,
     },
     {
       name: 'Grocery',
@@ -39,10 +45,10 @@ const BottomNavigation = () => {
             to={item.path}
             className={`nav-item ${
               currentPath === item.path ? 'nav-item-active' : 'nav-item-inactive'
-            }`}
+            } ${item.isCenter ? 'relative -top-4' : ''}`}
           >
             {item.icon}
-            <span className="text-xs mt-1">{item.name}</span>
+            <span className={`text-xs mt-1 ${item.isCenter ? 'font-medium' : ''}`}>{item.name}</span>
           </Link>
         ))}
       </div>
