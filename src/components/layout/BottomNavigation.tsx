@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, User, BookOpen, Plus, ShoppingCart } from 'lucide-react';
@@ -32,11 +33,6 @@ const BottomNavigation = () => {
       name: 'More',
       icon: <User size={24} />,
       path: '/more',
-    },
-    {
-      name: 'Recipe DB',
-      icon: <Plus size={24} />,
-      path: '/recipe-management',
     },
   ];
 
