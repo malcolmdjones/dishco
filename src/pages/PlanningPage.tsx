@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ArrowLeft, ArrowRight, Book, BookOpen, Calendar, CheckCircle, CookingPot, Info, Lock, Maximize2, RefreshCw, Save, Unlock, Zap } from 'lucide-react';
 import { calculateDailyMacros, defaultGoals, generateMockMealPlan, recipes } from '../data/mockData';
@@ -32,9 +31,12 @@ const PlanningPage = () => {
       return {
         ...day,
         meals: {
-          breakfast: day.meals.breakfast || null,
-          lunch: day.meals.lunch || null,
-          dinner: day.meals.dinner || null,
+          breakfast: Array.isArray(day.meals.breakfast) ? day.meals.breakfast : 
+                    day.meals.breakfast ? [day.meals.breakfast] : [],
+          lunch: Array.isArray(day.meals.lunch) ? day.meals.lunch : 
+                 day.meals.lunch ? [day.meals.lunch] : [],
+          dinner: Array.isArray(day.meals.dinner) ? day.meals.dinner : 
+                 day.meals.dinner ? [day.meals.dinner] : [],
           snacks: Array.isArray(day.meals.snacks) ? day.meals.snacks.filter(snack => snack !== null && snack !== undefined) : []
         }
       };
@@ -65,8 +67,8 @@ const PlanningPage = () => {
 
   const calendarDates = Array.from({ length: 7 }, (_, i) => addDays(new Date(), i));
 
-  const handleLockMeal = (mealType: string, mealId: string) => {
-    const key = `${mealType}-${mealId}`;
+  const handleLockMeal = (mealType: string, mealId: string, index?: number) => {
+    const key = index !== undefined ? `${mealType}-${mealId}-${index}` : `${mealType}-${mealId}`;
     setLockedMeals(prev => ({
       ...prev,
       [key]: !prev[key]
@@ -85,18 +87,59 @@ const PlanningPage = () => {
       const newDay = newPlan[index];
       const updatedMeals = { ...newDay.meals };
       
-      ['breakfast', 'lunch', 'dinner'].forEach((mealType) => {
-        const mealKey = `${mealType}-${day.meals[mealType]?.id}`;
-        if (lockedMeals[mealKey]) {
-          updatedMeals[mealType] = day.meals[mealType];
-        }
+      // Convert meals to arrays if they aren't already
+      const breakfastArray = Array.isArray(day.meals.breakfast) ? day.meals.breakfast : day.meals.breakfast ? [day.meals.breakfast] : [];
+      const lunchArray = Array.isArray(day.meals.lunch) ? day.meals.lunch : day.meals.lunch ? [day.meals.lunch] : [];
+      const dinnerArray = Array.isArray(day.meals.dinner) ? day.meals.dinner : day.meals.dinner ? [day.meals.dinner] : [];
+      const snacksArray = Array.isArray(day.meals.snacks) ? day.meals.snacks : [];
+      
+      // Keep locked breakfast meals
+      updatedMeals.breakfast = breakfastArray.filter((meal, mealIndex) => {
+        const mealKey = `breakfast-${meal?.id}-${mealIndex}`;
+        return lockedMeals[mealKey];
       });
       
-      if (day.meals.snacks) {
-        updatedMeals.snacks = day.meals.snacks.map((snack, snackIndex) => {
+      // Keep locked lunch meals
+      updatedMeals.lunch = lunchArray.filter((meal, mealIndex) => {
+        const mealKey = `lunch-${meal?.id}-${mealIndex}`;
+        return lockedMeals[mealKey];
+      });
+      
+      // Keep locked dinner meals
+      updatedMeals.dinner = dinnerArray.filter((meal, mealIndex) => {
+        const mealKey = `dinner-${meal?.id}-${mealIndex}`;
+        return lockedMeals[mealKey];
+      });
+      
+      // Keep locked snacks
+      if (snacksArray.length > 0) {
+        updatedMeals.snacks = snacksArray.filter((snack, snackIndex) => {
           const snackKey = `snacks-${snack?.id}-${snackIndex}`;
-          return lockedMeals[snackKey] ? snack : newDay.meals.snacks[snackIndex];
+          return lockedMeals[snackKey];
         });
+      }
+      
+      // Add in new meals from the newly generated plan if needed
+      if (Array.isArray(newDay.meals.breakfast) && newDay.meals.breakfast.length > 0 && updatedMeals.breakfast.length === 0) {
+        updatedMeals.breakfast = [newDay.meals.breakfast[0]];
+      } else if (newDay.meals.breakfast && updatedMeals.breakfast.length === 0) {
+        updatedMeals.breakfast = [newDay.meals.breakfast];
+      }
+      
+      if (Array.isArray(newDay.meals.lunch) && newDay.meals.lunch.length > 0 && updatedMeals.lunch.length === 0) {
+        updatedMeals.lunch = [newDay.meals.lunch[0]];
+      } else if (newDay.meals.lunch && updatedMeals.lunch.length === 0) {
+        updatedMeals.lunch = [newDay.meals.lunch];
+      }
+      
+      if (Array.isArray(newDay.meals.dinner) && newDay.meals.dinner.length > 0 && updatedMeals.dinner.length === 0) {
+        updatedMeals.dinner = [newDay.meals.dinner[0]];
+      } else if (newDay.meals.dinner && updatedMeals.dinner.length === 0) {
+        updatedMeals.dinner = [newDay.meals.dinner];
+      }
+      
+      if (!updatedMeals.snacks || updatedMeals.snacks.length === 0) {
+        updatedMeals.snacks = newDay.meals.snacks;
       }
       
       return {
@@ -137,16 +180,34 @@ const PlanningPage = () => {
     const updatedMealPlan = [...mealPlan];
     const currentDay = { ...updatedMealPlan[activeDay] };
     
-    if (!currentDay.meals.breakfast) {
-      currentDay.meals.breakfast = recipe;
-    } else if (!currentDay.meals.lunch) {
-      currentDay.meals.lunch = recipe;
-    } else if (!currentDay.meals.dinner) {
-      currentDay.meals.dinner = recipe;
-    } else {
-      if (!currentDay.meals.snacks) {
-        currentDay.meals.snacks = [];
-      }
+    // Convert single items to arrays if needed
+    if (!Array.isArray(currentDay.meals.breakfast)) {
+      currentDay.meals.breakfast = currentDay.meals.breakfast ? [currentDay.meals.breakfast] : [];
+    }
+    if (!Array.isArray(currentDay.meals.lunch)) {
+      currentDay.meals.lunch = currentDay.meals.lunch ? [currentDay.meals.lunch] : [];
+    }
+    if (!Array.isArray(currentDay.meals.dinner)) {
+      currentDay.meals.dinner = currentDay.meals.dinner ? [currentDay.meals.dinner] : [];
+    }
+    if (!Array.isArray(currentDay.meals.snacks)) {
+      currentDay.meals.snacks = [];
+    }
+    
+    // Add to breakfast if it's empty
+    if (currentDay.meals.breakfast.length === 0) {
+      currentDay.meals.breakfast.push(recipe);
+    } 
+    // Add to lunch if it's empty
+    else if (currentDay.meals.lunch.length === 0) {
+      currentDay.meals.lunch.push(recipe);
+    } 
+    // Add to dinner if it's empty
+    else if (currentDay.meals.dinner.length === 0) {
+      currentDay.meals.dinner.push(recipe);
+    } 
+    // Otherwise add to snacks
+    else {
       currentDay.meals.snacks.push(recipe);
     }
     
@@ -182,43 +243,46 @@ const PlanningPage = () => {
   const handleDrop = (targetType: string, targetIndex?: number) => {
     if (!draggedMeal) return;
     
-    if (draggedMeal.type === targetType && draggedMeal.index === targetIndex) {
-      setDraggedMeal(null);
-      return;
-    }
-    
     const updatedMealPlan = [...mealPlan];
     const currentDay = { ...updatedMealPlan[activeDay] };
     const updatedMeals = { ...currentDay.meals };
     
+    // Convert single items to arrays if needed
+    if (!Array.isArray(updatedMeals.breakfast)) {
+      updatedMeals.breakfast = updatedMeals.breakfast ? [updatedMeals.breakfast] : [];
+    }
+    if (!Array.isArray(updatedMeals.lunch)) {
+      updatedMeals.lunch = updatedMeals.lunch ? [updatedMeals.lunch] : [];
+    }
+    if (!Array.isArray(updatedMeals.dinner)) {
+      updatedMeals.dinner = updatedMeals.dinner ? [updatedMeals.dinner] : [];
+    }
+    if (!Array.isArray(updatedMeals.snacks)) {
+      updatedMeals.snacks = [];
+    }
+    
     // Only remove the meal from its original location
     if (draggedMeal.type === 'snacks') {
       if (updatedMeals.snacks && draggedMeal.index !== undefined) {
-        // Create a copy of the snacks array and remove the specific item
         const updatedSnacks = [...updatedMeals.snacks];
         updatedSnacks.splice(draggedMeal.index, 1);
         updatedMeals.snacks = updatedSnacks;
       }
     } else {
-      // For main meals, only remove if we're moving it somewhere else
-      if (draggedMeal.type !== targetType) {
-        updatedMeals[draggedMeal.type] = null;
+      // For main meals, remove only the specific item by index
+      if (draggedMeal.index !== undefined) {
+        const sourceArray = [...updatedMeals[draggedMeal.type]];
+        sourceArray.splice(draggedMeal.index, 1);
+        updatedMeals[draggedMeal.type] = sourceArray;
       }
     }
     
     // Add the meal to the target location
     if (targetType === 'snacks') {
-      if (!updatedMeals.snacks) {
-        updatedMeals.snacks = [];
-      }
       updatedMeals.snacks.push(draggedMeal.meal);
     } else {
-      // For main meals, allow multiple meals in the same slot
-      if (targetType === draggedMeal.type) {
-        // If same type, don't do anything as we didn't remove it
-      } else {
-        updatedMeals[targetType] = draggedMeal.meal;
-      }
+      // Add to the target array
+      updatedMeals[targetType].push(draggedMeal.meal);
     }
     
     currentDay.meals = updatedMeals;
@@ -364,7 +428,8 @@ const PlanningPage = () => {
               size="md"
               value={dailyMacros.fat}
               max={goals.fat}
-              showValue={true}
+              showValue={false}
+              difference={differences.fat}
               valueSuffix="g"
               label="Fat"
               status={percentages.fat > 90 ? "warning" : "default"}
@@ -382,19 +447,24 @@ const PlanningPage = () => {
         <div>
           <h3 className="font-medium mb-2">Breakfast</h3>
           <div 
-            className="drop-target"
+            className="drop-target space-y-3"
             onDragOver={handleDragOver}
             onDrop={() => handleDrop('breakfast')}
           >
-            {currentDayPlan.meals.breakfast ? (
-              <MealCard 
-                meal={currentDayPlan.meals.breakfast}
-                isLocked={lockedMeals[`breakfast-${currentDayPlan.meals.breakfast?.id}`]}
-                onLockToggle={() => handleLockMeal('breakfast', currentDayPlan.meals.breakfast?.id)}
-                onViewRecipe={() => handleOpenRecipeDetails(currentDayPlan.meals.breakfast)}
-                onDragStart={() => handleDragStart('breakfast', currentDayPlan.meals.breakfast)}
-                draggable={true}
-              />
+            {Array.isArray(currentDayPlan.meals.breakfast) && currentDayPlan.meals.breakfast.length > 0 ? (
+              currentDayPlan.meals.breakfast.map((meal, index) => (
+                meal && (
+                  <MealCard 
+                    key={`breakfast-${index}-${meal.id}`}
+                    meal={meal}
+                    isLocked={lockedMeals[`breakfast-${meal.id}-${index}`]}
+                    onLockToggle={() => handleLockMeal('breakfast', meal.id, index)}
+                    onViewRecipe={() => handleOpenRecipeDetails(meal)}
+                    onDragStart={() => handleDragStart('breakfast', meal, index)}
+                    draggable={true}
+                  />
+                )
+              ))
             ) : (
               <EmptyMealCard title="Breakfast" />
             )}
@@ -404,19 +474,24 @@ const PlanningPage = () => {
         <div>
           <h3 className="font-medium mb-2">Lunch</h3>
           <div 
-            className="drop-target"
+            className="drop-target space-y-3"
             onDragOver={handleDragOver}
             onDrop={() => handleDrop('lunch')}
           >
-            {currentDayPlan.meals.lunch ? (
-              <MealCard 
-                meal={currentDayPlan.meals.lunch}
-                isLocked={lockedMeals[`lunch-${currentDayPlan.meals.lunch?.id}`]}
-                onLockToggle={() => handleLockMeal('lunch', currentDayPlan.meals.lunch?.id)}
-                onViewRecipe={() => handleOpenRecipeDetails(currentDayPlan.meals.lunch)}
-                onDragStart={() => handleDragStart('lunch', currentDayPlan.meals.lunch)}
-                draggable={true}
-              />
+            {Array.isArray(currentDayPlan.meals.lunch) && currentDayPlan.meals.lunch.length > 0 ? (
+              currentDayPlan.meals.lunch.map((meal, index) => (
+                meal && (
+                  <MealCard 
+                    key={`lunch-${index}-${meal.id}`}
+                    meal={meal}
+                    isLocked={lockedMeals[`lunch-${meal.id}-${index}`]}
+                    onLockToggle={() => handleLockMeal('lunch', meal.id, index)}
+                    onViewRecipe={() => handleOpenRecipeDetails(meal)}
+                    onDragStart={() => handleDragStart('lunch', meal, index)}
+                    draggable={true}
+                  />
+                )
+              ))
             ) : (
               <EmptyMealCard title="Lunch" />
             )}
@@ -426,19 +501,24 @@ const PlanningPage = () => {
         <div>
           <h3 className="font-medium mb-2">Dinner</h3>
           <div 
-            className="drop-target"
+            className="drop-target space-y-3"
             onDragOver={handleDragOver}
             onDrop={() => handleDrop('dinner')}
           >
-            {currentDayPlan.meals.dinner ? (
-              <MealCard 
-                meal={currentDayPlan.meals.dinner}
-                isLocked={lockedMeals[`dinner-${currentDayPlan.meals.dinner?.id}`]}
-                onLockToggle={() => handleLockMeal('dinner', currentDayPlan.meals.dinner?.id)}
-                onViewRecipe={() => handleOpenRecipeDetails(currentDayPlan.meals.dinner)}
-                onDragStart={() => handleDragStart('dinner', currentDayPlan.meals.dinner)}
-                draggable={true}
-              />
+            {Array.isArray(currentDayPlan.meals.dinner) && currentDayPlan.meals.dinner.length > 0 ? (
+              currentDayPlan.meals.dinner.map((meal, index) => (
+                meal && (
+                  <MealCard 
+                    key={`dinner-${index}-${meal.id}`}
+                    meal={meal}
+                    isLocked={lockedMeals[`dinner-${meal.id}-${index}`]}
+                    onLockToggle={() => handleLockMeal('dinner', meal.id, index)}
+                    onViewRecipe={() => handleOpenRecipeDetails(meal)}
+                    onDragStart={() => handleDragStart('dinner', meal, index)}
+                    draggable={true}
+                  />
+                )
+              ))
             ) : (
               <EmptyMealCard title="Dinner" />
             )}
@@ -455,10 +535,10 @@ const PlanningPage = () => {
             {currentDayPlan.meals.snacks?.map((snack, index) => (
               snack && (
                 <MealCard 
-                  key={index}
+                  key={`snacks-${index}-${snack.id}`}
                   meal={snack}
-                  isLocked={lockedMeals[`snacks-${snack?.id}-${index}`]}
-                  onLockToggle={() => handleLockMeal(`snacks-${snack?.id}`, index.toString())}
+                  isLocked={lockedMeals[`snacks-${snack.id}-${index}`]}
+                  onLockToggle={() => handleLockMeal('snacks', snack.id, index)}
                   onViewRecipe={() => handleOpenRecipeDetails(snack)}
                   onDragStart={() => handleDragStart('snacks', snack, index)}
                   draggable={true}
@@ -584,7 +664,7 @@ const PlanningPage = () => {
                   </ol>
                 </div>
               </div>
-              <DrawerFooter>
+              <DrawerFooter className="mt-0 pt-0">
                 <DrawerClose asChild>
                   <Button>Close</Button>
                 </DrawerClose>
@@ -623,21 +703,63 @@ const PlanningPage = () => {
                 <div className="space-y-2">
                   <div className="flex items-start text-sm">
                     <span className="w-24 font-medium flex-shrink-0">Breakfast:</span>
-                    <span className="line-clamp-1">{day.meals.breakfast?.name || "None scheduled"}</span>
+                    <span className="flex-1">
+                      {Array.isArray(day.meals.breakfast) && day.meals.breakfast.length > 0 ? (
+                        <ul className="list-none pl-0 space-y-1">
+                          {day.meals.breakfast.map((meal, mealIndex) => (
+                            meal && (
+                              <li key={mealIndex} className="line-clamp-1">
+                                {meal.name}
+                              </li>
+                            )
+                          ))}
+                        </ul>
+                      ) : (
+                        "None scheduled"
+                      )}
+                    </span>
                   </div>
                   <div className="flex items-start text-sm">
                     <span className="w-24 font-medium flex-shrink-0">Lunch:</span>
-                    <span className="line-clamp-1">{day.meals.lunch?.name || "None scheduled"}</span>
+                    <span className="flex-1">
+                      {Array.isArray(day.meals.lunch) && day.meals.lunch.length > 0 ? (
+                        <ul className="list-none pl-0 space-y-1">
+                          {day.meals.lunch.map((meal, mealIndex) => (
+                            meal && (
+                              <li key={mealIndex} className="line-clamp-1">
+                                {meal.name}
+                              </li>
+                            )
+                          ))}
+                        </ul>
+                      ) : (
+                        "None scheduled"
+                      )}
+                    </span>
                   </div>
                   <div className="flex items-start text-sm">
                     <span className="w-24 font-medium flex-shrink-0">Dinner:</span>
-                    <span className="line-clamp-1">{day.meals.dinner?.name || "None scheduled"}</span>
+                    <span className="flex-1">
+                      {Array.isArray(day.meals.dinner) && day.meals.dinner.length > 0 ? (
+                        <ul className="list-none pl-0 space-y-1">
+                          {day.meals.dinner.map((meal, mealIndex) => (
+                            meal && (
+                              <li key={mealIndex} className="line-clamp-1">
+                                {meal.name}
+                              </li>
+                            )
+                          ))}
+                        </ul>
+                      ) : (
+                        "None scheduled"
+                      )}
+                    </span>
                   </div>
                   <div className="flex items-start text-sm">
                     <span className="w-24 font-medium flex-shrink-0 align-top">Snacks:</span>
                     <div className="flex-1">
                       {day.meals.snacks && day.meals.snacks.length > 0 ? (
-                        <ul className="list-disc pl-5 space-y-1">
+                        <ul className="list-none pl-0 space-y-1">
                           {day.meals.snacks.map((snack, snackIndex) => (
                             snack && (
                               <li key={snackIndex} className="line-clamp-1">

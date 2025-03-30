@@ -15,6 +15,7 @@ interface ProgressProps extends React.ComponentPropsWithoutRef<typeof ProgressPr
   label?: string;
   size?: "sm" | "md" | "lg";
   status?: "default" | "success" | "warning" | "error";
+  difference?: number;
 }
 
 const Progress = React.forwardRef<
@@ -32,6 +33,7 @@ const Progress = React.forwardRef<
   label,
   size = "md",
   status = "default",
+  difference,
   ...props 
 }, ref) => {
   const percentage = Math.min(100, (value / max) * 100);
@@ -61,7 +63,7 @@ const Progress = React.forwardRef<
               cy={radius}
               r={innerRadius}
               fill="transparent"
-              className="stroke-secondary"
+              className="stroke-gray-200"
               strokeWidth={strokeWidth}
             />
             {/* Progress circle */}
@@ -79,13 +81,23 @@ const Progress = React.forwardRef<
           </svg>
           {showValue && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className={cn(
-                "font-medium whitespace-nowrap text-center",
-                size === "sm" ? "text-xs" : size === "md" ? "text-sm" : "text-base",
-                statusColorClass
-              )}>
-                {valuePrefix}{Math.round(value)}{valueSuffix}
-              </span>
+              {difference !== undefined ? (
+                <span className={cn(
+                  "font-medium whitespace-nowrap text-center",
+                  size === "sm" ? "text-xs" : size === "md" ? "text-sm" : "text-base",
+                  difference > 0 ? "text-green-500" : difference < 0 ? "text-red-500" : statusColorClass
+                )}>
+                  {difference > 0 ? "+" : ""}{difference}{valueSuffix}
+                </span>
+              ) : (
+                <span className={cn(
+                  "font-medium whitespace-nowrap text-center",
+                  size === "sm" ? "text-xs" : size === "md" ? "text-sm" : "text-base",
+                  statusColorClass
+                )}>
+                  {valuePrefix}{Math.round(value)}{valueSuffix}
+                </span>
+              )}
             </div>
           )}
         </div>
