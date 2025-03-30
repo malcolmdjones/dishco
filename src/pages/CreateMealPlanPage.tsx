@@ -1,240 +1,35 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Save, RefreshCw, Lock, Unlock, Plus, Calendar, AlertTriangle, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { calculateDailyMacros, defaultGoals, fetchNutritionGoals, recipes, Recipe, NutritionGoals, MealPlanDay } from '@/data/mockData';
+import React, { useState } from 'react';
+import { useMealPlanUtils } from '@/hooks/useMealPlanUtils';
+import { Recipe } from '@/data/mockData';
 import RecipeViewer from '@/components/RecipeViewer';
 import SavePlanDialog from '@/components/SavePlanDialog';
-import { supabase } from '@/integrations/supabase/client';
+import PageHeader from '@/components/meal-plan/PageHeader';
+import DailyNavigationCalendar from '@/components/meal-plan/DailyNavigationCalendar';
+import DailyNutritionCard from '@/components/meal-plan/DailyNutritionCard';
+import MealCard from '@/components/meal-plan/MealCard';
+import SnacksSection from '@/components/meal-plan/SnacksSection';
+import BottomActionBar from '@/components/meal-plan/BottomActionBar';
 
 const CreateMealPlanPage = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentDay, setCurrentDay] = useState(0);
-  const [mealPlan, setMealPlan] = useState<MealPlanDay[]>([]);
-  const [userGoals, setUserGoals] = useState<NutritionGoals>(defaultGoals);
-  const [isGenerating, setIsGenerating] = useState(false);
+  // Use our custom hook for meal plan logic
+  const {
+    currentDay,
+    setCurrentDay,
+    mealPlan,
+    isGenerating,
+    lockedMeals,
+    aiReasoning,
+    toggleLockMeal,
+    regenerateMeals,
+    calculateDayTotals,
+    checkExceedsGoals
+  } = useMealPlanUtils();
+
+  // Local component state
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
   const [isSavePlanDialogOpen, setIsSavePlanDialogOpen] = useState(false);
-  const [lockedMeals, setLockedMeals] = useState<{[key: string]: boolean}>({});
-  const [aiReasoning, setAiReasoning] = useState<string>("");
-
-  // Get user's nutrition goals
-  useEffect(() => {
-    const getUserGoals = async () => {
-      try {
-        const goals = await fetchNutritionGoals();
-        setUserGoals(goals);
-      } catch (error) {
-        console.error('Error fetching nutrition goals:', error);
-      }
-    };
-    getUserGoals();
-  }, []);
-
-  // Initialize or generate meal plan
-  useEffect(() => {
-    if (mealPlan.length === 0) {
-      generateFullMealPlan();
-    }
-  }, [userGoals]);
-
-  // Function to generate a meal plan for the entire week
-  const generateFullMealPlan = () => {
-    setIsGenerating(true);
-    // Create a 7-day meal plan
-    const newPlan: MealPlanDay[] = Array.from({ length: 7 }).map((_, i) => {
-      const date = new Date(currentDate);
-      date.setDate(currentDate.getDate() + i - currentDay); // Adjust to keep current day in sync
-      
-      return {
-        date: date.toISOString(),
-        meals: {
-          breakfast: null,
-          lunch: null,
-          dinner: null,
-          snacks: [null, null]
-        }
-      };
-    });
-    
-    setMealPlan(newPlan);
-    regenerateMeals();
-  };
-
-  // Function to regenerate meals for the current day using AI
-  const regenerateMeals = async () => {
-    setIsGenerating(true);
-    setAiReasoning("");
-    
-    try {
-      // Prepare locked meals data
-      const currentLockedMeals: {[key: string]: any} = {};
-      if (mealPlan[currentDay]) {
-        const currentMeals = mealPlan[currentDay].meals;
-        
-        if (lockedMeals[`${currentDay}-breakfast`] && currentMeals.breakfast) {
-          currentLockedMeals.breakfast = currentMeals.breakfast;
-        }
-        
-        if (lockedMeals[`${currentDay}-lunch`] && currentMeals.lunch) {
-          currentLockedMeals.lunch = currentMeals.lunch;
-        }
-        
-        if (lockedMeals[`${currentDay}-dinner`] && currentMeals.dinner) {
-          currentLockedMeals.dinner = currentMeals.dinner;
-        }
-        
-        if (lockedMeals[`${currentDay}-snack-0`] && currentMeals.snacks?.[0]) {
-          currentLockedMeals['snack-0'] = currentMeals.snacks[0];
-        }
-        
-        if (lockedMeals[`${currentDay}-snack-1`] && currentMeals.snacks?.[1]) {
-          currentLockedMeals['snack-1'] = currentMeals.snacks[1];
-        }
-      }
-      
-      // Call the Supabase Edge Function
-      const { data, error } = await supabase.functions.invoke('meal-plan-ai', {
-        body: {
-          userGoals,
-          lockedMeals: currentLockedMeals,
-          availableRecipes: recipes,
-          currentDay,
-        },
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Apply the AI-generated meal plan to the current day
-      if (data && data.mealPlan) {
-        setMealPlan(prevPlan => {
-          const newPlan = [...prevPlan];
-          const currentPlanDay = { ...newPlan[currentDay] };
-          
-          currentPlanDay.meals = {
-            breakfast: data.mealPlan.breakfast,
-            lunch: data.mealPlan.lunch,
-            dinner: data.mealPlan.dinner,
-            snacks: data.mealPlan.snacks
-          };
-          
-          newPlan[currentDay] = currentPlanDay;
-          return newPlan;
-        });
-        
-        // Store AI reasoning if provided
-        if (data.reasoning) {
-          setAiReasoning(data.reasoning);
-        }
-        
-        toast({
-          title: "Meal Plan Updated",
-          description: "Your meals have been generated based on your nutrition goals.",
-        });
-      } else {
-        throw new Error("Received invalid data from AI service");
-      }
-    } catch (error) {
-      console.error("Error generating meal plan:", error);
-      toast({
-        title: "Error Generating Meal Plan",
-        description: error.message || "Failed to generate meal plan. Please try again.",
-        variant: "destructive"
-      });
-      
-      // Fallback to the original method if AI fails
-      fallbackMealGeneration();
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-  
-  // Fallback method if AI fails
-  const fallbackMealGeneration = () => {
-    setTimeout(() => {
-      setMealPlan(prevPlan => {
-        const newPlan = [...prevPlan];
-        const currentPlanDay = { ...newPlan[currentDay] };
-        
-        // Filter recipes by meal type
-        const breakfastRecipes = recipes.filter(r => r.type === 'breakfast');
-        const lunchRecipes = recipes.filter(r => r.type === 'lunch');
-        const dinnerRecipes = recipes.filter(r => r.type === 'dinner');
-        const snackRecipes = recipes.filter(r => r.type === 'snack');
-        
-        // Only replace meals that aren't locked
-        const newMeals = { ...currentPlanDay.meals };
-        
-        if (!lockedMeals[`${currentDay}-breakfast`]) {
-          newMeals.breakfast = breakfastRecipes[Math.floor(Math.random() * breakfastRecipes.length)];
-        }
-        
-        if (!lockedMeals[`${currentDay}-lunch`]) {
-          newMeals.lunch = lunchRecipes[Math.floor(Math.random() * lunchRecipes.length)];
-        }
-        
-        if (!lockedMeals[`${currentDay}-dinner`]) {
-          newMeals.dinner = dinnerRecipes[Math.floor(Math.random() * dinnerRecipes.length)];
-        }
-        
-        // Handle snacks
-        const newSnacks = [...(newMeals.snacks || [])];
-        if (!lockedMeals[`${currentDay}-snack-0`] || !newSnacks[0]) {
-          newSnacks[0] = snackRecipes[Math.floor(Math.random() * snackRecipes.length)];
-        }
-        
-        if (!lockedMeals[`${currentDay}-snack-1`] || !newSnacks[1]) {
-          newSnacks[1] = snackRecipes[Math.floor(Math.random() * snackRecipes.length)];
-        }
-        
-        newMeals.snacks = newSnacks;
-        currentPlanDay.meals = newMeals;
-        newPlan[currentDay] = currentPlanDay;
-        
-        return newPlan;
-      });
-      
-      toast({
-        title: "Meal Plan Updated (Fallback Mode)",
-        description: "Your meals have been regenerated using our basic algorithm.",
-      });
-    }, 1000);
-  };
-
-  // Handle day navigation
-  const navigateDay = (direction: 'prev' | 'next') => {
-    let newDay = direction === 'prev' ? currentDay - 1 : currentDay + 1;
-    
-    // Ensure we stay within the bounds of our week
-    if (newDay < 0) newDay = 0;
-    if (newDay > 6) newDay = 6;
-    
-    setCurrentDay(newDay);
-  };
-
-  // Toggle meal lock status
-  const toggleLockMeal = (mealType: string, index?: number) => {
-    const key = index !== undefined ? `${currentDay}-${mealType}-${index}` : `${currentDay}-${mealType}`;
-    
-    setLockedMeals(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-    
-    toast({
-      title: lockedMeals[key] ? "Meal Unlocked" : "Meal Locked",
-      description: lockedMeals[key] 
-        ? "This meal can now be changed when regenerating." 
-        : "This meal will stay the same when regenerating.",
-    });
-  };
 
   // Handle recipe selection to view details
   const handleRecipeClick = (recipe: Recipe) => {
@@ -247,450 +42,91 @@ const CreateMealPlanPage = () => {
     setIsSavePlanDialogOpen(true);
   };
 
-  // Calculate current day's nutrition totals
-  const calculateDayTotals = () => {
-    if (!mealPlan[currentDay]) return userGoals;
-    
-    const dayMeals = mealPlan[currentDay].meals;
-    return calculateDailyMacros(dayMeals);
-  };
-
-  // Check if current meals exceed user goals
-  const checkExceedsGoals = () => {
-    const totals = calculateDayTotals();
-    const exceeds = {
-      calories: totals.calories > userGoals.calories + 75,
-      protein: totals.protein > userGoals.protein + 2,
-      carbs: totals.carbs > userGoals.carbs + 5,
-      fat: totals.fat > userGoals.fat + 5
-    };
-    
-    return {
-      any: exceeds.calories || exceeds.protein || exceeds.carbs || exceeds.fat,
-      exceeds
-    };
-  };
-
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'short',
-      month: 'numeric', 
-      day: 'numeric'
-    });
-  };
-
-  // Get day number for the calendar display
-  const getDayNumber = (dateString: string) => {
-    return new Date(dateString).getDate();
+  // Placeholder for the Add from Vault functionality
+  const handleAddFromVault = (mealType: string, index?: number) => {
+    // This would be implemented in a future feature
+    console.log(`Add from vault for ${mealType}${index !== undefined ? ` ${index}` : ''}`);
   };
 
   // Get current day's data
   const currentDayData = mealPlan[currentDay];
   const dayTotals = calculateDayTotals();
-  const { any: exceedsGoals, exceeds } = checkExceedsGoals();
+  const goalExceeds = checkExceedsGoals();
+
+  if (!currentDayData) {
+    return <div className="p-4">Loading meal plan...</div>;
+  }
 
   return (
     <div className="pb-20 animate-fade-in">
-      <div className="flex items-center mb-4">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => navigate('/planning')} 
-          className="mr-2"
-        >
-          <ArrowLeft size={20} />
-        </Button>
-        <h1 className="text-xl font-bold">New Meal Plan</h1>
-      </div>
-      <p className="text-dishco-text-light mb-4">Plan and customize your meals</p>
+      <PageHeader />
 
       {/* Weekly Calendar Navigation */}
-      <div className="flex items-center justify-between mb-6">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => navigateDay('prev')} 
-          disabled={currentDay === 0}
-        >
-          <ArrowLeft size={18} />
-        </Button>
-        
-        <div className="flex space-x-2 overflow-x-auto">
-          {mealPlan.map((day, idx) => (
-            <button 
-              key={idx} 
-              className={`flex flex-col items-center justify-center size-10 rounded-full ${
-                idx === currentDay 
-                  ? 'bg-primary text-white' 
-                  : 'bg-gray-100 text-gray-600'
-              }`}
-              onClick={() => setCurrentDay(idx)}
-            >
-              <span className="text-xs uppercase">
-                {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' }).charAt(0)}
-              </span>
-              <span className="text-sm font-medium">{getDayNumber(day.date)}</span>
-            </button>
-          ))}
-        </div>
-        
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={() => navigateDay('next')}
-          disabled={currentDay === 6}
-        >
-          <ArrowRight size={18} />
-        </Button>
-      </div>
+      <DailyNavigationCalendar 
+        mealPlan={mealPlan}
+        currentDay={currentDay}
+        setCurrentDay={setCurrentDay}
+      />
 
       {/* Daily Nutrition Card */}
-      <div className="bg-white rounded-xl p-4 shadow-sm mb-6">
-        <h2 className="text-lg font-semibold mb-2">Daily Nutrition</h2>
-        
-        {exceedsGoals && (
-          <div className="flex items-center gap-2 p-2 bg-red-50 rounded-md mb-3 text-red-600 text-sm">
-            <AlertTriangle size={16} />
-            <span>This plan exceeds your daily goals</span>
-          </div>
-        )}
-        
-        <div className="grid grid-cols-4 gap-4">
-          {/* Calories */}
-          <div className="flex flex-col">
-            <div className="flex justify-between items-baseline">
-              <span className="text-xl font-semibold">{dayTotals.calories}</span>
-              <span className="text-xs text-gray-500">/ {userGoals.calories}</span>
-            </div>
-            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div 
-                className={`h-full rounded-full ${exceeds.calories ? 'bg-red-400' : 'bg-yellow-400'}`} 
-                style={{ width: `${Math.min(100, (dayTotals.calories / userGoals.calories) * 100)}%` }}
-              ></div>
-            </div>
-            <span className="text-xs mt-1">Calories</span>
-          </div>
-          
-          {/* Protein */}
-          <div className="flex flex-col">
-            <div className="flex justify-between items-baseline">
-              <span className="text-xl font-semibold">{dayTotals.protein}g</span>
-              <span className="text-xs text-gray-500">/ {userGoals.protein}g</span>
-            </div>
-            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div 
-                className={`h-full rounded-full ${exceeds.protein ? 'bg-red-400' : 'bg-blue-400'}`}
-                style={{ width: `${Math.min(100, (dayTotals.protein / userGoals.protein) * 100)}%` }}
-              ></div>
-            </div>
-            <span className="text-xs mt-1">Protein</span>
-          </div>
-          
-          {/* Carbs */}
-          <div className="flex flex-col">
-            <div className="flex justify-between items-baseline">
-              <span className="text-xl font-semibold">{dayTotals.carbs}g</span>
-              <span className="text-xs text-gray-500">/ {userGoals.carbs}g</span>
-            </div>
-            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div 
-                className={`h-full rounded-full ${exceeds.carbs ? 'bg-red-400' : 'bg-yellow-200'}`}
-                style={{ width: `${Math.min(100, (dayTotals.carbs / userGoals.carbs) * 100)}%` }}
-              ></div>
-            </div>
-            <span className="text-xs mt-1">Carbs</span>
-          </div>
-          
-          {/* Fat */}
-          <div className="flex flex-col">
-            <div className="flex justify-between items-baseline">
-              <span className="text-xl font-semibold">{dayTotals.fat}g</span>
-              <span className="text-xs text-gray-500">/ {userGoals.fat}g</span>
-            </div>
-            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div 
-                className={`h-full rounded-full ${exceeds.fat ? 'bg-red-400' : 'bg-purple-300'}`}
-                style={{ width: `${Math.min(100, (dayTotals.fat / userGoals.fat) * 100)}%` }}
-              ></div>
-            </div>
-            <span className="text-xs mt-1">Fat</span>
-          </div>
-        </div>
-        
-        {/* AI Reasoning */}
-        {aiReasoning && (
-          <div className="mt-4 p-3 bg-blue-50 rounded-md text-sm text-blue-700">
-            <p className="font-medium mb-1">AI Reasoning:</p>
-            <p>{aiReasoning}</p>
-          </div>
-        )}
-      </div>
+      <DailyNutritionCard 
+        dayTotals={dayTotals}
+        userGoals={calculateDayTotals()}
+        exceedsGoals={goalExceeds}
+        aiReasoning={aiReasoning}
+      />
 
       {/* Meal Sections */}
-      {currentDayData && (
-        <div className="space-y-6">
-          {/* Breakfast */}
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-medium">Breakfast</h3>
-              <div className="flex gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={() => toggleLockMeal('breakfast')}
-                >
-                  {lockedMeals[`${currentDay}-breakfast`] ? <Lock size={16} /> : <Unlock size={16} />}
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={() => {/* Add from vault logic */}}
-                >
-                  <Plus size={16} />
-                </Button>
-              </div>
-            </div>
-            
-            {currentDayData.meals.breakfast ? (
-              <div 
-                className="cursor-pointer" 
-                onClick={() => handleRecipeClick(currentDayData.meals.breakfast!)}
-              >
-                <h4 className="font-medium">{currentDayData.meals.breakfast.name}</h4>
-                <p className="text-sm text-gray-500 line-clamp-2">{currentDayData.meals.breakfast.description}</p>
-                <div className="flex justify-between items-center mt-2">
-                  <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">
-                    {currentDayData.meals.breakfast.macros.calories} kcal
-                  </span>
-                  <div className="flex gap-2">
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                      P: {currentDayData.meals.breakfast.macros.protein}g
-                    </span>
-                    <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">
-                      C: {currentDayData.meals.breakfast.macros.carbs}g
-                    </span>
-                    <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
-                      F: {currentDayData.meals.breakfast.macros.fat}g
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="h-24 bg-gray-50 rounded flex items-center justify-center">
-                <p className="text-gray-400 text-sm">No breakfast selected</p>
-              </div>
-            )}
-          </div>
-          
-          {/* Lunch */}
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-medium">Lunch</h3>
-              <div className="flex gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={() => toggleLockMeal('lunch')}
-                >
-                  {lockedMeals[`${currentDay}-lunch`] ? <Lock size={16} /> : <Unlock size={16} />}
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={() => {/* Add from vault logic */}}
-                >
-                  <Plus size={16} />
-                </Button>
-              </div>
-            </div>
-            
-            {currentDayData.meals.lunch ? (
-              <div 
-                className="cursor-pointer" 
-                onClick={() => handleRecipeClick(currentDayData.meals.lunch!)}
-              >
-                <h4 className="font-medium">{currentDayData.meals.lunch.name}</h4>
-                <p className="text-sm text-gray-500 line-clamp-2">{currentDayData.meals.lunch.description}</p>
-                <div className="flex justify-between items-center mt-2">
-                  <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">
-                    {currentDayData.meals.lunch.macros.calories} kcal
-                  </span>
-                  <div className="flex gap-2">
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                      P: {currentDayData.meals.lunch.macros.protein}g
-                    </span>
-                    <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">
-                      C: {currentDayData.meals.lunch.macros.carbs}g
-                    </span>
-                    <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
-                      F: {currentDayData.meals.lunch.macros.fat}g
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="h-24 bg-gray-50 rounded flex items-center justify-center">
-                <p className="text-gray-400 text-sm">No lunch selected</p>
-              </div>
-            )}
-          </div>
-          
-          {/* Dinner */}
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-medium">Dinner</h3>
-              <div className="flex gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={() => toggleLockMeal('dinner')}
-                >
-                  {lockedMeals[`${currentDay}-dinner`] ? <Lock size={16} /> : <Unlock size={16} />}
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={() => {/* Add from vault logic */}}
-                >
-                  <Plus size={16} />
-                </Button>
-              </div>
-            </div>
-            
-            {currentDayData.meals.dinner ? (
-              <div 
-                className="cursor-pointer" 
-                onClick={() => handleRecipeClick(currentDayData.meals.dinner!)}
-              >
-                <h4 className="font-medium">{currentDayData.meals.dinner.name}</h4>
-                <p className="text-sm text-gray-500 line-clamp-2">{currentDayData.meals.dinner.description}</p>
-                <div className="flex justify-between items-center mt-2">
-                  <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">
-                    {currentDayData.meals.dinner.macros.calories} kcal
-                  </span>
-                  <div className="flex gap-2">
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                      P: {currentDayData.meals.dinner.macros.protein}g
-                    </span>
-                    <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">
-                      C: {currentDayData.meals.dinner.macros.carbs}g
-                    </span>
-                    <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
-                      F: {currentDayData.meals.dinner.macros.fat}g
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="h-24 bg-gray-50 rounded flex items-center justify-center">
-                <p className="text-gray-400 text-sm">No dinner selected</p>
-              </div>
-            )}
-          </div>
-          
-          {/* Snacks */}
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <h3 className="font-medium mb-4">Snacks</h3>
-            
-            <div className="space-y-4">
-              {currentDayData.meals.snacks && currentDayData.meals.snacks.map((snack, idx) => (
-                <div key={idx} className="border-b pb-4 last:border-b-0 last:pb-0">
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="text-sm text-gray-600">Snack {idx + 1}</h4>
-                    <div className="flex gap-1">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={() => toggleLockMeal('snack', idx)}
-                      >
-                        {lockedMeals[`${currentDay}-snack-${idx}`] ? <Lock size={16} /> : <Unlock size={16} />}
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={() => {/* Add from vault logic */}}
-                      >
-                        <Plus size={16} />
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {snack ? (
-                    <div 
-                      className="cursor-pointer" 
-                      onClick={() => handleRecipeClick(snack)}
-                    >
-                      <h4 className="font-medium">{snack.name}</h4>
-                      <p className="text-sm text-gray-500 line-clamp-2">{snack.description}</p>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">
-                          {snack.macros.calories} kcal
-                        </span>
-                        <div className="flex gap-2">
-                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                            P: {snack.macros.protein}g
-                          </span>
-                          <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">
-                            C: {snack.macros.carbs}g
-                          </span>
-                          <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
-                            F: {snack.macros.fat}g
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="h-20 bg-gray-50 rounded flex items-center justify-center">
-                      <p className="text-gray-400 text-sm">No snack selected</p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      <div className="space-y-6">
+        {/* Breakfast */}
+        <MealCard 
+          title="Breakfast"
+          meal={currentDayData.meals.breakfast}
+          isLocked={!!lockedMeals[`${currentDay}-breakfast`]}
+          toggleLock={() => toggleLockMeal('breakfast')}
+          onAddFromVault={() => handleAddFromVault('breakfast')}
+          onMealClick={handleRecipeClick}
+        />
+        
+        {/* Lunch */}
+        <MealCard 
+          title="Lunch"
+          meal={currentDayData.meals.lunch}
+          isLocked={!!lockedMeals[`${currentDay}-lunch`]}
+          toggleLock={() => toggleLockMeal('lunch')}
+          onAddFromVault={() => handleAddFromVault('lunch')}
+          onMealClick={handleRecipeClick}
+        />
+        
+        {/* Dinner */}
+        <MealCard 
+          title="Dinner"
+          meal={currentDayData.meals.dinner}
+          isLocked={!!lockedMeals[`${currentDay}-dinner`]}
+          toggleLock={() => toggleLockMeal('dinner')}
+          onAddFromVault={() => handleAddFromVault('dinner')}
+          onMealClick={handleRecipeClick}
+        />
+        
+        {/* Snacks */}
+        <SnacksSection 
+          snacks={currentDayData.meals.snacks || [null, null]}
+          lockedSnacks={[
+            !!lockedMeals[`${currentDay}-snack-0`],
+            !!lockedMeals[`${currentDay}-snack-1`]
+          ]}
+          toggleLockSnack={(index) => toggleLockMeal('snack', index)}
+          onAddFromVault={(index) => handleAddFromVault('snack', index)}
+          onSnackClick={handleRecipeClick}
+        />
+      </div>
 
       {/* Bottom Action Buttons */}
-      <div className="fixed bottom-16 left-0 right-0 px-4 py-3 bg-white border-t flex justify-between">
-        <Button 
-          variant="outline" 
-          onClick={regenerateMeals} 
-          disabled={isGenerating}
-          className="w-[48%] bg-amber-50 border-amber-200 text-amber-800"
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 size={16} className="mr-2 animate-spin" />
-              Regenerating...
-            </>
-          ) : (
-            <>
-              <RefreshCw size={16} className="mr-2" />
-              Regenerate
-            </>
-          )}
-        </Button>
-        
-        <Button 
-          onClick={handleSavePlan} 
-          disabled={isGenerating}
-          className="w-[48%] bg-green-600 hover:bg-green-700"
-        >
-          <Save size={16} className="mr-2" />
-          Save Plan
-        </Button>
-      </div>
+      <BottomActionBar 
+        onRegenerate={regenerateMeals}
+        onSave={handleSavePlan}
+        isGenerating={isGenerating}
+      />
 
       {/* Recipe Viewer Dialog */}
       {selectedRecipe && (
