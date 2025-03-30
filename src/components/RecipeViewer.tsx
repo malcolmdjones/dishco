@@ -2,17 +2,31 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, Clock, Utensils, Users } from 'lucide-react';
+import { X, Clock, Utensils, Users, Heart } from 'lucide-react';
 import { Recipe } from '@/data/mockData';
 
 interface RecipeViewerProps {
   recipe: Recipe;
   isOpen: boolean;
   onClose: () => void;
+  isSaved?: boolean;
+  onToggleSave?: (recipeId: string, isSaved: boolean) => Promise<void>;
 }
 
-const RecipeViewer: React.FC<RecipeViewerProps> = ({ recipe, isOpen, onClose }) => {
+const RecipeViewer: React.FC<RecipeViewerProps> = ({ 
+  recipe, 
+  isOpen, 
+  onClose, 
+  isSaved = false,
+  onToggleSave
+}) => {
   if (!recipe) return null;
+
+  const handleToggleSave = async () => {
+    if (onToggleSave) {
+      await onToggleSave(recipe.id, isSaved);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -29,6 +43,18 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({ recipe, isOpen, onClose }) 
           >
             <X size={20} />
           </button>
+          
+          {onToggleSave && (
+            <button 
+              className="absolute top-4 left-4 bg-white/80 backdrop-blur-sm p-1.5 rounded-full"
+              onClick={handleToggleSave}
+            >
+              <Heart 
+                size={20} 
+                className={isSaved ? "fill-red-500 text-red-500" : "text-gray-700"}
+              />
+            </button>
+          )}
         </div>
         
         <DialogHeader className="p-6 pb-2">
