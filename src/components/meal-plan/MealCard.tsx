@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Lock, Unlock } from 'lucide-react';
+import { Plus, Lock, Unlock, CookingPot, Zap, Blend } from 'lucide-react';
 import { Recipe } from '@/data/mockData';
 
 interface MealCardProps {
@@ -22,14 +22,14 @@ const MealCard: React.FC<MealCardProps> = ({
   onMealClick
 }) => {
   return (
-    <div className="bg-white rounded-xl p-4 shadow-sm">
+    <div className={`bg-white rounded-xl p-4 shadow-sm ${isLocked ? 'border-2 border-green-500 animate-pulse' : ''}`}>
       <div className="flex justify-between items-center mb-2">
         <h3 className="font-medium">{title}</h3>
         <div className="flex gap-1">
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-8 w-8"
+            className={`h-8 w-8 ${isLocked ? 'text-green-500' : ''}`}
             onClick={toggleLock}
           >
             {isLocked ? <Lock size={16} /> : <Unlock size={16} />}
@@ -50,7 +50,26 @@ const MealCard: React.FC<MealCardProps> = ({
           className="cursor-pointer" 
           onClick={() => onMealClick(meal)}
         >
-          <h4 className="font-medium">{meal.name}</h4>
+          <div className="flex justify-between items-center">
+            <h4 className="font-medium">{meal.name}</h4>
+            <div className="flex gap-1">
+              {meal.equipment?.includes('blender') && (
+                <span className="text-gray-500" title="Requires blender">
+                  <Blend size={14} />
+                </span>
+              )}
+              {meal.equipment?.includes('stove') && (
+                <span className="text-gray-500" title="Requires cooking">
+                  <CookingPot size={14} />
+                </span>
+              )}
+              {meal.cookingTime && meal.cookingTime <= 15 && (
+                <span className="text-amber-500" title="Quick to prepare">
+                  <Zap size={14} />
+                </span>
+              )}
+            </div>
+          </div>
           <p className="text-sm text-gray-500 line-clamp-2">{meal.description}</p>
           <div className="flex justify-between items-center mt-2">
             <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">

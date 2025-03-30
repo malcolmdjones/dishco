@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Lock, Unlock } from 'lucide-react';
+import { Plus, Lock, Unlock, CookingPot, Zap, Blend } from 'lucide-react';
 import { Recipe } from '@/data/mockData';
 
 interface SnacksSectionProps {
@@ -25,14 +25,19 @@ const SnacksSection: React.FC<SnacksSectionProps> = ({
       
       <div className="space-y-4">
         {snacks.map((snack, idx) => (
-          <div key={idx} className="border-b pb-4 last:border-b-0 last:pb-0">
+          <div 
+            key={idx} 
+            className={`border-b pb-4 last:border-b-0 last:pb-0 ${
+              lockedSnacks[idx] ? 'border-2 border-green-500 rounded-lg p-2 -mx-2 animate-pulse' : ''
+            }`}
+          >
             <div className="flex justify-between items-center mb-2">
               <h4 className="text-sm text-gray-600">Snack {idx + 1}</h4>
               <div className="flex gap-1">
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-8 w-8"
+                  className={`h-8 w-8 ${lockedSnacks[idx] ? 'text-green-500' : ''}`}
                   onClick={() => toggleLockSnack(idx)}
                 >
                   {lockedSnacks[idx] ? <Lock size={16} /> : <Unlock size={16} />}
@@ -53,7 +58,26 @@ const SnacksSection: React.FC<SnacksSectionProps> = ({
                 className="cursor-pointer" 
                 onClick={() => onSnackClick(snack)}
               >
-                <h4 className="font-medium">{snack.name}</h4>
+                <div className="flex justify-between items-center">
+                  <h4 className="font-medium">{snack.name}</h4>
+                  <div className="flex gap-1">
+                    {snack.equipment?.includes('blender') && (
+                      <span className="text-gray-500" title="Requires blender">
+                        <Blend size={14} />
+                      </span>
+                    )}
+                    {snack.equipment?.includes('stove') && (
+                      <span className="text-gray-500" title="Requires cooking">
+                        <CookingPot size={14} />
+                      </span>
+                    )}
+                    {snack.cookingTime && snack.cookingTime <= 15 && (
+                      <span className="text-amber-500" title="Quick to prepare">
+                        <Zap size={14} />
+                      </span>
+                    )}
+                  </div>
+                </div>
                 <p className="text-sm text-gray-500 line-clamp-2">{snack.description}</p>
                 <div className="flex justify-between items-center mt-2">
                   <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">

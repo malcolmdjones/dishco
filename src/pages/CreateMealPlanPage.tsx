@@ -10,6 +10,8 @@ import DailyNutritionCard from '@/components/meal-plan/DailyNutritionCard';
 import MealCard from '@/components/meal-plan/MealCard';
 import SnacksSection from '@/components/meal-plan/SnacksSection';
 import BottomActionBar from '@/components/meal-plan/BottomActionBar';
+import WeekOverviewDialog from '@/components/meal-plan/WeekOverviewDialog';
+import RecipeVaultDialog from '@/components/meal-plan/RecipeVaultDialog';
 
 const CreateMealPlanPage = () => {
   // Use our custom hook for meal plan logic
@@ -19,7 +21,6 @@ const CreateMealPlanPage = () => {
     mealPlan,
     isGenerating,
     lockedMeals,
-    aiReasoning,
     toggleLockMeal,
     regenerateMeals,
     calculateDayTotals,
@@ -30,6 +31,10 @@ const CreateMealPlanPage = () => {
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
   const [isSavePlanDialogOpen, setIsSavePlanDialogOpen] = useState(false);
+  const [isWeekOverviewOpen, setIsWeekOverviewOpen] = useState(false);
+  const [isRecipeVaultOpen, setIsRecipeVaultOpen] = useState(false);
+  const [targetMealType, setTargetMealType] = useState('');
+  const [targetMealIndex, setTargetMealIndex] = useState<number | undefined>(undefined);
 
   // Handle recipe selection to view details
   const handleRecipeClick = (recipe: Recipe) => {
@@ -42,10 +47,42 @@ const CreateMealPlanPage = () => {
     setIsSavePlanDialogOpen(true);
   };
 
-  // Placeholder for the Add from Vault functionality
-  const handleAddFromVault = (mealType: string, index?: number) => {
-    // This would be implemented in a future feature
-    console.log(`Add from vault for ${mealType}${index !== undefined ? ` ${index}` : ''}`);
+  // Open the Recipe Vault dialog
+  const handleOpenVault = (mealType: string, index?: number) => {
+    setTargetMealType(mealType);
+    setTargetMealIndex(index);
+    setIsRecipeVaultOpen(true);
+  };
+
+  // Open the Week Overview dialog
+  const handleOpenWeekOverview = () => {
+    setIsWeekOverviewOpen(true);
+  };
+
+  // Add a recipe to the meal plan from the vault
+  const handleAddFromVault = (recipe: Recipe, mealType: string, index?: number) => {
+    // Clone current meal plan
+    const newMealPlan = [...mealPlan];
+    const currentDayData = { ...newMealPlan[currentDay] };
+    const currentMeals = { ...currentDayData.meals };
+    
+    // Update based on meal type
+    if (mealType === 'breakfast') {
+      currentMeals.breakfast = recipe;
+    } else if (mealType === 'lunch') {
+      currentMeals.lunch = recipe;
+    } else if (mealType === 'dinner') {
+      currentMeals.dinner = recipe;
+    } else if (mealType === 'snack' && index !== undefined) {
+      const newSnacks = [...(currentMeals.snacks || [])];
+      newSnacks[index] = recipe;
+      currentMeals.snacks = newSnacks;
+    }
+    
+    currentDayData.meals = currentMeals;
+    newMealPlan[currentDay] = currentDayData;
+    
+    // No need to call setMealPlan as it's handled by the hook
   };
 
   // Get current day's data
@@ -59,7 +96,10 @@ const CreateMealPlanPage = () => {
 
   return (
     <div className="pb-20 animate-fade-in">
-      <PageHeader />
+      <PageHeader 
+        onOpenVault={() => handleOpenVault('all')} 
+        onOpenWeekOverview={handleOpenWeekOverview} 
+      />
 
       {/* Weekly Calendar Navigation */}
       <DailyNavigationCalendar 
@@ -73,7 +113,6 @@ const CreateMealPlanPage = () => {
         dayTotals={dayTotals}
         userGoals={calculateDayTotals()}
         exceedsGoals={goalExceeds}
-        aiReasoning={aiReasoning}
       />
 
       {/* Meal Sections */}
@@ -84,7 +123,7 @@ const CreateMealPlanPage = () => {
           meal={currentDayData.meals.breakfast}
           isLocked={!!lockedMeals[`${currentDay}-breakfast`]}
           toggleLock={() => toggleLockMeal('breakfast')}
-          onAddFromVault={() => handleAddFromVault('breakfast')}
+          onAddFromVault={() => handleOpenVault('breakfast')}
           onMealClick={handleRecipeClick}
         />
         
@@ -94,7 +133,7 @@ const CreateMealPlanPage = () => {
           meal={currentDayData.meals.lunch}
           isLocked={!!lockedMeals[`${currentDay}-lunch`]}
           toggleLock={() => toggleLockMeal('lunch')}
-          onAddFromVault={() => handleAddFromVault('lunch')}
+          onAddFromVault={() => handleOpenVault('lunch')}
           onMealClick={handleRecipeClick}
         />
         
@@ -104,7 +143,7 @@ const CreateMealPlanPage = () => {
           meal={currentDayData.meals.dinner}
           isLocked={!!lockedMeals[`${currentDay}-dinner`]}
           toggleLock={() => toggleLockMeal('dinner')}
-          onAddFromVault={() => handleAddFromVault('dinner')}
+          onAddFromVault={() => handleOpenVault('dinner')}
           onMealClick={handleRecipeClick}
         />
         
@@ -116,7 +155,7 @@ const CreateMealPlanPage = () => {
             !!lockedMeals[`${currentDay}-snack-1`]
           ]}
           toggleLockSnack={(index) => toggleLockMeal('snack', index)}
-          onAddFromVault={(index) => handleAddFromVault('snack', index)}
+          onAddFromVault={(index) => handleOpenVault('snack', index)}
           onSnackClick={handleRecipeClick}
         />
       </div>
@@ -142,6 +181,22 @@ const CreateMealPlanPage = () => {
         isOpen={isSavePlanDialogOpen}
         onClose={() => setIsSavePlanDialogOpen(false)}
         mealPlan={mealPlan}
+      />
+
+      {/* Week Overview Dialog */}
+      <WeekOverviewDialog
+        isOpen={isWeekOverviewOpen}
+        onClose={() => setIsWeekOverviewOpen(false)}
+        mealPlan={mealPlan}
+      />
+
+      {/* Recipe Vault Dialog */}
+      <RecipeVaultDialog
+        isOpen={isRecipeVaultOpen}
+        onClose={() => setIsRecipeVaultOpen(false)}
+        onSelectRecipe={handleAddFromVault}
+        targetMealType={targetMealType}
+        targetMealIndex={targetMealIndex}
       />
     </div>
   );
