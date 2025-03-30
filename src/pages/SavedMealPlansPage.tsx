@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Copy, Trash2, ChevronRight, Plus, Pencil, Info } from 'lucide-react';
@@ -15,6 +14,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
+import { Database } from '@/integrations/supabase/types';
+import { Json } from '@/integrations/supabase/types';
 
 type SavedMealPlan = {
   id: string;
@@ -57,7 +58,17 @@ const SavedMealPlansPage = () => {
       }
       
       if (data) {
-        setSavedPlans(data as SavedMealPlan[]);
+        const typedPlans: SavedMealPlan[] = data.map(plan => ({
+          id: plan.id,
+          name: plan.name,
+          created_at: plan.created_at as string,
+          plan_data: {
+            days: (plan.plan_data as any)?.days || [],
+            description: (plan.plan_data as any)?.description
+          }
+        }));
+        
+        setSavedPlans(typedPlans);
       }
     } catch (error) {
       console.error('Error fetching saved meal plans:', error);
@@ -92,7 +103,6 @@ const SavedMealPlansPage = () => {
     const planToCopy = savedPlans.find(plan => plan.id === id);
     if (!planToCopy) return;
 
-    // Store the plan data in session storage for use in planning page
     sessionStorage.setItem('planToCopy', JSON.stringify(planToCopy.plan_data));
     
     toast({
@@ -114,7 +124,6 @@ const SavedMealPlansPage = () => {
   const confirmActivatePlan = () => {
     if (!selectedPlan) return;
 
-    // Store the plan data in session storage for use in planning page
     sessionStorage.setItem('activePlan', JSON.stringify({
       ...selectedPlan.plan_data,
       startDay: selectedDay
@@ -166,7 +175,6 @@ const SavedMealPlansPage = () => {
         return;
       }
       
-      // Update local state
       setSavedPlans(savedPlans.map(plan => 
         plan.id === selectedPlan.id 
           ? {
@@ -197,8 +205,6 @@ const SavedMealPlansPage = () => {
   };
 
   const handleCopyAndEdit = (plan: SavedMealPlan) => {
-    // Store the plan data in session storage for use in planning page
-    // We'll set all meals to be locked by default
     if (!plan.plan_data.days) return;
     
     const lockedMeals: {[key: string]: boolean} = {};
@@ -230,12 +236,10 @@ const SavedMealPlansPage = () => {
     navigate('/planning');
   };
 
-  // Calculate nutrition totals for a day's meals
   const calculateDayNutrition = (day: any) => {
     return calculateDailyMacros(day.meals);
   };
 
-  // Placeholder for empty state
   if (savedPlans.length === 0 && !loading) {
     return (
       <div className="animate-fade-in">
@@ -278,7 +282,6 @@ const SavedMealPlansPage = () => {
         </div>
       </header>
 
-      {/* Create new plan button */}
       <Button 
         variant="outline" 
         className="w-full mb-6 border-dashed justify-start"
@@ -288,7 +291,6 @@ const SavedMealPlansPage = () => {
         Create a new meal plan
       </Button>
 
-      {/* Saved plans list */}
       <div className="space-y-4">
         {loading ? (
           <div className="text-center py-12">
@@ -368,7 +370,6 @@ const SavedMealPlansPage = () => {
         )}
       </div>
 
-      {/* View Plan Details Dialog */}
       <Dialog open={isViewingPlan} onOpenChange={setIsViewingPlan}>
         <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
@@ -383,7 +384,6 @@ const SavedMealPlansPage = () => {
 
           {selectedPlan && (
             <div className="space-y-6">
-              {/* Nutrition Overview */}
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-medium mb-3">Nutrition Overview</h3>
                 <div className="grid grid-cols-4 gap-3">
@@ -450,7 +450,6 @@ const SavedMealPlansPage = () => {
                 </div>
               </div>
 
-              {/* Day 1 Meals */}
               <div>
                 <h3 className="font-medium mb-3">Day 1 Meals</h3>
                 <div className="space-y-3">
@@ -507,7 +506,6 @@ const SavedMealPlansPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Rename Plan Dialog */}
       <Dialog open={isRenaming} onOpenChange={setIsRenaming}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -550,7 +548,6 @@ const SavedMealPlansPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Start Date Selection Dialog */}
       <Dialog open={isSelectingStartDate} onOpenChange={setIsSelectingStartDate}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
