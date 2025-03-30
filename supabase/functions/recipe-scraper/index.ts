@@ -1,6 +1,6 @@
 
-// We'll update the existing recipe scraper to improve instruction formatting with AI
-// This adds a step to clean up and correct recipe instructions using OpenAI
+// We'll update the existing recipe scraper to improve recipe classification and tagging
+// This enhances filtering in the Explore Recipes page
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import * as cheerio from "https://esm.sh/cheerio@1.0.0-rc.12";
@@ -28,7 +28,23 @@ type RecipeData = {
   equipment?: string[];
   imageUrl?: string;
   localImageUrl?: string;
+  cuisineType?: string;
+  priceRange?: string;
+  dietaryNeeds?: string[];
+  isHighProtein?: boolean;
 };
+
+// Define meal types that match the ExploreRecipesPage filters
+const validMealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
+
+// Define cuisine types that match the ExploreRecipesPage filters
+const validCuisineTypes = ['american', 'italian', 'mexican', 'indian', 'chinese', 'other'];
+
+// Define dietary needs that match the ExploreRecipesPage filters
+const validDietaryNeeds = ['keto', 'vegan', 'vegetarian', 'paleo', 'gluten-free', 'dairy-free'];
+
+// Define equipment types that match the ExploreRecipesPage filters
+const validEquipment = ['oven', 'stovetop', 'air fryer', 'blender', 'grill', 'slow cooker'];
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -162,11 +178,25 @@ serve(async (req) => {
             recipeData.tags = categories;
             
             // Try to identify meal type from categories
-            const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'appetizer'];
             for (const category of categories) {
               const lowercaseCategory = category.toLowerCase();
-              if (mealTypes.includes(lowercaseCategory)) {
+              if (validMealTypes.includes(lowercaseCategory)) {
                 recipeData.mealType = lowercaseCategory;
+                break;
+              }
+            }
+          }
+
+          // Try to identify cuisine type
+          if (recipeSchema.recipeCuisine) {
+            const cuisines = Array.isArray(recipeSchema.recipeCuisine)
+              ? recipeSchema.recipeCuisine
+              : [recipeSchema.recipeCuisine];
+            
+            for (const cuisine of cuisines) {
+              const lowercaseCuisine = cuisine.toLowerCase();
+              if (validCuisineTypes.includes(lowercaseCuisine)) {
+                recipeData.cuisineType = lowercaseCuisine;
                 break;
               }
             }
@@ -236,101 +266,137 @@ serve(async (req) => {
       }
     }
     
-    // If we have instructions but they're in one big chunk or poorly formatted, use AI to clean them up
-    if (recipeData.instructions.length > 0) {
-      // Check if we need to improve the instructions formatting
-      const needsFormatting = recipeData.instructions.some(instruction => 
-        instruction.length > 200 || // Too long
-        instruction.includes('Step') || // Contains "Step X:" which we want to remove
-        /^\d+\./.test(instruction) // Starts with a number and period, which we want to clean up
-      );
-      
-      if (needsFormatting) {
-        try {
-          // Get OpenAI API key from environment variable
-          const openAIKey = Deno.env.get('OPENAI_API_KEY');
-          
-          if (openAIKey) {
-            console.log("Using AI to improve instruction formatting");
-            
-            const instructionsText = recipeData.instructions.join("\n");
-            
-            const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${openAIKey}`,
-                'Content-Type': 'application/json'
+    // Use AI to improve the instructions formatting and to analyze the recipe for classification
+    // Get OpenAI API key from environment variable
+    const openAIKey = Deno.env.get('OPENAI_API_KEY');
+    
+    if (openAIKey) {
+      try {
+        console.log("Using AI to improve recipe data");
+        
+        // Combine recipe data for AI analysis
+        const recipeAnalysisText = `
+Recipe Name: ${recipeData.name}
+Description: ${recipeData.description || ''}
+Ingredients:
+${recipeData.ingredients.join('\n')}
+Instructions:
+${recipeData.instructions.join('\n')}
+`;
+        
+        const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              {
+                role: 'system',
+                content: `You are an expert recipe analyst that helps classify recipes and improve instruction formatting. 
+                
+Please analyze the recipe and:
+1. Format the instructions into clear, step-by-step instructions.
+2. Classify the recipe into these categories:
+   - Meal Type: ${validMealTypes.join(', ')}
+   - Cuisine Type: ${validCuisineTypes.join(', ')}
+   - Equipment Needed: ${validEquipment.join(', ')}
+   - Dietary Needs: ${validDietaryNeeds.join(', ')}
+   - Price Range: $ (budget), $$ (moderate), or $$$ (expensive)
+   - Is High Protein: true/false (>20g protein per serving)
+   
+Return your analysis as a JSON object with these fields:
+- instructions: array of formatted step-by-step instructions
+- mealType: string (one of the valid meal types)
+- cuisineType: string (one of the valid cuisine types)
+- equipment: array of equipment needed
+- dietaryNeeds: array of dietary needs this recipe meets
+- priceRange: string (one of $, $$, $$$)
+- isHighProtein: boolean
+- cookTimeCategory: "quick" (≤15 min), "medium" (16-30 min), or "long" (>30 min)
+
+Correct any spelling or grammar issues in the instructions.`
               },
-              body: JSON.stringify({
-                model: 'gpt-4o-mini',
-                messages: [
-                  {
-                    role: 'system',
-                    content: 'You are a helpful assistant that formats recipe instructions into clear, concise, step-by-step instructions. Remove any numbering or "Step X:" prefixes. Correct grammar and spelling issues. Format as a clean array of instructions, with one step per array item. Be concise but comprehensive.'
-                  },
-                  {
-                    role: 'user',
-                    content: `Here are recipe instructions that need to be cleaned up and formatted:\n\n${instructionsText}\n\nPlease return ONLY a JSON array of strings, where each string is a single step.`
-                  }
-                ],
-                temperature: 0.3,
-              })
-            });
-            
-            if (aiResponse.ok) {
-              const aiData = await aiResponse.json();
-              try {
-                // Parse the JSON array from the AI's response
-                const formattedInstructions = JSON.parse(aiData.choices[0].message.content);
-                if (Array.isArray(formattedInstructions) && formattedInstructions.length > 0) {
-                  recipeData.instructions = formattedInstructions;
-                  console.log("Successfully formatted instructions with AI");
-                }
-              } catch (parseError) {
-                console.error("Error parsing AI response:", parseError);
-                // If we can't parse the JSON, try to extract an array from the text
-                const content = aiData.choices[0].message.content;
-                const match = content.match(/\[\s*".*"\s*\]/s);
-                if (match) {
-                  try {
-                    const extractedArray = JSON.parse(match[0]);
-                    if (Array.isArray(extractedArray) && extractedArray.length > 0) {
-                      recipeData.instructions = extractedArray;
-                      console.log("Successfully extracted instructions from AI response");
-                    }
-                  } catch (extractError) {
-                    console.error("Error extracting array from AI response:", extractError);
-                  }
-                }
+              {
+                role: 'user',
+                content: recipeAnalysisText
               }
-            } else {
-              console.error("Error from OpenAI API:", await aiResponse.text());
+            ],
+            temperature: 0.3,
+          })
+        });
+        
+        if (aiResponse.ok) {
+          const aiData = await aiResponse.json();
+          try {
+            // Parse the AI analysis
+            const content = aiData.choices[0].message.content;
+            // Extract JSON from the content (handles cases where AI adds text around the JSON)
+            const jsonMatch = content.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const aiAnalysis = JSON.parse(jsonMatch[0]);
+              
+              // Update recipe data with AI analysis
+              if (aiAnalysis.instructions && Array.isArray(aiAnalysis.instructions) && aiAnalysis.instructions.length > 0) {
+                recipeData.instructions = aiAnalysis.instructions;
+              }
+              
+              if (aiAnalysis.mealType && validMealTypes.includes(aiAnalysis.mealType)) {
+                recipeData.mealType = aiAnalysis.mealType;
+              }
+              
+              if (aiAnalysis.cuisineType && validCuisineTypes.includes(aiAnalysis.cuisineType)) {
+                recipeData.cuisineType = aiAnalysis.cuisineType;
+              }
+              
+              if (aiAnalysis.equipment && Array.isArray(aiAnalysis.equipment)) {
+                recipeData.equipment = aiAnalysis.equipment.filter(item => 
+                  validEquipment.includes(item.toLowerCase().replace('-', ' '))
+                );
+              }
+              
+              if (aiAnalysis.dietaryNeeds && Array.isArray(aiAnalysis.dietaryNeeds)) {
+                recipeData.dietaryNeeds = aiAnalysis.dietaryNeeds.filter(need => 
+                  validDietaryNeeds.includes(need.toLowerCase())
+                );
+              }
+              
+              if (aiAnalysis.priceRange && ['$', '$$', '$$$'].includes(aiAnalysis.priceRange)) {
+                recipeData.priceRange = aiAnalysis.priceRange;
+              }
+              
+              if (typeof aiAnalysis.isHighProtein === 'boolean') {
+                recipeData.isHighProtein = aiAnalysis.isHighProtein;
+              }
+              
+              console.log("Successfully enhanced recipe with AI analysis");
             }
-          } else {
-            console.log("OpenAI API key not found, skipping instruction formatting");
+          } catch (parseError) {
+            console.error("Error parsing AI response:", parseError);
           }
-        } catch (aiError) {
-          console.error("Error using AI for instruction formatting:", aiError);
+        } else {
+          console.error("Error from OpenAI API:", await aiResponse.text());
+        }
+      } catch (aiError) {
+        console.error("Error using AI for recipe analysis:", aiError);
+      }
+    }
+    
+    // If we still don't have equipment, estimate it based on instructions
+    if (!recipeData.equipment || recipeData.equipment.length === 0) {
+      recipeData.equipment = [];
+      for (const instruction of recipeData.instructions) {
+        for (const item of validEquipment) {
+          if (instruction.toLowerCase().includes(item) && !recipeData.equipment.includes(item)) {
+            recipeData.equipment.push(item);
+          }
         }
       }
     }
     
-    // Estimate equipment needed based on instructions
-    const commonEquipment = [
-      'oven', 'stove', 'stovetop', 'grill', 'microwave', 'blender', 
-      'food processor', 'mixer', 'slow cooker', 'pressure cooker', 
-      'air fryer', 'pan', 'pot', 'skillet', 'baking sheet'
-    ];
-    
-    recipeData.equipment = [];
-    for (const instruction of recipeData.instructions) {
-      for (const item of commonEquipment) {
-        if (instruction.toLowerCase().includes(item) && !recipeData.equipment.includes(item)) {
-          recipeData.equipment.push(item);
-        }
-      }
-    }
-    
+    // If we still don't have an image URL, try to find one in the HTML
     if (!recipeData.imageUrl) {
       console.log("Falling back to HTML parsing for image");
       // Try to find main recipe image
@@ -540,6 +606,11 @@ async function storeRecipeInDatabase(supabase: any, recipeData: RecipeData, user
       }
     }
     
+    // If high protein is not set by AI analysis, calculate it based on protein content
+    if (recipeData.isHighProtein === undefined && recipeData.protein) {
+      recipeData.isHighProtein = recipeData.protein >= 20;
+    }
+    
     // First, insert the main recipe
     const { data: recipe, error: recipeError } = await supabase
       .from('recipes')
@@ -549,7 +620,7 @@ async function storeRecipeInDatabase(supabase: any, recipeData: RecipeData, user
         image_url: imageUrl,
         prep_time: recipeData.prepTime,
         cook_time: recipeData.cookTime,
-        servings: recipeData.servings,
+        servings: recipeData.servings || 1,
         calories: recipeData.calories,
         protein: recipeData.protein,
         carbs: recipeData.carbs,
@@ -558,7 +629,10 @@ async function storeRecipeInDatabase(supabase: any, recipeData: RecipeData, user
         user_id: userId,
         is_public: true,
         requires_blender: recipeData.equipment?.includes('blender') || false,
-        requires_cooking: !!(recipeData.cookTime && recipeData.cookTime > 0)
+        requires_cooking: !!(recipeData.cookTime && recipeData.cookTime > 0),
+        price_range: recipeData.priceRange || '$',
+        cuisine_type: recipeData.cuisineType || 'other',
+        is_high_protein: recipeData.isHighProtein || false
       })
       .select()
       .single();
@@ -624,9 +698,14 @@ async function storeRecipeInDatabase(supabase: any, recipeData: RecipeData, user
       if (equipmentError) console.error("Error inserting equipment:", equipmentError);
     }
     
-    // Insert tags
-    if (recipeData.tags && recipeData.tags.length > 0) {
-      for (const tagName of recipeData.tags) {
+    // Insert dietary needs as tags
+    if (recipeData.dietaryNeeds && recipeData.dietaryNeeds.length > 0) {
+      const dietaryTags = [...recipeData.dietaryNeeds];
+      if (recipeData.tags) {
+        dietaryTags.push(...recipeData.tags);
+      }
+      
+      for (const tagName of dietaryTags) {
         // First get or create the tag
         let tagId;
         const { data: existingTag } = await supabase
