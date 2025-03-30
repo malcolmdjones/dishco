@@ -1,3 +1,4 @@
+
 export interface Macros {
   calories: number;
   protein: number;
@@ -17,8 +18,13 @@ export interface Recipe {
   imageSrc: string;
   preparationTime?: number; // in minutes
   favorite: boolean;
-  requiresBlender?: boolean; // Adding missing property
-  requiresCooking?: boolean; // Adding missing property
+}
+
+export interface UserGoals {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
 }
 
 // Default user goals
@@ -51,8 +57,6 @@ export const recipes: Recipe[] = [
     imageSrc: 'https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?ixlib=rb-4.0.3',
     preparationTime: 5,
     favorite: false,
-    requiresBlender: false,
-    requiresCooking: false,
   },
   {
     id: '2',
@@ -77,8 +81,6 @@ export const recipes: Recipe[] = [
     imageSrc: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?ixlib=rb-4.0.3',
     preparationTime: 10,
     favorite: true,
-    requiresBlender: false,
-    requiresCooking: false,
   },
   {
     id: '3',
@@ -101,8 +103,6 @@ export const recipes: Recipe[] = [
     imageSrc: 'https://images.unsplash.com/photo-1553530666-ba11a90a0868?ixlib=rb-4.0.3',
     preparationTime: 5,
     favorite: false,
-    requiresBlender: true,
-    requiresCooking: false,
   },
   {
     id: '4',
@@ -134,8 +134,6 @@ export const recipes: Recipe[] = [
     imageSrc: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3',
     preparationTime: 20,
     favorite: true,
-    requiresBlender: false,
-    requiresCooking: false,
   },
   {
     id: '5',
@@ -165,8 +163,6 @@ export const recipes: Recipe[] = [
     imageSrc: 'https://images.unsplash.com/photo-1625937286074-9ca519d5d9df?ixlib=rb-4.0.3',
     preparationTime: 10,
     favorite: false,
-    requiresBlender: false,
-    requiresCooking: false,
   },
   {
     id: '6',
@@ -199,8 +195,6 @@ export const recipes: Recipe[] = [
     imageSrc: 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?ixlib=rb-4.0.3',
     preparationTime: 30,
     favorite: true,
-    requiresBlender: false,
-    requiresCooking: false,
   },
   {
     id: '7',
@@ -225,8 +219,6 @@ export const recipes: Recipe[] = [
     imageSrc: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?ixlib=rb-4.0.3',
     preparationTime: 25,
     favorite: true,
-    requiresBlender: false,
-    requiresCooking: false,
   },
   {
     id: '8',
@@ -259,8 +251,6 @@ export const recipes: Recipe[] = [
     imageSrc: 'https://images.unsplash.com/photo-1546549032-9571cd6b27df?ixlib=rb-4.0.3',
     preparationTime: 40,
     favorite: false,
-    requiresBlender: false,
-    requiresCooking: false,
   },
   {
     id: '9',
@@ -295,8 +285,6 @@ export const recipes: Recipe[] = [
     imageSrc: 'https://images.unsplash.com/photo-1603356033288-acfcb54801e6?ixlib=rb-4.0.3',
     preparationTime: 30,
     favorite: true,
-    requiresBlender: false,
-    requiresCooking: false,
   },
   {
     id: '10',
@@ -313,8 +301,6 @@ export const recipes: Recipe[] = [
     ingredients: ['Protein blend', 'Nuts', 'Chocolate coating', 'Natural flavors'],
     imageSrc: 'https://images.unsplash.com/photo-1571748982800-fa51082c2224?ixlib=rb-4.0.3',
     favorite: false,
-    requiresBlender: false,
-    requiresCooking: false,
   },
   {
     id: '11',
@@ -331,8 +317,6 @@ export const recipes: Recipe[] = [
     ingredients: ['Greek yogurt', 'Fruit', 'Natural sweeteners'],
     imageSrc: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?ixlib=rb-4.0.3',
     favorite: true,
-    requiresBlender: false,
-    requiresCooking: false,
   },
   {
     id: '12',
@@ -349,8 +333,6 @@ export const recipes: Recipe[] = [
     ingredients: ['Rice cereal', 'Marshmallow', 'Butter'],
     imageSrc: 'https://images.unsplash.com/photo-1518119570819-33c8918d91c5?ixlib=rb-4.0.3',
     favorite: false,
-    requiresBlender: false,
-    requiresCooking: false,
   },
   {
     id: '13',
@@ -367,8 +349,6 @@ export const recipes: Recipe[] = [
     ingredients: ['Almonds', 'Walnuts', 'Dried cranberries', 'Pumpkin seeds', 'Dark chocolate chips'],
     imageSrc: 'https://images.unsplash.com/photo-1518426247914-20086336f804?ixlib=rb-4.0.3',
     favorite: true,
-    requiresBlender: false,
-    requiresCooking: false,
   },
   {
     id: '14',
@@ -391,8 +371,6 @@ export const recipes: Recipe[] = [
     imageSrc: 'https://images.unsplash.com/photo-1502481851512-e93e25e4a8a5?ixlib=rb-4.0.3',
     preparationTime: 10,
     favorite: false,
-    requiresBlender: false,
-    requiresCooking: false,
   },
   {
     id: '15',
@@ -426,8 +404,6 @@ export const recipes: Recipe[] = [
     imageSrc: 'https://images.unsplash.com/photo-1547592180-85f173990554?ixlib=rb-4.0.3',
     preparationTime: 40,
     favorite: false,
-    requiresBlender: false,
-    requiresCooking: false,
   },
   {
     id: '16',
@@ -463,8 +439,6 @@ export const recipes: Recipe[] = [
     imageSrc: 'https://images.unsplash.com/photo-1543340713-1bf56d3d1b68?ixlib=rb-4.0.3',
     preparationTime: 35,
     favorite: true,
-    requiresBlender: false,
-    requiresCooking: false,
   },
   {
     id: '17',
@@ -498,8 +472,6 @@ export const recipes: Recipe[] = [
     imageSrc: 'https://images.unsplash.com/photo-1534939561126-855b8675edd7?ixlib=rb-4.0.3',
     preparationTime: 180,
     favorite: false,
-    requiresBlender: false,
-    requiresCooking: false,
   },
   {
     id: '18',
@@ -516,8 +488,6 @@ export const recipes: Recipe[] = [
     ingredients: ['Cheddar cheese', 'Crackers', 'Apple slices', 'Grapes'],
     imageSrc: 'https://images.unsplash.com/photo-1490818387583-1baba5e638af?ixlib=rb-4.0.3',
     favorite: true,
-    requiresBlender: false,
-    requiresCooking: false,
   },
   {
     id: '19',
@@ -534,8 +504,6 @@ export const recipes: Recipe[] = [
     ingredients: ['Carrot sticks', 'Celery sticks', 'Bell pepper strips', 'Hummus'],
     imageSrc: 'https://images.unsplash.com/photo-1641055869467-f29c4a20f68c?ixlib=rb-4.0.3',
     favorite: false,
-    requiresBlender: false,
-    requiresCooking: false,
   },
   {
     id: '20',
@@ -552,8 +520,6 @@ export const recipes: Recipe[] = [
     ingredients: ['Flour tortilla', 'Refried beans', 'Cheese', 'Rice', 'Spices'],
     imageSrc: 'https://images.unsplash.com/photo-1584208632869-05fa2b2a5934?ixlib=rb-4.0.3',
     favorite: false,
-    requiresBlender: false,
-    requiresCooking: false,
   },
 ];
 
