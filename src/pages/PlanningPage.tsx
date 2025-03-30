@@ -70,7 +70,7 @@ const PlanningPage = () => {
           
           <div className="grid grid-cols-2 gap-4">
             {recipeSelection.map((recipe) => (
-              <div key={recipe.id} className="cursor-pointer">
+              <div key={recipe.id} className="cursor-pointer" onClick={() => navigate('/explore-recipes')}>
                 <div className="bg-gray-100 rounded-lg aspect-square mb-2 flex items-center justify-center overflow-hidden">
                   <img 
                     src={recipe.imageSrc} 

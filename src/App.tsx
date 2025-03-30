@@ -18,6 +18,7 @@ import SavedPlansPage from "./pages/SavedPlansPage";
 import DietaryRestrictionsPage from "./pages/DietaryRestrictionsPage";
 import AddExternalRecipePage from "./pages/AddExternalRecipePage";
 import CreateMealPlanPage from "./pages/CreateMealPlanPage";
+import ExploreRecipesPage from "./pages/ExploreRecipesPage";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
           <Route path="/" element={<AppLayout><HomePage /></AppLayout>} />
           <Route path="/planning" element={<AppLayout><PlanningPage /></AppLayout>} />
           <Route path="/create-meal-plan" element={<AppLayout><CreateMealPlanPage /></AppLayout>} />
+          <Route path="/explore-recipes" element={<AppLayout><ExploreRecipesPage /></AppLayout>} />
           <Route path="/grocery" element={<AppLayout><GroceryListPage /></AppLayout>} />
           <Route path="/more" element={<AppLayout><MorePage /></AppLayout>} />
           <Route path="/log-meal" element={<AppLayout><LogMealPage /></AppLayout>} />

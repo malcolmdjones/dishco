@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Save, RefreshCw, Lock, Unlock, Plus, Calendar, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Save, RefreshCw, Lock, Unlock, Plus, Calendar, AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { calculateDailyMacros, defaultGoals, fetchNutritionGoals, recipes, Recipe, NutritionGoals, MealPlanDay } from '@/data/mockData';
 import RecipeViewer from '@/components/RecipeViewer';
 import SavePlanDialog from '@/components/SavePlanDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 const CreateMealPlanPage = () => {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ const CreateMealPlanPage = () => {
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
   const [isSavePlanDialogOpen, setIsSavePlanDialogOpen] = useState(false);
   const [lockedMeals, setLockedMeals] = useState<{[key: string]: boolean}>({});
+  const [aiReasoning, setAiReasoning] = useState<string>("");
 
   // Get user's nutrition goals
   useEffect(() => {
@@ -64,10 +66,98 @@ const CreateMealPlanPage = () => {
     regenerateMeals();
   };
 
-  // Function to regenerate meals for the current day
-  const regenerateMeals = () => {
+  // Function to regenerate meals for the current day using AI
+  const regenerateMeals = async () => {
     setIsGenerating(true);
+    setAiReasoning("");
     
+    try {
+      // Prepare locked meals data
+      const currentLockedMeals: {[key: string]: any} = {};
+      if (mealPlan[currentDay]) {
+        const currentMeals = mealPlan[currentDay].meals;
+        
+        if (lockedMeals[`${currentDay}-breakfast`] && currentMeals.breakfast) {
+          currentLockedMeals.breakfast = currentMeals.breakfast;
+        }
+        
+        if (lockedMeals[`${currentDay}-lunch`] && currentMeals.lunch) {
+          currentLockedMeals.lunch = currentMeals.lunch;
+        }
+        
+        if (lockedMeals[`${currentDay}-dinner`] && currentMeals.dinner) {
+          currentLockedMeals.dinner = currentMeals.dinner;
+        }
+        
+        if (lockedMeals[`${currentDay}-snack-0`] && currentMeals.snacks?.[0]) {
+          currentLockedMeals['snack-0'] = currentMeals.snacks[0];
+        }
+        
+        if (lockedMeals[`${currentDay}-snack-1`] && currentMeals.snacks?.[1]) {
+          currentLockedMeals['snack-1'] = currentMeals.snacks[1];
+        }
+      }
+      
+      // Call the Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke('meal-plan-ai', {
+        body: {
+          userGoals,
+          lockedMeals: currentLockedMeals,
+          availableRecipes: recipes,
+          currentDay,
+        },
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Apply the AI-generated meal plan to the current day
+      if (data && data.mealPlan) {
+        setMealPlan(prevPlan => {
+          const newPlan = [...prevPlan];
+          const currentPlanDay = { ...newPlan[currentDay] };
+          
+          currentPlanDay.meals = {
+            breakfast: data.mealPlan.breakfast,
+            lunch: data.mealPlan.lunch,
+            dinner: data.mealPlan.dinner,
+            snacks: data.mealPlan.snacks
+          };
+          
+          newPlan[currentDay] = currentPlanDay;
+          return newPlan;
+        });
+        
+        // Store AI reasoning if provided
+        if (data.reasoning) {
+          setAiReasoning(data.reasoning);
+        }
+        
+        toast({
+          title: "Meal Plan Updated",
+          description: "Your meals have been generated based on your nutrition goals.",
+        });
+      } else {
+        throw new Error("Received invalid data from AI service");
+      }
+    } catch (error) {
+      console.error("Error generating meal plan:", error);
+      toast({
+        title: "Error Generating Meal Plan",
+        description: error.message || "Failed to generate meal plan. Please try again.",
+        variant: "destructive"
+      });
+      
+      // Fallback to the original method if AI fails
+      fallbackMealGeneration();
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+  
+  // Fallback method if AI fails
+  const fallbackMealGeneration = () => {
     setTimeout(() => {
       setMealPlan(prevPlan => {
         const newPlan = [...prevPlan];
@@ -111,13 +201,11 @@ const CreateMealPlanPage = () => {
         return newPlan;
       });
       
-      setIsGenerating(false);
-      
       toast({
-        title: "Meal Plan Updated",
-        description: "Your meals have been regenerated based on your nutrition goals.",
+        title: "Meal Plan Updated (Fallback Mode)",
+        description: "Your meals have been regenerated using our basic algorithm.",
       });
-    }, 1500);
+    }, 1000);
   };
 
   // Handle day navigation
@@ -330,6 +418,14 @@ const CreateMealPlanPage = () => {
             <span className="text-xs mt-1">Fat</span>
           </div>
         </div>
+        
+        {/* AI Reasoning */}
+        {aiReasoning && (
+          <div className="mt-4 p-3 bg-blue-50 rounded-md text-sm text-blue-700">
+            <p className="font-medium mb-1">AI Reasoning:</p>
+            <p>{aiReasoning}</p>
+          </div>
+        )}
       </div>
 
       {/* Meal Sections */}
@@ -573,8 +669,17 @@ const CreateMealPlanPage = () => {
           disabled={isGenerating}
           className="w-[48%] bg-amber-50 border-amber-200 text-amber-800"
         >
-          <RefreshCw size={16} className="mr-2" />
-          {isGenerating ? 'Regenerating...' : 'Regenerate'}
+          {isGenerating ? (
+            <>
+              <Loader2 size={16} className="mr-2 animate-spin" />
+              Regenerating...
+            </>
+          ) : (
+            <>
+              <RefreshCw size={16} className="mr-2" />
+              Regenerate
+            </>
+          )}
         </Button>
         
         <Button 

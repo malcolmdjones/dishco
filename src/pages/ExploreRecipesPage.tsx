@@ -1,403 +1,545 @@
-
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Search, Filter, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Filter, X } from 'lucide-react';
-import { recipes as allRecipes, Recipe } from '@/data/mockData';
-import { useToast } from '@/hooks/use-toast';
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetDescription, 
+  SheetHeader, 
+  SheetTitle,
+  SheetTrigger,
+  SheetFooter,
+  SheetClose
+} from '@/components/ui/sheet';
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { recipes, Recipe } from '@/data/mockData';
 import RecipeViewer from '@/components/RecipeViewer';
 
-// Filter definitions
-interface FilterOption {
-  id: string;
-  name: string;
-  options?: {
-    id: string;
-    name: string;
-  }[];
+// Define filter types
+type PriceRange = '$' | '$$' | '$$$';
+type CookTime = 'quick' | 'medium' | 'long';
+type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+type CuisineType = 'american' | 'italian' | 'mexican' | 'indian' | 'chinese' | 'other';
+type Equipment = 'oven' | 'stovetop' | 'air fryer' | 'blender' | 'grill' | 'slow cooker';
+type CalorieRange = '0-200' | '200-400' | '400-600' | '600-800' | '800+';
+type DietaryNeeds = 'keto' | 'vegan' | 'vegetarian' | 'paleo' | 'gluten-free' | 'dairy-free';
+
+// Define filter state interface
+interface Filters {
+  price: PriceRange[];
+  cookTime: CookTime[];
+  mealType: MealType[];
+  cuisine: CuisineType[];
+  equipment: Equipment[];
+  calories: CalorieRange[];
+  highProtein: boolean;
+  dietary: DietaryNeeds[];
 }
 
 const ExploreRecipesPage = () => {
-  const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [visibleRecipes, setVisibleRecipes] = useState(12); // For lazy loading
-  const [showFilters, setShowFilters] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [visibleRecipes, setVisibleRecipes] = useState<Recipe[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const recipesPerPage = 8;
   
-  // Filter states
-  const [activeFilters, setActiveFilters] = useState<{[key: string]: string[]}>({
-    priceRange: [],
+  // Filter state
+  const [filters, setFilters] = useState<Filters>({
+    price: [],
     cookTime: [],
     mealType: [],
-    cuisineType: [],
+    cuisine: [],
     equipment: [],
-    calorieRange: [],
-    dietaryNeeds: [],
+    calories: [],
+    highProtein: false,
+    dietary: []
   });
-
-  // Filter options
-  const filterCategories: FilterOption[] = [
-    {
-      id: 'priceRange',
-      name: 'Price Range',
-      options: [
-        { id: 'low', name: '$' },
-        { id: 'medium', name: '$$' },
-        { id: 'high', name: '$$$' },
-      ]
-    },
-    {
-      id: 'cookTime',
-      name: 'Cook Time',
-      options: [
-        { id: 'quick', name: 'Under 15 min' },
-        { id: 'medium', name: '15-30 min' },
-        { id: 'long', name: 'Over 30 min' },
-      ]
-    },
-    {
-      id: 'mealType',
-      name: 'Meal Type',
-      options: [
-        { id: 'breakfast', name: 'Breakfast' },
-        { id: 'lunch', name: 'Lunch' },
-        { id: 'dinner', name: 'Dinner' },
-        { id: 'snack', name: 'Snack' },
-      ]
-    },
-    {
-      id: 'cuisineType',
-      name: 'Cuisine',
-      options: [
-        { id: 'indian', name: 'Indian' },
-        { id: 'mexican', name: 'Mexican' },
-        { id: 'american', name: 'American' },
-        { id: 'italian', name: 'Italian' },
-        { id: 'asian', name: 'Asian' },
-      ]
-    },
-    {
-      id: 'equipment',
-      name: 'Equipment',
-      options: [
-        { id: 'oven', name: 'Oven' },
-        { id: 'stove', name: 'Stovetop' },
-        { id: 'airfryer', name: 'Air Fryer' },
-        { id: 'blender', name: 'Blender' },
-      ]
-    },
-    {
-      id: 'calorieRange',
-      name: 'Calories',
-      options: [
-        { id: '0-200', name: '0-200 cal' },
-        { id: '200-400', name: '200-400 cal' },
-        { id: '400-600', name: '400-600 cal' },
-        { id: '600+', name: '600+ cal' },
-      ]
-    },
-    {
-      id: 'dietaryNeeds',
-      name: 'Dietary Needs',
-      options: [
-        { id: 'highProtein', name: 'High Protein' },
-        { id: 'keto', name: 'Keto' },
-        { id: 'vegan', name: 'Vegan' },
-        { id: 'vegetarian', name: 'Vegetarian' },
-        { id: 'pescatarian', name: 'Pescatarian' },
-      ]
-    },
-  ];
-
-  // Load recipes with delay to simulate API call
+  
+  const [filtersApplied, setFiltersApplied] = useState(false);
+  const [activeFilterCount, setActiveFilterCount] = useState(0);
+  
+  // Effect to load initial recipes
   useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
-      setRecipes(allRecipes);
-      setIsLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
+    loadMoreRecipes(true);
   }, []);
-
-  // Filter recipes based on search and filters
-  const filteredRecipes = recipes.filter(recipe => {
-    // Search filter
-    const matchesSearch = 
-      searchQuery === '' || 
-      recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      recipe.description.toLowerCase().includes(searchQuery.toLowerCase());
+  
+  // Effect to detect filter changes
+  useEffect(() => {
+    // Count active filters
+    let count = 0;
+    count += filters.price.length;
+    count += filters.cookTime.length;
+    count += filters.mealType.length;
+    count += filters.cuisine.length;
+    count += filters.equipment.length;
+    count += filters.calories.length;
+    count += filters.highProtein ? 1 : 0;
+    count += filters.dietary.length;
     
-    // Check if any filters are active
-    const hasActiveFilters = Object.values(activeFilters).some(filters => filters.length > 0);
+    setActiveFilterCount(count);
+  }, [filters]);
+  
+  // Load more recipes with pagination
+  const loadMoreRecipes = (reset = false) => {
+    setLoading(true);
     
-    // If no filters active and matches search, include it
-    if (!hasActiveFilters) {
-      return matchesSearch;
-    }
-    
-    // Helper function to check if recipe matches a specific filter category
-    const matchesFilterCategory = (category: string): boolean => {
-      // If no filters in this category are selected, it passes
-      if (activeFilters[category].length === 0) {
+    // Simulate API call delay
+    setTimeout(() => {
+      const startIndex = reset ? 0 : (page - 1) * recipesPerPage;
+      const endIndex = startIndex + recipesPerPage;
+      
+      // Filter recipes based on current filters and search query
+      const filteredRecipes = recipes.filter(recipe => {
+        // Search query filter
+        if (searchQuery && !recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+            !recipe.description.toLowerCase().includes(searchQuery.toLowerCase())) {
+          return false;
+        }
+        
+        // Other filters will be implemented here
+        // This is a placeholder for future implementation
+        
         return true;
-      }
+      });
       
-      // Check specific filter logic based on category
-      switch (category) {
-        case 'mealType':
-          return activeFilters.mealType.includes(recipe.type || '');
-        
-        case 'cookTime': {
-          const totalTime = (recipe.prepTime || 0) + (recipe.cookTime || 0);
-          if (activeFilters.cookTime.includes('quick') && totalTime < 15) return true;
-          if (activeFilters.cookTime.includes('medium') && totalTime >= 15 && totalTime <= 30) return true;
-          if (activeFilters.cookTime.includes('long') && totalTime > 30) return true;
-          return false;
-        }
-        
-        case 'calorieRange': {
-          const calories = recipe.macros.calories;
-          if (activeFilters.calorieRange.includes('0-200') && calories <= 200) return true;
-          if (activeFilters.calorieRange.includes('200-400') && calories > 200 && calories <= 400) return true;
-          if (activeFilters.calorieRange.includes('400-600') && calories > 400 && calories <= 600) return true;
-          if (activeFilters.calorieRange.includes('600+') && calories > 600) return true;
-          return false;
-        }
-        
-        case 'equipment':
-          if (activeFilters.equipment.includes('blender') && recipe.requiresBlender) return true;
-          // Additional equipment checks would go here with expanded recipe data
-          return false;
-          
-        // Add more categories as needed
-        default:
-          return true;
-      }
-    };
-    
-    // Check if recipe matches all filter categories AND search
-    return matchesSearch && 
-           Object.keys(activeFilters).every(matchesFilterCategory);
-  });
-
-  // Handle loading more recipes on scroll
-  const loadMoreRecipes = () => {
-    setVisibleRecipes(prev => prev + 12);
-  };
-
-  // Toggle a filter
-  const toggleFilter = (category: string, value: string) => {
-    setActiveFilters(prev => {
-      const currentFilters = [...(prev[category] || [])];
-      const index = currentFilters.indexOf(value);
+      const newRecipes = filteredRecipes.slice(startIndex, endIndex);
       
-      if (index >= 0) {
-        // Remove filter
-        currentFilters.splice(index, 1);
+      if (reset) {
+        setVisibleRecipes(newRecipes);
+        setPage(1);
       } else {
-        // Add filter
-        currentFilters.push(value);
+        setVisibleRecipes(prev => [...prev, ...newRecipes]);
+        setPage(prev => prev + 1);
       }
       
-      return {
-        ...prev,
-        [category]: currentFilters
-      };
-    });
+      setHasMore(endIndex < filteredRecipes.length);
+      setLoading(false);
+    }, 500);
   };
-
-  // Clear all filters
-  const clearFilters = () => {
-    setActiveFilters({
-      priceRange: [],
-      cookTime: [],
-      mealType: [],
-      cuisineType: [],
-      equipment: [],
-      calorieRange: [],
-      dietaryNeeds: [],
-    });
-    setSearchQuery('');
+  
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
   };
-
-  // Get count of active filters
-  const activeFilterCount = Object.values(activeFilters).reduce(
-    (count, filters) => count + filters.length, 
-    0
-  );
-
+  
+  // Apply search filter
+  const handleSearch = () => {
+    loadMoreRecipes(true);
+  };
+  
   // Handle recipe selection
-  const handleOpenRecipe = (recipe: Recipe) => {
+  const handleRecipeClick = (recipe: Recipe) => {
     setSelectedRecipe(recipe);
     setIsRecipeViewerOpen(true);
   };
   
-  // Handle toggle save recipe
-  const handleToggleSave = async (recipeId: string, currentlySaved: boolean) => {
-    setIsSaved(!currentlySaved);
-    toast({
-      title: currentlySaved ? "Recipe removed" : "Recipe saved",
-      description: currentlySaved 
-        ? "Recipe removed from your saved collection"
-        : "Recipe added to your saved collection"
-    });
-    return Promise.resolve();
+  // Apply all filters
+  const applyFilters = () => {
+    setFiltersApplied(true);
+    loadMoreRecipes(true);
   };
-
+  
+  // Reset all filters
+  const resetFilters = () => {
+    setFilters({
+      price: [],
+      cookTime: [],
+      mealType: [],
+      cuisine: [],
+      equipment: [],
+      calories: [],
+      highProtein: false,
+      dietary: []
+    });
+    setFiltersApplied(false);
+    loadMoreRecipes(true);
+  };
+  
+  // Toggle filter item
+  const toggleFilter = <T extends keyof Filters>(
+    category: T, 
+    value: Filters[T] extends (infer U)[] ? U : never
+  ) => {
+    setFilters(prev => {
+      const current = prev[category] as any[];
+      return {
+        ...prev,
+        [category]: current.includes(value)
+          ? current.filter(item => item !== value)
+          : [...current, value]
+      };
+    });
+  };
+  
+  // Toggle boolean filter
+  const toggleBooleanFilter = (filter: 'highProtein') => {
+    setFilters(prev => ({
+      ...prev,
+      [filter]: !prev[filter]
+    }));
+  };
+  
   return (
-    <div className="animate-fade-in pb-20">
-      <header className="mb-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Explore Recipes</h1>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1 relative"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter size={16} />
-            Filter
-            {activeFilterCount > 0 && (
-              <span className="absolute -top-2 -right-2 w-5 h-5 bg-dishco-primary text-white rounded-full text-xs flex items-center justify-center">
-                {activeFilterCount}
-              </span>
-            )}
-          </Button>
-        </div>
-        <p className="text-dishco-text-light">Discover new meal ideas</p>
-      </header>
-
-      {/* Search bar */}
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-        <Input
-          placeholder="Search recipes..."
-          className="pl-10 pr-4 py-2"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        {searchQuery && (
-          <button 
-            className="absolute right-3 top-1/2 transform -translate-y-1/2"
-            onClick={() => setSearchQuery('')}
-          >
-            <X size={16} className="text-gray-400" />
-          </button>
-        )}
+    <div className="pb-20 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center mb-4">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => navigate('/planning')} 
+          className="mr-2"
+        >
+          <ArrowLeft size={20} />
+        </Button>
+        <h1 className="text-xl font-bold">Explore Recipes</h1>
       </div>
-
-      {/* Filters panel */}
-      {showFilters && (
-        <div className="bg-white rounded-xl p-4 mb-6 shadow-sm animate-scale-in">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="font-semibold">Filters</h2>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-sm"
-              onClick={clearFilters}
-            >
-              Clear all
+      
+      {/* Search and Filter Bar */}
+      <div className="flex gap-2 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+          <Input 
+            placeholder="Search recipes..." 
+            value={searchQuery}
+            onChange={handleSearchChange}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            className="pl-10"
+          />
+        </div>
+        
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="relative">
+              <Filter size={18} className="mr-2" />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full w-5 h-5 text-xs flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
             </Button>
-          </div>
-          
-          <div className="space-y-4">
-            {filterCategories.map(category => (
-              <div key={category.id} className="border-b pb-3 last:border-0">
-                <h3 className="font-medium mb-2">{category.name}</h3>
-                <div className="flex flex-wrap gap-2">
-                  {category.options?.map(option => (
-                    <button
-                      key={option.id}
-                      className={`px-3 py-1 rounded-full text-sm ${
-                        activeFilters[category.id]?.includes(option.id)
-                          ? 'bg-dishco-primary text-white'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}
-                      onClick={() => toggleFilter(category.id, option.id)}
-                    >
-                      {option.name}
-                    </button>
+          </SheetTrigger>
+          <SheetContent className="overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Filter Recipes</SheetTitle>
+              <SheetDescription>
+                Customize your recipe search with these filters
+              </SheetDescription>
+            </SheetHeader>
+            
+            <div className="py-4 space-y-6">
+              {/* Price Range Filter */}
+              <div>
+                <h3 className="font-medium mb-2">Price Range</h3>
+                <div className="flex gap-4">
+                  {['$', '$$', '$$$'].map((price) => (
+                    <div key={price} className="flex items-center gap-2">
+                      <Checkbox 
+                        id={`price-${price}`} 
+                        checked={filters.price.includes(price as PriceRange)}
+                        onCheckedChange={() => toggleFilter('price', price as PriceRange)}
+                      />
+                      <Label htmlFor={`price-${price}`}>{price}</Label>
+                    </div>
                   ))}
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Recipe grid */}
-      {isLoading ? (
-        <div className="grid grid-cols-2 gap-4">
-          {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="animate-pulse">
-              <div className="bg-gray-200 rounded-lg aspect-square mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <>
-          {filteredRecipes.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-xl font-medium mb-2">No recipes found</p>
-              <p className="text-dishco-text-light mb-4">
-                Try adjusting your search or filters
-              </p>
-              <Button onClick={clearFilters}>Clear all filters</Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4">
-              {filteredRecipes.slice(0, visibleRecipes).map(recipe => (
-                <div 
-                  key={recipe.id} 
-                  className="cursor-pointer"
-                  onClick={() => handleOpenRecipe(recipe)}
-                >
-                  <div className="bg-gray-100 rounded-lg aspect-square mb-2 overflow-hidden">
-                    <img
-                      src={recipe.imageSrc}
-                      alt={recipe.name}
-                      className="w-full h-full object-cover"
+              
+              <Separator />
+              
+              {/* Cook Time Filter */}
+              <div>
+                <h3 className="font-medium mb-2">Cook Time</h3>
+                <div className="grid grid-cols-1 gap-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox 
+                      id="time-quick" 
+                      checked={filters.cookTime.includes('quick')}
+                      onCheckedChange={() => toggleFilter('cookTime', 'quick')}
                     />
+                    <Label htmlFor="time-quick">Quick (Under 15 min)</Label>
                   </div>
-                  <h3 className="font-medium text-sm line-clamp-1">{recipe.name}</h3>
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="text-sm text-gray-600">{recipe.macros.calories} cal</span>
-                    <span className="text-xs text-blue-600">{recipe.type}</span>
+                  <div className="flex items-center gap-2">
+                    <Checkbox 
+                      id="time-medium" 
+                      checked={filters.cookTime.includes('medium')}
+                      onCheckedChange={() => toggleFilter('cookTime', 'medium')}
+                    />
+                    <Label htmlFor="time-medium">Medium (15-30 min)</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox 
+                      id="time-long" 
+                      checked={filters.cookTime.includes('long')}
+                      onCheckedChange={() => toggleFilter('cookTime', 'long')}
+                    />
+                    <Label htmlFor="time-long">Long (Over 30 min)</Label>
                   </div>
                 </div>
-              ))}
+              </div>
+              
+              <Separator />
+              
+              {/* Meal Type Filter */}
+              <div>
+                <h3 className="font-medium mb-2">Meal Type</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {['breakfast', 'lunch', 'dinner', 'snack'].map((type) => (
+                    <div key={type} className="flex items-center gap-2">
+                      <Checkbox 
+                        id={`type-${type}`} 
+                        checked={filters.mealType.includes(type as MealType)}
+                        onCheckedChange={() => toggleFilter('mealType', type as MealType)}
+                      />
+                      <Label htmlFor={`type-${type}`}>{type.charAt(0).toUpperCase() + type.slice(1)}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <Separator />
+              
+              {/* Cuisine Type Filter */}
+              <div>
+                <h3 className="font-medium mb-2">Cuisine</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {['american', 'italian', 'mexican', 'indian', 'chinese', 'other'].map((cuisine) => (
+                    <div key={cuisine} className="flex items-center gap-2">
+                      <Checkbox 
+                        id={`cuisine-${cuisine}`} 
+                        checked={filters.cuisine.includes(cuisine as CuisineType)}
+                        onCheckedChange={() => toggleFilter('cuisine', cuisine as CuisineType)}
+                      />
+                      <Label htmlFor={`cuisine-${cuisine}`}>{cuisine.charAt(0).toUpperCase() + cuisine.slice(1)}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <Separator />
+              
+              {/* Equipment Filter */}
+              <div>
+                <h3 className="font-medium mb-2">Equipment Needed</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {['oven', 'stovetop', 'air fryer', 'blender', 'grill', 'slow cooker'].map((equipment) => (
+                    <div key={equipment} className="flex items-center gap-2">
+                      <Checkbox 
+                        id={`equipment-${equipment}`} 
+                        checked={filters.equipment.includes(equipment.replace(' ', '-') as Equipment)}
+                        onCheckedChange={() => toggleFilter('equipment', equipment.replace(' ', '-') as Equipment)}
+                      />
+                      <Label htmlFor={`equipment-${equipment}`}>{equipment.charAt(0).toUpperCase() + equipment.slice(1)}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <Separator />
+              
+              {/* Calorie Range Filter */}
+              <div>
+                <h3 className="font-medium mb-2">Calories</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {['0-200', '200-400', '400-600', '600-800', '800+'].map((range) => (
+                    <div key={range} className="flex items-center gap-2">
+                      <Checkbox 
+                        id={`calories-${range}`} 
+                        checked={filters.calories.includes(range as CalorieRange)}
+                        onCheckedChange={() => toggleFilter('calories', range as CalorieRange)}
+                      />
+                      <Label htmlFor={`calories-${range}`}>{range} cal</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <Separator />
+              
+              {/* High Protein Filter */}
+              <div>
+                <div className="flex items-center gap-2">
+                  <Checkbox 
+                    id="high-protein" 
+                    checked={filters.highProtein}
+                    onCheckedChange={() => toggleBooleanFilter('highProtein')}
+                  />
+                  <Label htmlFor="high-protein">High Protein (20g+ per serving)</Label>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              {/* Dietary Needs Filter */}
+              <div>
+                <h3 className="font-medium mb-2">Dietary Needs</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {['keto', 'vegan', 'vegetarian', 'paleo', 'gluten-free', 'dairy-free'].map((diet) => (
+                    <div key={diet} className="flex items-center gap-2">
+                      <Checkbox 
+                        id={`diet-${diet}`} 
+                        checked={filters.dietary.includes(diet as DietaryNeeds)}
+                        onCheckedChange={() => toggleFilter('dietary', diet as DietaryNeeds)}
+                      />
+                      <Label htmlFor={`diet-${diet}`}>{diet.charAt(0).toUpperCase() + diet.slice(1)}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
+            
+            <SheetFooter className="flex gap-2 mt-4">
+              <Button variant="outline" onClick={resetFilters} className="flex-1">
+                Reset
+              </Button>
+              <SheetClose asChild>
+                <Button onClick={applyFilters} className="flex-1">
+                  Apply Filters
+                </Button>
+              </SheetClose>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
+      </div>
+      
+      {/* Active Filters Display */}
+      {activeFilterCount > 0 && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {filters.price.map(price => (
+            <Button 
+              key={`filter-price-${price}`}
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1 bg-gray-100"
+              onClick={() => toggleFilter('price', price)}
+            >
+              {price} <X size={14} className="ml-1" />
+            </Button>
+          ))}
+          
+          {filters.mealType.map(type => (
+            <Button 
+              key={`filter-type-${type}`}
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1 bg-gray-100"
+              onClick={() => toggleFilter('mealType', type)}
+            >
+              {type.charAt(0).toUpperCase() + type.slice(1)} <X size={14} className="ml-1" />
+            </Button>
+          ))}
+          
+          {/* Add more active filter displays here */}
+          
+          {activeFilterCount > 3 && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="bg-gray-100">
+                  +{activeFilterCount - 3} more
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-2">
+                <div className="grid gap-1">
+                  {/* Display remaining filters */}
+                </div>
+              </PopoverContent>
+            </Popover>
           )}
           
-          {filteredRecipes.length > visibleRecipes && (
-            <div className="mt-6 text-center">
-              <Button 
-                variant="outline" 
-                onClick={loadMoreRecipes}
-              >
-                Load more recipes
-              </Button>
-            </div>
-          )}
-        </>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-red-500"
+            onClick={resetFilters}
+          >
+            Clear All
+          </Button>
+        </div>
       )}
       
-      {/* Recipe Viewer */}
+      {/* Recipe Grid */}
+      <div className="grid grid-cols-2 gap-4">
+        {visibleRecipes.map(recipe => (
+          <div 
+            key={recipe.id} 
+            className="bg-white rounded-lg overflow-hidden shadow-sm cursor-pointer"
+            onClick={() => handleRecipeClick(recipe)}
+          >
+            <div className="aspect-square bg-gray-100 overflow-hidden">
+              <img 
+                src={recipe.imageSrc} 
+                alt={recipe.name} 
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="p-3">
+              <h3 className="font-medium text-sm line-clamp-1">{recipe.name}</h3>
+              <div className="flex justify-between items-center mt-1">
+                <span className="text-sm text-gray-600">{recipe.macros.calories} cal</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">
+                    {recipe.macros.protein}g protein
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1 mt-2">
+                <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-800 rounded">
+                  {recipe.type}
+                </span>
+                {/* Additional tags would go here */}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      {/* Load More Button */}
+      {hasMore && (
+        <div className="mt-6 text-center">
+          <Button 
+            variant="outline" 
+            onClick={() => loadMoreRecipes()} 
+            disabled={loading}
+            className="w-full"
+          >
+            {loading ? 'Loading...' : 'Load More Recipes'}
+          </Button>
+        </div>
+      )}
+      
+      {/* No Results Message */}
+      {visibleRecipes.length === 0 && !loading && (
+        <div className="text-center py-10">
+          <p className="text-gray-500">No recipes found matching your criteria.</p>
+          <Button 
+            variant="link" 
+            onClick={resetFilters}
+            className="mt-2"
+          >
+            Clear filters and try again
+          </Button>
+        </div>
+      )}
+      
+      {/* Recipe Viewer Dialog */}
       {selectedRecipe && (
         <RecipeViewer
           recipe={selectedRecipe}
           isOpen={isRecipeViewerOpen}
           onClose={() => setIsRecipeViewerOpen(false)}
-          isSaved={isSaved}
-          onToggleSave={handleToggleSave}
         />
       )}
     </div>
