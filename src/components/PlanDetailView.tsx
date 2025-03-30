@@ -19,30 +19,45 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
   const [selectedRecipe, setSelectedRecipe] = useState<any>(null);
   const [isRecipeDetailOpen, setIsRecipeDetailOpen] = useState(false);
 
-  if (!plan) return null;
+  // Early return if plan is not available
+  if (!plan || !plan.days || !Array.isArray(plan.days) || plan.days.length === 0) {
+    return null;
+  }
 
-  const dailyMacros = calculateDailyMacros(plan.days[activeDay].meals);
+  // Ensure activeDay is within valid range
+  const validActiveDay = Math.min(activeDay, plan.days.length - 1);
   
+  // Get daily macros safely
+  const dailyMacros = plan.days[validActiveDay] && plan.days[validActiveDay].meals
+    ? calculateDailyMacros(plan.days[validActiveDay].meals)
+    : { calories: 0, protein: 0, carbs: 0, fat: 0 };
+  
+  // Calculate average calories safely
   const averageCalories = Math.round(
     plan.days.reduce((sum: number, day: any) => {
+      if (!day || !day.meals) return sum;
       const dayMacros = calculateDailyMacros(day.meals);
       return sum + dayMacros.calories;
-    }, 0) / plan.days.length
+    }, 0) / (plan.days.length || 1) // Avoid division by zero
   );
   
+  // Calculate total macros safely
   const totalMacros = {
     protein: Math.round(plan.days.reduce((sum: number, day: any) => {
+      if (!day || !day.meals) return sum;
       const dayMacros = calculateDailyMacros(day.meals);
       return sum + dayMacros.protein;
-    }, 0) / plan.days.length),
+    }, 0) / (plan.days.length || 1)),
     carbs: Math.round(plan.days.reduce((sum: number, day: any) => {
+      if (!day || !day.meals) return sum;
       const dayMacros = calculateDailyMacros(day.meals);
       return sum + dayMacros.carbs;
-    }, 0) / plan.days.length),
+    }, 0) / (plan.days.length || 1)),
     fat: Math.round(plan.days.reduce((sum: number, day: any) => {
+      if (!day || !day.meals) return sum;
       const dayMacros = calculateDailyMacros(day.meals);
       return sum + dayMacros.fat;
-    }, 0) / plan.days.length),
+    }, 0) / (plan.days.length || 1)),
   };
   
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -52,6 +67,14 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
       setSelectedRecipe(recipe);
       setIsRecipeDetailOpen(true);
     }
+  };
+
+  // Ensure we have meals for the active day
+  const currentDayMeals = plan.days[validActiveDay]?.meals || {
+    breakfast: null,
+    lunch: null,
+    dinner: null,
+    snacks: []
   };
 
   return (
@@ -74,7 +97,7 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
             <div className="bg-muted/30 p-4 rounded-lg space-y-3">
               <h3 className="font-medium">Average Daily Nutrition</h3>
               
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 <div className="space-y-1">
                   <div className="flex justify-between items-center text-sm">
                     <span>Calories</span>
@@ -114,7 +137,7 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
                 {plan.days.map((day: any, index: number) => (
                   <Button
                     key={index}
-                    variant={activeDay === index ? "default" : "outline"}
+                    variant={validActiveDay === index ? "default" : "outline"}
                     size="sm"
                     onClick={() => setActiveDay(index)}
                     className="flex-shrink-0"
@@ -125,26 +148,26 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
               </div>
               
               <div className="border rounded-md p-4 space-y-4">
-                <h3 className="font-medium">Day {activeDay + 1}: {days[activeDay % 7]}</h3>
+                <h3 className="font-medium">Day {validActiveDay + 1}: {days[validActiveDay % 7]}</h3>
                 
                 <div className="space-y-3">
                   <div>
                     <h4 className="text-sm font-medium mb-2">Breakfast</h4>
-                    {plan.days[activeDay].meals.breakfast ? (
+                    {currentDayMeals.breakfast ? (
                       <div 
                         className="p-3 bg-muted/20 rounded-md flex items-center cursor-pointer hover:bg-muted/30 transition-colors"
-                        onClick={() => handleOpenRecipe(plan.days[activeDay].meals.breakfast)}
+                        onClick={() => handleOpenRecipe(currentDayMeals.breakfast)}
                       >
                         <div className="w-10 h-10 rounded-md overflow-hidden mr-3 flex-shrink-0">
                           <img 
-                            src={plan.days[activeDay].meals.breakfast.imageSrc} 
-                            alt={plan.days[activeDay].meals.breakfast.name}
+                            src={currentDayMeals.breakfast.imageSrc || '/placeholder.svg'} 
+                            alt={currentDayMeals.breakfast.name}
                             className="w-full h-full object-cover"
                           />
                         </div>
                         <div className="flex-1">
-                          <p className="font-medium text-sm">{plan.days[activeDay].meals.breakfast.name}</p>
-                          <p className="text-xs text-dishco-text-light">{plan.days[activeDay].meals.breakfast.macros.calories} cal</p>
+                          <p className="font-medium text-sm">{currentDayMeals.breakfast.name}</p>
+                          <p className="text-xs text-dishco-text-light">{currentDayMeals.breakfast.macros?.calories || 0} cal</p>
                         </div>
                       </div>
                     ) : (
@@ -154,21 +177,21 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
                   
                   <div>
                     <h4 className="text-sm font-medium mb-2">Lunch</h4>
-                    {plan.days[activeDay].meals.lunch ? (
+                    {currentDayMeals.lunch ? (
                       <div 
                         className="p-3 bg-muted/20 rounded-md flex items-center cursor-pointer hover:bg-muted/30 transition-colors"
-                        onClick={() => handleOpenRecipe(plan.days[activeDay].meals.lunch)}
+                        onClick={() => handleOpenRecipe(currentDayMeals.lunch)}
                       >
                         <div className="w-10 h-10 rounded-md overflow-hidden mr-3 flex-shrink-0">
                           <img 
-                            src={plan.days[activeDay].meals.lunch.imageSrc} 
-                            alt={plan.days[activeDay].meals.lunch.name}
+                            src={currentDayMeals.lunch.imageSrc || '/placeholder.svg'} 
+                            alt={currentDayMeals.lunch.name}
                             className="w-full h-full object-cover"
                           />
                         </div>
                         <div className="flex-1">
-                          <p className="font-medium text-sm">{plan.days[activeDay].meals.lunch.name}</p>
-                          <p className="text-xs text-dishco-text-light">{plan.days[activeDay].meals.lunch.macros.calories} cal</p>
+                          <p className="font-medium text-sm">{currentDayMeals.lunch.name}</p>
+                          <p className="text-xs text-dishco-text-light">{currentDayMeals.lunch.macros?.calories || 0} cal</p>
                         </div>
                       </div>
                     ) : (
@@ -178,21 +201,21 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
                   
                   <div>
                     <h4 className="text-sm font-medium mb-2">Dinner</h4>
-                    {plan.days[activeDay].meals.dinner ? (
+                    {currentDayMeals.dinner ? (
                       <div 
                         className="p-3 bg-muted/20 rounded-md flex items-center cursor-pointer hover:bg-muted/30 transition-colors"
-                        onClick={() => handleOpenRecipe(plan.days[activeDay].meals.dinner)}
+                        onClick={() => handleOpenRecipe(currentDayMeals.dinner)}
                       >
                         <div className="w-10 h-10 rounded-md overflow-hidden mr-3 flex-shrink-0">
                           <img 
-                            src={plan.days[activeDay].meals.dinner.imageSrc} 
-                            alt={plan.days[activeDay].meals.dinner.name}
+                            src={currentDayMeals.dinner.imageSrc || '/placeholder.svg'} 
+                            alt={currentDayMeals.dinner.name}
                             className="w-full h-full object-cover"
                           />
                         </div>
                         <div className="flex-1">
-                          <p className="font-medium text-sm">{plan.days[activeDay].meals.dinner.name}</p>
-                          <p className="text-xs text-dishco-text-light">{plan.days[activeDay].meals.dinner.macros.calories} cal</p>
+                          <p className="font-medium text-sm">{currentDayMeals.dinner.name}</p>
+                          <p className="text-xs text-dishco-text-light">{currentDayMeals.dinner.macros?.calories || 0} cal</p>
                         </div>
                       </div>
                     ) : (
@@ -202,9 +225,9 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
                   
                   <div>
                     <h4 className="text-sm font-medium mb-2">Snacks</h4>
-                    {plan.days[activeDay].meals.snacks && plan.days[activeDay].meals.snacks.length > 0 ? (
+                    {currentDayMeals.snacks && Array.isArray(currentDayMeals.snacks) && currentDayMeals.snacks.length > 0 ? (
                       <div className="space-y-2">
-                        {plan.days[activeDay].meals.snacks.map((snack: any, index: number) => (
+                        {currentDayMeals.snacks.map((snack: any, index: number) => (
                           snack && (
                             <div 
                               key={index}
@@ -213,14 +236,14 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
                             >
                               <div className="w-10 h-10 rounded-md overflow-hidden mr-3 flex-shrink-0">
                                 <img 
-                                  src={snack.imageSrc} 
+                                  src={snack.imageSrc || '/placeholder.svg'} 
                                   alt={snack.name}
                                   className="w-full h-full object-cover"
                                 />
                               </div>
                               <div className="flex-1">
                                 <p className="font-medium text-sm">{snack.name}</p>
-                                <p className="text-xs text-dishco-text-light">{snack.macros.calories} cal</p>
+                                <p className="text-xs text-dishco-text-light">{snack.macros?.calories || 0} cal</p>
                               </div>
                             </div>
                           )
