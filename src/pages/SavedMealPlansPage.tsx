@@ -142,7 +142,7 @@ const SavedMealPlansPage = () => {
     }
   };
 
-  const handleDeletePlan = (id) => {
+  const handleDeletePlan = async (id) => {
     try {
       const { error } = await supabase
         .from('saved_meal_plans')
