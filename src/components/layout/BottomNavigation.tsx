@@ -49,10 +49,10 @@ const BottomNavigation = () => {
           >
             {item.isCenter ? (
               <div className="relative -top-5">
-                <div className="w-14 h-14 bg-dishco-primary rounded-full flex items-center justify-center shadow-lg">
+                <div className="w-14 h-14 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
                   {item.icon}
                 </div>
-                <span className="text-xs mt-1 text-dishco-primary font-medium">{item.name}</span>
+                <span className="text-xs mt-1 text-green-500 font-medium">{item.name}</span>
               </div>
             ) : (
               <>

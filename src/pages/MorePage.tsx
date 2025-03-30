@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronRight, Heart, Settings, User, Utensils, BookOpen, LogOut } from 'lucide-react';
+import { ChevronRight, Heart, Settings, User, Utensils, BookOpen, LogOut, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -52,6 +52,12 @@ const MorePage = () => {
       icon: <Heart size={20} className="text-pink-500" />,
       path: '/saved-recipes',
       description: 'View and manage your favorite recipes'
+    },
+    {
+      name: 'Saved Meal Plans',
+      icon: <Calendar size={20} className="text-purple-500" />,
+      path: '/saved-plans',
+      description: 'Access your collection of meal plans'
     },
     {
       name: 'Add External Recipe',

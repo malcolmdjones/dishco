@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
-import { ArrowLeft, ArrowRight, Book, BookOpen, Calendar, CheckCircle, CookingPot, Info, Lock, Maximize2, RefreshCw, Save, Unlock, Zap } from 'lucide-react';
-import { calculateDailyMacros, defaultGoals, generateMockMealPlan, recipes } from '../data/mockData';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, ArrowRight, Book, BookOpen, Calendar, CheckCircle, CookingPot, Info, Lock, Maximize2, RefreshCw, Save, Unlock, Zap, Heart } from 'lucide-react';
+import { calculateDailyMacros, defaultGoals, fetchNutritionGoals, generateMockMealPlan, recipes } from '../data/mockData';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
@@ -13,9 +13,15 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import SavePlanDialog from '@/components/SavePlanDialog';
+import Badge from '@/components/Badge';
+import RecipeDetail from '@/components/RecipeDetail';
 
 const PlanningPage = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [mealPlan, setMealPlan] = useState(generateMockMealPlan());
   const [activeDay, setActiveDay] = useState(0);
   const [lockedMeals, setLockedMeals] = useState<{[key: string]: boolean}>({});
@@ -23,8 +29,40 @@ const PlanningPage = () => {
   const [isRecipeDrawerOpen, setIsRecipeDrawerOpen] = useState(false);
   const [isWeekOverviewOpen, setIsWeekOverviewOpen] = useState(false);
   const [isVaultOpen, setIsVaultOpen] = useState(false);
+  const [isSavePlanOpen, setIsSavePlanOpen] = useState(false);
+  const [goals, setGoals] = useState(defaultGoals);
+  const [savedRecipeIds, setSavedRecipeIds] = useState<string[]>([]);
   
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  
+  useEffect(() => {
+    const loadGoals = async () => {
+      const currentGoals = await fetchNutritionGoals();
+      setGoals(currentGoals);
+    };
+    
+    loadGoals();
+    fetchSavedRecipes();
+  }, []);
+  
+  const fetchSavedRecipes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('saved_recipes')
+        .select('recipe_id');
+      
+      if (error) {
+        console.error('Error fetching saved recipes:', error);
+        return;
+      }
+      
+      if (data) {
+        setSavedRecipeIds(data.map(item => item.recipe_id));
+      }
+    } catch (error) {
+      console.error('Error fetching saved recipes:', error);
+    }
+  };
   
   // Ensure we have valid meal plan data
   const ensureValidMealPlan = () => {
@@ -46,7 +84,6 @@ const PlanningPage = () => {
   const safeMealPlan = ensureValidMealPlan();
   const currentDayPlan = safeMealPlan[activeDay];
   const dailyMacros = calculateDailyMacros(currentDayPlan.meals);
-  const goals = defaultGoals;
 
   const percentages = {
     calories: Math.min(100, (dailyMacros.calories / goals.calories) * 100),
@@ -114,11 +151,8 @@ const PlanningPage = () => {
   };
 
   const handleSavePlan = () => {
-    toast({
-      title: "Plan Saved",
-      description: "Your meal plan has been saved successfully.",
-      variant: "default",
-    });
+    // Open save plan dialog
+    setIsSavePlanOpen(true);
   };
 
   const navigateDay = (direction: number) => {
@@ -231,6 +265,49 @@ const PlanningPage = () => {
       title: "Meal Moved",
       description: `${draggedMeal.meal.name} moved to ${targetType === 'snacks' ? 'snacks' : targetType}.`,
     });
+  };
+
+  const handleToggleSaveRecipe = async (recipeId: string, isSaved: boolean) => {
+    try {
+      if (isSaved) {
+        // Remove from saved recipes
+        const { error } = await supabase
+          .from('saved_recipes')
+          .delete()
+          .eq('recipe_id', recipeId);
+        
+        if (error) {
+          console.error('Error removing recipe from saved:', error);
+          return;
+        }
+        
+        setSavedRecipeIds(savedRecipeIds.filter(id => id !== recipeId));
+        
+        toast({
+          title: "Recipe Removed",
+          description: "Recipe removed from your saved recipes.",
+        });
+      } else {
+        // Add to saved recipes
+        const { error } = await supabase
+          .from('saved_recipes')
+          .insert([{ recipe_id: recipeId }]);
+        
+        if (error) {
+          console.error('Error saving recipe:', error);
+          return;
+        }
+        
+        setSavedRecipeIds([...savedRecipeIds, recipeId]);
+        
+        toast({
+          title: "Recipe Saved",
+          description: "Recipe added to your saved recipes.",
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling recipe save state:', error);
+    }
   };
 
   return (
@@ -394,6 +471,7 @@ const PlanningPage = () => {
                 onViewRecipe={() => handleOpenRecipeDetails(currentDayPlan.meals.breakfast)}
                 onDragStart={() => handleDragStart('breakfast', currentDayPlan.meals.breakfast)}
                 draggable={true}
+                isSaved={savedRecipeIds.includes(currentDayPlan.meals.breakfast?.id)}
               />
             ) : (
               <EmptyMealCard title="Breakfast" />
@@ -416,6 +494,7 @@ const PlanningPage = () => {
                 onViewRecipe={() => handleOpenRecipeDetails(currentDayPlan.meals.lunch)}
                 onDragStart={() => handleDragStart('lunch', currentDayPlan.meals.lunch)}
                 draggable={true}
+                isSaved={savedRecipeIds.includes(currentDayPlan.meals.lunch?.id)}
               />
             ) : (
               <EmptyMealCard title="Lunch" />
@@ -438,6 +517,7 @@ const PlanningPage = () => {
                 onViewRecipe={() => handleOpenRecipeDetails(currentDayPlan.meals.dinner)}
                 onDragStart={() => handleDragStart('dinner', currentDayPlan.meals.dinner)}
                 draggable={true}
+                isSaved={savedRecipeIds.includes(currentDayPlan.meals.dinner?.id)}
               />
             ) : (
               <EmptyMealCard title="Dinner" />
@@ -463,6 +543,7 @@ const PlanningPage = () => {
                   onDragStart={() => handleDragStart('snacks', snack, index)}
                   draggable={true}
                   isSnack={true}
+                  isSaved={savedRecipeIds.includes(snack?.id)}
                 />
               )
             ))}
@@ -493,109 +574,18 @@ const PlanningPage = () => {
         </Button>
       </div>
 
-      <Drawer open={isRecipeDrawerOpen} onOpenChange={setIsRecipeDrawerOpen}>
-        <DrawerContent className="max-h-[85vh] overflow-y-auto">
-          {selectedMeal && (
-            <>
-              <div className="relative h-48 w-full">
-                <img 
-                  src={selectedMeal.imageSrc} 
-                  alt={selectedMeal.name} 
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                  <h2 className="text-white text-lg font-bold">{selectedMeal.name}</h2>
-                </div>
-              </div>
-              <DrawerHeader className="py-3">
-                <div className="flex items-center mt-2 space-x-2">
-                  {selectedMeal.requiresBlender && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="p-1 bg-dishco-secondary/20 rounded-full">
-                          <Zap size={16} />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Quick to prepare</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                  {selectedMeal.requiresCooking && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="p-1 bg-dishco-secondary/20 rounded-full">
-                          <CookingPot size={16} />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Requires cooking</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                </div>
-                <DrawerDescription>
-                  {selectedMeal.description}
-                </DrawerDescription>
-              </DrawerHeader>
-              <div className="px-4">
-                <div className="flex justify-between mb-4 bg-dishco-secondary/10 p-3 rounded-md">
-                  <div className="text-center">
-                    <p className="text-xs text-dishco-text-light">Calories</p>
-                    <p className="font-semibold">{selectedMeal.macros.calories}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-dishco-text-light">Protein</p>
-                    <p className="font-semibold">{selectedMeal.macros.protein}g</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-dishco-text-light">Carbs</p>
-                    <p className="font-semibold">{selectedMeal.macros.carbs}g</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-dishco-text-light">Fat</p>
-                    <p className="font-semibold">{selectedMeal.macros.fat}g</p>
-                  </div>
-                </div>
-                
-                <div className="mb-4">
-                  <h3 className="font-medium mb-2">Ingredients</h3>
-                  <ul className="list-disc pl-5 space-y-1 text-sm">
-                    {selectedMeal.ingredients ? (
-                      selectedMeal.ingredients.map((ingredient, index) => (
-                        <li key={index}>{ingredient}</li>
-                      ))
-                    ) : (
-                      <li>Ingredients not available</li>
-                    )}
-                  </ul>
-                </div>
-                
-                <div className="mb-4">
-                  <h3 className="font-medium mb-2">Instructions</h3>
-                  <ol className="list-decimal pl-5 space-y-2 text-sm">
-                    {selectedMeal.instructions ? (
-                      selectedMeal.instructions.map((step, index) => (
-                        <li key={index}>{step}</li>
-                      ))
-                    ) : (
-                      <li>Instructions not available</li>
-                    )}
-                  </ol>
-                </div>
-              </div>
-              <DrawerFooter>
-                <DrawerClose asChild>
-                  <Button>Close</Button>
-                </DrawerClose>
-              </DrawerFooter>
-            </>
-          )}
-        </DrawerContent>
-      </Drawer>
+      {selectedMeal && (
+        <RecipeDetail 
+          recipeId={selectedMeal.id}
+          onClose={() => setIsRecipeDrawerOpen(false)}
+          isSaved={savedRecipeIds.includes(selectedMeal.id)}
+          onToggleSave={handleToggleSaveRecipe}
+          className={isRecipeDrawerOpen ? "block" : "hidden"}
+        />
+      )}
 
       <Dialog open={isWeekOverviewOpen} onOpenChange={setIsWeekOverviewOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Calendar size={18} className="text-dishco-primary" />
@@ -671,14 +661,22 @@ const PlanningPage = () => {
           </SheetHeader>
           
           <div className="mt-6 grid gap-4">
-            {recipes.slice(0, 5).map((recipe) => (
+            {recipes.map((recipe) => (
               <Card key={recipe.id} className="overflow-hidden">
-                <div className="h-24 w-full overflow-hidden">
+                <div className="h-24 w-full overflow-hidden relative">
                   <img 
                     src={recipe.imageSrc} 
                     alt={recipe.name} 
                     className="w-full h-full object-cover"
                   />
+                  {recipe.type && (
+                    <div className="absolute top-2 left-2">
+                      <Badge 
+                        text={recipe.type.charAt(0).toUpperCase() + recipe.type.slice(1)} 
+                        variant={recipe.type as any}
+                      />
+                    </div>
+                  )}
                 </div>
                 <CardHeader className="py-3">
                   <CardTitle className="text-base">{recipe.name}</CardTitle>
@@ -687,15 +685,34 @@ const PlanningPage = () => {
                   <div className="text-xs text-dishco-text-light">
                     {recipe.macros.calories} cal · {recipe.macros.protein}g protein
                   </div>
-                  <Button size="sm" onClick={() => handleAddFromVault(recipe)}>
-                    Add
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="p-0 w-8 h-8"
+                      onClick={() => handleToggleSaveRecipe(recipe.id, savedRecipeIds.includes(recipe.id))}
+                    >
+                      <Heart 
+                        size={16} 
+                        className={savedRecipeIds.includes(recipe.id) ? "text-red-500 fill-current" : "text-red-500"} 
+                      />
+                    </Button>
+                    <Button size="sm" onClick={() => handleAddFromVault(recipe)}>
+                      Add
+                    </Button>
+                  </div>
                 </CardFooter>
               </Card>
             ))}
           </div>
         </SheetContent>
       </Sheet>
+
+      <SavePlanDialog 
+        isOpen={isSavePlanOpen} 
+        onClose={() => setIsSavePlanOpen(false)} 
+        mealPlan={safeMealPlan}
+      />
     </div>
   );
 };
@@ -708,10 +725,11 @@ interface MealCardProps {
   onDragStart: () => void;
   draggable: boolean;
   isSnack?: boolean;
+  isSaved?: boolean;
 }
 
 const MealCard: React.FC<MealCardProps> = ({ 
-  meal, isLocked, onLockToggle, onViewRecipe, onDragStart, draggable, isSnack = false 
+  meal, isLocked, onLockToggle, onViewRecipe, onDragStart, draggable, isSnack = false, isSaved = false
 }) => {
   return (
     <div 
@@ -773,6 +791,15 @@ const MealCard: React.FC<MealCardProps> = ({
             </Tooltip>
           )}
         </div>
+        
+        {meal.type && (
+          <div className="absolute top-2 left-2">
+            <Badge 
+              text={meal.type.charAt(0).toUpperCase() + meal.type.slice(1)} 
+              variant={meal.type as any}
+            />
+          </div>
+        )}
       </div>
       
       <div className="p-3">        
