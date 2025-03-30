@@ -16,7 +16,20 @@ import { DayMeals, DayPlan, WeeklyMealPlan } from '@/types/mealPlan';
 
 const PlanningPage = () => {
   const { toast } = useToast();
-  const [mealPlan, setMealPlan] = useState<WeeklyMealPlan>(generateMockMealPlan());
+  const [mealPlan, setMealPlan] = useState<WeeklyMealPlan>(() => {
+    const mockPlan = generateMockMealPlan();
+    const typedMealPlan: WeeklyMealPlan = mockPlan.map(day => ({
+      day: day.day,
+      meals: {
+        breakfast: Array.isArray(day.meals.breakfast) ? day.meals.breakfast : [day.meals.breakfast].filter(Boolean),
+        lunch: Array.isArray(day.meals.lunch) ? day.meals.lunch : [day.meals.lunch].filter(Boolean),
+        dinner: Array.isArray(day.meals.dinner) ? day.meals.dinner : [day.meals.dinner].filter(Boolean),
+        snacks: Array.isArray(day.meals.snacks) ? day.meals.snacks.filter(Boolean) : []
+      }
+    }));
+    return typedMealPlan;
+  });
+  
   const [activeDay, setActiveDay] = useState(0);
   const [lockedMeals, setLockedMeals] = useState<{[key: string]: boolean}>({});
   const [selectedMeal, setSelectedMeal] = useState<Recipe | null>(null);
@@ -26,18 +39,14 @@ const PlanningPage = () => {
   
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   
-  // Ensure we have valid meal plan data
   const ensureValidMealPlan = (): WeeklyMealPlan => {
     const safeWeeklyPlan = mealPlan.map(day => {
       return {
         ...day,
         meals: {
-          breakfast: Array.isArray(day.meals.breakfast) ? day.meals.breakfast : 
-                    day.meals.breakfast ? [day.meals.breakfast as Recipe] : [],
-          lunch: Array.isArray(day.meals.lunch) ? day.meals.lunch : 
-                 day.meals.lunch ? [day.meals.lunch as Recipe] : [],
-          dinner: Array.isArray(day.meals.dinner) ? day.meals.dinner : 
-                 day.meals.dinner ? [day.meals.dinner as Recipe] : [],
+          breakfast: Array.isArray(day.meals.breakfast) ? day.meals.breakfast : [],
+          lunch: Array.isArray(day.meals.lunch) ? day.meals.lunch : [],
+          dinner: Array.isArray(day.meals.dinner) ? day.meals.dinner : [],
           snacks: Array.isArray(day.meals.snacks) ? day.meals.snacks.filter(snack => snack !== null && snack !== undefined) : []
         }
       };
@@ -58,7 +67,6 @@ const PlanningPage = () => {
     fat: Math.min(100, (dailyMacros.fat / goals.fat) * 100),
   };
   
-  // Calculate the differences for circular progress displays
   const differences = {
     calories: dailyMacros.calories - goals.calories,
     protein: dailyMacros.protein - goals.protein,
@@ -86,57 +94,74 @@ const PlanningPage = () => {
     
     const updatedPlan = mealPlan.map((day, index) => {
       const newDay = newPlan[index];
-      const updatedMeals = { ...newDay.meals } as DayMeals;
+      const updatedMeals: DayMeals = {
+        breakfast: [],
+        lunch: [],
+        dinner: [],
+        snacks: []
+      };
       
-      // Keep locked breakfast meals
-      updatedMeals.breakfast = day.meals.breakfast.filter((meal, mealIndex) => {
+      const lockedBreakfast = day.meals.breakfast.filter((meal, mealIndex) => {
         if (!meal) return false;
         const mealKey = `breakfast-${meal.id}-${mealIndex}`;
         return lockedMeals[mealKey];
       });
+      updatedMeals.breakfast = lockedBreakfast;
       
-      // Keep locked lunch meals
-      updatedMeals.lunch = day.meals.lunch.filter((meal, mealIndex) => {
+      const lockedLunch = day.meals.lunch.filter((meal, mealIndex) => {
         if (!meal) return false;
         const mealKey = `lunch-${meal.id}-${mealIndex}`;
         return lockedMeals[mealKey];
       });
+      updatedMeals.lunch = lockedLunch;
       
-      // Keep locked dinner meals
-      updatedMeals.dinner = day.meals.dinner.filter((meal, mealIndex) => {
+      const lockedDinner = day.meals.dinner.filter((meal, mealIndex) => {
         if (!meal) return false;
         const mealKey = `dinner-${meal.id}-${mealIndex}`;
         return lockedMeals[mealKey];
       });
+      updatedMeals.dinner = lockedDinner;
       
-      // Keep locked snacks
-      updatedMeals.snacks = day.meals.snacks.filter((snack, snackIndex) => {
+      const lockedSnacks = day.meals.snacks.filter((snack, snackIndex) => {
         if (!snack) return false;
         const snackKey = `snacks-${snack.id}-${snackIndex}`;
         return lockedMeals[snackKey];
       });
+      updatedMeals.snacks = lockedSnacks;
       
-      // Add in new meals from the newly generated plan if needed
-      if (updatedMeals.breakfast.length === 0 && newDay.meals.breakfast.length > 0) {
+      if (updatedMeals.breakfast.length === 0 && newDay.meals.breakfast && 
+          Array.isArray(newDay.meals.breakfast) && newDay.meals.breakfast.length > 0) {
         updatedMeals.breakfast.push(newDay.meals.breakfast[0]);
+      } else if (updatedMeals.breakfast.length === 0 && newDay.meals.breakfast) {
+        updatedMeals.breakfast.push(Array.isArray(newDay.meals.breakfast) ? 
+          newDay.meals.breakfast[0] : newDay.meals.breakfast);
       }
       
-      if (updatedMeals.lunch.length === 0 && newDay.meals.lunch.length > 0) {
+      if (updatedMeals.lunch.length === 0 && newDay.meals.lunch && 
+          Array.isArray(newDay.meals.lunch) && newDay.meals.lunch.length > 0) {
         updatedMeals.lunch.push(newDay.meals.lunch[0]);
+      } else if (updatedMeals.lunch.length === 0 && newDay.meals.lunch) {
+        updatedMeals.lunch.push(Array.isArray(newDay.meals.lunch) ? 
+          newDay.meals.lunch[0] : newDay.meals.lunch);
       }
       
-      if (updatedMeals.dinner.length === 0 && newDay.meals.dinner.length > 0) {
+      if (updatedMeals.dinner.length === 0 && newDay.meals.dinner && 
+          Array.isArray(newDay.meals.dinner) && newDay.meals.dinner.length > 0) {
         updatedMeals.dinner.push(newDay.meals.dinner[0]);
+      } else if (updatedMeals.dinner.length === 0 && newDay.meals.dinner) {
+        updatedMeals.dinner.push(Array.isArray(newDay.meals.dinner) ? 
+          newDay.meals.dinner[0] : newDay.meals.dinner);
       }
       
-      if (updatedMeals.snacks.length === 0 && newDay.meals.snacks.length > 0) {
-        updatedMeals.snacks = [...newDay.meals.snacks];
+      if (updatedMeals.snacks.length === 0 && newDay.meals.snacks && 
+          Array.isArray(newDay.meals.snacks) && newDay.meals.snacks.length > 0) {
+        updatedMeals.snacks = [...newDay.meals.snacks.filter(Boolean)];
       }
       
       return {
         ...newDay,
         meals: updatedMeals
-      };
+      } as DayPlan;
     });
     
     setMealPlan(updatedPlan);
@@ -170,21 +195,17 @@ const PlanningPage = () => {
   const handleAddFromVault = (recipe: Recipe) => {
     const updatedMealPlan = [...mealPlan];
     const currentDay = { ...updatedMealPlan[activeDay] };
-    const updatedMeals = { ...currentDay.meals } as DayMeals;
+    const updatedMeals: DayMeals = { ...currentDay.meals };
     
-    // Add to breakfast if it's empty
     if (updatedMeals.breakfast.length === 0) {
-      updatedMeals.breakfast.push(recipe);
+      updatedMeals.breakfast = [recipe];
     } 
-    // Add to lunch if it's empty
     else if (updatedMeals.lunch.length === 0) {
-      updatedMeals.lunch.push(recipe);
+      updatedMeals.lunch = [recipe];
     } 
-    // Add to dinner if it's empty
     else if (updatedMeals.dinner.length === 0) {
-      updatedMeals.dinner.push(recipe);
+      updatedMeals.dinner = [recipe];
     } 
-    // Otherwise add to snacks
     else {
       updatedMeals.snacks.push(recipe);
     }
@@ -224,25 +245,11 @@ const PlanningPage = () => {
     
     const updatedMealPlan = [...mealPlan];
     const currentDay = { ...updatedMealPlan[activeDay] };
-    const updatedMeals = { ...currentDay.meals } as DayMeals;
+    const updatedMeals: DayMeals = { ...currentDay.meals };
     
-    // Only remove the meal from its original location if the index is provided
-    if (draggedMeal.type === 'snacks' && draggedMeal.index !== undefined) {
-      const updatedSnacks = [...updatedMeals.snacks];
-      updatedSnacks.splice(draggedMeal.index, 1);
-      updatedMeals.snacks = updatedSnacks;
-    } else if (draggedMeal.index !== undefined) {
-      // For main meals, remove only the specific item by index
-      const sourceArray = [...updatedMeals[draggedMeal.type as keyof DayMeals] as Recipe[]];
-      sourceArray.splice(draggedMeal.index, 1);
-      updatedMeals[draggedMeal.type as keyof DayMeals] = sourceArray as any;
-    }
-    
-    // Add the meal to the target location
     if (targetType === 'snacks') {
       updatedMeals.snacks.push(draggedMeal.meal);
     } else {
-      // Add to the target array
       (updatedMeals[targetType as keyof DayMeals] as Recipe[]).push(draggedMeal.meal);
     }
     
@@ -253,8 +260,8 @@ const PlanningPage = () => {
     setDraggedMeal(null);
     
     toast({
-      title: "Meal Moved",
-      description: `${draggedMeal.meal.name} moved to ${targetType === 'snacks' ? 'snacks' : targetType}.`,
+      title: "Meal Added",
+      description: `${draggedMeal.meal.name} added to ${targetType === 'snacks' ? 'snacks' : targetType}.`,
     });
   };
 
