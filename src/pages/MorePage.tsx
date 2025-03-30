@@ -4,10 +4,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, Heart, Settings, User, Utensils, BookOpen, LogOut, Calendar, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 const MorePage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [goals, setGoals] = useState({
     calories: 2000,
     protein: 150,
@@ -21,10 +23,11 @@ const MorePage = () => {
 
   const fetchNutritionGoals = async () => {
     try {
-      // For now, we're not authenticating users, so we'll get the first nutrition goals record
+      // With authentication, we can now fetch the user's specific nutrition goals
       const { data, error } = await supabase
         .from('nutrition_goals')
         .select('*')
+        .eq('user_id', user?.id)
         .limit(1)
         .single();
       
@@ -43,6 +46,15 @@ const MorePage = () => {
       }
     } catch (error) {
       console.error('Error fetching nutrition goals:', error);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Error signing out:', error);
     }
   };
   
@@ -98,8 +110,8 @@ const MorePage = () => {
           <User size={24} className="text-white" />
         </div>
         <div>
-          <h2 className="font-bold">John Doe</h2>
-          <p className="text-sm text-dishco-text-light">john.doe@example.com</p>
+          <h2 className="font-bold">{user?.email || 'Loading...'}</h2>
+          <p className="text-sm text-dishco-text-light">{user?.email}</p>
         </div>
       </div>
 
@@ -156,7 +168,10 @@ const MorePage = () => {
       </div>
 
       {/* Logout Button */}
-      <button className="w-full py-3 border border-gray-300 rounded-xl text-dishco-text-light font-medium flex items-center justify-center">
+      <button 
+        className="w-full py-3 border border-gray-300 rounded-xl text-dishco-text-light font-medium flex items-center justify-center"
+        onClick={handleSignOut}
+      >
         <LogOut size={18} className="mr-2" />
         <span>Log Out</span>
       </button>
