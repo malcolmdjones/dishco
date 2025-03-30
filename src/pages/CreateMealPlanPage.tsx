@@ -20,6 +20,7 @@ const CreateMealPlanPage = () => {
     mealPlan,
     isGenerating,
     lockedMeals,
+    aiReasoning,
     toggleLockMeal,
     regenerateMeals,
     calculateDayTotals,

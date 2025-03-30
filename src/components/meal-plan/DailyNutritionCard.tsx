@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 
 interface NutritionGoals {
   calories: number;
@@ -33,76 +32,78 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
   exceedsGoals,
   aiReasoning
 }) => {
-  // Calculate percentage of goals
-  const calculatePercentage = (current: number, goal: number) => {
-    return Math.min(Math.round((current / goal) * 100), 100);
-  };
-  
-  const calories = calculatePercentage(dayTotals.calories, userGoals.calories);
-  const protein = calculatePercentage(dayTotals.protein, userGoals.protein);
-  const carbs = calculatePercentage(dayTotals.carbs, userGoals.carbs);
-  const fat = calculatePercentage(dayTotals.fat, userGoals.fat);
-  
   return (
     <Card className="mb-6">
       <CardContent className="pt-6">
-        <h2 className="text-lg font-semibold mb-4">Today's Nutrition</h2>
+        <h2 className="text-lg font-semibold mb-4">Daily Nutrition</h2>
         
-        <div className="space-y-4">
+        <div className="space-y-6">
+          {/* Calories */}
           <div>
-            <div className="flex justify-between mb-1">
-              <span className="font-medium">Calories</span>
-              <span className={`${exceedsGoals.exceeds.calories ? 'text-red-500' : ''}`}>
-                {dayTotals.calories} / {userGoals.calories} kcal
-              </span>
+            <div className="flex justify-between mb-2">
+              <div>
+                <span className="text-2xl font-semibold">{dayTotals.calories}</span>
+                <span className="text-gray-500 text-sm ml-1">/ {userGoals.calories}</span>
+              </div>
+              <span className="text-lg">Calories</span>
             </div>
-            <Progress 
-              value={calories} 
-              className="h-2" 
-              indicatorClassName={`${exceedsGoals.exceeds.calories ? 'bg-red-500' : 'bg-green-500'}`}
-            />
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div 
+                className={`h-full ${exceedsGoals.exceeds.calories ? 'bg-red-500' : 'bg-yellow-400'}`}
+                style={{ width: `${Math.min(100, (dayTotals.calories / userGoals.calories) * 100)}%` }}
+              ></div>
+            </div>
           </div>
           
+          {/* Protein */}
           <div>
-            <div className="flex justify-between mb-1">
-              <span className="font-medium">Protein</span>
-              <span className={`${exceedsGoals.exceeds.protein ? 'text-red-500' : ''}`}>
-                {dayTotals.protein} / {userGoals.protein}g
-              </span>
+            <div className="flex justify-between mb-2">
+              <div>
+                <span className="text-2xl font-semibold">{dayTotals.protein}g</span>
+                <span className="text-gray-500 text-sm ml-1">/ {userGoals.protein}g</span>
+              </div>
+              <span className="text-lg">Protein</span>
             </div>
-            <Progress 
-              value={protein} 
-              className="h-2" 
-              indicatorClassName={`${exceedsGoals.exceeds.protein ? 'bg-red-500' : 'bg-blue-500'}`}
-            />
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div 
+                className={`h-full ${exceedsGoals.exceeds.protein ? 'bg-red-500' : 'bg-blue-400'}`}
+                style={{ width: `${Math.min(100, (dayTotals.protein / userGoals.protein) * 100)}%` }}
+              ></div>
+            </div>
           </div>
           
+          {/* Carbs */}
           <div>
-            <div className="flex justify-between mb-1">
-              <span className="font-medium">Carbs</span>
-              <span className={`${exceedsGoals.exceeds.carbs ? 'text-red-500' : ''}`}>
-                {dayTotals.carbs} / {userGoals.carbs}g
-              </span>
+            <div className="flex justify-between mb-2">
+              <div>
+                <span className="text-2xl font-semibold">{dayTotals.carbs}g</span>
+                <span className="text-gray-500 text-sm ml-1">/ {userGoals.carbs}g</span>
+              </div>
+              <span className="text-lg">Carbs</span>
             </div>
-            <Progress 
-              value={carbs} 
-              className="h-2" 
-              indicatorClassName={`${exceedsGoals.exceeds.carbs ? 'bg-red-500' : 'bg-yellow-500'}`}
-            />
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div 
+                className={`h-full ${exceedsGoals.exceeds.carbs ? 'bg-red-500' : 'bg-yellow-400'}`}
+                style={{ width: `${Math.min(100, (dayTotals.carbs / userGoals.carbs) * 100)}%` }}
+              ></div>
+            </div>
           </div>
           
+          {/* Fat */}
           <div>
-            <div className="flex justify-between mb-1">
-              <span className="font-medium">Fat</span>
-              <span className={`${exceedsGoals.exceeds.fat ? 'text-red-500' : ''}`}>
-                {dayTotals.fat} / {userGoals.fat}g
-              </span>
+            <div className="flex justify-between mb-2">
+              <div>
+                <span className="text-2xl font-semibold">{dayTotals.fat}g</span>
+                <span className="text-gray-500 text-sm ml-1">/ {userGoals.fat}g</span>
+              </div>
+              <span className="text-lg">Fat</span>
             </div>
-            <Progress 
-              value={fat} 
-              className="h-2" 
-              indicatorClassName={`${exceedsGoals.exceeds.fat ? 'bg-red-500' : 'bg-purple-500'}`}
-            />
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div 
+                className={`h-full ${exceedsGoals.exceeds.fat ? 'bg-red-500' : 'bg-purple-400'}`}
+                style={{ width: `${Math.min(100, (dayTotals.fat / userGoals.fat) * 100)}%` }}
+              ></div>
+            </div>
           </div>
         </div>
       </CardContent>
