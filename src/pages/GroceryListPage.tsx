@@ -5,8 +5,8 @@ import { generateGroceryList, generateMockMealPlan } from '../data/mockData';
 import type { GroceryItem } from '../data/mockData';
 import { useToast } from '@/hooks/use-toast';
 
-// Generate initial grocery list from a mock meal plan
-const initialGroceryItems = generateGroceryList(generateMockMealPlan());
+// Generate initial grocery list
+const initialGroceryItems = generateGroceryList();
 
 const GroceryListPage = () => {
   const { toast } = useToast();
@@ -46,7 +46,7 @@ const GroceryListPage = () => {
           id: `item-${Date.now()}`,
           name: newItem.trim(), 
           category: 'Other',
-          quantity: 1, 
+          quantity: "1", // Changed to string to match GroceryItem type
           unit: 'item(s)',
           checked: false 
         }
@@ -156,6 +156,9 @@ interface GroceryItemProps {
 }
 
 const GroceryItem: React.FC<GroceryItemProps> = ({ item, onToggle }) => {
+  // Parse quantity as number for comparison, defaulting to 1 if parsing fails
+  const quantityNum = parseInt(item.quantity) || 1;
+  
   return (
     <div 
       className={`bg-white rounded-lg p-3 flex items-center transition-all duration-200 animate-scale-in ${
@@ -179,7 +182,7 @@ const GroceryItem: React.FC<GroceryItemProps> = ({ item, onToggle }) => {
         </p>
       </div>
       
-      {item.quantity > 1 && (
+      {quantityNum > 1 && (
         <div className="bg-gray-100 rounded-full px-2 py-0.5">
           <span className="text-xs font-medium">x{item.quantity}</span>
         </div>
