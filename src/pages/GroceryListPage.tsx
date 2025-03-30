@@ -1,13 +1,11 @@
 
 import React, { useState } from 'react';
 import { Check, ChevronDown, ChevronUp, Plus, Search, ShoppingBag } from 'lucide-react';
-import { generateGroceryList, recipes } from '../data/mockData';
+import { generateGroceryList, generateMockMealPlan, GroceryItem } from '../data/mockData';
 import { useToast } from '@/hooks/use-toast';
 
-// Generate initial grocery list from our mock recipes
-const initialGroceryItems = generateGroceryList(
-  recipes.filter((_, index) => index < 5) // Only use first 5 recipes for demo
-);
+// Generate initial grocery list from a mock meal plan
+const initialGroceryItems = generateGroceryList(generateMockMealPlan());
 
 const GroceryListPage = () => {
   const { toast } = useToast();
@@ -43,7 +41,14 @@ const GroceryListPage = () => {
     if (newItem.trim()) {
       setGroceryItems(prev => [
         ...prev,
-        { name: newItem.trim(), count: 1, checked: false }
+        { 
+          id: `item-${Date.now()}`,
+          name: newItem.trim(), 
+          category: 'Other',
+          quantity: 1, 
+          unit: 'item(s)',
+          checked: false 
+        }
       ]);
       setNewItem('');
       toast({
@@ -145,7 +150,7 @@ const GroceryListPage = () => {
 };
 
 interface GroceryItemProps {
-  item: { name: string; count: number; checked: boolean };
+  item: GroceryItem;
   onToggle: () => void;
 }
 
@@ -173,9 +178,9 @@ const GroceryItem: React.FC<GroceryItemProps> = ({ item, onToggle }) => {
         </p>
       </div>
       
-      {item.count > 1 && (
+      {item.quantity > 1 && (
         <div className="bg-gray-100 rounded-full px-2 py-0.5">
-          <span className="text-xs font-medium">x{item.count}</span>
+          <span className="text-xs font-medium">x{item.quantity}</span>
         </div>
       )}
     </div>

@@ -272,25 +272,29 @@ export const generateGroceryList = (mealPlan: WeeklyMealPlan): GroceryItem[] => 
   const allIngredients: string[] = [];
   
   mealPlan.forEach(day => {
-    // Add breakfast ingredients
+    // Add breakfast ingredients - check for null
     if (day.meals.breakfast) {
       allIngredients.push(...day.meals.breakfast.ingredients);
     }
     
-    // Add lunch ingredients
+    // Add lunch ingredients - check for null
     if (day.meals.lunch) {
       allIngredients.push(...day.meals.lunch.ingredients);
     }
     
-    // Add dinner ingredients
+    // Add dinner ingredients - check for null
     if (day.meals.dinner) {
       allIngredients.push(...day.meals.dinner.ingredients);
     }
     
-    // Add snack ingredients
-    day.meals.snacks.forEach(snack => {
-      allIngredients.push(...snack.ingredients);
-    });
+    // Add snack ingredients - make sure snacks array exists
+    if (day.meals.snacks && day.meals.snacks.length > 0) {
+      day.meals.snacks.forEach(snack => {
+        if (snack) {
+          allIngredients.push(...snack.ingredients);
+        }
+      });
+    }
   });
   
   // Count occurrences of each ingredient
