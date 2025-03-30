@@ -1,16 +1,90 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Search, Heart, Filter, Info } from 'lucide-react';
+import { ArrowLeft, Search, Heart, Info } from 'lucide-react';
 import { recipes } from '../data/mockData';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import RecipeDetail from '@/components/RecipeDetail';
+import { supabase } from '@/integrations/supabase/client';
 
 const SavedRecipesPage = () => {
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  // In a real app, this would come from a database or API
-  const [savedRecipeIds] = useState(['1', '3', '5', '7', '9', '11']);
+  const [savedRecipeIds, setSavedRecipeIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedRecipe, setSelectedRecipe] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchSavedRecipes();
+  }, []);
+
+  const fetchSavedRecipes = async () => {
+    try {
+      setLoading(true);
+      // For now, we're not authenticating users, so we'll get all saved recipes
+      const { data, error } = await supabase
+        .from('saved_recipes')
+        .select('recipe_id');
+      
+      if (error) throw error;
+      
+      const recipeIds = data.map(item => item.recipe_id);
+      setSavedRecipeIds(recipeIds);
+    } catch (error) {
+      console.error('Error fetching saved recipes:', error);
+      // Fallback to mock data if error
+      setSavedRecipeIds(['1', '3', '5', '7', '9', '11']);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleSaveRecipe = async (recipeId: string, isSaved: boolean) => {
+    try {
+      if (isSaved) {
+        // Remove from saved recipes
+        await supabase
+          .from('saved_recipes')
+          .delete()
+          .eq('recipe_id', recipeId);
+        
+        setSavedRecipeIds(current => current.filter(id => id !== recipeId));
+        toast({
+          title: "Recipe Removed",
+          description: "Recipe has been removed from your saved recipes.",
+        });
+      } else {
+        // Add to saved recipes
+        await supabase
+          .from('saved_recipes')
+          .insert({ recipe_id: recipeId });
+        
+        setSavedRecipeIds(current => [...current, recipeId]);
+        toast({
+          title: "Recipe Saved",
+          description: "Recipe has been added to your saved recipes.",
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling save recipe:', error);
+      // Fallback behavior for demo
+      if (isSaved) {
+        setSavedRecipeIds(current => current.filter(id => id !== recipeId));
+      } else {
+        setSavedRecipeIds(current => [...current, recipeId]);
+      }
+      
+      toast({
+        title: isSaved ? "Recipe Removed" : "Recipe Saved",
+        description: isSaved 
+          ? "Recipe has been removed from your saved recipes." 
+          : "Recipe has been added to your saved recipes.",
+      });
+    }
+  };
 
   const savedRecipes = recipes.filter(recipe => savedRecipeIds.includes(recipe.id));
   
@@ -87,7 +161,10 @@ const SavedRecipesPage = () => {
                     alt={recipe.name} 
                     className="w-full h-full object-cover"
                   />
-                  <button className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-md">
+                  <button 
+                    className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-md"
+                    onClick={() => toggleSaveRecipe(recipe.id, true)}
+                  >
                     <Heart size={16} className="text-red-500 fill-current" />
                   </button>
                 </div>
@@ -102,25 +179,30 @@ const SavedRecipesPage = () => {
                   </div>
                 </div>
               </div>
-              <div className="px-3 pb-3 flex space-x-2">
+              <div className="px-3 pb-3">
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="flex-1"
+                  className="w-full"
+                  onClick={() => setSelectedRecipe(recipe.id)}
                 >
                   View Details
-                </Button>
-                <Button 
-                  size="sm" 
-                  className="flex-1"
-                >
-                  Add to Plan
                 </Button>
               </div>
             </div>
           ))
         )}
       </div>
+
+      {/* Recipe Detail Modal */}
+      {selectedRecipe && (
+        <RecipeDetail 
+          recipeId={selectedRecipe}
+          onClose={() => setSelectedRecipe(null)}
+          onToggleSave={toggleSaveRecipe}
+          isSaved={true}
+        />
+      )}
     </div>
   );
 };

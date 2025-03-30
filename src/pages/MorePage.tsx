@@ -1,13 +1,50 @@
 
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, Heart, Settings, User, Utensils, BookOpen, LogOut } from 'lucide-react';
-import { defaultGoals } from '../data/mockData';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const MorePage = () => {
   const { toast } = useToast();
-  const [goals, setGoals] = useState(defaultGoals);
+  const navigate = useNavigate();
+  const [goals, setGoals] = useState({
+    calories: 2000,
+    protein: 150,
+    carbs: 200,
+    fat: 65
+  });
+  
+  useEffect(() => {
+    fetchNutritionGoals();
+  }, []);
+
+  const fetchNutritionGoals = async () => {
+    try {
+      // For now, we're not authenticating users, so we'll get the first nutrition goals record
+      const { data, error } = await supabase
+        .from('nutrition_goals')
+        .select('*')
+        .limit(1)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching nutrition goals:', error);
+        return;
+      }
+      
+      if (data) {
+        setGoals({
+          calories: data.calories,
+          protein: data.protein,
+          carbs: data.carbs,
+          fat: data.fat
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching nutrition goals:', error);
+    }
+  };
   
   const menuItems = [
     {
@@ -100,10 +137,7 @@ const MorePage = () => {
         </div>
         <button 
           className="w-full mt-4 py-2 px-4 bg-dishco-primary bg-opacity-10 text-dishco-primary rounded-lg font-medium"
-          onClick={() => toast({
-            title: "Coming Soon",
-            description: "Nutrition goal editing will be available in the next update.",
-          })}
+          onClick={() => navigate('/nutrition-goals')}
         >
           Edit Goals
         </button>

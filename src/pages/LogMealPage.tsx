@@ -34,7 +34,7 @@ const LogMealPage = () => {
   ];
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in pb-16">
       <header className="mb-6">
         <h1 className="text-2xl font-bold">Log a Meal</h1>
         <p className="text-dishco-text-light">Track what you've eaten today</p>

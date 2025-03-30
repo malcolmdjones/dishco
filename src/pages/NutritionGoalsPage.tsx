@@ -1,15 +1,62 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Save } from 'lucide-react';
-import { defaultGoals, UserGoals } from '../data/mockData';
 import { useToast } from '@/hooks/use-toast';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+
+type UserGoals = {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+};
 
 const NutritionGoalsPage = () => {
   const { toast } = useToast();
-  const [goals, setGoals] = useState<UserGoals>(defaultGoals);
+  const navigate = useNavigate();
+  const [goals, setGoals] = useState<UserGoals>({
+    calories: 2000,
+    protein: 150,
+    carbs: 200,
+    fat: 65
+  });
+  const [recordId, setRecordId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchNutritionGoals();
+  }, []);
+
+  const fetchNutritionGoals = async () => {
+    try {
+      // For now, we're not authenticating users, so we'll get the first nutrition goals record
+      const { data, error } = await supabase
+        .from('nutrition_goals')
+        .select('*')
+        .limit(1)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching nutrition goals:', error);
+        return;
+      }
+      
+      if (data) {
+        setRecordId(data.id);
+        setGoals({
+          calories: data.calories,
+          protein: data.protein,
+          carbs: data.carbs,
+          fat: data.fat
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching nutrition goals:', error);
+    }
+  };
 
   const handleChange = (field: keyof UserGoals, value: string) => {
     const numValue = parseInt(value) || 0;
@@ -19,11 +66,50 @@ const NutritionGoalsPage = () => {
     }));
   };
 
-  const handleSave = () => {
-    toast({
-      title: "Goals Updated",
-      description: "Your nutrition goals have been saved successfully.",
-    });
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      if (recordId) {
+        // Update existing record
+        await supabase
+          .from('nutrition_goals')
+          .update({
+            calories: goals.calories,
+            protein: goals.protein,
+            carbs: goals.carbs,
+            fat: goals.fat,
+            updated_at: new Date()
+          })
+          .eq('id', recordId);
+      } else {
+        // Create new record
+        await supabase
+          .from('nutrition_goals')
+          .insert([{
+            calories: goals.calories,
+            protein: goals.protein,
+            carbs: goals.carbs,
+            fat: goals.fat
+          }]);
+      }
+      
+      toast({
+        title: "Goals Updated",
+        description: "Your nutrition goals have been saved successfully.",
+      });
+      
+      // Navigate back to More page
+      navigate('/more');
+    } catch (error) {
+      console.error('Error saving nutrition goals:', error);
+      toast({
+        title: "Error",
+        description: "There was a problem saving your goals. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -131,7 +217,7 @@ const NutritionGoalsPage = () => {
         </div>
       </div>
 
-      <Button onClick={handleSave} className="w-full">
+      <Button onClick={handleSave} className="w-full" disabled={loading}>
         <Save size={18} className="mr-2" />
         Save Goals
       </Button>
