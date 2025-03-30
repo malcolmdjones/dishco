@@ -137,6 +137,25 @@ const PlanningPage = () => {
     setIsWeekOverviewOpen(false);
   };
 
+  const handleWeeklyOverview = () => {
+    const safeWeeklyPlan = mealPlan.map(day => {
+      const safeMeals = {
+        breakfast: day.meals.breakfast || null,
+        lunch: day.meals.lunch || null,
+        dinner: day.meals.dinner || null,
+        snacks: day.meals.snacks || []
+      };
+      
+      return {
+        ...day,
+        meals: safeMeals
+      };
+    });
+    
+    setMealPlan(safeWeeklyPlan);
+    setIsWeekOverviewOpen(true);
+  };
+
   const [draggedMeal, setDraggedMeal] = useState<{type: string, meal: any, index?: number} | null>(null);
   
   const handleDragStart = (mealType: string, meal: any, index?: number) => {
@@ -596,7 +615,9 @@ const PlanningPage = () => {
                     {day.meals.snacks && day.meals.snacks.length > 0 ? (
                       <ul className="list-disc pl-8 mt-1">
                         {day.meals.snacks.map((snack, snackIndex) => (
-                          <li key={snackIndex} className="line-clamp-1">{snack.name}</li>
+                          <li key={snackIndex} className="line-clamp-1">
+                            {snack ? snack.name : "Unknown snack"}
+                          </li>
                         ))}
                       </ul>
                     ) : (
