@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Book, BookOpen, Calendar, CheckCircle, CookingPot, Info, Lock, Maximize2, RefreshCw, Save, Unlock, Zap, Heart } from 'lucide-react';
 import { calculateDailyMacros, defaultGoals, fetchNutritionGoals, generateMockMealPlan, recipes } from '../data/mockData';
@@ -37,8 +36,28 @@ const PlanningPage = () => {
   
   useEffect(() => {
     const loadGoals = async () => {
-      const currentGoals = await fetchNutritionGoals();
-      setGoals(currentGoals);
+      try {
+        const { data, error } = await supabase
+          .from('nutrition_goals')
+          .select('*')
+          .limit(1)
+          .single();
+          
+        if (data) {
+          setGoals({
+            calories: data.calories,
+            protein: data.protein,
+            carbs: data.carbs,
+            fat: data.fat
+          });
+        } else {
+          const mockGoals = await fetchNutritionGoals();
+          setGoals(mockGoals);
+        }
+      } catch (err) {
+        const mockGoals = await fetchNutritionGoals();
+        setGoals(mockGoals);
+      }
     };
     
     loadGoals();
@@ -64,7 +83,6 @@ const PlanningPage = () => {
     }
   };
   
-  // Ensure we have valid meal plan data
   const ensureValidMealPlan = () => {
     const safeWeeklyPlan = mealPlan.map(day => {
       return {
@@ -92,7 +110,6 @@ const PlanningPage = () => {
     fat: Math.min(100, (dailyMacros.fat / goals.fat) * 100),
   };
   
-  // Calculate the differences for circular progress displays
   const differences = {
     calories: dailyMacros.calories - goals.calories,
     protein: dailyMacros.protein - goals.protein,
@@ -151,7 +168,6 @@ const PlanningPage = () => {
   };
 
   const handleSavePlan = () => {
-    // Open save plan dialog
     setIsSavePlanOpen(true);
   };
 
@@ -225,31 +241,25 @@ const PlanningPage = () => {
     const currentDay = { ...updatedMealPlan[activeDay] };
     const updatedMeals = { ...currentDay.meals };
     
-    // Only remove the meal from its original location
     if (draggedMeal.type === 'snacks') {
       if (updatedMeals.snacks && draggedMeal.index !== undefined) {
-        // Create a copy of the snacks array and remove the specific item
         const updatedSnacks = [...updatedMeals.snacks];
         updatedSnacks.splice(draggedMeal.index, 1);
         updatedMeals.snacks = updatedSnacks;
       }
     } else {
-      // For main meals, only remove if we're moving it somewhere else
       if (draggedMeal.type !== targetType) {
         updatedMeals[draggedMeal.type] = null;
       }
     }
     
-    // Add the meal to the target location
     if (targetType === 'snacks') {
       if (!updatedMeals.snacks) {
         updatedMeals.snacks = [];
       }
       updatedMeals.snacks.push(draggedMeal.meal);
     } else {
-      // For main meals, allow multiple meals in the same slot
       if (targetType === draggedMeal.type) {
-        // If same type, don't do anything as we didn't remove it
       } else {
         updatedMeals[targetType] = draggedMeal.meal;
       }
@@ -270,7 +280,6 @@ const PlanningPage = () => {
   const handleToggleSaveRecipe = async (recipeId: string, isSaved: boolean) => {
     try {
       if (isSaved) {
-        // Remove from saved recipes
         const { error } = await supabase
           .from('saved_recipes')
           .delete()
@@ -288,7 +297,6 @@ const PlanningPage = () => {
           description: "Recipe removed from your saved recipes.",
         });
       } else {
-        // Add to saved recipes
         const { error } = await supabase
           .from('saved_recipes')
           .insert([{ recipe_id: recipeId }]);
@@ -580,7 +588,7 @@ const PlanningPage = () => {
           onClose={() => setIsRecipeDrawerOpen(false)}
           isSaved={savedRecipeIds.includes(selectedMeal.id)}
           onToggleSave={handleToggleSaveRecipe}
-          className={isRecipeDrawerOpen ? "block" : "hidden"}
+          className={isRecipeDrawerOpen ? "block max-h-[80vh] overflow-auto" : "hidden"}
         />
       )}
 
@@ -739,7 +747,7 @@ const MealCard: React.FC<MealCardProps> = ({
     >
       <div className="relative">
         <img 
-          src={meal.imageSrc} 
+          src={meal.imageSrc || `/placeholder.svg`} 
           alt={meal.name} 
           className="w-full h-32 object-cover"
         />
