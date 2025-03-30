@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { Check, ChevronDown, ChevronUp, Plus, Search, ShoppingBag } from 'lucide-react';
-import { generateGroceryList, generateMockMealPlan, GroceryItem } from '../data/mockData';
+import { generateGroceryList, generateMockMealPlan } from '../data/mockData';
+import type { GroceryItem } from '../data/mockData';
 import { useToast } from '@/hooks/use-toast';
 
 // Generate initial grocery list from a mock meal plan
