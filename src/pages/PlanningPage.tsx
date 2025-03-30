@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ArrowLeft, ArrowRight, Book, BookOpen, Calendar, CheckCircle, CookingPot, Info, Lock, Maximize2, RefreshCw, Save, Unlock, Zap } from 'lucide-react';
 import { calculateDailyMacros, defaultGoals, generateMockMealPlan, recipes } from '../data/mockData';
@@ -33,6 +34,14 @@ const PlanningPage = () => {
     protein: Math.min(100, (dailyMacros.protein / goals.protein) * 100),
     carbs: Math.min(100, (dailyMacros.carbs / goals.carbs) * 100),
     fat: Math.min(100, (dailyMacros.fat / goals.fat) * 100),
+  };
+  
+  // Calculate the differences for circular progress displays
+  const differences = {
+    calories: dailyMacros.calories - goals.calories,
+    protein: dailyMacros.protein - goals.protein,
+    carbs: dailyMacros.carbs - goals.carbs,
+    fat: dailyMacros.fat - goals.fat
   };
 
   const calendarDates = Array.from({ length: 7 }, (_, i) => addDays(new Date(), i));
@@ -277,149 +286,150 @@ const PlanningPage = () => {
       </div>
 
       <div className="bg-white rounded-xl shadow-md p-4 mb-6 animate-slide-up">
-        <h2 className="text-lg font-semibold mb-3">Daily Nutrition</h2>
-        <div className="space-y-3">
-          <div>
-            <div className="flex justify-between mb-1">
-              <span>Calories</span>
-              <span className="font-medium">
-                {dailyMacros.calories} / {goals.calories} kcal
-                <span className={percentages.calories > 100 ? 'text-dishco-error ml-1' : ''}>
-                  {percentages.calories > 100 ? '⚠️' : ''}
-                </span>
-              </span>
-            </div>
+        <h2 className="text-lg font-semibold mb-4">Daily Nutrition</h2>
+        <div className="flex justify-between items-end">
+          <div className="flex-1 flex flex-col items-center">
             <Progress 
-              value={percentages.calories} 
-              className="h-2" 
-              indicatorClassName={
-                percentages.calories > 100 
-                  ? 'bg-dishco-error' 
-                  : percentages.calories > 90 
-                    ? 'bg-dishco-accent' 
-                    : 'bg-dishco-primary'
-              } 
+              type="circular" 
+              size="md"
+              value={percentages.calories}
+              max={100}
+              showValue={true}
+              valuePrefix={differences.calories >= 0 ? "+" : ""}
+              valueSuffix=""
+              label="Calories"
+              status={percentages.calories > 90 ? "warning" : "default"}
+              className="mb-1"
             />
+            <span className="text-xs text-center mt-1">
+              {dailyMacros.calories} / {goals.calories}
+            </span>
           </div>
-          
-          <div>
-            <div className="flex justify-between mb-1">
-              <span>Protein</span>
-              <span className="font-medium">
-                {dailyMacros.protein} / {goals.protein} g
-                <span className={percentages.protein > 100 ? 'text-dishco-error ml-1' : ''}>
-                  {percentages.protein > 100 ? '⚠️' : ''}
-                </span>
-              </span>
-            </div>
+
+          <div className="flex-1 flex flex-col items-center">
             <Progress 
-              value={percentages.protein} 
-              className="h-2" 
-              indicatorClassName={
-                percentages.protein > 100 
-                  ? 'bg-dishco-error' 
-                  : percentages.protein > 90 
-                    ? 'bg-dishco-accent' 
-                    : 'bg-dishco-primary'
-              } 
+              type="circular" 
+              size="md"
+              value={percentages.protein}
+              max={100}
+              showValue={true}
+              valuePrefix={differences.protein >= 0 ? "+" : ""}
+              valueSuffix="g"
+              label="Protein"
+              status={percentages.protein > 90 ? "warning" : "default"}
+              indicatorClassName="text-amber-500"
+              className="mb-1"
             />
+            <span className="text-xs text-center mt-1 text-amber-600">
+              {dailyMacros.protein}g / {goals.protein}g
+            </span>
           </div>
-          
-          <div>
-            <div className="flex justify-between mb-1">
-              <span>Carbs</span>
-              <span className="font-medium">
-                {dailyMacros.carbs} / {goals.carbs} g
-                <span className={percentages.carbs > 100 ? 'text-dishco-error ml-1' : ''}>
-                  {percentages.carbs > 100 ? '⚠️' : ''}
-                </span>
-              </span>
-            </div>
+
+          <div className="flex-1 flex flex-col items-center">
             <Progress 
-              value={percentages.carbs} 
-              className="h-2" 
-              indicatorClassName={
-                percentages.carbs > 100 
-                  ? 'bg-dishco-error' 
-                  : percentages.carbs > 90 
-                    ? 'bg-dishco-accent' 
-                    : 'bg-dishco-primary'
-              } 
+              type="circular" 
+              size="md"
+              value={percentages.carbs}
+              max={100}
+              showValue={true}
+              valuePrefix={differences.carbs >= 0 ? "+" : ""}
+              valueSuffix="g"
+              label="Carbs"
+              status={percentages.carbs > 90 ? "warning" : "default"}
+              indicatorClassName="text-primary"
+              className="mb-1"
             />
+            <span className="text-xs text-center mt-1">
+              {dailyMacros.carbs}g / {goals.carbs}g
+            </span>
           </div>
-          
-          <div>
-            <div className="flex justify-between mb-1">
-              <span>Fat</span>
-              <span className="font-medium">
-                {dailyMacros.fat} / {goals.fat} g
-                <span className={percentages.fat > 100 ? 'text-dishco-error ml-1' : ''}>
-                  {percentages.fat > 100 ? '⚠️' : ''}
-                </span>
-              </span>
-            </div>
+
+          <div className="flex-1 flex flex-col items-center">
             <Progress 
-              value={percentages.fat} 
-              className="h-2" 
-              indicatorClassName={
-                percentages.fat > 100 
-                  ? 'bg-dishco-error' 
-                  : percentages.fat > 90 
-                    ? 'bg-dishco-accent' 
-                    : 'bg-dishco-primary'
-              } 
+              type="circular" 
+              size="md"
+              value={percentages.fat}
+              max={100}
+              showValue={true}
+              valuePrefix={differences.fat >= 0 ? "+" : ""}
+              valueSuffix="g"
+              label="Fat"
+              status={percentages.fat > 90 ? "warning" : "default"}
+              indicatorClassName="text-green-500"
+              className="mb-1"
             />
+            <span className="text-xs text-center mt-1 text-green-600">
+              {dailyMacros.fat}g / {goals.fat}g
+            </span>
           </div>
         </div>
       </div>
 
       <div className="space-y-4 mb-6">
-        <div 
-          className="drop-target"
-          onDragOver={handleDragOver}
-          onDrop={() => handleDrop('breakfast')}
-        >
-          <MealCard 
-            title="Breakfast" 
-            meal={currentDayPlan.meals.breakfast}
-            isLocked={lockedMeals[`breakfast-${currentDayPlan.meals.breakfast?.id}`]}
-            onLockToggle={() => handleLockMeal('breakfast', currentDayPlan.meals.breakfast?.id)}
-            onViewRecipe={() => handleOpenRecipeDetails(currentDayPlan.meals.breakfast)}
-            onDragStart={() => currentDayPlan.meals.breakfast && handleDragStart('breakfast', currentDayPlan.meals.breakfast)}
-            draggable={!!currentDayPlan.meals.breakfast}
-          />
+        <div>
+          <h3 className="font-medium mb-2">Breakfast</h3>
+          <div 
+            className="drop-target"
+            onDragOver={handleDragOver}
+            onDrop={() => handleDrop('breakfast')}
+          >
+            {currentDayPlan.meals.breakfast ? (
+              <MealCard 
+                meal={currentDayPlan.meals.breakfast}
+                isLocked={lockedMeals[`breakfast-${currentDayPlan.meals.breakfast?.id}`]}
+                onLockToggle={() => handleLockMeal('breakfast', currentDayPlan.meals.breakfast?.id)}
+                onViewRecipe={() => handleOpenRecipeDetails(currentDayPlan.meals.breakfast)}
+                onDragStart={() => handleDragStart('breakfast', currentDayPlan.meals.breakfast)}
+                draggable={true}
+              />
+            ) : (
+              <EmptyMealCard title="Breakfast" />
+            )}
+          </div>
         </div>
         
-        <div 
-          className="drop-target"
-          onDragOver={handleDragOver}
-          onDrop={() => handleDrop('lunch')}
-        >
-          <MealCard 
-            title="Lunch" 
-            meal={currentDayPlan.meals.lunch}
-            isLocked={lockedMeals[`lunch-${currentDayPlan.meals.lunch?.id}`]}
-            onLockToggle={() => handleLockMeal('lunch', currentDayPlan.meals.lunch?.id)}
-            onViewRecipe={() => handleOpenRecipeDetails(currentDayPlan.meals.lunch)}
-            onDragStart={() => currentDayPlan.meals.lunch && handleDragStart('lunch', currentDayPlan.meals.lunch)}
-            draggable={!!currentDayPlan.meals.lunch}
-          />
+        <div>
+          <h3 className="font-medium mb-2">Lunch</h3>
+          <div 
+            className="drop-target"
+            onDragOver={handleDragOver}
+            onDrop={() => handleDrop('lunch')}
+          >
+            {currentDayPlan.meals.lunch ? (
+              <MealCard 
+                meal={currentDayPlan.meals.lunch}
+                isLocked={lockedMeals[`lunch-${currentDayPlan.meals.lunch?.id}`]}
+                onLockToggle={() => handleLockMeal('lunch', currentDayPlan.meals.lunch?.id)}
+                onViewRecipe={() => handleOpenRecipeDetails(currentDayPlan.meals.lunch)}
+                onDragStart={() => handleDragStart('lunch', currentDayPlan.meals.lunch)}
+                draggable={true}
+              />
+            ) : (
+              <EmptyMealCard title="Lunch" />
+            )}
+          </div>
         </div>
         
-        <div 
-          className="drop-target"
-          onDragOver={handleDragOver}
-          onDrop={() => handleDrop('dinner')}
-        >
-          <MealCard 
-            title="Dinner" 
-            meal={currentDayPlan.meals.dinner}
-            isLocked={lockedMeals[`dinner-${currentDayPlan.meals.dinner?.id}`]}
-            onLockToggle={() => handleLockMeal('dinner', currentDayPlan.meals.dinner?.id)}
-            onViewRecipe={() => handleOpenRecipeDetails(currentDayPlan.meals.dinner)}
-            onDragStart={() => currentDayPlan.meals.dinner && handleDragStart('dinner', currentDayPlan.meals.dinner)}
-            draggable={!!currentDayPlan.meals.dinner}
-          />
+        <div>
+          <h3 className="font-medium mb-2">Dinner</h3>
+          <div 
+            className="drop-target"
+            onDragOver={handleDragOver}
+            onDrop={() => handleDrop('dinner')}
+          >
+            {currentDayPlan.meals.dinner ? (
+              <MealCard 
+                meal={currentDayPlan.meals.dinner}
+                isLocked={lockedMeals[`dinner-${currentDayPlan.meals.dinner?.id}`]}
+                onLockToggle={() => handleLockMeal('dinner', currentDayPlan.meals.dinner?.id)}
+                onViewRecipe={() => handleOpenRecipeDetails(currentDayPlan.meals.dinner)}
+                onDragStart={() => handleDragStart('dinner', currentDayPlan.meals.dinner)}
+                draggable={true}
+              />
+            ) : (
+              <EmptyMealCard title="Dinner" />
+            )}
+          </div>
         </div>
         
         <div>
@@ -433,7 +443,6 @@ const PlanningPage = () => {
               snack && (
                 <MealCard 
                   key={index}
-                  title={`Snack ${index + 1}`} 
                   meal={snack}
                   isLocked={lockedMeals[`snacks-${snack?.id}-${index}`]}
                   onLockToggle={() => handleLockMeal(`snacks-${snack?.id}`, index.toString())}
@@ -444,6 +453,9 @@ const PlanningPage = () => {
                 />
               )
             ))}
+            {(!currentDayPlan.meals.snacks || currentDayPlan.meals.snacks.length === 0) && (
+              <EmptyMealCard title="Snack" />
+            )}
           </div>
         </div>
       </div>
@@ -596,33 +608,35 @@ const PlanningPage = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <div className="flex items-center text-sm">
-                    <span className="w-24 font-medium">Breakfast:</span>
+                  <div className="flex items-start text-sm">
+                    <span className="w-24 font-medium flex-shrink-0">Breakfast:</span>
                     <span className="line-clamp-1">{day.meals.breakfast?.name || "None scheduled"}</span>
                   </div>
-                  <div className="flex items-center text-sm">
-                    <span className="w-24 font-medium">Lunch:</span>
+                  <div className="flex items-start text-sm">
+                    <span className="w-24 font-medium flex-shrink-0">Lunch:</span>
                     <span className="line-clamp-1">{day.meals.lunch?.name || "None scheduled"}</span>
                   </div>
-                  <div className="flex items-center text-sm">
-                    <span className="w-24 font-medium">Dinner:</span>
+                  <div className="flex items-start text-sm">
+                    <span className="w-24 font-medium flex-shrink-0">Dinner:</span>
                     <span className="line-clamp-1">{day.meals.dinner?.name || "None scheduled"}</span>
                   </div>
                   <div className="flex flex-col text-sm">
                     <div className="flex">
-                      <span className="w-24 font-medium">Snacks:</span>
+                      <span className="w-24 font-medium flex-shrink-0">Snacks:</span>
+                      <div className="flex-1">
+                        {day.meals.snacks && day.meals.snacks.length > 0 ? (
+                          <ul className="list-disc pl-5">
+                            {day.meals.snacks.map((snack, snackIndex) => (
+                              <li key={snackIndex} className="line-clamp-1 ml-0">
+                                {snack ? snack.name : "Unknown snack"}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <span>None scheduled</span>
+                        )}
+                      </div>
                     </div>
-                    {day.meals.snacks && day.meals.snacks.length > 0 ? (
-                      <ul className="list-disc pl-8 mt-1">
-                        {day.meals.snacks.map((snack, snackIndex) => (
-                          <li key={snackIndex} className="line-clamp-1">
-                            {snack ? snack.name : "Unknown snack"}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <span className="pl-24">None scheduled</span>
-                    )}
                   </div>
                 </div>
               </div>
@@ -674,7 +688,6 @@ const PlanningPage = () => {
 };
 
 interface MealCardProps {
-  title: string;
   meal: any;
   isLocked: boolean;
   onLockToggle: () => void;
@@ -685,9 +698,9 @@ interface MealCardProps {
 }
 
 const MealCard: React.FC<MealCardProps> = ({ 
-  title, meal, isLocked, onLockToggle, onViewRecipe, onDragStart, draggable, isSnack = false 
+  meal, isLocked, onLockToggle, onViewRecipe, onDragStart, draggable, isSnack = false 
 }) => {
-  return meal ? (
+  return (
     <div 
       className={`bg-white rounded-xl shadow-md overflow-hidden ${!isSnack ? 'animate-bounce-in' : 'animate-scale-in'}`}
       draggable={draggable}
@@ -749,17 +762,16 @@ const MealCard: React.FC<MealCardProps> = ({
         </div>
       </div>
       
-      <div className="p-3">
+      <div className="p-3">        
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="font-medium text-sm">{title}</h3>
+            <p className="font-semibold">{meal.name}</p>
           </div>
           <div className="bg-dishco-secondary bg-opacity-20 rounded-full px-2 py-0.5">
             <span className="text-xs font-medium">{meal.macros.calories} kcal</span>
           </div>
         </div>
         
-        <p className="mt-1 font-semibold">{meal.name}</p>
         <p className="text-sm text-dishco-text-light line-clamp-2 mt-1">{meal.description}</p>
         
         <div className="flex mt-3 space-x-2">
@@ -769,7 +781,15 @@ const MealCard: React.FC<MealCardProps> = ({
         </div>
       </div>
     </div>
-  ) : (
+  );
+};
+
+interface EmptyMealCardProps {
+  title: string;
+}
+
+const EmptyMealCard: React.FC<EmptyMealCardProps> = ({ title }) => {
+  return (
     <div className="bg-white rounded-xl shadow-sm p-4 border border-dashed border-gray-300 flex justify-center items-center h-40">
       <button className="flex flex-col items-center text-dishco-primary">
         <div className="w-12 h-12 rounded-full bg-dishco-primary bg-opacity-10 flex items-center justify-center mb-2">
