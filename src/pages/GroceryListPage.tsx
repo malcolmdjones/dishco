@@ -1,33 +1,57 @@
 
-import React, { useState } from 'react';
-import { Check, ChevronDown, ChevronUp, Plus, Search, ShoppingBag } from 'lucide-react';
-import { generateGroceryList, generateMockMealPlan } from '../data/mockData';
+import React, { useState, useEffect } from 'react';
+import { Check, ChevronDown, ChevronUp, Plus, RotateCcw, Search, ShoppingBag, Trash2 } from 'lucide-react';
+import { generateGroceryList } from '../data/mockData';
 import type { GroceryItem } from '../data/mockData';
 import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 // Generate initial grocery list
 const initialGroceryItems = generateGroceryList();
 
 const GroceryListPage = () => {
   const { toast } = useToast();
-  const [groceryItems, setGroceryItems] = useState(initialGroceryItems);
+  const [groceryItems, setGroceryItems] = useState<GroceryItem[]>(() => {
+    // Try to load from localStorage first
+    const savedItems = localStorage.getItem('groceryItems');
+    return savedItems ? JSON.parse(savedItems) : initialGroceryItems;
+  });
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [newItem, setNewItem] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
+  const [activeTab, setActiveTab] = useState('active');
+
+  // Save items to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('groceryItems', JSON.stringify(groceryItems));
+  }, [groceryItems]);
+
+  // Filter active and completed items
+  const activeItems = groceryItems.filter(item => !item.checked);
+  const completedItems = groceryItems.filter(item => item.checked);
 
   // Group items by first letter
-  const groupedItems = groceryItems
-    .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    .reduce((groups, item) => {
-      const firstLetter = item.name.charAt(0).toUpperCase();
-      if (!groups[firstLetter]) {
-        groups[firstLetter] = [];
-      }
-      groups[firstLetter].push(item);
-      return groups;
-    }, {});
+  const groupItems = (items: GroceryItem[]) => {
+    return items
+      .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
+      .reduce((groups, item) => {
+        const firstLetter = item.name.charAt(0).toUpperCase();
+        if (!groups[firstLetter]) {
+          groups[firstLetter] = [];
+        }
+        groups[firstLetter].push(item);
+        return groups;
+      }, {});
+  };
 
-  const sortedGroups = Object.keys(groupedItems).sort();
+  const groupedActiveItems = groupItems(activeItems);
+  const groupedCompletedItems = groupItems(completedItems);
+
+  const sortedActiveGroups = Object.keys(groupedActiveItems).sort();
+  const sortedCompletedGroups = Object.keys(groupedCompletedItems).sort();
 
   const handleToggleItem = (itemName: string) => {
     setGroceryItems(prevItems =>
@@ -59,8 +83,29 @@ const GroceryListPage = () => {
     }
   };
 
-  const completedCount = groceryItems.filter(item => item.checked).length;
-  const completionPercentage = Math.round((completedCount / groceryItems.length) * 100) || 0;
+  const handleClearCompleted = () => {
+    setGroceryItems(prev => prev.filter(item => !item.checked));
+    toast({
+      title: "Completed Items Cleared",
+      description: "All completed items have been removed from your list.",
+    });
+  };
+
+  const handleUndoItem = (itemName: string) => {
+    setGroceryItems(prevItems =>
+      prevItems.map(item =>
+        item.name === itemName ? { ...item, checked: false } : item
+      )
+    );
+    toast({
+      title: "Item Restored",
+      description: `${itemName} has been moved back to your active list.`,
+    });
+  };
+
+  const activeItemsCount = activeItems.length;
+  const completedItemsCount = completedItems.length;
+  const completionPercentage = Math.round((completedItemsCount / (activeItemsCount + completedItemsCount)) * 100) || 0;
 
   return (
     <div className="animate-fade-in">
@@ -78,7 +123,7 @@ const GroceryListPage = () => {
           <div className="flex justify-between items-center mb-1">
             <h2 className="font-semibold">Shopping Progress</h2>
             <span className="text-sm font-medium">
-              {completedCount} of {groceryItems.length} items
+              {completedItemsCount} of {activeItemsCount + completedItemsCount} items
             </span>
           </div>
           <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -121,31 +166,113 @@ const GroceryListPage = () => {
         </form>
       </div>
 
-      {/* Grocery Items */}
-      <div>
-        {sortedGroups.length > 0 ? (
-          sortedGroups.map(letter => (
-            <div key={letter} className="mb-4">
-              <div className="sticky top-0 bg-dishco-background py-2 font-semibold text-dishco-primary">
-                {letter}
+      {/* Tabs for Active and Completed Items */}
+      <Tabs defaultValue="active" onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsTrigger value="active" className="flex items-center justify-center">
+            Active
+            {activeItemsCount > 0 && (
+              <span className="ml-2 text-xs bg-gray-100 px-2 py-0.5 rounded-full">
+                {activeItemsCount}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="completed" className="flex items-center justify-center">
+            Completed
+            {completedItemsCount > 0 && (
+              <span className="ml-2 text-xs bg-gray-100 px-2 py-0.5 rounded-full">
+                {completedItemsCount}
+              </span>
+            )}
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="active" className="mt-0">
+          {sortedActiveGroups.length > 0 ? (
+            sortedActiveGroups.map(letter => (
+              <div key={letter} className="mb-4">
+                <div className="sticky top-0 bg-dishco-background py-2 font-semibold text-dishco-primary">
+                  {letter}
+                </div>
+                <div className="space-y-2">
+                  {groupedActiveItems[letter].map((item, index) => (
+                    <GroceryItem
+                      key={`${item.name}-${index}`}
+                      item={item}
+                      onToggle={() => handleToggleItem(item.name)}
+                      showUndoButton={false}
+                    />
+                  ))}
+                </div>
               </div>
-              <div className="space-y-2">
-                {groupedItems[letter].map((item, index) => (
-                  <GroceryItem
-                    key={`${item.name}-${index}`}
-                    item={item}
-                    onToggle={() => handleToggleItem(item.name)}
-                  />
-                ))}
-              </div>
+            ))
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-dishco-text-light">No active items</p>
+              {completedItemsCount > 0 && (
+                <p className="text-sm text-dishco-text-light mt-2">
+                  Check the completed tab to see checked off items
+                </p>
+              )}
             </div>
-          ))
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-dishco-text-light">No items found</p>
-          </div>
-        )}
-      </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="completed" className="mt-0">
+          {completedItemsCount > 0 ? (
+            <div>
+              <div className="flex justify-end mb-4">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="flex items-center text-xs">
+                      <Trash2 size={14} className="mr-1" />
+                      Clear All
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Clear completed items?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will remove all checked off items from your grocery list. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleClearCompleted}>Continue</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+              
+              {sortedCompletedGroups.map(letter => (
+                <div key={letter} className="mb-4">
+                  <div className="sticky top-0 bg-dishco-background py-2 font-semibold text-gray-400">
+                    {letter}
+                  </div>
+                  <div className="space-y-2">
+                    {groupedCompletedItems[letter].map((item, index) => (
+                      <GroceryItem
+                        key={`${item.name}-${index}`}
+                        item={item}
+                        onToggle={() => handleToggleItem(item.name)}
+                        showUndoButton={true}
+                        onUndo={() => handleUndoItem(item.name)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-dishco-text-light">No completed items</p>
+              <p className="text-sm text-dishco-text-light mt-2">
+                Items you check off will appear here
+              </p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
@@ -153,9 +280,11 @@ const GroceryListPage = () => {
 interface GroceryItemProps {
   item: GroceryItem;
   onToggle: () => void;
+  showUndoButton: boolean;
+  onUndo?: () => void;
 }
 
-const GroceryItem: React.FC<GroceryItemProps> = ({ item, onToggle }) => {
+const GroceryItem: React.FC<GroceryItemProps> = ({ item, onToggle, showUndoButton, onUndo }) => {
   // Parse quantity as number for comparison, defaulting to 1 if parsing fails
   const quantityNum = parseInt(item.quantity) || 1;
   
@@ -166,7 +295,10 @@ const GroceryItem: React.FC<GroceryItemProps> = ({ item, onToggle }) => {
       }`}
     >
       <button
-        onClick={onToggle}
+        onClick={(e) => {
+          e.stopPropagation(); // Prevent card click from triggering
+          onToggle();
+        }}
         className={`w-6 h-6 rounded-full mr-3 flex items-center justify-center ${
           item.checked 
             ? 'bg-dishco-primary text-white' 
@@ -183,9 +315,22 @@ const GroceryItem: React.FC<GroceryItemProps> = ({ item, onToggle }) => {
       </div>
       
       {quantityNum > 1 && (
-        <div className="bg-gray-100 rounded-full px-2 py-0.5">
+        <div className="bg-gray-100 rounded-full px-2 py-0.5 mr-2">
           <span className="text-xs font-medium">x{item.quantity}</span>
         </div>
+      )}
+      
+      {showUndoButton && onUndo && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent card click from triggering
+            onUndo();
+          }}
+          className="p-1.5 text-gray-500 hover:text-dishco-primary rounded-full hover:bg-gray-100"
+          title="Restore item"
+        >
+          <RotateCcw size={14} />
+        </button>
       )}
     </div>
   );
