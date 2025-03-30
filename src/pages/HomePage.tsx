@@ -1,255 +1,180 @@
 
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Plus, ArrowRight, Lock, LucideIcon, Check } from 'lucide-react';
-import { calculateDailyMacros, defaultGoals, recipes } from '../data/mockData';
-import { Progress } from '@/components/ui/progress';
+import React from 'react';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
+import 'react-circular-progressbar/dist/styles.css';
+import { Heart, Plus, UtensilsCrossed } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { calculateDailyMacros, defaultGoals } from '@/data/mockData';
+import HomeRecipeViewer from '@/components/HomeRecipeViewer';
 
 const HomePage = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const [todayMeals, setTodayMeals] = useState({
-    breakfast: recipes.find(r => r.id === '2'), // Avocado Toast
-    lunch: recipes.find(r => r.id === '4'),     // Chicken Salad
-    dinner: recipes.find(r => r.id === '7'),    // Salmon with Asparagus
-    snacks: [
-      recipes.find(r => r.id === '11'),         // Greek Yogurt Cup
-      recipes.find(r => r.id === '13'),         // Trail Mix
-    ],
-  });
-
-  const [consumedMeals, setConsumedMeals] = useState({
-    breakfast: false,
-    lunch: false,
-    dinner: false,
-    snacks: [false, false]
-  });
-
-  // Calculate macros only for consumed meals
-  const calculateConsumedMacros = () => {
-    const consumed = {
-      breakfast: consumedMeals.breakfast ? todayMeals.breakfast : null,
-      lunch: consumedMeals.lunch ? todayMeals.lunch : null,
-      dinner: consumedMeals.dinner ? todayMeals.dinner : null,
-      snacks: todayMeals.snacks?.filter((_, index) => consumedMeals.snacks[index]) || []
-    };
-    
-    return calculateDailyMacros(consumed);
-  };
-
-  const dailyMacros = calculateConsumedMacros();
-  const goals = defaultGoals;
-
-  // Calculate percentages for progress bars
-  const percentages = {
-    calories: Math.min(100, (dailyMacros.calories / goals.calories) * 100),
-    protein: Math.min(100, (dailyMacros.protein / goals.protein) * 100),
-    carbs: Math.min(100, (dailyMacros.carbs / goals.carbs) * 100),
-    fat: Math.min(100, (dailyMacros.fat / goals.fat) * 100),
-  };
-
-  const getProgressColor = (percentage: number) => {
-    if (percentage > 100) return 'bg-dishco-error';
-    if (percentage > 90) return 'bg-dishco-accent';
-    return 'bg-dishco-primary';
-  };
-
-  const handleMealConsumed = (mealType: string, index?: number) => {
-    if (mealType === 'snacks' && typeof index === 'number') {
-      const newSnacks = [...consumedMeals.snacks];
-      newSnacks[index] = !newSnacks[index];
-      setConsumedMeals({...consumedMeals, snacks: newSnacks});
-    } else {
-      setConsumedMeals({
-        ...consumedMeals,
-        [mealType]: !consumedMeals[mealType as keyof typeof consumedMeals]
-      });
+  
+  // Mock data for today's meal plan
+  const todayPlan = {
+    breakfast: {
+      id: '1',
+      name: 'Avocado Toast with Eggs',
+      calories: 450,
+      protein: 22,
+      image: '/placeholder.svg',
+    },
+    lunch: {
+      id: '2',
+      name: 'Greek Salad with Grilled Chicken',
+      calories: 380,
+      protein: 32,
+      image: '/placeholder.svg',
+    },
+    dinner: {
+      id: '3',
+      name: 'Salmon with Roasted Vegetables',
+      calories: 520,
+      protein: 38,
+      image: '/placeholder.svg',
     }
-    
-    toast({
-      title: "Meal tracking updated",
-      description: "Your nutrition progress has been updated.",
-    });
+  };
+  
+  // Mock nutrition data
+  const dailyNutrition = {
+    calories: 1350,
+    totalCalories: 2000,
+    protein: 92,
+    totalProtein: 150,
+    carbs: 130,
+    totalCarbs: 200,
+    fat: 50,
+    totalFat: 65
+  };
+
+  const caloriesPercentage = (dailyNutrition.calories / dailyNutrition.totalCalories) * 100;
+  const proteinPercentage = (dailyNutrition.protein / dailyNutrition.totalProtein) * 100;
+  const carbsPercentage = (dailyNutrition.carbs / dailyNutrition.totalCarbs) * 100;
+  const fatPercentage = (dailyNutrition.fat / dailyNutrition.totalFat) * 100;
+
+  // Color definitions for macros
+  const macroColors = {
+    calories: '#FFF4D7',
+    protein: '#DBE9FE',
+    carbs: '#FEF9C3',
+    fat: '#F3E8FF'
   };
 
   return (
     <div className="animate-fade-in">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold">Today's Meals</h1>
-        <p className="text-dishco-text-light">Track your meals and macros</p>
+        <h1 className="text-2xl font-bold">Hi there 👋</h1>
+        <p className="text-dishco-text-light">Track your meals and plan for the week</p>
       </header>
-
-      {/* Daily Macros Summary Card */}
-      <div className="bg-white rounded-xl shadow-md p-4 mb-6 animate-slide-up">
-        <h2 className="text-lg font-semibold mb-3">Daily Nutrition</h2>
-        <div className="space-y-3">
-          <div>
-            <div className="flex justify-between mb-1">
-              <span>Calories</span>
-              <span className="font-medium">
-                {dailyMacros.calories} / {goals.calories} kcal
-              </span>
-            </div>
-            <Progress value={percentages.calories} className="h-2" 
-                     indicatorClassName={getProgressColor(percentages.calories)} />
-          </div>
-          
-          <div>
-            <div className="flex justify-between mb-1">
-              <span>Protein</span>
-              <span className="font-medium">
-                {dailyMacros.protein} / {goals.protein} g
-              </span>
-            </div>
-            <Progress value={percentages.protein} className="h-2" 
-                     indicatorClassName={getProgressColor(percentages.protein)} />
-          </div>
-          
-          <div>
-            <div className="flex justify-between mb-1">
-              <span>Carbs</span>
-              <span className="font-medium">
-                {dailyMacros.carbs} / {goals.carbs} g
-              </span>
-            </div>
-            <Progress value={percentages.carbs} className="h-2" 
-                     indicatorClassName={getProgressColor(percentages.carbs)} />
-          </div>
-          
-          <div>
-            <div className="flex justify-between mb-1">
-              <span>Fat</span>
-              <span className="font-medium">
-                {dailyMacros.fat} / {goals.fat} g
-              </span>
-            </div>
-            <Progress value={percentages.fat} className="h-2" 
-                     indicatorClassName={getProgressColor(percentages.fat)} />
-          </div>
-        </div>
-      </div>
-
-      {/* Meals List */}
-      <div className="space-y-4">
-        <MealSection 
-          title="Breakfast" 
-          meal={todayMeals.breakfast} 
-          completed={consumedMeals.breakfast}
-          onConsumed={() => handleMealConsumed('breakfast')}
-        />
-        
-        <MealSection 
-          title="Lunch" 
-          meal={todayMeals.lunch} 
-          completed={consumedMeals.lunch}
-          onConsumed={() => handleMealConsumed('lunch')}
-        />
-        
-        <MealSection 
-          title="Dinner" 
-          meal={todayMeals.dinner} 
-          completed={consumedMeals.dinner}
-          onConsumed={() => handleMealConsumed('dinner')}
-        />
-        
-        <div>
-          <h3 className="font-medium mb-2">Snacks</h3>
-          <div className="space-y-3">
-            {todayMeals.snacks?.map((snack, index) => (
-              snack && (
-                <MealSection 
-                  key={index}
-                  title={`Snack ${index + 1}`} 
-                  meal={snack} 
-                  completed={consumedMeals.snacks[index]}
-                  onConsumed={() => handleMealConsumed('snacks', index)}
-                  isSnack={true}
-                />
-              )
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Weekly Plan Button */}
-      <Link to="/planning" className="btn-primary w-full mt-8 flex items-center justify-center">
-        <span>Plan Your Week</span>
-        <ArrowRight className="ml-2" size={18} />
-      </Link>
-    </div>
-  );
-};
-
-interface MealSectionProps {
-  title: string;
-  meal: any;
-  completed: boolean;
-  onConsumed: () => void;
-  isSnack?: boolean;
-}
-
-const MealSection: React.FC<MealSectionProps> = ({ 
-  title, meal, completed, onConsumed, isSnack = false 
-}) => {
-  return meal ? (
-    <div className={`bg-white rounded-xl shadow-sm overflow-hidden ${!isSnack ? 'animate-bounce-in' : 'animate-scale-in'}`}>
-      <div className="flex items-center">
-        {/* Image */}
-        <div className="w-20 h-20 bg-gray-200 relative">
-          <img 
-            src={meal.imageSrc} 
-            alt={meal.name} 
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
-            <Lock size={16} className="text-white" />
-          </div>
-        </div>
-        
-        {/* Content */}
-        <div className="flex-1 p-3">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="font-medium text-sm">{title}</h3>
-            </div>
-            <div className="bg-dishco-secondary bg-opacity-20 rounded-full px-2 py-0.5">
-              <span className="text-xs font-medium">{meal.macros.calories} kcal</span>
-            </div>
-          </div>
-          <p className="mt-1 font-medium">{meal.name}</p>
-          
-          <Button 
-            onClick={onConsumed}
-            variant={completed ? "default" : "outline"}
-            size="sm"
-            className="mt-2"
-          >
-            {completed ? (
-              <>
-                <Check size={16} className="mr-1" />
-                Consumed
-              </>
-            ) : (
-              "Mark as consumed"
-            )}
-          </Button>
-        </div>
-      </div>
       
-      {/* Macro Pills */}
-      <div className="flex px-3 pb-3 space-x-2 mt-1">
-        <span className="macro-pill macro-pill-protein">P: {meal.macros.protein}g</span>
-        <span className="macro-pill macro-pill-carbs">C: {meal.macros.carbs}g</span>
-        <span className="macro-pill macro-pill-fat">F: {meal.macros.fat}g</span>
+      <div className="space-y-6">
+        <div className="bg-white rounded-xl p-4 shadow-sm animate-slide-up">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Today's Nutrition</h2>
+            <Link to="/nutrition-goals">
+              <Button variant="ghost" size="sm" className="text-xs">Adjust Goals</Button>
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-4 gap-3">
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 mb-2">
+                <CircularProgressbar
+                  value={caloriesPercentage}
+                  text={`${dailyNutrition.calories}`}
+                  styles={buildStyles({
+                    textSize: '28px',
+                    pathColor: macroColors.calories,
+                    textColor: '#3C3C3C',
+                    trailColor: '#F9F9F9',
+                  })}
+                />
+              </div>
+              <span className="text-xs text-center">
+                Calories
+              </span>
+            </div>
+            
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 mb-2">
+                <CircularProgressbar
+                  value={proteinPercentage}
+                  text={`${dailyNutrition.protein}g`}
+                  styles={buildStyles({
+                    textSize: '28px',
+                    pathColor: macroColors.protein,
+                    textColor: '#3C3C3C',
+                    trailColor: '#F9F9F9',
+                  })}
+                />
+              </div>
+              <span className="text-xs text-center">
+                Protein
+              </span>
+            </div>
+            
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 mb-2">
+                <CircularProgressbar
+                  value={carbsPercentage}
+                  text={`${dailyNutrition.carbs}g`}
+                  styles={buildStyles({
+                    textSize: '28px',
+                    pathColor: macroColors.carbs,
+                    textColor: '#3C3C3C',
+                    trailColor: '#F9F9F9',
+                  })}
+                />
+              </div>
+              <span className="text-xs text-center">
+                Carbs
+              </span>
+            </div>
+            
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 mb-2">
+                <CircularProgressbar
+                  value={fatPercentage}
+                  text={`${dailyNutrition.fat}g`}
+                  styles={buildStyles({
+                    textSize: '28px',
+                    pathColor: macroColors.fat,
+                    textColor: '#3C3C3C',
+                    trailColor: '#F9F9F9',
+                  })}
+                />
+              </div>
+              <span className="text-xs text-center">
+                Fat
+              </span>
+            </div>
+          </div>
+          
+          <div className="mt-4">
+            <Link to="/log-meal">
+              <Button className="w-full flex items-center justify-center gap-2">
+                <UtensilsCrossed size={18} />
+                Log a Meal
+              </Button>
+            </Link>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-xl p-4 shadow-sm animate-slide-up">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold">Recipes</h2>
+            <Link to="/saved-recipes">
+              <Button variant="ghost" size="sm" className="text-xs">View All</Button>
+            </Link>
+          </div>
+          
+          <HomeRecipeViewer />
+        </div>
       </div>
-    </div>
-  ) : (
-    <div className="bg-white rounded-xl shadow-sm p-4 border border-dashed border-gray-300 flex justify-center items-center">
-      <button className="flex items-center text-dishco-primary">
-        <Plus size={18} className="mr-1" />
-        <span>Add {title}</span>
-      </button>
     </div>
   );
 };

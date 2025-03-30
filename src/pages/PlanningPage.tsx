@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Book, BookOpen, Calendar, CheckCircle, CookingPot, Info, Lock, Maximize2, RefreshCw, Save, Unlock, Zap, Heart } from 'lucide-react';
 import { calculateDailyMacros, defaultGoals, fetchNutritionGoals, generateMockMealPlan, recipes } from '../data/mockData';
-import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -17,6 +16,8 @@ import { supabase } from '@/integrations/supabase/client';
 import SavePlanDialog from '@/components/SavePlanDialog';
 import Badge from '@/components/Badge';
 import RecipeDetail from '@/components/RecipeDetail';
+import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
+import 'react-circular-progressbar/dist/styles.css';
 
 const PlanningPage = () => {
   const { toast } = useToast();
@@ -62,7 +63,41 @@ const PlanningPage = () => {
     
     loadGoals();
     fetchSavedRecipes();
+    loadSavedPlan();
   }, []);
+  
+  const loadSavedPlan = () => {
+    const planToCopy = sessionStorage.getItem('planToCopy');
+    const savedLockedMeals = sessionStorage.getItem('lockedMeals');
+    
+    if (planToCopy) {
+      try {
+        const parsedPlan = JSON.parse(planToCopy);
+        if (parsedPlan.days && Array.isArray(parsedPlan.days)) {
+          setMealPlan(parsedPlan.days);
+          toast({
+            title: "Plan Loaded",
+            description: "Your saved meal plan has been loaded.",
+          });
+          
+          sessionStorage.removeItem('planToCopy');
+        }
+      } catch (error) {
+        console.error('Error parsing saved plan:', error);
+      }
+    }
+    
+    if (savedLockedMeals) {
+      try {
+        const parsedLockedMeals = JSON.parse(savedLockedMeals);
+        setLockedMeals(parsedLockedMeals);
+        
+        sessionStorage.removeItem('lockedMeals');
+      } catch (error) {
+        console.error('Error parsing locked meals:', error);
+      }
+    }
+  };
   
   const fetchSavedRecipes = async () => {
     try {
@@ -318,6 +353,13 @@ const PlanningPage = () => {
     }
   };
 
+  const macroColors = {
+    calories: '#FFF4D7',
+    protein: '#DBE9FE',
+    carbs: '#FEF9C3',
+    fat: '#F3E8FF'
+  };
+
   return (
     <div className="animate-fade-in pb-4">
       <header className="mb-4 flex justify-between items-center">
@@ -391,71 +433,72 @@ const PlanningPage = () => {
         <h2 className="text-lg font-semibold mb-4">Daily Nutrition</h2>
         <div className="flex justify-between items-center">
           <div className="flex-1 flex flex-col items-center">
-            <Progress 
-              type="circular" 
-              size="md"
-              value={dailyMacros.calories}
-              max={goals.calories}
-              showValue={true}
-              valueSuffix=""
-              label="Calories"
-              status={percentages.calories > 90 ? "warning" : "default"}
-              className="mb-1"
-            />
+            <div className="w-20 h-20">
+              <CircularProgressbar
+                value={percentages.calories}
+                text={`${dailyMacros.calories}`}
+                styles={buildStyles({
+                  textSize: '30px',
+                  pathColor: macroColors.calories,
+                  textColor: '#3C3C3C',
+                  trailColor: '#F9F9F9',
+                })}
+              />
+            </div>
             <span className="text-xs text-center mt-1">
-              {dailyMacros.calories} / {goals.calories}
+              {dailyMacros.calories} / {goals.calories} Cal
             </span>
           </div>
 
           <div className="flex-1 flex flex-col items-center">
-            <Progress 
-              type="circular" 
-              size="md"
-              value={dailyMacros.protein}
-              max={goals.protein}
-              showValue={true}
-              valueSuffix="g"
-              label="Protein"
-              status={percentages.protein > 90 ? "warning" : "default"}
-              indicatorClassName="text-amber-500"
-              className="mb-1"
-            />
+            <div className="w-20 h-20">
+              <CircularProgressbar
+                value={percentages.protein}
+                text={`${dailyMacros.protein}g`}
+                styles={buildStyles({
+                  textSize: '30px',
+                  pathColor: macroColors.protein,
+                  textColor: '#3C3C3C',
+                  trailColor: '#F9F9F9',
+                })}
+              />
+            </div>
             <span className="text-xs text-center mt-1 text-amber-600">
               {dailyMacros.protein}g / {goals.protein}g
             </span>
           </div>
 
           <div className="flex-1 flex flex-col items-center">
-            <Progress 
-              type="circular" 
-              size="md"
-              value={dailyMacros.carbs}
-              max={goals.carbs}
-              showValue={true}
-              valueSuffix="g"
-              label="Carbs"
-              status={percentages.carbs > 90 ? "warning" : "default"}
-              indicatorClassName="text-primary"
-              className="mb-1"
-            />
+            <div className="w-20 h-20">
+              <CircularProgressbar
+                value={percentages.carbs}
+                text={`${dailyMacros.carbs}g`}
+                styles={buildStyles({
+                  textSize: '30px',
+                  pathColor: macroColors.carbs,
+                  textColor: '#3C3C3C',
+                  trailColor: '#F9F9F9',
+                })}
+              />
+            </div>
             <span className="text-xs text-center mt-1">
               {dailyMacros.carbs}g / {goals.carbs}g
             </span>
           </div>
 
           <div className="flex-1 flex flex-col items-center">
-            <Progress 
-              type="circular" 
-              size="md"
-              value={dailyMacros.fat}
-              max={goals.fat}
-              showValue={true}
-              valueSuffix="g"
-              label="Fat"
-              status={percentages.fat > 90 ? "warning" : "default"}
-              indicatorClassName="text-green-500"
-              className="mb-1"
-            />
+            <div className="w-20 h-20">
+              <CircularProgressbar
+                value={percentages.fat}
+                text={`${dailyMacros.fat}g`}
+                styles={buildStyles({
+                  textSize: '30px',
+                  pathColor: macroColors.fat,
+                  textColor: '#3C3C3C',
+                  trailColor: '#F9F9F9',
+                })}
+              />
+            </div>
             <span className="text-xs text-center mt-1 text-green-600">
               {dailyMacros.fat}g / {goals.fat}g
             </span>

@@ -1,122 +1,122 @@
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 interface SavePlanDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  mealPlan: any;
+  mealPlan: any[];
 }
 
 const SavePlanDialog: React.FC<SavePlanDialogProps> = ({ isOpen, onClose, mealPlan }) => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
   const [planName, setPlanName] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [description, setDescription] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSave = async () => {
     if (!planName.trim()) {
       toast({
-        title: "Plan name required",
-        description: "Please enter a name for your meal plan.",
-        variant: "destructive",
+        title: "Name Required",
+        description: "Please provide a name for your meal plan.",
+        variant: "destructive"
       });
       return;
     }
 
-    setLoading(true);
+    setIsSaving(true);
+    
     try {
-      // Prepare the plan data
       const planData = {
-        name: planName,
-        plan: mealPlan,
-        description: `${format(new Date(), 'MMM d')} - ${format(new Date(new Date().getTime() + 6 * 24 * 60 * 60 * 1000), 'MMM d, yyyy')}`,
+        days: mealPlan,
+        description: description.trim()
       };
-
-      // Save to Supabase
+      
       const { error } = await supabase
         .from('saved_meal_plans')
-        .insert([{
-          name: planName,
+        .insert([{ 
+          name: planName.trim(),
           plan_data: planData
         }]);
-
+      
       if (error) {
         console.error('Error saving meal plan:', error);
         toast({
-          title: "Error",
-          description: "There was a problem saving your meal plan. Please try again.",
-          variant: "destructive",
+          title: "Save Failed",
+          description: "There was an error saving your meal plan.",
+          variant: "destructive"
         });
         return;
       }
-
+      
       toast({
         title: "Plan Saved",
         description: "Your meal plan has been saved successfully.",
       });
-
-      // Close dialog and navigate to saved plans
+      
       onClose();
       navigate('/saved-plans');
     } catch (error) {
       console.error('Error saving meal plan:', error);
       toast({
-        title: "Error",
-        description: "There was a problem saving your meal plan. Please try again.",
-        variant: "destructive",
+        title: "Save Failed",
+        description: "There was an error saving your meal plan.",
+        variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      setIsSaving(false);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Save Meal Plan</DialogTitle>
           <DialogDescription>
-            Give your meal plan a name to save it for later.
+            Give your meal plan a name and optional description to save it for later.
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4">
-          <div className="mb-4">
+        
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
             <Label htmlFor="plan-name">Plan Name</Label>
             <Input
               id="plan-name"
-              placeholder="e.g., Clean Eating Week"
+              placeholder="e.g., My Weekly Plan, Keto Plan"
               value={planName}
               onChange={(e) => setPlanName(e.target.value)}
-              className="mt-1"
             />
           </div>
           
-          <div className="bg-gray-50 p-3 rounded-md mb-4">
-            <h3 className="text-sm font-medium mb-2">Week Overview</h3>
-            <div className="text-sm text-dishco-text-light">
-              {format(new Date(), 'MMM d')} - {format(new Date(new Date().getTime() + 6 * 24 * 60 * 60 * 1000), 'MMM d, yyyy')}
-            </div>
-            <p className="text-xs mt-2">
-              This plan includes {mealPlan.length} days of meals with all your customizations.
-            </p>
+          <div className="grid gap-2">
+            <Label htmlFor="plan-description">Description (Optional)</Label>
+            <Textarea
+              id="plan-description"
+              placeholder="Add notes about this meal plan..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="resize-none"
+              rows={3}
+            />
           </div>
-          
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onClose} disabled={loading}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={loading || !planName.trim()}>
-              {loading ? 'Saving...' : 'Save Plan'}
-            </Button>
-          </div>
+        </div>
+        
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save Plan"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
