@@ -65,6 +65,7 @@ export const useMealPlanUtils = () => {
           instructions: dbRecipe.recipe_instructions?.map(inst => inst.instruction) || [],
           prepTime: dbRecipe.prep_time || 0,
           cookTime: dbRecipe.cook_time || 0,
+          servings: dbRecipe.servings || 1, // Add the missing servings property with a default value
           macros: {
             calories: dbRecipe.calories || 0,
             protein: dbRecipe.protein || 0,
