@@ -1,4 +1,3 @@
-
 export interface Macros {
   calories: number;
   protein: number;

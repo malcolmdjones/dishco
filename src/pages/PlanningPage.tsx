@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, ArrowRight, Book, BookOpen, Calendar, CheckCircle, CookingPot, Info, Lock, Maximize2, RefreshCw, Save, Unlock, Zap } from 'lucide-react';
-import { calculateDailyMacros, defaultGoals, generateMockMealPlan, recipes } from '../data/mockData';
+import { Recipe, calculateDailyMacros, defaultGoals, generateMockMealPlan, recipes } from '../data/mockData';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
@@ -12,13 +12,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { DayMeals, DayPlan, WeeklyMealPlan } from '@/types/mealPlan';
 
 const PlanningPage = () => {
   const { toast } = useToast();
-  const [mealPlan, setMealPlan] = useState(generateMockMealPlan());
+  const [mealPlan, setMealPlan] = useState<WeeklyMealPlan>(generateMockMealPlan());
   const [activeDay, setActiveDay] = useState(0);
   const [lockedMeals, setLockedMeals] = useState<{[key: string]: boolean}>({});
-  const [selectedMeal, setSelectedMeal] = useState<any>(null);
+  const [selectedMeal, setSelectedMeal] = useState<Recipe | null>(null);
   const [isRecipeDrawerOpen, setIsRecipeDrawerOpen] = useState(false);
   const [isWeekOverviewOpen, setIsWeekOverviewOpen] = useState(false);
   const [isVaultOpen, setIsVaultOpen] = useState(false);
@@ -26,17 +27,17 @@ const PlanningPage = () => {
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   
   // Ensure we have valid meal plan data
-  const ensureValidMealPlan = () => {
+  const ensureValidMealPlan = (): WeeklyMealPlan => {
     const safeWeeklyPlan = mealPlan.map(day => {
       return {
         ...day,
         meals: {
           breakfast: Array.isArray(day.meals.breakfast) ? day.meals.breakfast : 
-                    day.meals.breakfast ? [day.meals.breakfast] : [],
+                    day.meals.breakfast ? [day.meals.breakfast as Recipe] : [],
           lunch: Array.isArray(day.meals.lunch) ? day.meals.lunch : 
-                 day.meals.lunch ? [day.meals.lunch] : [],
+                 day.meals.lunch ? [day.meals.lunch as Recipe] : [],
           dinner: Array.isArray(day.meals.dinner) ? day.meals.dinner : 
-                 day.meals.dinner ? [day.meals.dinner] : [],
+                 day.meals.dinner ? [day.meals.dinner as Recipe] : [],
           snacks: Array.isArray(day.meals.snacks) ? day.meals.snacks.filter(snack => snack !== null && snack !== undefined) : []
         }
       };
@@ -85,61 +86,51 @@ const PlanningPage = () => {
     
     const updatedPlan = mealPlan.map((day, index) => {
       const newDay = newPlan[index];
-      const updatedMeals = { ...newDay.meals };
-      
-      // Convert meals to arrays if they aren't already
-      const breakfastArray = Array.isArray(day.meals.breakfast) ? day.meals.breakfast : day.meals.breakfast ? [day.meals.breakfast] : [];
-      const lunchArray = Array.isArray(day.meals.lunch) ? day.meals.lunch : day.meals.lunch ? [day.meals.lunch] : [];
-      const dinnerArray = Array.isArray(day.meals.dinner) ? day.meals.dinner : day.meals.dinner ? [day.meals.dinner] : [];
-      const snacksArray = Array.isArray(day.meals.snacks) ? day.meals.snacks : [];
+      const updatedMeals = { ...newDay.meals } as DayMeals;
       
       // Keep locked breakfast meals
-      updatedMeals.breakfast = breakfastArray.filter((meal, mealIndex) => {
-        const mealKey = `breakfast-${meal?.id}-${mealIndex}`;
+      updatedMeals.breakfast = day.meals.breakfast.filter((meal, mealIndex) => {
+        if (!meal) return false;
+        const mealKey = `breakfast-${meal.id}-${mealIndex}`;
         return lockedMeals[mealKey];
       });
       
       // Keep locked lunch meals
-      updatedMeals.lunch = lunchArray.filter((meal, mealIndex) => {
-        const mealKey = `lunch-${meal?.id}-${mealIndex}`;
+      updatedMeals.lunch = day.meals.lunch.filter((meal, mealIndex) => {
+        if (!meal) return false;
+        const mealKey = `lunch-${meal.id}-${mealIndex}`;
         return lockedMeals[mealKey];
       });
       
       // Keep locked dinner meals
-      updatedMeals.dinner = dinnerArray.filter((meal, mealIndex) => {
-        const mealKey = `dinner-${meal?.id}-${mealIndex}`;
+      updatedMeals.dinner = day.meals.dinner.filter((meal, mealIndex) => {
+        if (!meal) return false;
+        const mealKey = `dinner-${meal.id}-${mealIndex}`;
         return lockedMeals[mealKey];
       });
       
       // Keep locked snacks
-      if (snacksArray.length > 0) {
-        updatedMeals.snacks = snacksArray.filter((snack, snackIndex) => {
-          const snackKey = `snacks-${snack?.id}-${snackIndex}`;
-          return lockedMeals[snackKey];
-        });
-      }
+      updatedMeals.snacks = day.meals.snacks.filter((snack, snackIndex) => {
+        if (!snack) return false;
+        const snackKey = `snacks-${snack.id}-${snackIndex}`;
+        return lockedMeals[snackKey];
+      });
       
       // Add in new meals from the newly generated plan if needed
-      if (Array.isArray(newDay.meals.breakfast) && newDay.meals.breakfast.length > 0 && updatedMeals.breakfast.length === 0) {
-        updatedMeals.breakfast = [newDay.meals.breakfast[0]];
-      } else if (newDay.meals.breakfast && updatedMeals.breakfast.length === 0) {
-        updatedMeals.breakfast = [newDay.meals.breakfast];
+      if (updatedMeals.breakfast.length === 0 && newDay.meals.breakfast.length > 0) {
+        updatedMeals.breakfast.push(newDay.meals.breakfast[0]);
       }
       
-      if (Array.isArray(newDay.meals.lunch) && newDay.meals.lunch.length > 0 && updatedMeals.lunch.length === 0) {
-        updatedMeals.lunch = [newDay.meals.lunch[0]];
-      } else if (newDay.meals.lunch && updatedMeals.lunch.length === 0) {
-        updatedMeals.lunch = [newDay.meals.lunch];
+      if (updatedMeals.lunch.length === 0 && newDay.meals.lunch.length > 0) {
+        updatedMeals.lunch.push(newDay.meals.lunch[0]);
       }
       
-      if (Array.isArray(newDay.meals.dinner) && newDay.meals.dinner.length > 0 && updatedMeals.dinner.length === 0) {
-        updatedMeals.dinner = [newDay.meals.dinner[0]];
-      } else if (newDay.meals.dinner && updatedMeals.dinner.length === 0) {
-        updatedMeals.dinner = [newDay.meals.dinner];
+      if (updatedMeals.dinner.length === 0 && newDay.meals.dinner.length > 0) {
+        updatedMeals.dinner.push(newDay.meals.dinner[0]);
       }
       
-      if (!updatedMeals.snacks || updatedMeals.snacks.length === 0) {
-        updatedMeals.snacks = newDay.meals.snacks;
+      if (updatedMeals.snacks.length === 0 && newDay.meals.snacks.length > 0) {
+        updatedMeals.snacks = [...newDay.meals.snacks];
       }
       
       return {
@@ -171,46 +162,34 @@ const PlanningPage = () => {
     }
   };
   
-  const handleOpenRecipeDetails = (meal: any) => {
+  const handleOpenRecipeDetails = (meal: Recipe) => {
     setSelectedMeal(meal);
     setIsRecipeDrawerOpen(true);
   };
   
-  const handleAddFromVault = (recipe: any) => {
+  const handleAddFromVault = (recipe: Recipe) => {
     const updatedMealPlan = [...mealPlan];
     const currentDay = { ...updatedMealPlan[activeDay] };
-    
-    // Convert single items to arrays if needed
-    if (!Array.isArray(currentDay.meals.breakfast)) {
-      currentDay.meals.breakfast = currentDay.meals.breakfast ? [currentDay.meals.breakfast] : [];
-    }
-    if (!Array.isArray(currentDay.meals.lunch)) {
-      currentDay.meals.lunch = currentDay.meals.lunch ? [currentDay.meals.lunch] : [];
-    }
-    if (!Array.isArray(currentDay.meals.dinner)) {
-      currentDay.meals.dinner = currentDay.meals.dinner ? [currentDay.meals.dinner] : [];
-    }
-    if (!Array.isArray(currentDay.meals.snacks)) {
-      currentDay.meals.snacks = [];
-    }
+    const updatedMeals = { ...currentDay.meals } as DayMeals;
     
     // Add to breakfast if it's empty
-    if (currentDay.meals.breakfast.length === 0) {
-      currentDay.meals.breakfast.push(recipe);
+    if (updatedMeals.breakfast.length === 0) {
+      updatedMeals.breakfast.push(recipe);
     } 
     // Add to lunch if it's empty
-    else if (currentDay.meals.lunch.length === 0) {
-      currentDay.meals.lunch.push(recipe);
+    else if (updatedMeals.lunch.length === 0) {
+      updatedMeals.lunch.push(recipe);
     } 
     // Add to dinner if it's empty
-    else if (currentDay.meals.dinner.length === 0) {
-      currentDay.meals.dinner.push(recipe);
+    else if (updatedMeals.dinner.length === 0) {
+      updatedMeals.dinner.push(recipe);
     } 
     // Otherwise add to snacks
     else {
-      currentDay.meals.snacks.push(recipe);
+      updatedMeals.snacks.push(recipe);
     }
     
+    currentDay.meals = updatedMeals;
     updatedMealPlan[activeDay] = currentDay;
     setMealPlan(updatedMealPlan);
     
@@ -230,9 +209,9 @@ const PlanningPage = () => {
     setIsWeekOverviewOpen(true);
   };
 
-  const [draggedMeal, setDraggedMeal] = useState<{type: string, meal: any, index?: number} | null>(null);
+  const [draggedMeal, setDraggedMeal] = useState<{type: string, meal: Recipe, index?: number} | null>(null);
   
-  const handleDragStart = (mealType: string, meal: any, index?: number) => {
+  const handleDragStart = (mealType: string, meal: Recipe, index?: number) => {
     setDraggedMeal({ type: mealType, meal, index });
   };
   
@@ -245,36 +224,18 @@ const PlanningPage = () => {
     
     const updatedMealPlan = [...mealPlan];
     const currentDay = { ...updatedMealPlan[activeDay] };
-    const updatedMeals = { ...currentDay.meals };
+    const updatedMeals = { ...currentDay.meals } as DayMeals;
     
-    // Convert single items to arrays if needed
-    if (!Array.isArray(updatedMeals.breakfast)) {
-      updatedMeals.breakfast = updatedMeals.breakfast ? [updatedMeals.breakfast] : [];
-    }
-    if (!Array.isArray(updatedMeals.lunch)) {
-      updatedMeals.lunch = updatedMeals.lunch ? [updatedMeals.lunch] : [];
-    }
-    if (!Array.isArray(updatedMeals.dinner)) {
-      updatedMeals.dinner = updatedMeals.dinner ? [updatedMeals.dinner] : [];
-    }
-    if (!Array.isArray(updatedMeals.snacks)) {
-      updatedMeals.snacks = [];
-    }
-    
-    // Only remove the meal from its original location
-    if (draggedMeal.type === 'snacks') {
-      if (updatedMeals.snacks && draggedMeal.index !== undefined) {
-        const updatedSnacks = [...updatedMeals.snacks];
-        updatedSnacks.splice(draggedMeal.index, 1);
-        updatedMeals.snacks = updatedSnacks;
-      }
-    } else {
+    // Only remove the meal from its original location if the index is provided
+    if (draggedMeal.type === 'snacks' && draggedMeal.index !== undefined) {
+      const updatedSnacks = [...updatedMeals.snacks];
+      updatedSnacks.splice(draggedMeal.index, 1);
+      updatedMeals.snacks = updatedSnacks;
+    } else if (draggedMeal.index !== undefined) {
       // For main meals, remove only the specific item by index
-      if (draggedMeal.index !== undefined) {
-        const sourceArray = [...updatedMeals[draggedMeal.type]];
-        sourceArray.splice(draggedMeal.index, 1);
-        updatedMeals[draggedMeal.type] = sourceArray;
-      }
+      const sourceArray = [...updatedMeals[draggedMeal.type as keyof DayMeals] as Recipe[]];
+      sourceArray.splice(draggedMeal.index, 1);
+      updatedMeals[draggedMeal.type as keyof DayMeals] = sourceArray as any;
     }
     
     // Add the meal to the target location
@@ -282,7 +243,7 @@ const PlanningPage = () => {
       updatedMeals.snacks.push(draggedMeal.meal);
     } else {
       // Add to the target array
-      updatedMeals[targetType].push(draggedMeal.meal);
+      (updatedMeals[targetType as keyof DayMeals] as Recipe[]).push(draggedMeal.meal);
     }
     
     currentDay.meals = updatedMeals;
@@ -823,7 +784,7 @@ const PlanningPage = () => {
 };
 
 interface MealCardProps {
-  meal: any;
+  meal: Recipe;
   isLocked: boolean;
   onLockToggle: () => void;
   onViewRecipe: () => void;
@@ -936,7 +897,7 @@ const EmptyMealCard: React.FC<EmptyMealCardProps> = ({ title }) => {
   );
 };
 
-const Plus = ({ size, className }) => (
+const Plus = ({ size, className }: { size: number, className?: string }) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
     width={size} 
