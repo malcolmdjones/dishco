@@ -1,18 +1,35 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
-import { Heart, Plus, UtensilsCrossed } from 'lucide-react';
+import { Heart, Plus, UtensilsCrossed, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { calculateDailyMacros, defaultGoals } from '@/data/mockData';
 import HomeRecipeViewer from '@/components/HomeRecipeViewer';
+import { format, addDays, subDays } from 'date-fns';
 
 const HomePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  
+  // Function to go to previous day
+  const goToPreviousDay = () => {
+    setSelectedDate(prevDate => subDays(prevDate, 1));
+  };
+  
+  // Function to go to next day
+  const goToNextDay = () => {
+    setSelectedDate(prevDate => addDays(prevDate, 1));
+  };
+  
+  // Function to reset to today
+  const goToToday = () => {
+    setSelectedDate(new Date());
+  };
   
   // Mock data for today's meal plan
   const todayPlan = {
@@ -64,12 +81,48 @@ const HomePage = () => {
     fat: '#F3E8FF'
   };
 
+  // Check if selected date is today
+  const isToday = format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+
   return (
     <div className="animate-fade-in">
       <header className="mb-6">
         <h1 className="text-2xl font-bold">Hi there 👋</h1>
         <p className="text-dishco-text-light">Track your meals and plan for the week</p>
       </header>
+      
+      {/* Date selector */}
+      <div className="bg-white rounded-xl p-4 mb-6 shadow-sm">
+        <div className="flex items-center justify-between">
+          <button onClick={goToPreviousDay} className="p-2 hover:bg-gray-100 rounded-full">
+            <ChevronLeft size={18} />
+          </button>
+          
+          <div className="text-center">
+            <button 
+              onClick={goToToday}
+              className={`text-lg font-medium ${isToday ? 'text-dishco-primary' : ''}`}
+            >
+              {format(selectedDate, 'EEEE, MMMM d')}
+              {!isToday && (
+                <span className="ml-2 text-xs bg-gray-100 px-2 py-0.5 rounded-full">
+                  Tap to return to today
+                </span>
+              )}
+            </button>
+            <p className="text-xs text-dishco-text-light">
+              {isToday ? 'Today' : 
+                format(selectedDate, 'yyyy-MM-dd') === format(addDays(new Date(), 1), 'yyyy-MM-dd') ? 'Tomorrow' : 
+                format(selectedDate, 'yyyy-MM-dd') === format(subDays(new Date(), 1), 'yyyy-MM-dd') ? 'Yesterday' : 
+                format(selectedDate, 'MMM d, yyyy')}
+            </p>
+          </div>
+          
+          <button onClick={goToNextDay} className="p-2 hover:bg-gray-100 rounded-full">
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      </div>
       
       <div className="space-y-6">
         <div className="bg-white rounded-xl p-4 shadow-sm animate-slide-up">

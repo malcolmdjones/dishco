@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Copy, Trash2, ChevronRight, Plus, Pencil, Info } from 'lucide-react';
+import { ArrowLeft, Calendar, Trash2, ChevronRight, Plus, Pencil, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -97,20 +98,6 @@ const SavedMealPlansPage = () => {
     } catch (error) {
       console.error('Error deleting meal plan:', error);
     }
-  };
-
-  const handleCopy = (id: string) => {
-    const planToCopy = savedPlans.find(plan => plan.id === id);
-    if (!planToCopy) return;
-
-    sessionStorage.setItem('planToCopy', JSON.stringify(planToCopy.plan_data));
-    
-    toast({
-      title: "Plan Duplicated",
-      description: "A copy of the plan has been created.",
-    });
-    
-    navigate('/planning');
   };
 
   const handleActivate = (id: string) => {
@@ -509,7 +496,7 @@ const SavedMealPlansPage = () => {
       <Dialog open={isRenaming} onOpenChange={setIsRenaming}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Rename Plan</DialogTitle>
+            <DialogTitle>Edit Plan</DialogTitle>
             <DialogDescription>
               Update the name and description of your meal plan.
             </DialogDescription>
