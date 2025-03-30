@@ -93,11 +93,17 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
     <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent className="max-h-[90vh] overflow-y-auto">
         <div className="h-48 w-full overflow-hidden relative">
-          <img 
-            src={recipe.imageSrc || '/placeholder.svg'} 
-            alt={recipe.name} 
-            className="w-full h-full object-cover"
-          />
+          {recipe.imageSrc ? (
+            <img 
+              src={recipe.imageSrc || '/placeholder.svg'} 
+              alt={recipe.name} 
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+              <span className="text-gray-400">No image available</span>
+            </div>
+          )}
           <button 
             className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md"
             onClick={onClose}
@@ -137,37 +143,26 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
           {/* Nutrition Information */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-3">Nutrition Information</h3>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium">Calories</span>
-                  <span className="text-sm font-medium">{recipe.macros.calories} kcal</span>
-                </div>
-                <Progress value={75} className="h-2" indicatorClassName="bg-amber-400" />
+            <div className="grid grid-cols-4 gap-2">
+              <div className="bg-amber-50 p-2 rounded-md text-center">
+                <div className="text-sm font-medium mb-1">Calories</div>
+                <div className="font-bold">{recipe.macros.calories}</div>
+                <div className="text-xs">kcal</div>
               </div>
-              
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium">Protein</span>
-                  <span className="text-sm font-medium">{recipe.macros.protein}g</span>
-                </div>
-                <Progress value={65} className="h-2" indicatorClassName="bg-blue-400" />
+              <div className="bg-blue-50 p-2 rounded-md text-center">
+                <div className="text-sm font-medium mb-1">Protein</div>
+                <div className="font-bold">{recipe.macros.protein}</div>
+                <div className="text-xs">g</div>
               </div>
-              
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium">Carbs</span>
-                  <span className="text-sm font-medium">{recipe.macros.carbs}g</span>
-                </div>
-                <Progress value={80} className="h-2" indicatorClassName="bg-yellow-400" />
+              <div className="bg-yellow-50 p-2 rounded-md text-center">
+                <div className="text-sm font-medium mb-1">Carbs</div>
+                <div className="font-bold">{recipe.macros.carbs}</div>
+                <div className="text-xs">g</div>
               </div>
-              
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium">Fat</span>
-                  <span className="text-sm font-medium">{recipe.macros.fat}g</span>
-                </div>
-                <Progress value={60} className="h-2" indicatorClassName="bg-purple-400" />
+              <div className="bg-purple-50 p-2 rounded-md text-center">
+                <div className="text-sm font-medium mb-1">Fat</div>
+                <div className="font-bold">{recipe.macros.fat}</div>
+                <div className="text-xs">g</div>
               </div>
             </div>
           </div>
@@ -185,7 +180,7 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
           {/* Instructions */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-3">Instructions</h3>
-            <ol className="list-decimal pl-5 space-y-4">
+            <ol className="list-decimal pl-5 space-y-2">
               {recipe.instructions?.map((instruction: string, index: number) => (
                 <li key={index} className="pl-1">{instruction}</li>
               ))}

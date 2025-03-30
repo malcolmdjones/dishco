@@ -32,7 +32,7 @@ const SnacksSection: React.FC<SnacksSectionProps> = ({
             }`}
           >
             <div className="flex justify-between items-center mb-2">
-              <h4 className="text-sm text-gray-600">Snack {idx + 1}</h4>
+              <div className="text-sm text-gray-600"></div>
               <div className="flex gap-1">
                 <Button 
                   variant="ghost" 

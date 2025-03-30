@@ -30,7 +30,8 @@ interface DailyNutritionCardProps {
 const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
   dayTotals,
   userGoals,
-  exceedsGoals
+  exceedsGoals,
+  aiReasoning
 }) => {
   // Calculate percentage of goals
   const calculatePercentage = (current: number, goal: number) => {

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useMealPlanUtils } from '@/hooks/useMealPlanUtils';
 import { Recipe } from '@/data/mockData';
@@ -113,6 +112,7 @@ const CreateMealPlanPage = () => {
         dayTotals={dayTotals}
         userGoals={calculateDayTotals()}
         exceedsGoals={goalExceeds}
+        aiReasoning={undefined}
       />
 
       {/* Meal Sections */}
