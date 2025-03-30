@@ -24,6 +24,7 @@ type RecipeData = {
   tags?: string[];
   equipment?: string[];
   imageUrl?: string;
+  localImageUrl?: string;
 };
 
 serve(async (req) => {
@@ -66,19 +67,42 @@ serve(async (req) => {
 
     // Look for common recipe schema elements
     // Try to find structured JSON-LD data first (most recipe sites use this)
-    const jsonLdScript = $('script[type="application/ld+json"]').html();
-    if (jsonLdScript) {
+    const jsonLdScripts = $('script[type="application/ld+json"]');
+    let foundRecipeSchema = false;
+    
+    jsonLdScripts.each((i, script) => {
+      if (foundRecipeSchema) return;
+      
       try {
-        const jsonData = JSON.parse(jsonLdScript);
-        // Handle array of schemas
-        const recipeSchema = Array.isArray(jsonData) 
-          ? jsonData.find(item => item['@type'] === 'Recipe') 
-          : (jsonData['@type'] === 'Recipe' ? jsonData : jsonData['@graph']?.find(item => item['@type'] === 'Recipe'));
+        const scriptContent = $(script).html();
+        if (!scriptContent) return;
+        
+        const jsonData = JSON.parse(scriptContent);
+        
+        // Handle different structures of JSON-LD
+        const recipeSchema = findRecipeSchema(jsonData);
         
         if (recipeSchema) {
+          foundRecipeSchema = true;
+          console.log("Found recipe schema in JSON-LD!");
+          
           recipeData.name = recipeSchema.name || recipeData.name;
           recipeData.description = recipeSchema.description;
-          recipeData.imageUrl = recipeSchema.image?.url || recipeSchema.image;
+          
+          // Get image - handle different formats
+          if (recipeSchema.image) {
+            if (typeof recipeSchema.image === 'string') {
+              recipeData.imageUrl = recipeSchema.image;
+            } else if (recipeSchema.image.url) {
+              recipeData.imageUrl = recipeSchema.image.url;
+            } else if (Array.isArray(recipeSchema.image) && recipeSchema.image.length > 0) {
+              if (typeof recipeSchema.image[0] === 'string') {
+                recipeData.imageUrl = recipeSchema.image[0];
+              } else if (recipeSchema.image[0].url) {
+                recipeData.imageUrl = recipeSchema.image[0].url;
+              }
+            }
+          }
           
           // Get ingredients
           if (recipeSchema.recipeIngredient) {
@@ -90,20 +114,35 @@ serve(async (req) => {
           // Get instructions
           if (recipeSchema.recipeInstructions) {
             if (Array.isArray(recipeSchema.recipeInstructions)) {
-              recipeData.instructions = recipeSchema.recipeInstructions.map((inst: any) => 
-                typeof inst === 'string' ? inst : (inst.text || "")
-              );
+              recipeData.instructions = recipeSchema.recipeInstructions.map((inst: any) => {
+                if (typeof inst === 'string') {
+                  return inst;
+                } else if (inst.text) {
+                  return inst.text;
+                } else if (inst.itemListElement) {
+                  // Some schemas nest instructions in itemListElement
+                  return Array.isArray(inst.itemListElement) 
+                    ? inst.itemListElement.map((item: any) => item.text || "").join("\n")
+                    : "";
+                } else {
+                  return "";
+                }
+              }).filter((text: string) => text.trim() !== "");
             } else if (typeof recipeSchema.recipeInstructions === 'string') {
-              recipeData.instructions = [recipeSchema.recipeInstructions];
+              // Split by periods or line breaks if it's a single string
+              recipeData.instructions = recipeSchema.recipeInstructions
+                .split(/(?<=\.)\s+|[\r\n]+/)
+                .map((s: string) => s.trim())
+                .filter((s: string) => s.length > 0);
             }
           }
           
           // Get nutritional info
           if (recipeSchema.nutrition) {
-            recipeData.calories = parseInt(recipeSchema.nutrition.calories) || undefined;
-            recipeData.protein = parseInt(recipeSchema.nutrition.proteinContent) || undefined;
-            recipeData.carbs = parseInt(recipeSchema.nutrition.carbohydrateContent) || undefined;
-            recipeData.fat = parseInt(recipeSchema.nutrition.fatContent) || undefined;
+            recipeData.calories = parseNutritionValue(recipeSchema.nutrition.calories);
+            recipeData.protein = parseNutritionValue(recipeSchema.nutrition.proteinContent);
+            recipeData.carbs = parseNutritionValue(recipeSchema.nutrition.carbohydrateContent);
+            recipeData.fat = parseNutritionValue(recipeSchema.nutrition.fatContent);
           }
           
           // Get cooking info
@@ -133,14 +172,17 @@ serve(async (req) => {
       } catch (e) {
         console.error("Error parsing JSON-LD:", e);
       }
-    }
+    });
     
     // If JSON-LD didn't provide everything, fall back to HTML parsing
+    // First check if we need to extract ingredients
     if (recipeData.ingredients.length === 0) {
+      console.log("Falling back to HTML parsing for ingredients");
       // Try common ingredient selectors
       const ingredientSelectors = [
         '.recipe-ingredients li', '.ingredients li', '.ingredient-list li',
-        '[itemprop="recipeIngredient"]', '.wprm-recipe-ingredient'
+        '[itemprop="recipeIngredient"]', '.wprm-recipe-ingredient',
+        '.recipe__ingredient', '.recipe-ingredient', '.ingredient'
       ];
       
       for (const selector of ingredientSelectors) {
@@ -152,18 +194,41 @@ serve(async (req) => {
       }
     }
     
+    // Check if we need to extract instructions
     if (recipeData.instructions.length === 0) {
+      console.log("Falling back to HTML parsing for instructions");
       // Try common instruction selectors
       const instructionSelectors = [
         '.recipe-instructions li', '.instructions li', '.preparation-steps li',
-        '[itemprop="recipeInstructions"]', '.wprm-recipe-instruction'
+        '[itemprop="recipeInstructions"]', '.wprm-recipe-instruction',
+        '.recipe__instruction', '.recipe-instruction', '.instruction',
+        '.recipe-method-step', '.recipe-directions__list-item'
       ];
       
       for (const selector of instructionSelectors) {
         const instructions = $(selector).map((_, el) => $(el).text().trim()).get();
         if (instructions.length > 0) {
-          recipeData.instructions = instructions;
+          recipeData.instructions = instructions.filter(text => text.length > 0);
           break;
+        }
+      }
+      
+      // If still no instructions, try finding a parent container and getting all list items
+      if (recipeData.instructions.length === 0) {
+        const instructionContainerSelectors = [
+          '.recipe-instructions', '.instructions', '.preparation-steps',
+          '.recipe-directions', '.recipe-method', '.directions'
+        ];
+        
+        for (const selector of instructionContainerSelectors) {
+          if ($(selector).length) {
+            const container = $(selector).first();
+            const instructions = container.find('li, p').map((_, el) => $(el).text().trim()).get();
+            if (instructions.length > 0) {
+              recipeData.instructions = instructions.filter(text => text.length > 0);
+              break;
+            }
+          }
         }
       }
     }
@@ -185,14 +250,17 @@ serve(async (req) => {
     }
     
     if (!recipeData.imageUrl) {
+      console.log("Falling back to HTML parsing for image");
       // Try to find main recipe image
       const imageSelectors = [
         '.recipe-image img', '.hero-photo img', '[itemprop="image"]', 
-        '.wprm-recipe-image img', '.post-thumbnail img'
+        '.wprm-recipe-image img', '.post-thumbnail img',
+        '.recipe__image img', '.recipe-card__image img',
+        '.recipe-featured-image img', '.featured-image img'
       ];
       
       for (const selector of imageSelectors) {
-        const imgSrc = $(selector).first().attr('src');
+        const imgSrc = $(selector).first().attr('src') || $(selector).first().attr('data-src');
         if (imgSrc) {
           recipeData.imageUrl = imgSrc;
           break;
@@ -204,6 +272,64 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // Download and store the image if URL exists
+    if (recipeData.imageUrl) {
+      try {
+        console.log(`Downloading image from: ${recipeData.imageUrl}`);
+        
+        // Generate a unique file name for the image
+        const imageName = `recipe-images/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.jpg`;
+        
+        // Download the image
+        const imageResponse = await fetch(recipeData.imageUrl);
+        if (imageResponse.ok) {
+          const imageBlob = await imageResponse.blob();
+          
+          // Check if images bucket exists, if not create it
+          const { data: buckets } = await supabase.storage.listBuckets();
+          const imagesBucketExists = buckets?.some(bucket => bucket.name === 'recipe-images');
+          
+          if (!imagesBucketExists) {
+            console.log("Creating recipe-images bucket");
+            const { error: bucketError } = await supabase.storage.createBucket('recipe-images', {
+              public: true
+            });
+            if (bucketError) {
+              console.error("Error creating bucket:", bucketError);
+            }
+          }
+          
+          // Upload the image to Supabase Storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('recipe-images')
+            .upload(imageName, imageBlob, {
+              contentType: imageResponse.headers.get('content-type') || 'image/jpeg',
+              upsert: true
+            });
+          
+          if (uploadError) {
+            console.error("Error uploading image:", uploadError);
+          } else {
+            console.log("Image uploaded successfully:", uploadData);
+            
+            // Get the public URL of the uploaded image
+            const { data: publicUrlData } = await supabase.storage
+              .from('recipe-images')
+              .getPublicUrl(imageName);
+            
+            if (publicUrlData) {
+              recipeData.localImageUrl = publicUrlData.publicUrl;
+              console.log("Image public URL:", publicUrlData.publicUrl);
+            }
+          }
+        } else {
+          console.error("Failed to download image:", imageResponse.statusText);
+        }
+      } catch (error) {
+        console.error("Error processing image:", error);
+      }
+    }
     
     // Only save to database if userId is provided
     if (userId) {
@@ -237,6 +363,44 @@ serve(async (req) => {
   }
 });
 
+// Helper function to find recipe schema in JSON-LD data
+function findRecipeSchema(jsonData: any): any {
+  // Case 1: Direct Recipe object
+  if (jsonData['@type'] === 'Recipe') {
+    return jsonData;
+  }
+  
+  // Case 2: Array of schemas
+  if (Array.isArray(jsonData)) {
+    return jsonData.find(item => item['@type'] === 'Recipe');
+  }
+  
+  // Case 3: Graph with multiple items
+  if (jsonData['@graph'] && Array.isArray(jsonData['@graph'])) {
+    return jsonData['@graph'].find((item: any) => item['@type'] === 'Recipe');
+  }
+  
+  // Case 4: Nested in another structure
+  for (const key in jsonData) {
+    if (typeof jsonData[key] === 'object' && jsonData[key] !== null) {
+      if (jsonData[key]['@type'] === 'Recipe') {
+        return jsonData[key];
+      }
+    }
+  }
+  
+  return null;
+}
+
+// Helper function to parse nutrition values
+function parseNutritionValue(value: string | undefined): number | undefined {
+  if (!value) return undefined;
+  
+  // Extract numbers from the string (e.g., "150 calories" -> 150)
+  const match = value.match(/\d+/);
+  return match ? parseInt(match[0]) : undefined;
+}
+
 // Helper function to parse ISO duration string to minutes
 function parseDuration(duration: string): number | undefined {
   try {
@@ -268,13 +432,16 @@ function parseServings(yield_: string | number | any[]): number | undefined {
 // Function to store recipe data in database
 async function storeRecipeInDatabase(supabase: any, recipeData: RecipeData, userId: string) {
   try {
+    // Use local image URL if available, otherwise use original URL
+    const imageUrl = recipeData.localImageUrl || recipeData.imageUrl;
+    
     // First, insert the main recipe
     const { data: recipe, error: recipeError } = await supabase
       .from('recipes')
       .insert({
         name: recipeData.name,
         description: recipeData.description,
-        image_url: recipeData.imageUrl,
+        image_url: imageUrl,
         prep_time: recipeData.prepTime,
         cook_time: recipeData.cookTime,
         servings: recipeData.servings,

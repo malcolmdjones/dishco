@@ -47,6 +47,8 @@ const RecipeScraperForm: React.FC<RecipeScraperFormProps> = ({ onRecipeAdded }) 
         throw new Error('Failed to scrape recipe data');
       }
       
+      console.log("Scraped data:", data.data);
+      
       const scrapedData = data.data;
       setScrapedRecipe(scrapedData);
       setEditedRecipe({
@@ -63,7 +65,7 @@ const RecipeScraperForm: React.FC<RecipeScraperFormProps> = ({ onRecipeAdded }) 
         fat: scrapedData.fat || '',
         mealType: scrapedData.mealType || '',
         equipment: scrapedData.equipment || [],
-        imageUrl: scrapedData.imageUrl || '',
+        imageUrl: scrapedData.localImageUrl || scrapedData.imageUrl || '',
         tags: scrapedData.tags || []
       });
       
@@ -113,9 +115,9 @@ const RecipeScraperForm: React.FC<RecipeScraperFormProps> = ({ onRecipeAdded }) 
   const handleSaveRecipe = async () => {
     if (!user) {
       toast({
-        title: 'Authentication required',
-        description: 'You must be logged in to save recipes',
-        variant: 'destructive',
+        title: "Authentication required",
+        description: "You must be logged in to save recipes",
+        variant: "destructive",
       });
       return;
     }
