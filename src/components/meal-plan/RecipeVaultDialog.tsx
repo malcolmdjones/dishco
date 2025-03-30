@@ -4,7 +4,8 @@ import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogDescription
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -69,6 +70,7 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Recipe Vault</DialogTitle>
+          <DialogDescription>Browse and select recipes from your collection</DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4">
@@ -118,17 +120,17 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
                 <div className="flex justify-between items-start">
                   <h3 className="font-medium">{recipe.name}</h3>
                   <div className="flex gap-1">
-                    {recipe.equipment?.includes('blender') && (
+                    {recipe.requiresBlender && (
                       <span className="text-gray-500" title="Requires blender">
                         <Blend size={14} />
                       </span>
                     )}
-                    {recipe.equipment?.includes('stove') && (
+                    {recipe.requiresCooking && (
                       <span className="text-gray-500" title="Requires cooking">
                         <CookingPot size={14} />
                       </span>
                     )}
-                    {recipe.cookingTime && recipe.cookingTime <= 15 && (
+                    {recipe.cookTime && recipe.cookTime <= 15 && (
                       <span className="text-amber-500" title="Quick to prepare">
                         <Zap size={14} />
                       </span>

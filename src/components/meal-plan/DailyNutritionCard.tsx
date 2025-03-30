@@ -20,14 +20,14 @@ interface DailyNutritionCardProps {
       fat: boolean;
     }
   };
-  aiReasoning: string;
+  aiReasoning?: string; // Make this prop optional
 }
 
 const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
   dayTotals,
   userGoals,
   exceedsGoals,
-  aiReasoning
+  aiReasoning = "" // Provide a default empty string
 }) => {
   const { any: exceedsAny, exceeds } = exceedsGoals;
 
@@ -104,7 +104,7 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
         </div>
       </div>
       
-      {/* AI Reasoning */}
+      {/* AI Reasoning - only show if provided */}
       {aiReasoning && (
         <div className="mt-4 p-3 bg-blue-50 rounded-md text-sm text-blue-700">
           <p className="font-medium mb-1">AI Reasoning:</p>

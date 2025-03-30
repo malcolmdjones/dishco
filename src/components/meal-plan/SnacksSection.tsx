@@ -61,17 +61,17 @@ const SnacksSection: React.FC<SnacksSectionProps> = ({
                 <div className="flex justify-between items-center">
                   <h4 className="font-medium">{snack.name}</h4>
                   <div className="flex gap-1">
-                    {snack.equipment?.includes('blender') && (
+                    {snack.requiresBlender && (
                       <span className="text-gray-500" title="Requires blender">
                         <Blend size={14} />
                       </span>
                     )}
-                    {snack.equipment?.includes('stove') && (
+                    {snack.requiresCooking && (
                       <span className="text-gray-500" title="Requires cooking">
                         <CookingPot size={14} />
                       </span>
                     )}
-                    {snack.cookingTime && snack.cookingTime <= 15 && (
+                    {snack.cookTime && snack.cookTime <= 15 && (
                       <span className="text-amber-500" title="Quick to prepare">
                         <Zap size={14} />
                       </span>
