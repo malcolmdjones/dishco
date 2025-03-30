@@ -7,7 +7,7 @@ import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import { ChevronLeft, ChevronRight, Home } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { calculateDailyMacros, recipes, defaultGoals, Recipe } from '@/data/mockData';
+import { calculateDailyMacros, defaultGoals, Recipe } from '@/data/mockData';
 import RecipeViewer from '@/components/RecipeViewer';
 
 interface Meal {
@@ -38,27 +38,84 @@ const HomePage = () => {
     totalFat: defaultGoals.fat
   });
   
-  // State for today's meals
+  // Initialize with valid recipe data to prevent undefined errors
   const [todaysMeals, setTodaysMeals] = useState<Meal[]>([
     {
       id: '1',
       name: 'Avocado Toast with Egg',
       type: 'breakfast',
-      recipe: recipes.find(recipe => recipe.id === '2') || recipes[0],
+      recipe: {
+        id: '1',
+        name: 'Avocado Toast with Egg',
+        type: 'breakfast',
+        description: 'Healthy breakfast with avocado and egg on toast',
+        ingredients: ['bread', 'avocado', 'egg'],
+        instructions: ['Toast bread', 'Mash avocado', 'Fry egg', 'Assemble'],
+        prepTime: 5,
+        cookTime: 10,
+        servings: 1,
+        macros: {
+          calories: 350,
+          protein: 15,
+          carbs: 30,
+          fat: 20
+        },
+        imageSrc: '/placeholder.svg',
+        requiresBlender: false,
+        requiresCooking: true
+      },
       consumed: false
     },
     {
       id: '2',
       name: 'Grilled Chicken Salad',
       type: 'lunch',
-      recipe: recipes.find(recipe => recipe.id === '4') || recipes[0],
+      recipe: {
+        id: '2',
+        name: 'Grilled Chicken Salad',
+        type: 'lunch',
+        description: 'Fresh salad with grilled chicken',
+        ingredients: ['chicken breast', 'lettuce', 'tomatoes', 'cucumber', 'olive oil'],
+        instructions: ['Grill chicken', 'Chop vegetables', 'Mix together', 'Add dressing'],
+        prepTime: 10,
+        cookTime: 15,
+        servings: 1,
+        macros: {
+          calories: 400,
+          protein: 35,
+          carbs: 10,
+          fat: 25
+        },
+        imageSrc: '/placeholder.svg',
+        requiresBlender: false,
+        requiresCooking: true
+      },
       consumed: false
     },
     {
       id: '3',
       name: 'Baked Salmon with Asparagus',
       type: 'dinner',
-      recipe: recipes.find(recipe => recipe.id === '7') || recipes[0],
+      recipe: {
+        id: '3',
+        name: 'Baked Salmon with Asparagus',
+        type: 'dinner',
+        description: 'Healthy dinner with omega-3 rich salmon',
+        ingredients: ['salmon fillet', 'asparagus', 'lemon', 'olive oil', 'herbs'],
+        instructions: ['Preheat oven', 'Season salmon', 'Arrange asparagus', 'Bake until done'],
+        prepTime: 10,
+        cookTime: 20,
+        servings: 1,
+        macros: {
+          calories: 450,
+          protein: 40,
+          carbs: 15,
+          fat: 25
+        },
+        imageSrc: '/placeholder.svg',
+        requiresBlender: false,
+        requiresCooking: true
+      },
       consumed: false
     }
   ]);
@@ -332,59 +389,66 @@ const HomePage = () => {
         <h2 className="text-lg font-semibold mb-4">Today's Meals</h2>
         
         <div className="space-y-4">
-          {todaysMeals.map((meal) => (
-            <div key={meal.id} className="bg-white rounded-xl p-4 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-500">{formatMealType(meal.type)}</span>
-                <span className="text-sm bg-amber-50 text-amber-800 px-2 py-1 rounded-full">
-                  {meal.recipe.macros.calories} kcal
-                </span>
-              </div>
-              
-              <div className="flex gap-3">
-                <div 
-                  className="w-20 h-20 rounded-lg overflow-hidden cursor-pointer"
-                  onClick={() => handleOpenRecipe(meal.recipe)}
-                >
-                  <img 
-                    src={meal.recipe.imageSrc} 
-                    alt={meal.name}
-                    className="w-full h-full object-cover"
-                  />
+          {todaysMeals.map((meal) => {
+            // Add null check to ensure meal and recipe exist
+            if (!meal || !meal.recipe) {
+              return null;
+            }
+            
+            return (
+              <div key={meal.id} className="bg-white rounded-xl p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-500">{formatMealType(meal.type)}</span>
+                  <span className="text-sm bg-amber-50 text-amber-800 px-2 py-1 rounded-full">
+                    {meal.recipe.macros.calories} kcal
+                  </span>
                 </div>
                 
-                <div className="flex-1">
-                  <h3 
-                    className="font-semibold mb-2 cursor-pointer"
+                <div className="flex gap-3">
+                  <div 
+                    className="w-20 h-20 rounded-lg overflow-hidden cursor-pointer"
                     onClick={() => handleOpenRecipe(meal.recipe)}
                   >
-                    {meal.name}
-                  </h3>
+                    <img 
+                      src={meal.recipe.imageSrc} 
+                      alt={meal.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                   
-                  <Button
-                    variant={meal.consumed ? "outline" : "outline"}
-                    size="sm"
-                    className={`w-full ${meal.consumed ? 'text-green-600 border-green-600' : ''}`}
-                    onClick={() => handleToggleConsumed(meal)}
-                  >
-                    {meal.consumed ? 'Consumed ✓' : 'Mark as consumed'}
-                  </Button>
+                  <div className="flex-1">
+                    <h3 
+                      className="font-semibold mb-2 cursor-pointer"
+                      onClick={() => handleOpenRecipe(meal.recipe)}
+                    >
+                      {meal.name}
+                    </h3>
+                    
+                    <Button
+                      variant={meal.consumed ? "outline" : "outline"}
+                      size="sm"
+                      className={`w-full ${meal.consumed ? 'text-green-600 border-green-600' : ''}`}
+                      onClick={() => handleToggleConsumed(meal)}
+                    >
+                      {meal.consumed ? 'Consumed ✓' : 'Mark as consumed'}
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2 mt-3">
+                  <span className="px-3 py-1 bg-blue-100 rounded-full text-xs">
+                    P: {meal.recipe.macros.protein}g
+                  </span>
+                  <span className="px-3 py-1 bg-yellow-100 rounded-full text-xs">
+                    C: {meal.recipe.macros.carbs}g
+                  </span>
+                  <span className="px-3 py-1 bg-purple-100 rounded-full text-xs">
+                    F: {meal.recipe.macros.fat}g
+                  </span>
                 </div>
               </div>
-              
-              <div className="flex gap-2 mt-3">
-                <span className="px-3 py-1 bg-blue-100 rounded-full text-xs">
-                  P: {meal.recipe.macros.protein}g
-                </span>
-                <span className="px-3 py-1 bg-yellow-100 rounded-full text-xs">
-                  C: {meal.recipe.macros.carbs}g
-                </span>
-                <span className="px-3 py-1 bg-purple-100 rounded-full text-xs">
-                  F: {meal.recipe.macros.fat}g
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
       
