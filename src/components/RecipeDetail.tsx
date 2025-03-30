@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Heart } from 'lucide-react';
-import { recipes } from '../data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import Badge from './Badge';
+import { Recipe } from '@/data/mockData';
 
 interface RecipeDetailProps {
   recipeId: string;
@@ -27,8 +27,11 @@ const RecipeDetail: React.FC<RecipeDetailProps> = ({
   const { user } = useAuth();
   const [isSaved, setIsSaved] = useState(propIsSaved || false);
   const [loading, setLoading] = useState(false);
+  const [recipe, setRecipe] = useState<Recipe | null>(null);
   
-  const recipe = recipes.find(r => r.id === recipeId);
+  useEffect(() => {
+    fetchRecipe();
+  }, [recipeId]);
 
   useEffect(() => {
     // If isSaved prop is provided, use it
@@ -39,6 +42,52 @@ const RecipeDetail: React.FC<RecipeDetailProps> = ({
       checkIfSaved();
     }
   }, [recipeId, propIsSaved, user]);
+
+  const fetchRecipe = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('recipes')
+        .select(`
+          *,
+          recipe_ingredients(*),
+          recipe_instructions(*)
+        `)
+        .eq('id', recipeId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching recipe:', error);
+        return;
+      }
+
+      if (data) {
+        const formattedRecipe: Recipe = {
+          id: data.id,
+          name: data.name,
+          type: data.meal_type?.toLowerCase() || 'other',
+          description: data.description || '',
+          ingredients: data.recipe_ingredients?.map(ing => ing.name) || [],
+          instructions: data.recipe_instructions?.map(inst => inst.instruction) || [],
+          prepTime: data.prep_time || 0,
+          cookTime: data.cook_time || 0,
+          servings: data.servings || 1,
+          macros: {
+            calories: data.calories || 0,
+            protein: data.protein || 0,
+            carbs: data.carbs || 0,
+            fat: data.fat || 0
+          },
+          imageSrc: data.image_url || '/placeholder.svg',
+          requiresBlender: false,
+          requiresCooking: true
+        };
+        
+        setRecipe(formattedRecipe);
+      }
+    } catch (error) {
+      console.error('Error fetching recipe:', error);
+    }
+  };
 
   const checkIfSaved = async () => {
     if (!user) return;
@@ -133,7 +182,7 @@ const RecipeDetail: React.FC<RecipeDetailProps> = ({
     return (
       <div className={`fixed inset-0 bg-black/50 z-50 flex items-center justify-center ${className}`}>
         <div className="bg-white rounded-xl p-6 max-w-md w-full max-h-[85vh] overflow-y-auto">
-          <p>Recipe not found</p>
+          <p>Loading recipe...</p>
           <Button onClick={onClose} className="mt-4 w-full">Close</Button>
         </div>
       </div>

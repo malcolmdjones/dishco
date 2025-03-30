@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, Filter, ChevronDown, X, Loader2 } from 'lucide-react';
@@ -116,10 +115,12 @@ const ExploreRecipesPage = () => {
           fat: dbRecipe.fat || 0
         },
         imageSrc: dbRecipe.image_url || '/placeholder.svg',
-        cuisineType: dbRecipe.cuisine_type || 'other',
-        priceRange: dbRecipe.price_range || '$',
-        isHighProtein: dbRecipe.is_high_protein || false,
-        equipment: dbRecipe.recipe_equipment?.map(eq => eq.name) || []
+        cuisineType: dbRecipe.meal_type || 'other',
+        priceRange: '$',
+        isHighProtein: dbRecipe.protein > 20,
+        equipment: dbRecipe.recipe_equipment?.map(eq => eq.name) || [],
+        requiresBlender: false,
+        requiresCooking: true
       }));
       
       setAllRecipes(formattedRecipes);
