@@ -24,8 +24,7 @@ const CreateMealPlanPage = () => {
     toggleLockMeal,
     regenerateMeals,
     calculateDayTotals,
-    checkExceedsGoals,
-    aiReasoning
+    checkExceedsGoals
   } = useMealPlanUtils();
 
   // Local component state
@@ -114,7 +113,6 @@ const CreateMealPlanPage = () => {
         dayTotals={dayTotals}
         userGoals={calculateDayTotals()}
         exceedsGoals={goalExceeds}
-        aiReasoning={aiReasoning}
       />
 
       {/* Meal Sections */}

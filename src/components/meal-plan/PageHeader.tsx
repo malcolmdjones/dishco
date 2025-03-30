@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, BookOpen, Archive } from 'lucide-react';
+import { ArrowLeft, BookOpen, Vault } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface PageHeaderProps {
@@ -29,12 +29,11 @@ const PageHeader: React.FC<PageHeaderProps> = ({ onOpenVault, onOpenWeekOverview
         <div className="flex space-x-2">
           <Button 
             variant="outline" 
-            size="sm" 
+            size="icon"
             onClick={onOpenVault}
-            className="flex items-center gap-1"
+            title="Recipe Vault"
           >
-            <Archive size={16} />
-            Recipe Vault
+            <Vault size={16} />
           </Button>
           <Button 
             variant="outline" 
