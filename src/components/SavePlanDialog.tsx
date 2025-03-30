@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 
 interface SavePlanDialogProps {
   isOpen: boolean;
@@ -21,8 +22,18 @@ const SavePlanDialog: React.FC<SavePlanDialogProps> = ({ isOpen, onClose, mealPl
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleSave = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to save meal plans.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!planName.trim()) {
       toast({
         title: "Name Required",
@@ -44,14 +55,15 @@ const SavePlanDialog: React.FC<SavePlanDialogProps> = ({ isOpen, onClose, mealPl
         .from('saved_meal_plans')
         .insert([{ 
           name: planName.trim(),
-          plan_data: planData
+          plan_data: planData,
+          user_id: user.id
         }]);
       
       if (error) {
         console.error('Error saving meal plan:', error);
         toast({
           title: "Save Failed",
-          description: "There was an error saving your meal plan.",
+          description: error.message || "There was an error saving your meal plan.",
           variant: "destructive"
         });
         return;
@@ -64,11 +76,11 @@ const SavePlanDialog: React.FC<SavePlanDialogProps> = ({ isOpen, onClose, mealPl
       
       onClose();
       navigate('/saved-plans');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving meal plan:', error);
       toast({
         title: "Save Failed",
-        description: "There was an error saving your meal plan.",
+        description: error.message || "There was an error saving your meal plan.",
         variant: "destructive"
       });
     } finally {

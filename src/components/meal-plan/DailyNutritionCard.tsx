@@ -37,65 +37,73 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
       <CardContent className="pt-6">
         <h2 className="text-lg font-semibold mb-4">Daily Nutrition</h2>
         
-        <div className="grid grid-cols-4 gap-4">
+        <div className="space-y-4">
           {/* Calories */}
-          <div className="flex flex-col">
-            <div className="flex items-end mb-2 gap-1">
-              <span className="text-2xl font-semibold">{dayTotals.calories}</span>
-              <span className="text-gray-500 text-sm">/ {userGoals.calories}</span>
+          <div>
+            <div className="flex justify-between mb-1">
+              <span className="text-sm text-gray-700">Calories</span>
+              <div className="flex items-baseline gap-1">
+                <span className="text-base font-semibold">{dayTotals.calories}</span>
+                <span className="text-xs text-gray-500">/ {userGoals.calories}</span>
+              </div>
             </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
               <div 
                 className={`h-full ${exceedsGoals.exceeds.calories ? 'bg-red-500' : 'bg-yellow-400'}`}
                 style={{ width: `${Math.min(100, (dayTotals.calories / userGoals.calories) * 100)}%` }}
               ></div>
             </div>
-            <span className="text-sm text-gray-700">Calories</span>
           </div>
           
           {/* Protein */}
-          <div className="flex flex-col">
-            <div className="flex items-end mb-2 gap-1">
-              <span className="text-2xl font-semibold">{dayTotals.protein}g</span>
-              <span className="text-gray-500 text-sm">/ {userGoals.protein}g</span>
+          <div>
+            <div className="flex justify-between mb-1">
+              <span className="text-sm text-gray-700">Protein</span>
+              <div className="flex items-baseline gap-1">
+                <span className="text-base font-semibold">{dayTotals.protein}g</span>
+                <span className="text-xs text-gray-500">/ {userGoals.protein}g</span>
+              </div>
             </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
               <div 
                 className={`h-full ${exceedsGoals.exceeds.protein ? 'bg-red-500' : 'bg-blue-400'}`}
                 style={{ width: `${Math.min(100, (dayTotals.protein / userGoals.protein) * 100)}%` }}
               ></div>
             </div>
-            <span className="text-sm text-gray-700">Protein</span>
           </div>
           
           {/* Carbs */}
-          <div className="flex flex-col">
-            <div className="flex items-end mb-2 gap-1">
-              <span className="text-2xl font-semibold">{dayTotals.carbs}g</span>
-              <span className="text-gray-500 text-sm">/ {userGoals.carbs}g</span>
+          <div>
+            <div className="flex justify-between mb-1">
+              <span className="text-sm text-gray-700">Carbs</span>
+              <div className="flex items-baseline gap-1">
+                <span className="text-base font-semibold">{dayTotals.carbs}g</span>
+                <span className="text-xs text-gray-500">/ {userGoals.carbs}g</span>
+              </div>
             </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
               <div 
                 className={`h-full ${exceedsGoals.exceeds.carbs ? 'bg-red-500' : 'bg-yellow-400'}`}
                 style={{ width: `${Math.min(100, (dayTotals.carbs / userGoals.carbs) * 100)}%` }}
               ></div>
             </div>
-            <span className="text-sm text-gray-700">Carbs</span>
           </div>
           
           {/* Fat */}
-          <div className="flex flex-col">
-            <div className="flex items-end mb-2 gap-1">
-              <span className="text-2xl font-semibold">{dayTotals.fat}g</span>
-              <span className="text-gray-500 text-sm">/ {userGoals.fat}g</span>
+          <div>
+            <div className="flex justify-between mb-1">
+              <span className="text-sm text-gray-700">Fat</span>
+              <div className="flex items-baseline gap-1">
+                <span className="text-base font-semibold">{dayTotals.fat}g</span>
+                <span className="text-xs text-gray-500">/ {userGoals.fat}g</span>
+              </div>
             </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
               <div 
                 className={`h-full ${exceedsGoals.exceeds.fat ? 'bg-red-500' : 'bg-purple-400'}`}
                 style={{ width: `${Math.min(100, (dayTotals.fat / userGoals.fat) * 100)}%` }}
               ></div>
             </div>
-            <span className="text-sm text-gray-700">Fat</span>
           </div>
         </div>
       </CardContent>

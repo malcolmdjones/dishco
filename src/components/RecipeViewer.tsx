@@ -1,11 +1,11 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress'; 
 import { Heart, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 import Badge from './Badge';
 
 interface RecipeViewerProps {
@@ -24,10 +24,42 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
   onToggleSave
 }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [recipeSaved, setRecipeSaved] = useState(isSaved);
   
+  useEffect(() => {
+    if (recipe?.id) {
+      checkIfSaved();
+    }
+  }, [recipe?.id, user]);
+
+  useEffect(() => {
+    setRecipeSaved(isSaved);
+  }, [isSaved]);
+  
   if (!recipe) return null;
+
+  const checkIfSaved = async () => {
+    if (!user || !recipe.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('saved_recipes')
+        .select('*')
+        .eq('recipe_id', recipe.id)
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error('Error checking if recipe is saved:', error);
+        return;
+      }
+      
+      setRecipeSaved(data && data.length > 0);
+    } catch (error) {
+      console.error('Error checking if recipe is saved:', error);
+    }
+  };
 
   // Color definitions for macros
   const macroColors = {
@@ -38,7 +70,14 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
   };
   
   const handleSaveRecipe = async () => {
-    if (!recipe.id) return;
+    if (!recipe.id || !user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to save recipes",
+        variant: "destructive"
+      });
+      return;
+    }
     
     setSaving(true);
     try {
@@ -47,7 +86,8 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
         const { error } = await supabase
           .from('saved_recipes')
           .delete()
-          .eq('recipe_id', recipe.id);
+          .eq('recipe_id', recipe.id)
+          .eq('user_id', user.id);
           
         if (error) throw error;
         
@@ -61,7 +101,10 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
         // Add to saved recipes
         const { error } = await supabase
           .from('saved_recipes')
-          .insert([{ recipe_id: recipe.id }]);
+          .insert([{ 
+            recipe_id: recipe.id,
+            user_id: user.id 
+          }]);
           
         if (error) throw error;
         
@@ -77,11 +120,11 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
       if (onToggleSave) {
         await onToggleSave(recipe.id, !recipeSaved);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving recipe:', error);
       toast({
         title: "Error",
-        description: "Failed to save recipe. Please try again.",
+        description: error.message || "Failed to save recipe. Please try again.",
         variant: "destructive"
       });
     } finally {

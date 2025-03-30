@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, Heart, Settings, User, Utensils, BookOpen, LogOut, Calendar, AlertTriangle } from 'lucide-react';
@@ -16,18 +15,24 @@ const MorePage = () => {
     carbs: 200,
     fat: 65
   });
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    fetchNutritionGoals();
-  }, []);
+    if (user) {
+      fetchNutritionGoals();
+    }
+  }, [user]);
 
   const fetchNutritionGoals = async () => {
+    if (!user) return;
+    
     try {
+      setLoading(true);
       // With authentication, we can now fetch the user's specific nutrition goals
       const { data, error } = await supabase
         .from('nutrition_goals')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .limit(1)
         .single();
       
@@ -46,6 +51,8 @@ const MorePage = () => {
       }
     } catch (error) {
       console.error('Error fetching nutrition goals:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -141,30 +148,36 @@ const MorePage = () => {
       {/* Nutrition Goals Summary */}
       <div className="bg-white rounded-xl shadow-md p-4 mb-6">
         <h2 className="text-lg font-semibold mb-3">Current Nutrition Goals</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-sm text-dishco-text-light">Daily Calories</p>
-            <p className="text-xl font-bold">{goals.calories} kcal</p>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-sm text-dishco-text-light">Protein</p>
-            <p className="text-xl font-bold">{goals.protein}g</p>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-sm text-dishco-text-light">Carbs</p>
-            <p className="text-xl font-bold">{goals.carbs}g</p>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-sm text-dishco-text-light">Fat</p>
-            <p className="text-xl font-bold">{goals.fat}g</p>
-          </div>
-        </div>
-        <button 
-          className="w-full mt-4 py-2 px-4 bg-dishco-primary bg-opacity-10 text-dishco-primary rounded-lg font-medium"
-          onClick={() => navigate('/nutrition-goals')}
-        >
-          Edit Goals
-        </button>
+        {loading ? (
+          <div className="text-center py-4 text-gray-500">Loading your goals...</div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-sm text-dishco-text-light">Daily Calories</p>
+                <p className="text-xl font-bold">{goals.calories} kcal</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-sm text-dishco-text-light">Protein</p>
+                <p className="text-xl font-bold">{goals.protein}g</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-sm text-dishco-text-light">Carbs</p>
+                <p className="text-xl font-bold">{goals.carbs}g</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-sm text-dishco-text-light">Fat</p>
+                <p className="text-xl font-bold">{goals.fat}g</p>
+              </div>
+            </div>
+            <button 
+              className="w-full mt-4 py-2 px-4 bg-dishco-primary bg-opacity-10 text-dishco-primary rounded-lg font-medium"
+              onClick={() => navigate('/nutrition-goals')}
+            >
+              Edit Goals
+            </button>
+          </>
+        )}
       </div>
 
       {/* Logout Button */}
