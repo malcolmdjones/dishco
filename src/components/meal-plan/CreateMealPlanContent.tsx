@@ -10,6 +10,7 @@ import SnacksSection from '@/components/meal-plan/SnacksSection';
 import BottomActionBar from '@/components/meal-plan/BottomActionBar';
 import WeekOverviewDialog from '@/components/meal-plan/WeekOverviewDialog';
 import RecipeVaultDialog from '@/components/meal-plan/RecipeVaultDialog';
+import { useNavigate } from 'react-router-dom';
 
 interface CreateMealPlanContentProps {
   currentDay: number;
@@ -34,6 +35,8 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
   calculateDayTotals,
   checkExceedsGoals
 }) => {
+  const navigate = useNavigate();
+  
   // Local component state
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);

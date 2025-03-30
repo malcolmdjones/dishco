@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Calendar, ArrowRight, Search } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { recipes } from '@/data/mockData';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -16,6 +15,7 @@ const PlanningPage = () => {
   const [loading, setLoading] = useState(false);
   const [activePlan, setActivePlan] = useState<any>(null);
   const [weekDays, setWeekDays] = useState<Date[]>([]);
+  const [recipes, setRecipes] = useState<any[]>([]);
 
   useEffect(() => {
     // Generate current week days
@@ -34,7 +34,31 @@ const PlanningPage = () => {
         console.error('Error parsing active plan:', error);
       }
     }
+
+    // Fetch recipes from the database
+    fetchRecipes();
   }, []);
+
+  const fetchRecipes = async () => {
+    try {
+      setLoading(true);
+      // Fetch recipes from the database
+      const { data, error } = await supabase
+        .from('recipes')
+        .select('*')
+        .limit(4);
+
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setRecipes(data);
+      }
+    } catch (error) {
+      console.error('Error fetching recipes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGeneratePlan = () => {
     navigate('/create-meal-plan');
@@ -124,24 +148,38 @@ const PlanningPage = () => {
             Discover new and exciting meal ideas tailored to your preferences.
           </p>
           
-          <div className="grid grid-cols-2 gap-4">
-            {recipeSelection.map((recipe) => (
-              <div key={recipe.id} className="cursor-pointer" onClick={() => navigate('/explore-recipes')}>
-                <div className="bg-gray-100 rounded-lg aspect-square mb-2 flex items-center justify-center overflow-hidden">
-                  <img 
-                    src={recipe.imageSrc} 
-                    alt={recipe.name} 
-                    className="w-full h-full object-cover"
-                  />
+          {recipeSelection.length > 0 ? (
+            <div className="grid grid-cols-2 gap-4">
+              {recipeSelection.map((recipe) => (
+                <div key={recipe.id} className="cursor-pointer" onClick={() => navigate('/explore-recipes')}>
+                  <div className="bg-gray-100 rounded-lg aspect-square mb-2 flex items-center justify-center overflow-hidden">
+                    <img 
+                      src={recipe.image_url || '/placeholder.svg'} 
+                      alt={recipe.name} 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <h3 className="font-medium text-sm line-clamp-1">{recipe.name}</h3>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-sm text-gray-600">{recipe.calories || 0} cal</span>
+                    <span className="text-xs text-blue-600">{recipe.meal_type || 'Meal'}</span>
+                  </div>
                 </div>
-                <h3 className="font-medium text-sm line-clamp-1">{recipe.name}</h3>
-                <div className="flex justify-between items-center mt-1">
-                  <span className="text-sm text-gray-600">{recipe.macros.calories} cal</span>
-                  <span className="text-xs text-blue-600">{recipe.type}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <p className="text-gray-400 mb-2">No recipes found</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-xs"
+                onClick={() => navigate('/recipe-management')}
+              >
+                Add Your First Recipe
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

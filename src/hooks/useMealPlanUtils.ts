@@ -1,11 +1,13 @@
 
-import { useState, useEffect } from 'react';
-import { calculateDailyMacros, defaultGoals, fetchNutritionGoals, recipes, Recipe, NutritionGoals, MealPlanDay } from '@/data/mockData';
+import { useState, useEffect, useCallback } from 'react';
+import { calculateDailyMacros, defaultGoals, fetchNutritionGoals, recipes as mockRecipes, Recipe, NutritionGoals, MealPlanDay } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 export const useMealPlanUtils = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentDay, setCurrentDay] = useState(0);
   const [mealPlan, setMealPlan] = useState<MealPlanDay[]>([]);
@@ -13,6 +15,7 @@ export const useMealPlanUtils = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [lockedMeals, setLockedMeals] = useState<{[key: string]: boolean}>({});
   const [aiReasoning, setAiReasoning] = useState<string>("");
+  const [dbRecipes, setDbRecipes] = useState<Recipe[]>([]);
 
   // Get user's nutrition goals
   useEffect(() => {
@@ -25,6 +28,68 @@ export const useMealPlanUtils = () => {
       }
     };
     getUserGoals();
+  }, []);
+
+  // Fetch recipes from the database
+  const fetchDbRecipes = useCallback(async () => {
+    try {
+      // First try to fetch user's recipes
+      let { data, error } = await supabase
+        .from('recipes')
+        .select(`
+          *,
+          recipe_ingredients(*),
+          recipe_instructions(*),
+          recipe_equipment(*)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+
+      // Convert database recipes to the Recipe format
+      const formattedRecipes = data.map(dbRecipe => {
+        const recipeType = dbRecipe.meal_type?.toLowerCase() || 'other';
+        
+        // Map database recipe to Recipe format
+        const recipe: Recipe = {
+          id: dbRecipe.id,
+          name: dbRecipe.name,
+          type: recipeType === 'breakfast' ? 'breakfast' : 
+                recipeType === 'lunch' ? 'lunch' : 
+                recipeType === 'dinner' ? 'dinner' : 
+                recipeType === 'snack' ? 'snack' : 'other',
+          description: dbRecipe.description || '',
+          ingredients: dbRecipe.recipe_ingredients?.map(ing => ing.name) || [],
+          instructions: dbRecipe.recipe_instructions?.map(inst => inst.instruction) || [],
+          prepTime: dbRecipe.prep_time || 0,
+          cookTime: dbRecipe.cook_time || 0,
+          macros: {
+            calories: dbRecipe.calories || 0,
+            protein: dbRecipe.protein || 0,
+            carbs: dbRecipe.carbs || 0,
+            fat: dbRecipe.fat || 0
+          },
+          imageSrc: dbRecipe.image_url || '/placeholder.svg'
+        };
+
+        return recipe;
+      });
+
+      // Set the recipes in state
+      if (formattedRecipes.length > 0) {
+        setDbRecipes(formattedRecipes);
+      } else {
+        // Fallback to mock recipes if no database recipes are available
+        setDbRecipes(mockRecipes);
+        console.log('No database recipes found, using mock recipes');
+      }
+    } catch (error) {
+      console.error('Error fetching recipes:', error);
+      // Fallback to mock recipes in case of error
+      setDbRecipes(mockRecipes);
+    }
   }, []);
 
   // Check for a plan to copy from session storage
@@ -89,6 +154,11 @@ export const useMealPlanUtils = () => {
     setAiReasoning("");
     
     try {
+      // Make sure we have recipes
+      if (dbRecipes.length === 0) {
+        await fetchDbRecipes();
+      }
+      
       // Prepare locked meals data
       const currentLockedMeals: {[key: string]: any} = {};
       if (mealPlan[currentDay]) {
@@ -120,7 +190,7 @@ export const useMealPlanUtils = () => {
         body: {
           userGoals,
           lockedMeals: currentLockedMeals,
-          availableRecipes: recipes,
+          availableRecipes: dbRecipes.length > 0 ? dbRecipes : mockRecipes,
           currentDay,
         },
       });
@@ -180,35 +250,47 @@ export const useMealPlanUtils = () => {
         const newPlan = [...prevPlan];
         const currentPlanDay = { ...newPlan[currentDay] };
         
+        const availableRecipes = dbRecipes.length > 0 ? dbRecipes : mockRecipes;
+        
         // Filter recipes by meal type
-        const breakfastRecipes = recipes.filter(r => r.type === 'breakfast');
-        const lunchRecipes = recipes.filter(r => r.type === 'lunch');
-        const dinnerRecipes = recipes.filter(r => r.type === 'dinner');
-        const snackRecipes = recipes.filter(r => r.type === 'snack');
+        const breakfastRecipes = availableRecipes.filter(r => r.type === 'breakfast');
+        const lunchRecipes = availableRecipes.filter(r => r.type === 'lunch');
+        const dinnerRecipes = availableRecipes.filter(r => r.type === 'dinner');
+        const snackRecipes = availableRecipes.filter(r => r.type === 'snack');
         
         // Only replace meals that aren't locked
         const newMeals = { ...currentPlanDay.meals };
         
         if (!lockedMeals[`${currentDay}-breakfast`]) {
-          newMeals.breakfast = breakfastRecipes[Math.floor(Math.random() * breakfastRecipes.length)];
+          newMeals.breakfast = breakfastRecipes.length > 0 ? 
+            breakfastRecipes[Math.floor(Math.random() * breakfastRecipes.length)] :
+            availableRecipes[Math.floor(Math.random() * availableRecipes.length)];
         }
         
         if (!lockedMeals[`${currentDay}-lunch`]) {
-          newMeals.lunch = lunchRecipes[Math.floor(Math.random() * lunchRecipes.length)];
+          newMeals.lunch = lunchRecipes.length > 0 ? 
+            lunchRecipes[Math.floor(Math.random() * lunchRecipes.length)] :
+            availableRecipes[Math.floor(Math.random() * availableRecipes.length)];
         }
         
         if (!lockedMeals[`${currentDay}-dinner`]) {
-          newMeals.dinner = dinnerRecipes[Math.floor(Math.random() * dinnerRecipes.length)];
+          newMeals.dinner = dinnerRecipes.length > 0 ? 
+            dinnerRecipes[Math.floor(Math.random() * dinnerRecipes.length)] :
+            availableRecipes[Math.floor(Math.random() * availableRecipes.length)];
         }
         
         // Handle snacks
         const newSnacks = [...(newMeals.snacks || [])];
         if (!lockedMeals[`${currentDay}-snack-0`] || !newSnacks[0]) {
-          newSnacks[0] = snackRecipes[Math.floor(Math.random() * snackRecipes.length)];
+          newSnacks[0] = snackRecipes.length > 0 ? 
+            snackRecipes[Math.floor(Math.random() * snackRecipes.length)] :
+            availableRecipes[Math.floor(Math.random() * availableRecipes.length)];
         }
         
         if (!lockedMeals[`${currentDay}-snack-1`] || !newSnacks[1]) {
-          newSnacks[1] = snackRecipes[Math.floor(Math.random() * snackRecipes.length)];
+          newSnacks[1] = snackRecipes.length > 0 ? 
+            snackRecipes[Math.floor(Math.random() * snackRecipes.length)] :
+            availableRecipes[Math.floor(Math.random() * availableRecipes.length)];
         }
         
         newMeals.snacks = newSnacks;
@@ -275,10 +357,12 @@ export const useMealPlanUtils = () => {
     isGenerating,
     lockedMeals,
     aiReasoning,
+    dbRecipes,
     generateFullMealPlan,
     regenerateMeals,
     toggleLockMeal,
     calculateDayTotals,
-    checkExceedsGoals
+    checkExceedsGoals,
+    fetchDbRecipes
   };
 };

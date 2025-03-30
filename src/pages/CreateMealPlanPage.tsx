@@ -7,6 +7,7 @@ import WeekOverviewDialog from '@/components/meal-plan/WeekOverviewDialog';
 import RecipeVaultDialog from '@/components/meal-plan/RecipeVaultDialog';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 const CreateMealPlanPage = () => {
   const { toast } = useToast();
@@ -47,12 +48,18 @@ const CreateMealPlanPage = () => {
     toggleLockMeal,
     regenerateMeals,
     calculateDayTotals,
-    checkExceedsGoals
+    checkExceedsGoals,
+    fetchDbRecipes
   } = useMealPlanUtils();
 
   // Local component state for dialog handling
   const [isWeekOverviewOpen, setIsWeekOverviewOpen] = useState(false);
   const [isRecipeVaultOpen, setIsRecipeVaultOpen] = useState(false);
+
+  // Fetch database recipes when component mounts
+  useEffect(() => {
+    fetchDbRecipes();
+  }, [fetchDbRecipes]);
 
   // Handle opening the Recipe Vault dialog without a specific meal
   const handleOpenVault = () => {

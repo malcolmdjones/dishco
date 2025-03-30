@@ -3,8 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { X, Search, Plus } from 'lucide-react';
-import { recipes, Recipe } from '@/data/mockData';
+import { X, Search, Plus, Loader2 } from 'lucide-react';
+import { Recipe } from '@/data/mockData';
+import { supabase } from '@/integrations/supabase/client';
+import { useMealPlanUtils } from '@/hooks/useMealPlanUtils';
 
 interface RecipeVaultDialogProps {
   isOpen: boolean;
@@ -21,13 +23,23 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
   targetMealType,
   targetMealIndex
 }) => {
+  const { dbRecipes, fetchDbRecipes } = useMealPlanUtils();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(false);
+  
+  // Fetch recipes when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      setLoading(true);
+      fetchDbRecipes().then(() => setLoading(false));
+    }
+  }, [isOpen, fetchDbRecipes]);
   
   // Filter recipes based on search term and selected type
   useEffect(() => {
-    let filtered = [...recipes];
+    let filtered = [...dbRecipes];
     
     // Filter by meal type if selected
     if (selectedType) {
@@ -44,7 +56,7 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
     }
     
     setFilteredRecipes(filtered);
-  }, [searchTerm, selectedType]);
+  }, [searchTerm, selectedType, dbRecipes]);
 
   // Clear filters when dialog is opened
   useEffect(() => {
@@ -128,9 +140,13 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto pr-1">
-          {filteredRecipes.length > 0 ? (
-            filteredRecipes.map((recipe) => (
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="animate-spin h-8 w-8 text-primary" />
+          </div>
+        ) : filteredRecipes.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto pr-1">
+            {filteredRecipes.map((recipe) => (
               <div 
                 key={recipe.id}
                 className="border rounded-lg overflow-hidden cursor-pointer hover:border-primary transition-colors"
@@ -153,13 +169,23 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
                   </div>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="col-span-2 text-center py-8">
-              <p className="text-gray-500">No recipes found. Try a different search.</p>
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-500">No recipes found. Try a different search.</p>
+            {dbRecipes.length === 0 && (
+              <Button 
+                variant="outline"
+                className="mt-4"
+                onClick={() => window.location.href = '/recipe-management'}
+              >
+                <Plus size={16} className="mr-1.5" />
+                Add Recipes
+              </Button>
+            )}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

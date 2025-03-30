@@ -3,7 +3,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import PageHeaderContent from './PageHeaderContent';
 
 interface PageHeaderProps {
   onOpenVault: () => void;
@@ -14,10 +13,10 @@ const PageHeader: React.FC<PageHeaderProps> = ({ onOpenVault, onOpenWeekOverview
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-4">
-        <Link to="/planning" className="flex items-center">
-          <ArrowLeft size={20} className="mr-2" />
-          <span className="font-medium">Back</span>
-        </Link>
+        <div>
+          <h1 className="text-xl font-bold">New Meal Plan</h1>
+          <p className="text-dishco-text-light mt-1">Plan and customize your meals</p>
+        </div>
         <div className="flex space-x-2">
           <Button 
             variant="ghost" 
@@ -36,11 +35,10 @@ const PageHeader: React.FC<PageHeaderProps> = ({ onOpenVault, onOpenWeekOverview
           </Button>
         </div>
       </div>
-      
-      <PageHeaderContent 
-        onOpenVault={onOpenVault} 
-        onOpenWeekOverview={onOpenWeekOverview} 
-      />
+      <Link to="/planning" className="flex items-center mb-4 text-sm">
+        <ArrowLeft size={16} className="mr-1" />
+        <span>Back to planning</span>
+      </Link>
     </div>
   );
 };
