@@ -80,11 +80,11 @@ const Progress = React.forwardRef<
           {showValue && (
             <div className="absolute inset-0 flex items-center justify-center">
               <span className={cn(
-                "font-medium",
-                size === "sm" ? "text-sm" : size === "md" ? "text-base" : "text-lg",
+                "font-medium whitespace-nowrap text-center",
+                size === "sm" ? "text-xs" : size === "md" ? "text-sm" : "text-base",
                 statusColorClass
               )}>
-                {valuePrefix}{value}{valueSuffix}
+                {valuePrefix}{Math.round(value)}{valueSuffix}
               </span>
             </div>
           )}

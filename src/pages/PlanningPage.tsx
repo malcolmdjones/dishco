@@ -25,7 +25,26 @@ const PlanningPage = () => {
   const [isVaultOpen, setIsVaultOpen] = useState(false);
   
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  const currentDayPlan = mealPlan[activeDay];
+  
+  // Ensure we have valid meal plan data
+  const ensureValidMealPlan = () => {
+    const safeWeeklyPlan = mealPlan.map(day => {
+      return {
+        ...day,
+        meals: {
+          breakfast: day.meals.breakfast || null,
+          lunch: day.meals.lunch || null,
+          dinner: day.meals.dinner || null,
+          snacks: Array.isArray(day.meals.snacks) ? day.meals.snacks.filter(snack => snack !== null && snack !== undefined) : []
+        }
+      };
+    });
+    
+    return safeWeeklyPlan;
+  };
+  
+  const safeMealPlan = ensureValidMealPlan();
+  const currentDayPlan = safeMealPlan[activeDay];
   const dailyMacros = calculateDailyMacros(currentDayPlan.meals);
   const goals = defaultGoals;
 
@@ -147,21 +166,6 @@ const PlanningPage = () => {
   };
 
   const handleWeeklyOverview = () => {
-    const safeWeeklyPlan = mealPlan.map(day => {
-      const safeMeals = {
-        breakfast: day.meals.breakfast || null,
-        lunch: day.meals.lunch || null,
-        dinner: day.meals.dinner || null,
-        snacks: day.meals.snacks || []
-      };
-      
-      return {
-        ...day,
-        meals: safeMeals
-      };
-    });
-    
-    setMealPlan(safeWeeklyPlan);
     setIsWeekOverviewOpen(true);
   };
 
@@ -187,21 +191,34 @@ const PlanningPage = () => {
     const currentDay = { ...updatedMealPlan[activeDay] };
     const updatedMeals = { ...currentDay.meals };
     
+    // Only remove the meal from its original location
     if (draggedMeal.type === 'snacks') {
       if (updatedMeals.snacks && draggedMeal.index !== undefined) {
-        updatedMeals.snacks = updatedMeals.snacks.filter((_, i) => i !== draggedMeal.index);
+        // Create a copy of the snacks array and remove the specific item
+        const updatedSnacks = [...updatedMeals.snacks];
+        updatedSnacks.splice(draggedMeal.index, 1);
+        updatedMeals.snacks = updatedSnacks;
       }
     } else {
-      updatedMeals[draggedMeal.type] = null;
+      // For main meals, only remove if we're moving it somewhere else
+      if (draggedMeal.type !== targetType) {
+        updatedMeals[draggedMeal.type] = null;
+      }
     }
     
+    // Add the meal to the target location
     if (targetType === 'snacks') {
       if (!updatedMeals.snacks) {
         updatedMeals.snacks = [];
       }
       updatedMeals.snacks.push(draggedMeal.meal);
     } else {
-      updatedMeals[targetType] = draggedMeal.meal;
+      // For main meals, allow multiple meals in the same slot
+      if (targetType === draggedMeal.type) {
+        // If same type, don't do anything as we didn't remove it
+      } else {
+        updatedMeals[targetType] = draggedMeal.meal;
+      }
     }
     
     currentDay.meals = updatedMeals;
@@ -287,15 +304,14 @@ const PlanningPage = () => {
 
       <div className="bg-white rounded-xl shadow-md p-4 mb-6 animate-slide-up">
         <h2 className="text-lg font-semibold mb-4">Daily Nutrition</h2>
-        <div className="flex justify-between items-end">
+        <div className="flex justify-between items-center">
           <div className="flex-1 flex flex-col items-center">
             <Progress 
               type="circular" 
               size="md"
-              value={percentages.calories}
-              max={100}
+              value={dailyMacros.calories}
+              max={goals.calories}
               showValue={true}
-              valuePrefix={differences.calories >= 0 ? "+" : ""}
               valueSuffix=""
               label="Calories"
               status={percentages.calories > 90 ? "warning" : "default"}
@@ -310,10 +326,9 @@ const PlanningPage = () => {
             <Progress 
               type="circular" 
               size="md"
-              value={percentages.protein}
-              max={100}
+              value={dailyMacros.protein}
+              max={goals.protein}
               showValue={true}
-              valuePrefix={differences.protein >= 0 ? "+" : ""}
               valueSuffix="g"
               label="Protein"
               status={percentages.protein > 90 ? "warning" : "default"}
@@ -329,10 +344,9 @@ const PlanningPage = () => {
             <Progress 
               type="circular" 
               size="md"
-              value={percentages.carbs}
-              max={100}
+              value={dailyMacros.carbs}
+              max={goals.carbs}
               showValue={true}
-              valuePrefix={differences.carbs >= 0 ? "+" : ""}
               valueSuffix="g"
               label="Carbs"
               status={percentages.carbs > 90 ? "warning" : "default"}
@@ -348,10 +362,9 @@ const PlanningPage = () => {
             <Progress 
               type="circular" 
               size="md"
-              value={percentages.fat}
-              max={100}
+              value={dailyMacros.fat}
+              max={goals.fat}
               showValue={true}
-              valuePrefix={differences.fat >= 0 ? "+" : ""}
               valueSuffix="g"
               label="Fat"
               status={percentages.fat > 90 ? "warning" : "default"}
@@ -481,7 +494,7 @@ const PlanningPage = () => {
       </div>
 
       <Drawer open={isRecipeDrawerOpen} onOpenChange={setIsRecipeDrawerOpen}>
-        <DrawerContent className="max-h-[90vh] overflow-y-auto">
+        <DrawerContent className="max-h-[85vh] overflow-y-auto">
           {selectedMeal && (
             <>
               <div className="relative h-48 w-full">
@@ -494,7 +507,7 @@ const PlanningPage = () => {
                   <h2 className="text-white text-lg font-bold">{selectedMeal.name}</h2>
                 </div>
               </div>
-              <DrawerHeader>
+              <DrawerHeader className="py-3">
                 <div className="flex items-center mt-2 space-x-2">
                   {selectedMeal.requiresBlender && (
                     <Tooltip>
@@ -525,7 +538,7 @@ const PlanningPage = () => {
                   {selectedMeal.description}
                 </DrawerDescription>
               </DrawerHeader>
-              <div className="px-4 pb-6">
+              <div className="px-4">
                 <div className="flex justify-between mb-4 bg-dishco-secondary/10 p-3 rounded-md">
                   <div className="text-center">
                     <p className="text-xs text-dishco-text-light">Calories</p>
@@ -545,7 +558,7 @@ const PlanningPage = () => {
                   </div>
                 </div>
                 
-                <div className="mb-6">
+                <div className="mb-4">
                   <h3 className="font-medium mb-2">Ingredients</h3>
                   <ul className="list-disc pl-5 space-y-1 text-sm">
                     {selectedMeal.ingredients ? (
@@ -558,7 +571,7 @@ const PlanningPage = () => {
                   </ul>
                 </div>
                 
-                <div>
+                <div className="mb-4">
                   <h3 className="font-medium mb-2">Instructions</h3>
                   <ol className="list-decimal pl-5 space-y-2 text-sm">
                     {selectedMeal.instructions ? (
@@ -594,7 +607,7 @@ const PlanningPage = () => {
           </DialogHeader>
           
           <div className="space-y-6 pt-2">
-            {mealPlan.map((day, index) => (
+            {safeMealPlan.map((day, index) => (
               <div 
                 key={index} 
                 className="border rounded-lg p-3 cursor-pointer hover:border-dishco-primary transition-colors"
@@ -620,22 +633,22 @@ const PlanningPage = () => {
                     <span className="w-24 font-medium flex-shrink-0">Dinner:</span>
                     <span className="line-clamp-1">{day.meals.dinner?.name || "None scheduled"}</span>
                   </div>
-                  <div className="flex flex-col text-sm">
-                    <div className="flex">
-                      <span className="w-24 font-medium flex-shrink-0">Snacks:</span>
-                      <div className="flex-1">
-                        {day.meals.snacks && day.meals.snacks.length > 0 ? (
-                          <ul className="list-disc pl-5">
-                            {day.meals.snacks.map((snack, snackIndex) => (
-                              <li key={snackIndex} className="line-clamp-1 ml-0">
-                                {snack ? snack.name : "Unknown snack"}
+                  <div className="flex items-start text-sm">
+                    <span className="w-24 font-medium flex-shrink-0 align-top">Snacks:</span>
+                    <div className="flex-1">
+                      {day.meals.snacks && day.meals.snacks.length > 0 ? (
+                        <ul className="list-disc pl-5 space-y-1">
+                          {day.meals.snacks.map((snack, snackIndex) => (
+                            snack && (
+                              <li key={snackIndex} className="line-clamp-1">
+                                {snack.name}
                               </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <span>None scheduled</span>
-                        )}
-                      </div>
+                            )
+                          ))}
+                        </ul>
+                      ) : (
+                        <span>None scheduled</span>
+                      )}
                     </div>
                   </div>
                 </div>
