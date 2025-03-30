@@ -2,23 +2,17 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar, ArrowRight, Search } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { recipes } from '@/data/mockData';
 
 const PlanningPage = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
   const handleGeneratePlan = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      toast({
-        title: "Meal Plan Generated",
-        description: "Your customized meal plan for the week has been created!",
-      });
-    }, 1500);
+    navigate('/create-meal-plan');
   };
 
   // Get a selection of 4 recipes for display
@@ -53,11 +47,10 @@ const PlanningPage = () => {
         {/* Generate Meal Plan Button */}
         <Button 
           className="w-full py-6 text-lg font-medium"
-          disabled={loading}
           onClick={handleGeneratePlan}
         >
-          {loading ? 'Generating...' : 'Generate a Meal Plan'} 
-          {!loading && <ArrowRight className="ml-2" />}
+          Generate a Meal Plan
+          <ArrowRight className="ml-2" />
         </Button>
 
         {/* Discover Recipes */}
