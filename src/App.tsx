@@ -21,6 +21,7 @@ import CreateMealPlanPage from "./pages/CreateMealPlanPage";
 import ExploreRecipesPage from "./pages/ExploreRecipesPage";
 import AuthPage from "./pages/AuthPage";
 import RecipeManagementPage from './pages/RecipeManagementPage';
+import CustomRecipeFormPage from "./pages/CustomRecipeFormPage";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
@@ -48,7 +49,8 @@ const App = () => (
             <Route path="/saved-plans" element={<ProtectedRoute><AppLayout><SavedPlansPage /></AppLayout></ProtectedRoute>} />
             <Route path="/saved-recipes" element={<ProtectedRoute><AppLayout><SavedRecipesPage /></AppLayout></ProtectedRoute>} />
             <Route path="/add-recipe" element={<ProtectedRoute><AppLayout><AddExternalRecipePage /></AppLayout></ProtectedRoute>} />
-            <Route path="/custom-recipe/new" element={<ProtectedRoute><AppLayout><AddExternalRecipePage /></AppLayout></ProtectedRoute>} />
+            <Route path="/custom-recipe/new" element={<ProtectedRoute><AppLayout><CustomRecipeFormPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/custom-recipe" element={<ProtectedRoute><AppLayout><AddExternalRecipePage /></AppLayout></ProtectedRoute>} />
             <Route path="/nutrition-goals" element={<ProtectedRoute><AppLayout><NutritionGoalsPage /></AppLayout></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><AppLayout><AccountSettingsPage /></AppLayout></ProtectedRoute>} />
             <Route path="/dietary-restrictions" element={<ProtectedRoute><AppLayout><DietaryRestrictionsPage /></AppLayout></ProtectedRoute>} />
