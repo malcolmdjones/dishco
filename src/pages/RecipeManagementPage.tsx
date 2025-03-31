@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Search, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Search, Loader2, Edit, Trash, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import RecipeScraperForm from '@/components/RecipeScraperForm';
 import RecipeViewer from '@/components/RecipeViewer';
+import EditRecipeDialog from '@/components/EditRecipeDialog';
 import { Recipe } from '@/data/mockData';
 
 const RecipeManagementPage: React.FC = () => {
@@ -24,6 +25,8 @@ const RecipeManagementPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('my-recipes');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
+  const [editRecipeId, setEditRecipeId] = useState<string | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -143,6 +146,15 @@ const RecipeManagementPage: React.FC = () => {
     setIsRecipeViewerOpen(true);
   };
 
+  const handleEditRecipe = (recipeId: string) => {
+    setEditRecipeId(recipeId);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditSuccess = () => {
+    fetchRecipes();
+  };
+
   return (
     <div className="container mx-auto max-w-4xl pb-20 pt-4">
       <div className="flex items-center mb-6">
@@ -249,19 +261,33 @@ const RecipeManagementPage: React.FC = () => {
                     </p>
                   </CardContent>
                   <CardFooter className="pt-0 flex justify-between">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleViewRecipe(recipe)}
-                    >
-                      View Details
-                    </Button>
+                    <div className="flex space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleViewRecipe(recipe)}
+                        className="flex items-center"
+                      >
+                        <Eye size={16} className="mr-1" />
+                        View
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEditRecipe(recipe.id)}
+                        className="flex items-center"
+                      >
+                        <Edit size={16} className="mr-1" />
+                        Edit
+                      </Button>
+                    </div>
                     <Button 
                       variant="ghost" 
                       size="sm"
-                      className="text-red-500 hover:text-red-700"
+                      className="text-red-500 hover:text-red-700 flex items-center"
                       onClick={() => handleDeleteRecipe(recipe.id)}
                     >
+                      <Trash size={16} className="mr-1" />
                       Delete
                     </Button>
                   </CardFooter>
@@ -282,6 +308,16 @@ const RecipeManagementPage: React.FC = () => {
           recipe={selectedRecipe}
           isOpen={isRecipeViewerOpen}
           onClose={() => setIsRecipeViewerOpen(false)}
+        />
+      )}
+
+      {/* Edit Recipe Dialog */}
+      {editRecipeId && (
+        <EditRecipeDialog
+          isOpen={isEditDialogOpen}
+          onClose={() => setIsEditDialogOpen(false)}
+          recipeId={editRecipeId}
+          onSuccess={handleEditSuccess}
         />
       )}
     </div>
