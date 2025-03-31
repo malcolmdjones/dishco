@@ -1,8 +1,9 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import AppLayout from "./components/layout/AppLayout";
 import HomePage from "./pages/HomePage";
 import PlanningPage from "./pages/PlanningPage";
@@ -23,7 +24,6 @@ import RecipeManagementPage from './pages/RecipeManagementPage';
 import CustomRecipeFormPage from "./pages/CustomRecipeFormPage";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
-import { Route, useLocation, Navigate } from 'react-router-dom';
 
 const queryClient = new QueryClient();
 
@@ -48,7 +48,7 @@ const App = () => (
             <Route path="/log-meal" element={<ProtectedRoute><AppLayout><LogMealPage /></AppLayout></ProtectedRoute>} />
             <Route path="/saved-plans" element={<ProtectedRoute><AppLayout><SavedPlansPage /></AppLayout></ProtectedRoute>} />
             <Route path="/saved-recipes" element={<ProtectedRoute><AppLayout><SavedRecipesPage /></AppLayout></ProtectedRoute>} />
-            <Route path="/add-recipe" element={<ProtectedRoute><AppLayout><AddExternalRecipePage /></AppLayout></ProtectedRoute>} />
+            <Route path="/add-recipe" element={<RedirectRoute><ProtectedRoute><AppLayout><AddExternalRecipePage /></AppLayout></ProtectedRoute></RedirectRoute>} />
             <Route path="/custom-recipe/new" element={<ProtectedRoute><AppLayout><CustomRecipeFormPage /></AppLayout></ProtectedRoute>} />
             <Route path="/custom-recipe" element={<ProtectedRoute><AppLayout><AddExternalRecipePage /></AppLayout></ProtectedRoute>} />
             <Route path="/nutrition-goals" element={<ProtectedRoute><AppLayout><NutritionGoalsPage /></AppLayout></ProtectedRoute>} />
