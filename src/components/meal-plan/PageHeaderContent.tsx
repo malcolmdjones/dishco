@@ -17,37 +17,39 @@ const PageHeaderContent: React.FC<PageHeaderContentProps> = ({
   
   return (
     <>
-      <div className="flex items-center mb-4 justify-between">
-        <div className="flex items-center">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => navigate('/planning')} 
-            className="mr-2"
-          >
-            <ArrowLeft size={20} />
-          </Button>
-          <h1 className="text-xl font-bold">New Meal Plan</h1>
+      <div className="flex flex-col mb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate('/planning')} 
+              className="mr-2"
+            >
+              <ArrowLeft size={20} />
+            </Button>
+            <h1 className="text-3xl font-bold text-gray-800">New Meal Plan</h1>
+          </div>
+          <div className="flex space-x-2">
+            <Button 
+              variant="outline" 
+              className="px-6 rounded-full"
+              onClick={onOpenWeekOverview}
+            >
+              Overview
+            </Button>
+            <Button 
+              variant="outline" 
+              size="icon"
+              className="rounded-full aspect-square w-[48px] h-[48px]"
+              onClick={onOpenVault}
+            >
+              <BookOpen size={20} />
+            </Button>
+          </div>
         </div>
-        <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={onOpenVault}
-            title="Recipe Vault"
-          >
-            <BookOpen size={16} />
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onOpenWeekOverview}
-          >
-            Overview
-          </Button>
-        </div>
+        <p className="text-gray-500 text-lg mt-1 ml-10">Plan and customize your meals</p>
       </div>
-      <p className="text-dishco-text-light mb-4">Plan and customize your meals</p>
     </>
   );
 };

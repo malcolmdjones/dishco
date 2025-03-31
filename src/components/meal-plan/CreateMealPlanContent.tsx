@@ -8,9 +8,7 @@ import DailyNutritionCard from '@/components/meal-plan/DailyNutritionCard';
 import MealCard from '@/components/meal-plan/MealCard';
 import SnacksSection from '@/components/meal-plan/SnacksSection';
 import BottomActionBar from '@/components/meal-plan/BottomActionBar';
-import WeekOverviewDialog from '@/components/meal-plan/WeekOverviewDialog';
-import RecipeVaultDialog from '@/components/meal-plan/RecipeVaultDialog';
-import { useNavigate } from 'react-router-dom';
+import { useMealPlanUtils } from '@/hooks/useMealPlanUtils';
 
 interface CreateMealPlanContentProps {
   currentDay: number;
@@ -22,6 +20,7 @@ interface CreateMealPlanContentProps {
   regenerateMeals: () => void;
   calculateDayTotals: () => any;
   checkExceedsGoals: () => any;
+  onOpenVault?: (mealType: string, index?: number) => void;
 }
 
 const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
@@ -33,18 +32,16 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
   toggleLockMeal,
   regenerateMeals,
   calculateDayTotals,
-  checkExceedsGoals
+  checkExceedsGoals,
+  onOpenVault
 }) => {
-  const navigate = useNavigate();
-  
   // Local component state
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
   const [isSavePlanDialogOpen, setIsSavePlanDialogOpen] = useState(false);
-  const [isWeekOverviewOpen, setIsWeekOverviewOpen] = useState(false);
-  const [isRecipeVaultOpen, setIsRecipeVaultOpen] = useState(false);
-  const [targetMealType, setTargetMealType] = useState('');
-  const [targetMealIndex, setTargetMealIndex] = useState<number | undefined>(undefined);
+  
+  // Get user goals from the hook
+  const { userGoals } = useMealPlanUtils();
 
   // Handle recipe selection to view details
   const handleRecipeClick = (recipe: Recipe) => {
@@ -57,37 +54,11 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
     setIsSavePlanDialogOpen(true);
   };
 
-  // Open the Recipe Vault dialog
+  // Handle opening the vault for a specific meal
   const handleOpenVault = (mealType: string, index?: number) => {
-    setTargetMealType(mealType);
-    setTargetMealIndex(index);
-    setIsRecipeVaultOpen(true);
-  };
-
-  // Add a recipe to the meal plan from the vault
-  const handleAddFromVault = (recipe: Recipe, mealType: string, index?: number) => {
-    // Clone current meal plan
-    const newMealPlan = [...mealPlan];
-    const currentDayData = { ...newMealPlan[currentDay] };
-    const currentMeals = { ...currentDayData.meals };
-    
-    // Update based on meal type
-    if (mealType === 'breakfast') {
-      currentMeals.breakfast = recipe;
-    } else if (mealType === 'lunch') {
-      currentMeals.lunch = recipe;
-    } else if (mealType === 'dinner') {
-      currentMeals.dinner = recipe;
-    } else if (mealType === 'snack' && index !== undefined) {
-      const newSnacks = [...(currentMeals.snacks || [])];
-      newSnacks[index] = recipe;
-      currentMeals.snacks = newSnacks;
+    if (onOpenVault) {
+      onOpenVault(mealType, index);
     }
-    
-    currentDayData.meals = currentMeals;
-    newMealPlan[currentDay] = currentDayData;
-    
-    // No need to call setMealPlan as it's handled by the hook
   };
 
   // Get current day's data
@@ -111,7 +82,7 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
       {/* Daily Nutrition Card */}
       <DailyNutritionCard 
         dayTotals={dayTotals}
-        userGoals={calculateDayTotals()}
+        userGoals={userGoals}
         exceedsGoals={goalExceeds}
       />
 
@@ -181,22 +152,6 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
         isOpen={isSavePlanDialogOpen}
         onClose={() => setIsSavePlanDialogOpen(false)}
         mealPlan={mealPlan}
-      />
-
-      {/* Week Overview Dialog */}
-      <WeekOverviewDialog
-        isOpen={isWeekOverviewOpen}
-        onClose={() => setIsWeekOverviewOpen(false)}
-        mealPlan={mealPlan}
-      />
-
-      {/* Recipe Vault Dialog */}
-      <RecipeVaultDialog
-        isOpen={isRecipeVaultOpen}
-        onClose={() => setIsRecipeVaultOpen(false)}
-        onSelectRecipe={handleAddFromVault}
-        targetMealType={targetMealType}
-        targetMealIndex={targetMealIndex}
       />
     </div>
   );
