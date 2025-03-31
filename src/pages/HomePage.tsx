@@ -2,13 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
-import { format, addDays, subDays, isToday } from 'date-fns';
+import { format, addDays, subDays, isToday, isSameDay } from 'date-fns';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
-import { ChevronLeft, ChevronRight, Home } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { calculateDailyMacros, defaultGoals, Recipe } from '@/data/mockData';
 import RecipeViewer from '@/components/RecipeViewer';
+import { supabase } from '@/integrations/supabase/client';
+import HomeRecipeViewer from '@/components/HomeRecipeViewer';
 
 interface Meal {
   id: string;
@@ -25,6 +27,8 @@ const HomePage = () => {
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [activeMealPlan, setActiveMealPlan] = useState<any>(null);
+  const [todaysMeals, setTodaysMeals] = useState<Meal[]>([]);
   
   // State for daily nutrition
   const [dailyNutrition, setDailyNutrition] = useState({
@@ -38,87 +42,101 @@ const HomePage = () => {
     totalFat: defaultGoals.fat
   });
   
-  // Initialize with valid recipe data to prevent undefined errors
-  const [todaysMeals, setTodaysMeals] = useState<Meal[]>([
-    {
-      id: '1',
-      name: 'Avocado Toast with Egg',
-      type: 'breakfast',
-      recipe: {
-        id: '1',
-        name: 'Avocado Toast with Egg',
-        type: 'breakfast',
-        description: 'Healthy breakfast with avocado and egg on toast',
-        ingredients: ['bread', 'avocado', 'egg'],
-        instructions: ['Toast bread', 'Mash avocado', 'Fry egg', 'Assemble'],
-        prepTime: 5,
-        cookTime: 10,
-        servings: 1,
-        macros: {
-          calories: 350,
-          protein: 15,
-          carbs: 30,
-          fat: 20
-        },
-        imageSrc: '/placeholder.svg',
-        requiresBlender: false,
-        requiresCooking: true
-      },
-      consumed: false
-    },
-    {
-      id: '2',
-      name: 'Grilled Chicken Salad',
-      type: 'lunch',
-      recipe: {
-        id: '2',
-        name: 'Grilled Chicken Salad',
-        type: 'lunch',
-        description: 'Fresh salad with grilled chicken',
-        ingredients: ['chicken breast', 'lettuce', 'tomatoes', 'cucumber', 'olive oil'],
-        instructions: ['Grill chicken', 'Chop vegetables', 'Mix together', 'Add dressing'],
-        prepTime: 10,
-        cookTime: 15,
-        servings: 1,
-        macros: {
-          calories: 400,
-          protein: 35,
-          carbs: 10,
-          fat: 25
-        },
-        imageSrc: '/placeholder.svg',
-        requiresBlender: false,
-        requiresCooking: true
-      },
-      consumed: false
-    },
-    {
-      id: '3',
-      name: 'Baked Salmon with Asparagus',
-      type: 'dinner',
-      recipe: {
-        id: '3',
-        name: 'Baked Salmon with Asparagus',
-        type: 'dinner',
-        description: 'Healthy dinner with omega-3 rich salmon',
-        ingredients: ['salmon fillet', 'asparagus', 'lemon', 'olive oil', 'herbs'],
-        instructions: ['Preheat oven', 'Season salmon', 'Arrange asparagus', 'Bake until done'],
-        prepTime: 10,
-        cookTime: 20,
-        servings: 1,
-        macros: {
-          calories: 450,
-          protein: 40,
-          carbs: 15,
-          fat: 25
-        },
-        imageSrc: '/placeholder.svg',
-        requiresBlender: false,
-        requiresCooking: true
-      },
-      consumed: false
+  // Load meal plan for the selected date
+  useEffect(() => {
+    fetchMealPlanForDate(selectedDate);
+  }, [selectedDate]);
+
+  // Fetch meal plan for the selected date
+  const fetchMealPlanForDate = async (date: Date) => {
+    try {
+      // Try to fetch from local storage first (for demonstration)
+      const savedMealPlans = JSON.parse(localStorage.getItem('savedMealPlans') || '[]');
+      
+      // Filter meal plans to find one active for the selected date
+      const activePlan = savedMealPlans.find((plan: any) => {
+        const planData = plan.plan_data;
+        if (!planData || !planData.days) return false;
+        
+        // Check if the plan has a day entry for the selected date
+        return planData.days.some((day: any) => {
+          const dayDate = new Date(day.date);
+          return isSameDay(dayDate, date);
+        });
+      });
+      
+      setActiveMealPlan(activePlan || null);
+      
+      if (activePlan) {
+        // Find the specific day in the plan
+        const planData = activePlan.plan_data;
+        const activeDay = planData.days.find((day: any) => {
+          const dayDate = new Date(day.date);
+          return isSameDay(dayDate, date);
+        });
+        
+        if (activeDay) {
+          // Convert to our Meal format
+          const meals: Meal[] = [];
+          
+          // Add breakfast
+          if (activeDay.breakfast) {
+            meals.push({
+              id: `breakfast-${activeDay.breakfast.id}`,
+              name: activeDay.breakfast.name,
+              type: 'breakfast',
+              recipe: activeDay.breakfast,
+              consumed: false
+            });
+          }
+          
+          // Add lunch
+          if (activeDay.lunch) {
+            meals.push({
+              id: `lunch-${activeDay.lunch.id}`,
+              name: activeDay.lunch.name,
+              type: 'lunch',
+              recipe: activeDay.lunch,
+              consumed: false
+            });
+          }
+          
+          // Add dinner
+          if (activeDay.dinner) {
+            meals.push({
+              id: `dinner-${activeDay.dinner.id}`,
+              name: activeDay.dinner.name,
+              type: 'dinner',
+              recipe: activeDay.dinner,
+              consumed: false
+            });
+          }
+          
+          // Add snacks
+          if (activeDay.snacks && activeDay.snacks.length > 0) {
+            activeDay.snacks.forEach((snack: any, index: number) => {
+              meals.push({
+                id: `snack-${index}-${snack.id}`,
+                name: snack.name,
+                type: 'snack',
+                recipe: snack,
+                consumed: false
+              });
+            });
+          }
+          
+          setTodaysMeals(meals);
+        } else {
+          setTodaysMeals([]);
+        }
+      } else {
+        setTodaysMeals([]);
+      }
+    } catch (error) {
+      console.error('Error fetching meal plan:', error);
+      setTodaysMeals([]);
     }
-  ]);
+  };
 
   // Reset nutrition at midnight
   useEffect(() => {
@@ -386,70 +404,104 @@ const HomePage = () => {
       
       {/* Today's Meals */}
       <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-4">Today's Meals</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Today's Meals</h2>
+          {!activeMealPlan && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => navigate('/create-meal-plan')}
+              className="text-xs"
+            >
+              <Plus size={16} className="mr-1" />
+              Create Meal Plan
+            </Button>
+          )}
+        </div>
         
-        <div className="space-y-4">
-          {todaysMeals.map((meal) => {
-            // Add null check to ensure meal and recipe exist
-            if (!meal || !meal.recipe) {
-              return null;
-            }
-            
-            return (
-              <div key={meal.id} className="bg-white rounded-xl p-4 shadow-sm">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-500">{formatMealType(meal.type)}</span>
-                  <span className="text-sm bg-amber-50 text-amber-800 px-2 py-1 rounded-full">
-                    {meal.recipe.macros.calories} kcal
-                  </span>
-                </div>
-                
-                <div className="flex gap-3">
-                  <div 
-                    className="w-20 h-20 rounded-lg overflow-hidden cursor-pointer"
-                    onClick={() => handleOpenRecipe(meal.recipe)}
-                  >
-                    <img 
-                      src={meal.recipe.imageSrc} 
-                      alt={meal.name}
-                      className="w-full h-full object-cover"
-                    />
+        {todaysMeals.length > 0 ? (
+          <div className="space-y-4">
+            {todaysMeals.map((meal) => {
+              // Add null check to ensure meal and recipe exist
+              if (!meal || !meal.recipe) {
+                return null;
+              }
+              
+              return (
+                <div key={meal.id} className="bg-white rounded-xl p-4 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-500">{formatMealType(meal.type)}</span>
+                    <span className="text-sm bg-amber-50 text-amber-800 px-2 py-1 rounded-full">
+                      {meal.recipe.macros.calories} kcal
+                    </span>
                   </div>
                   
-                  <div className="flex-1">
-                    <h3 
-                      className="font-semibold mb-2 cursor-pointer"
+                  <div className="flex gap-3">
+                    <div 
+                      className="w-20 h-20 rounded-lg overflow-hidden cursor-pointer"
                       onClick={() => handleOpenRecipe(meal.recipe)}
                     >
-                      {meal.name}
-                    </h3>
+                      <img 
+                        src={meal.recipe.imageSrc} 
+                        alt={meal.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                     
-                    <Button
-                      variant={meal.consumed ? "outline" : "outline"}
-                      size="sm"
-                      className={`w-full ${meal.consumed ? 'text-green-600 border-green-600' : ''}`}
-                      onClick={() => handleToggleConsumed(meal)}
-                    >
-                      {meal.consumed ? 'Consumed ✓' : 'Mark as consumed'}
-                    </Button>
+                    <div className="flex-1">
+                      <h3 
+                        className="font-semibold mb-2 cursor-pointer"
+                        onClick={() => handleOpenRecipe(meal.recipe)}
+                      >
+                        {meal.name}
+                      </h3>
+                      
+                      <Button
+                        variant={meal.consumed ? "outline" : "outline"}
+                        size="sm"
+                        className={`w-full ${meal.consumed ? 'text-green-600 border-green-600' : ''}`}
+                        onClick={() => handleToggleConsumed(meal)}
+                      >
+                        {meal.consumed ? 'Consumed ✓' : 'Mark as consumed'}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2 mt-3">
+                    <span className="px-3 py-1 bg-blue-100 rounded-full text-xs">
+                      P: {meal.recipe.macros.protein}g
+                    </span>
+                    <span className="px-3 py-1 bg-yellow-100 rounded-full text-xs">
+                      C: {meal.recipe.macros.carbs}g
+                    </span>
+                    <span className="px-3 py-1 bg-purple-100 rounded-full text-xs">
+                      F: {meal.recipe.macros.fat}g
+                    </span>
                   </div>
                 </div>
-                
-                <div className="flex gap-2 mt-3">
-                  <span className="px-3 py-1 bg-blue-100 rounded-full text-xs">
-                    P: {meal.recipe.macros.protein}g
-                  </span>
-                  <span className="px-3 py-1 bg-yellow-100 rounded-full text-xs">
-                    C: {meal.recipe.macros.carbs}g
-                  </span>
-                  <span className="px-3 py-1 bg-purple-100 rounded-full text-xs">
-                    F: {meal.recipe.macros.fat}g
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl p-6 shadow-sm text-center">
+            <p className="text-gray-500 mb-4">No meal plan active for this date</p>
+            <Button
+              onClick={() => navigate('/create-meal-plan')}
+              variant="outline"
+            >
+              Create a Meal Plan
+            </Button>
+          </div>
+        )}
+      </div>
+      
+      {/* Featured Recipes Section */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold">Recipes You Might Like</h2>
+          <Link to="/explore-recipes" className="text-sm text-blue-600">See All</Link>
         </div>
+        <HomeRecipeViewer className="animate-fade-in" />
       </div>
       
       {/* Recipe Viewer */}

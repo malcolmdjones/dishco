@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -6,6 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Plus, Trash, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const CustomRecipeFormPage = () => {
   const navigate = useNavigate();
@@ -13,6 +22,7 @@ const CustomRecipeFormPage = () => {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [recipeId, setRecipeId] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Form state
   const [title, setTitle] = useState('');
@@ -34,7 +44,6 @@ const CustomRecipeFormPage = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if we're editing an existing recipe
     const searchParams = new URLSearchParams(location.search);
     const editId = searchParams.get('edit');
     
@@ -57,7 +66,6 @@ const CustomRecipeFormPage = () => {
         setCookingTime(recipeToEdit.cookingTime?.toString() || '');
         setServings(recipeToEdit.servings?.toString() || '');
         
-        // Set ingredients
         if (recipeToEdit.ingredients && recipeToEdit.ingredients.length > 0) {
           setIngredients(recipeToEdit.ingredients.map((ing: any, index: number) => ({
             id: index.toString(),
@@ -67,12 +75,10 @@ const CustomRecipeFormPage = () => {
           })));
         }
         
-        // Set instructions
         if (recipeToEdit.instructions && recipeToEdit.instructions.length > 0) {
           setInstructions(recipeToEdit.instructions);
         }
         
-        // Set nutrition
         if (recipeToEdit.nutrition) {
           setNutrition({
             calories: recipeToEdit.nutrition.calories?.toString() || '',
@@ -82,7 +88,6 @@ const CustomRecipeFormPage = () => {
           });
         }
         
-        // Set image preview if available
         if (recipeToEdit.imageUrl) {
           setImagePreview(recipeToEdit.imageUrl);
         }
@@ -137,7 +142,6 @@ const CustomRecipeFormPage = () => {
       const file = e.target.files[0];
       setImage(file);
       
-      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -149,7 +153,6 @@ const CustomRecipeFormPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Basic validation
     if (!title) {
       toast({
         title: "Missing Information",
@@ -160,10 +163,8 @@ const CustomRecipeFormPage = () => {
     }
     
     try {
-      // Generate a unique ID for the recipe if not editing
       const currentRecipeId = recipeId || `external-${Date.now()}`;
       
-      // Prepare recipe data
       const recipeData = {
         id: currentRecipeId,
         title,
@@ -188,11 +189,9 @@ const CustomRecipeFormPage = () => {
         createdAt: new Date().toISOString()
       };
       
-      // Save to local storage
       const savedRecipes = JSON.parse(localStorage.getItem('externalRecipes') || '[]');
       
       if (isEditing) {
-        // Update existing recipe
         const updatedRecipes = savedRecipes.map((recipe: any) => 
           recipe.id === currentRecipeId ? recipeData : recipe
         );
@@ -203,19 +202,14 @@ const CustomRecipeFormPage = () => {
           description: "Your recipe has been successfully updated.",
         });
       } else {
-        // Add new recipe
         localStorage.setItem('externalRecipes', JSON.stringify([...savedRecipes, recipeData]));
         
-        // Add to saved recipes
         try {
-          // Save to Supabase if available
           await supabase.from('saved_recipes').insert({
             recipe_id: currentRecipeId,
-            // In a real app, the user_id would come from authentication
           });
         } catch (error) {
           console.error('Error saving to database:', error);
-          // Fall back to local storage if Supabase fails
           const savedRecipeIds = JSON.parse(localStorage.getItem('savedRecipeIds') || '[]');
           localStorage.setItem('savedRecipeIds', JSON.stringify([...savedRecipeIds, currentRecipeId]));
         }
@@ -226,7 +220,6 @@ const CustomRecipeFormPage = () => {
         });
       }
       
-      // Navigate back to custom recipes
       navigate('/custom-recipe');
     } catch (error) {
       console.error('Error saving recipe:', error);
@@ -238,22 +231,57 @@ const CustomRecipeFormPage = () => {
     }
   };
 
+  const handleDeleteRecipe = () => {
+    if (!recipeId) return;
+    
+    try {
+      const savedRecipes = JSON.parse(localStorage.getItem('externalRecipes') || '[]');
+      const updatedRecipes = savedRecipes.filter((recipe: any) => recipe.id !== recipeId);
+      localStorage.setItem('externalRecipes', JSON.stringify(updatedRecipes));
+      
+      toast({
+        title: "Recipe deleted",
+        description: "Your recipe has been removed from your collection.",
+      });
+      
+      navigate('/custom-recipe');
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to delete your recipe. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="container mx-auto max-w-4xl pb-20 pt-4">
-      <div className="flex items-center mb-6">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => navigate('/custom-recipe')} 
-          className="mr-2"
-        >
-          <ArrowLeft size={20} />
-        </Button>
-        <h1 className="text-2xl font-bold">{isEditing ? 'Edit Recipe' : 'Add Custom Recipe'}</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate('/custom-recipe')} 
+            className="mr-2"
+          >
+            <ArrowLeft size={20} />
+          </Button>
+          <h1 className="text-2xl font-bold">{isEditing ? 'Edit Recipe' : 'Add Custom Recipe'}</h1>
+        </div>
+        
+        {isEditing && (
+          <Button 
+            variant="destructive"
+            onClick={() => setIsDeleteDialogOpen(true)}
+            className="flex items-center"
+          >
+            <Trash size={16} className="mr-2" />
+            Delete Recipe
+          </Button>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Image Upload */}
         <div className="bg-white rounded-xl shadow-sm p-4">
           <div className="flex items-center justify-center w-full">
             {imagePreview ? (
@@ -293,7 +321,6 @@ const CustomRecipeFormPage = () => {
           </div>
         </div>
 
-        {/* Basic Info */}
         <div className="bg-white rounded-xl shadow-sm p-4 space-y-4">
           <h2 className="font-semibold text-lg">Recipe Details</h2>
           
@@ -360,7 +387,6 @@ const CustomRecipeFormPage = () => {
           </div>
         </div>
 
-        {/* Ingredients */}
         <div className="bg-white rounded-xl shadow-sm p-4 space-y-4">
           <h2 className="font-semibold text-lg">Ingredients</h2>
           
@@ -408,7 +434,6 @@ const CustomRecipeFormPage = () => {
           </Button>
         </div>
 
-        {/* Instructions */}
         <div className="bg-white rounded-xl shadow-sm p-4 space-y-4">
           <h2 className="font-semibold text-lg">Instructions</h2>
           
@@ -449,7 +474,6 @@ const CustomRecipeFormPage = () => {
           </Button>
         </div>
 
-        {/* Nutrition Info */}
         <div className="bg-white rounded-xl shadow-sm p-4 space-y-4">
           <h2 className="font-semibold text-lg">Nutrition Information (per serving)</h2>
           
@@ -505,6 +529,23 @@ const CustomRecipeFormPage = () => {
           {isEditing ? 'Update Recipe' : 'Save Recipe'}
         </Button>
       </form>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the recipe from your collection.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteRecipe} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
