@@ -29,7 +29,6 @@ const HomePage = () => {
   const [activeMealPlan, setActiveMealPlan] = useState<any>(null);
   const [todaysMeals, setTodaysMeals] = useState<Meal[]>([]);
   
-  // State for daily nutrition
   const [dailyNutrition, setDailyNutrition] = useState({
     calories: 0,
     totalCalories: defaultGoals.calories,
@@ -40,32 +39,23 @@ const HomePage = () => {
     fat: 0,
     totalFat: defaultGoals.fat
   });
-  
-  // Load meal plan for the selected date
+
   useEffect(() => {
     fetchMealPlanForDate(selectedDate);
   }, [selectedDate]);
 
-  // Fetch meal plan for the selected date
   const fetchMealPlanForDate = async (date: Date) => {
     try {
-      // Try to fetch from local storage
       const activePlanJson = localStorage.getItem('activePlan');
       
       if (!activePlanJson) {
-        // If no active plan, check if there's a savedMealPlans entry
         const savedMealPlansJson = localStorage.getItem('savedMealPlans');
         if (savedMealPlansJson) {
           const savedMealPlans = JSON.parse(savedMealPlansJson);
           if (savedMealPlans && savedMealPlans.length > 0) {
-            // Use the first saved plan as active plan
             const firstPlan = savedMealPlans[0];
             setActiveMealPlan(firstPlan);
-            
-            // Also set it as the active plan in localStorage
             localStorage.setItem('activePlan', JSON.stringify(firstPlan.plan_data));
-            
-            // Process meals for today from this plan
             processMealsForDate(firstPlan.plan_data, date);
             return;
           }
@@ -76,11 +66,9 @@ const HomePage = () => {
         return;
       }
       
-      // Parse active plan if found
       const activePlan = JSON.parse(activePlanJson);
       console.log("Active plan loaded for HomePage:", activePlan);
       
-      // Store in state for access elsewhere
       setActiveMealPlan({
         id: activePlan.id || 'active-plan',
         name: activePlan.name || 'Active Plan',
@@ -88,23 +76,19 @@ const HomePage = () => {
         plan_data: activePlan
       });
       
-      // Process meals for the selected date
       processMealsForDate(activePlan, date);
-      
     } catch (error) {
       console.error('Error fetching meal plan:', error);
       setTodaysMeals([]);
     }
   };
-  
-  // Process meals for the selected date
+
   const processMealsForDate = (planData: any, date: Date) => {
     if (!planData || !planData.days) {
       setTodaysMeals([]);
       return;
     }
     
-    // Find the specific day in the plan
     const activeDay = planData.days.find((day: any) => {
       if (!day || !day.date) return false;
       const dayDate = new Date(day.date);
@@ -117,10 +101,8 @@ const HomePage = () => {
       return;
     }
     
-    // Convert to our Meal format
     const meals: Meal[] = [];
     
-    // Add breakfast
     if (activeDay.meals?.breakfast) {
       meals.push({
         id: `breakfast-${activeDay.meals.breakfast.id || Date.now()}`,
@@ -131,7 +113,6 @@ const HomePage = () => {
       });
     }
     
-    // Add lunch
     if (activeDay.meals?.lunch) {
       meals.push({
         id: `lunch-${activeDay.meals.lunch.id || Date.now()}`,
@@ -142,7 +123,6 @@ const HomePage = () => {
       });
     }
     
-    // Add dinner
     if (activeDay.meals?.dinner) {
       meals.push({
         id: `dinner-${activeDay.meals.dinner.id || Date.now()}`,
@@ -153,7 +133,6 @@ const HomePage = () => {
       });
     }
     
-    // Add snacks
     if (activeDay.meals?.snacks && activeDay.meals.snacks.length > 0) {
       activeDay.meals.snacks.forEach((snack: any, index: number) => {
         if (snack) {
@@ -172,14 +151,11 @@ const HomePage = () => {
     setTodaysMeals(meals);
   };
 
-  // Reset nutrition at midnight
   useEffect(() => {
-    // First, check if we should reset based on stored date
     const lastResetDate = localStorage.getItem('lastNutritionResetDate');
     const today = new Date().toDateString();
     
     if (lastResetDate !== today) {
-      // Reset nutrition
       setDailyNutrition(prev => ({
         ...prev,
         calories: 0,
@@ -188,23 +164,19 @@ const HomePage = () => {
         fat: 0
       }));
       
-      // Reset consumed status
       setTodaysMeals(meals => 
         meals.map(meal => ({ ...meal, consumed: false }))
       );
       
-      // Store current date
       localStorage.setItem('lastNutritionResetDate', today);
     }
     
-    // Set up the next day reset
     const checkForNewDay = () => {
       const now = new Date();
       const hours = now.getHours();
       const minutes = now.getMinutes();
       
       if (hours === 0 && minutes === 0) {
-        // Reset nutrition at midnight
         setDailyNutrition(prev => ({
           ...prev,
           calories: 0,
@@ -213,60 +185,48 @@ const HomePage = () => {
           fat: 0
         }));
         
-        // Reset consumed status
         setTodaysMeals(meals => 
           meals.map(meal => ({ ...meal, consumed: false }))
         );
         
-        // Store current date
         localStorage.setItem('lastNutritionResetDate', now.toDateString());
       }
     };
     
-    // Check every minute
     const interval = setInterval(checkForNewDay, 60000);
     
     return () => clearInterval(interval);
   }, []);
-  
-  // Function to go to previous day
+
   const goToPreviousDay = () => {
     setSelectedDate(prevDate => subDays(prevDate, 1));
   };
-  
-  // Function to go to next day
+
   const goToNextDay = () => {
     setSelectedDate(prevDate => addDays(prevDate, 1));
   };
-  
-  // Function to reset to today
+
   const goToToday = () => {
     setSelectedDate(new Date());
   };
-  
-  // Open recipe viewer
+
   const handleOpenRecipe = (recipe: Recipe) => {
     setSelectedRecipe(recipe);
     setIsRecipeViewerOpen(true);
   };
-  
-  // Handle toggle save recipe (placeholder)
+
   const handleToggleSave = async (recipeId: string, currentlySaved: boolean) => {
     setIsSaved(!currentlySaved);
     return Promise.resolve();
   };
-  
-  // Function to toggle meal consumption
+
   const handleToggleConsumed = (meal: Meal) => {
-    // Update the meal
     const updatedMeals = todaysMeals.map(m => 
       m.id === meal.id ? { ...m, consumed: !m.consumed } : m
     );
     setTodaysMeals(updatedMeals);
     
-    // Update nutrition based on whether meal was consumed or unconsumed
     if (!meal.consumed) {
-      // Add nutrition values
       setDailyNutrition(prev => ({
         ...prev,
         calories: prev.calories + meal.recipe.macros.calories,
@@ -280,7 +240,6 @@ const HomePage = () => {
         description: `${meal.name} has been marked as consumed.`
       });
     } else {
-      // Subtract nutrition values
       setDailyNutrition(prev => ({
         ...prev,
         calories: Math.max(0, prev.calories - meal.recipe.macros.calories),
@@ -295,8 +254,7 @@ const HomePage = () => {
       });
     }
   };
-  
-  // Color definitions for macros
+
   const macroColors = {
     calories: '#FFF4D7',
     protein: '#DBE9FE',
@@ -304,10 +262,8 @@ const HomePage = () => {
     fat: '#F3E8FF'
   };
 
-  // Check if selected date is today
   const isSelectedDateToday = isToday(selectedDate);
 
-  // Format meal type
   const formatMealType = (type: string) => {
     return type.charAt(0).toUpperCase() + type.slice(1);
   };
@@ -319,7 +275,6 @@ const HomePage = () => {
         <p className="text-dishco-text-light">Track your meals and plan for the week</p>
       </header>
       
-      {/* Date selector */}
       <div className="bg-white rounded-xl p-4 mb-6 shadow-sm">
         <div className="flex items-center justify-between">
           <button onClick={goToPreviousDay} className="p-2 hover:bg-gray-100 rounded-full">
@@ -352,7 +307,6 @@ const HomePage = () => {
         </div>
       </div>
       
-      {/* Today's Nutrition */}
       <div className="bg-white rounded-xl p-4 mb-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Today's Nutrition</h2>
@@ -436,7 +390,6 @@ const HomePage = () => {
         </div>
       </div>
       
-      {/* Today's Meals */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Today's Meals</h2>
@@ -456,7 +409,6 @@ const HomePage = () => {
         {todaysMeals.length > 0 ? (
           <div className="space-y-4">
             {todaysMeals.map((meal) => {
-              // Add null check to ensure meal and recipe exist
               if (!meal || !meal.recipe) {
                 return null;
               }
@@ -476,7 +428,7 @@ const HomePage = () => {
                       onClick={() => handleOpenRecipe(meal.recipe)}
                     >
                       <img 
-                        src={meal.recipe.imageSrc || meal.recipe.image_url || '/placeholder.svg'} 
+                        src={meal.recipe.imageSrc || '/placeholder.svg'} 
                         alt={meal.name}
                         className="w-full h-full object-cover"
                       />
@@ -529,7 +481,6 @@ const HomePage = () => {
         )}
       </div>
       
-      {/* Featured Recipes Section */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold">Recipes You Might Like</h2>
@@ -538,7 +489,6 @@ const HomePage = () => {
         <HomeRecipeViewer className="animate-fade-in" />
       </div>
       
-      {/* Recipe Viewer */}
       {selectedRecipe && (
         <RecipeViewer
           recipe={selectedRecipe}
