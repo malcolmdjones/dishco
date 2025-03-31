@@ -222,14 +222,17 @@ export type Database = {
           carbs: number | null
           cook_time: number | null
           created_at: string | null
+          cuisine_type: string | null
           description: string | null
           fat: number | null
           id: string
           image_url: string | null
+          is_high_protein: boolean | null
           is_public: boolean | null
           meal_type: string | null
           name: string
           prep_time: number | null
+          price_range: string | null
           protein: number | null
           requires_blender: boolean | null
           requires_cooking: boolean | null
@@ -243,14 +246,17 @@ export type Database = {
           carbs?: number | null
           cook_time?: number | null
           created_at?: string | null
+          cuisine_type?: string | null
           description?: string | null
           fat?: number | null
           id?: string
           image_url?: string | null
+          is_high_protein?: boolean | null
           is_public?: boolean | null
           meal_type?: string | null
           name: string
           prep_time?: number | null
+          price_range?: string | null
           protein?: number | null
           requires_blender?: boolean | null
           requires_cooking?: boolean | null
@@ -264,14 +270,17 @@ export type Database = {
           carbs?: number | null
           cook_time?: number | null
           created_at?: string | null
+          cuisine_type?: string | null
           description?: string | null
           fat?: number | null
           id?: string
           image_url?: string | null
+          is_high_protein?: boolean | null
           is_public?: boolean | null
           meal_type?: string | null
           name?: string
           prep_time?: number | null
+          price_range?: string | null
           protein?: number | null
           requires_blender?: boolean | null
           requires_cooking?: boolean | null

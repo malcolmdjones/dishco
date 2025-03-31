@@ -197,6 +197,16 @@ const RecipeManagementPage: React.FC = () => {
                           {recipe.meal_type}
                         </span>
                       )}
+                      {recipe.cuisine_type && recipe.cuisine_type !== 'other' && (
+                        <span className="text-xs px-2 py-1 bg-purple-100 rounded-md">
+                          {recipe.cuisine_type}
+                        </span>
+                      )}
+                      {recipe.is_high_protein && (
+                        <span className="text-xs px-2 py-1 bg-blue-200 rounded-md">
+                          High Protein
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm text-gray-600">
                       {recipe.recipe_ingredients?.length || 0} ingredients • 

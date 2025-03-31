@@ -66,7 +66,10 @@ const RecipeScraperForm: React.FC<RecipeScraperFormProps> = ({ onRecipeAdded }) 
         mealType: scrapedData.mealType || '',
         equipment: scrapedData.equipment || [],
         imageUrl: scrapedData.localImageUrl || scrapedData.imageUrl || '',
-        tags: scrapedData.tags || []
+        tags: scrapedData.tags || [],
+        cuisineType: scrapedData.cuisineType || 'other',
+        priceRange: scrapedData.priceRange || '$',
+        isHighProtein: scrapedData.isHighProtein || false
       });
       
       toast({
