@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import RecipeScraperForm from '@/components/RecipeScraperForm';
+import RecipeViewer from '@/components/RecipeViewer';
+import { Recipe } from '@/data/mockData';
 
 const RecipeManagementPage: React.FC = () => {
   const navigate = useNavigate();
@@ -20,6 +22,8 @@ const RecipeManagementPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredRecipes, setFilteredRecipes] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('my-recipes');
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -106,6 +110,37 @@ const RecipeManagementPage: React.FC = () => {
       title: 'Recipe added',
       description: `${newRecipe.name} has been added to your recipes`,
     });
+  };
+
+  const handleViewRecipe = (recipe: any) => {
+    // Convert the database recipe to the Recipe format expected by RecipeViewer
+    const viewerRecipe: Recipe = {
+      id: recipe.id,
+      name: recipe.name,
+      type: recipe.meal_type?.toLowerCase() || 'other',
+      description: recipe.description || '',
+      ingredients: recipe.recipe_ingredients?.map((ing: any) => ing.name) || [],
+      instructions: recipe.recipe_instructions?.map((inst: any) => inst.instruction) || [],
+      prepTime: recipe.prep_time || 0,
+      cookTime: recipe.cook_time || 0,
+      servings: recipe.servings || 1,
+      macros: {
+        calories: recipe.calories || 0,
+        protein: recipe.protein || 0,
+        carbs: recipe.carbs || 0,
+        fat: recipe.fat || 0
+      },
+      imageSrc: recipe.image_url || '/placeholder.svg',
+      cuisineType: recipe.cuisine_type || 'other',
+      priceRange: recipe.price_range || '$',
+      isHighProtein: recipe.is_high_protein || false,
+      equipment: recipe.recipe_equipment?.map((eq: any) => eq.name) || [],
+      requiresBlender: recipe.requires_blender || false,
+      requiresCooking: recipe.requires_cooking || true
+    };
+    
+    setSelectedRecipe(viewerRecipe);
+    setIsRecipeViewerOpen(true);
   };
 
   return (
@@ -217,7 +252,7 @@ const RecipeManagementPage: React.FC = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => navigate(`/recipe/${recipe.id}`)}
+                      onClick={() => handleViewRecipe(recipe)}
                     >
                       View Details
                     </Button>
@@ -240,6 +275,15 @@ const RecipeManagementPage: React.FC = () => {
           <RecipeScraperForm onRecipeAdded={handleRecipeScraped} />
         </TabsContent>
       </Tabs>
+
+      {/* Recipe Viewer Dialog */}
+      {selectedRecipe && (
+        <RecipeViewer
+          recipe={selectedRecipe}
+          isOpen={isRecipeViewerOpen}
+          onClose={() => setIsRecipeViewerOpen(false)}
+        />
+      )}
     </div>
   );
 };

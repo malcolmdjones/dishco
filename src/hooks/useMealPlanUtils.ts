@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { calculateDailyMacros, defaultGoals, fetchNutritionGoals, recipes as mockRecipes, Recipe, NutritionGoals, MealPlanDay } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
@@ -11,24 +10,53 @@ export const useMealPlanUtils = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentDay, setCurrentDay] = useState(0);
   const [mealPlan, setMealPlan] = useState<MealPlanDay[]>([]);
-  const [userGoals, setUserGoals] = useState<NutritionGoals>(defaultGoals);
+  const [userGoals, setUserGoals] = useState({
+    calories: 2000,
+    protein: 150,
+    carbs: 200,
+    fat: 65
+  });
   const [isGenerating, setIsGenerating] = useState(false);
   const [lockedMeals, setLockedMeals] = useState<{[key: string]: boolean}>({});
   const [aiReasoning, setAiReasoning] = useState<string>("");
   const [dbRecipes, setDbRecipes] = useState<Recipe[]>([]);
 
-  // Get user's nutrition goals
-  useEffect(() => {
-    const getUserGoals = async () => {
-      try {
-        const goals = await fetchNutritionGoals();
-        setUserGoals(goals);
-      } catch (error) {
+  // Fetch user's nutrition goals from Supabase
+  const fetchNutritionGoals = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('nutrition_goals')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) {
         console.error('Error fetching nutrition goals:', error);
+        return;
       }
-    };
-    getUserGoals();
-  }, []);
+
+      if (data) {
+        console.info('Using database nutrition goals:', data);
+        setUserGoals({
+          calories: data.calories,
+          protein: data.protein,
+          carbs: data.carbs,
+          fat: data.fat
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching nutrition goals:', error);
+    }
+  }, [user]);
+
+  // When user changes, fetch nutrition goals
+  useEffect(() => {
+    if (user) {
+      fetchNutritionGoals();
+    }
+  }, [user, fetchNutritionGoals]);
 
   // Fetch recipes from the database
   const fetchDbRecipes = useCallback(async () => {
@@ -360,17 +388,23 @@ export const useMealPlanUtils = () => {
     if (!mealPlan[currentDay]) return userGoals;
     
     const dayMeals = mealPlan[currentDay].meals;
-    return calculateDailyMacros(dayMeals);
+    const totals = calculateDailyMacros(dayMeals);
+    
+    // Return the user's goals along with the day totals
+    return {
+      ...totals,
+      goals: userGoals
+    };
   };
 
   // Check if current meals exceed user goals
   const checkExceedsGoals = () => {
     const totals = calculateDayTotals();
     const exceeds = {
-      calories: totals.calories > userGoals.calories + 75,
-      protein: totals.protein > userGoals.protein + 2,
-      carbs: totals.carbs > userGoals.carbs + 5,
-      fat: totals.fat > userGoals.fat + 5
+      calories: totals.calories > userGoals.calories,
+      protein: totals.protein > userGoals.protein,
+      carbs: totals.carbs > userGoals.carbs,
+      fat: totals.fat > userGoals.fat
     };
     
     return {
@@ -394,6 +428,7 @@ export const useMealPlanUtils = () => {
     toggleLockMeal,
     calculateDayTotals,
     checkExceedsGoals,
-    fetchDbRecipes
+    fetchDbRecipes,
+    fetchNutritionGoals
   };
 };

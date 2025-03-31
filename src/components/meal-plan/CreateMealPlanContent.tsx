@@ -22,6 +22,12 @@ interface CreateMealPlanContentProps {
   regenerateMeals: () => void;
   calculateDayTotals: () => any;
   checkExceedsGoals: () => any;
+  userGoals?: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
 }
 
 const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
@@ -33,7 +39,8 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
   toggleLockMeal,
   regenerateMeals,
   calculateDayTotals,
-  checkExceedsGoals
+  checkExceedsGoals,
+  userGoals
 }) => {
   const navigate = useNavigate();
   
@@ -111,7 +118,7 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
       {/* Daily Nutrition Card */}
       <DailyNutritionCard 
         dayTotals={dayTotals}
-        userGoals={calculateDayTotals()}
+        userGoals={userGoals}
         exceedsGoals={goalExceeds}
       />
 
