@@ -24,28 +24,40 @@ const PlanningPage = () => {
     const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
     setWeekDays(days);
 
-    // Check for active plan in localStorage (not sessionStorage)
-    const storedPlan = localStorage.getItem('activePlan');
-    if (storedPlan) {
-      try {
-        const parsedPlan = JSON.parse(storedPlan);
-        setActivePlan(parsedPlan);
-        
-        // Also store in localStorage for HomePage to access
-        localStorage.setItem('savedMealPlans', JSON.stringify([{
-          id: 'active-plan',
-          name: parsedPlan.name || 'Active Plan',
-          created_at: new Date().toISOString(),
-          plan_data: parsedPlan
-        }]));
-      } catch (error) {
-        console.error('Error parsing active plan:', error);
-      }
-    }
+    // Load active plan from localStorage
+    loadActivePlan();
 
     // Fetch recipes from the database
     fetchRecipes();
   }, []);
+
+  const loadActivePlan = () => {
+    try {
+      // Check for active plan in localStorage
+      const storedPlan = localStorage.getItem('activePlan');
+      if (storedPlan) {
+        const parsedPlan = JSON.parse(storedPlan);
+        console.log('Active plan loaded:', parsedPlan);
+        setActivePlan(parsedPlan);
+      } else {
+        // If no activePlan, check if there's a savedMealPlans entry
+        const savedMealPlans = localStorage.getItem('savedMealPlans');
+        if (savedMealPlans) {
+          const parsedPlans = JSON.parse(savedMealPlans);
+          if (parsedPlans && parsedPlans.length > 0) {
+            const firstPlan = parsedPlans[0];
+            console.log('Using first saved plan as active:', firstPlan);
+            setActivePlan(firstPlan.plan_data);
+            
+            // Also save it as the active plan for consistency
+            localStorage.setItem('activePlan', JSON.stringify(firstPlan.plan_data));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading active plan:', error);
+    }
+  };
 
   const fetchRecipes = async () => {
     try {

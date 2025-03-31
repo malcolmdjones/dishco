@@ -63,19 +63,22 @@ const SavedPlanCard: React.FC<SavedPlanCardProps> = ({ plan, onDelete }) => {
       // Add the plan name to the data
       const activePlanData = {
         ...planData,
-        name: plan.name
+        name: plan.name,
+        id: plan.id
       };
       
-      // Store in localStorage instead of sessionStorage
+      // Store the complete plan in localStorage
       localStorage.setItem('activePlan', JSON.stringify(activePlanData));
       
-      // Also store in a format compatible with HomePage
-      localStorage.setItem('savedMealPlans', JSON.stringify([{
+      // Also store the full plan object with metadata for consistency
+      const savedMealPlan = {
         id: plan.id,
         name: plan.name,
         created_at: plan.created_at,
         plan_data: activePlanData
-      }]));
+      };
+      
+      localStorage.setItem('savedMealPlans', JSON.stringify([savedMealPlan]));
       
       toast({
         title: "Plan Activated",

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
@@ -51,128 +50,126 @@ const HomePage = () => {
   const fetchMealPlanForDate = async (date: Date) => {
     try {
       // Try to fetch from local storage
-      const savedMealPlansJson = localStorage.getItem('savedMealPlans');
       const activePlanJson = localStorage.getItem('activePlan');
       
-      if (!savedMealPlansJson && !activePlanJson) {
+      if (!activePlanJson) {
+        // If no active plan, check if there's a savedMealPlans entry
+        const savedMealPlansJson = localStorage.getItem('savedMealPlans');
+        if (savedMealPlansJson) {
+          const savedMealPlans = JSON.parse(savedMealPlansJson);
+          if (savedMealPlans && savedMealPlans.length > 0) {
+            // Use the first saved plan as active plan
+            const firstPlan = savedMealPlans[0];
+            setActiveMealPlan(firstPlan);
+            
+            // Also set it as the active plan in localStorage
+            localStorage.setItem('activePlan', JSON.stringify(firstPlan.plan_data));
+            
+            // Process meals for today from this plan
+            processMealsForDate(firstPlan.plan_data, date);
+            return;
+          }
+        }
+        
         setActiveMealPlan(null);
         setTodaysMeals([]);
         return;
       }
       
-      let savedMealPlans = [];
-      let activePlan = null;
+      // Parse active plan if found
+      const activePlan = JSON.parse(activePlanJson);
+      console.log("Active plan loaded for HomePage:", activePlan);
       
-      // Try parsing the saved meal plans
-      if (savedMealPlansJson) {
-        savedMealPlans = JSON.parse(savedMealPlansJson);
-      }
-      
-      // If we have an active plan stored separately, use that
-      if (activePlanJson) {
-        try {
-          const parsedActivePlan = JSON.parse(activePlanJson);
-          activePlan = {
-            id: 'active-plan',
-            name: parsedActivePlan.name || 'Active Plan',
-            created_at: new Date().toISOString(),
-            plan_data: parsedActivePlan
-          };
-          
-          // Add to saved meal plans if not already there
-          if (!savedMealPlans.find((plan: any) => plan.id === 'active-plan')) {
-            savedMealPlans = [activePlan, ...savedMealPlans];
-          }
-        } catch (error) {
-          console.error('Error parsing active plan:', error);
-        }
-      }
-      
-      // Filter meal plans to find one active for the selected date
-      const planForDate = savedMealPlans.find((plan: any) => {
-        const planData = plan.plan_data;
-        if (!planData || !planData.days) return false;
-        
-        // Check if the plan has a day entry for the selected date
-        return planData.days.some((day: any) => {
-          const dayDate = new Date(day.date);
-          return isSameDay(dayDate, date);
-        });
+      // Store in state for access elsewhere
+      setActiveMealPlan({
+        id: activePlan.id || 'active-plan',
+        name: activePlan.name || 'Active Plan',
+        created_at: new Date().toISOString(),
+        plan_data: activePlan
       });
       
-      setActiveMealPlan(planForDate || null);
+      // Process meals for the selected date
+      processMealsForDate(activePlan, date);
       
-      if (planForDate) {
-        // Find the specific day in the plan
-        const planData = planForDate.plan_data;
-        const activeDay = planData.days.find((day: any) => {
-          const dayDate = new Date(day.date);
-          return isSameDay(dayDate, date);
-        });
-        
-        if (activeDay) {
-          // Convert to our Meal format
-          const meals: Meal[] = [];
-          
-          // Add breakfast
-          if (activeDay.meals?.breakfast) {
-            meals.push({
-              id: `breakfast-${activeDay.meals.breakfast.id}`,
-              name: activeDay.meals.breakfast.name,
-              type: 'breakfast',
-              recipe: activeDay.meals.breakfast,
-              consumed: false
-            });
-          }
-          
-          // Add lunch
-          if (activeDay.meals?.lunch) {
-            meals.push({
-              id: `lunch-${activeDay.meals.lunch.id}`,
-              name: activeDay.meals.lunch.name,
-              type: 'lunch',
-              recipe: activeDay.meals.lunch,
-              consumed: false
-            });
-          }
-          
-          // Add dinner
-          if (activeDay.meals?.dinner) {
-            meals.push({
-              id: `dinner-${activeDay.meals.dinner.id}`,
-              name: activeDay.meals.dinner.name,
-              type: 'dinner',
-              recipe: activeDay.meals.dinner,
-              consumed: false
-            });
-          }
-          
-          // Add snacks
-          if (activeDay.meals?.snacks && activeDay.meals.snacks.length > 0) {
-            activeDay.meals.snacks.forEach((snack: any, index: number) => {
-              if (snack) {
-                meals.push({
-                  id: `snack-${index}-${snack.id}`,
-                  name: snack.name,
-                  type: 'snack',
-                  recipe: snack,
-                  consumed: false
-                });
-              }
-            });
-          }
-          
-          setTodaysMeals(meals);
-        } else {
-          setTodaysMeals([]);
-        }
-      } else {
-        setTodaysMeals([]);
-      }
     } catch (error) {
       console.error('Error fetching meal plan:', error);
       setTodaysMeals([]);
     }
+  };
+  
+  // Process meals for the selected date
+  const processMealsForDate = (planData: any, date: Date) => {
+    if (!planData || !planData.days) {
+      setTodaysMeals([]);
+      return;
+    }
+    
+    // Find the specific day in the plan
+    const activeDay = planData.days.find((day: any) => {
+      if (!day || !day.date) return false;
+      const dayDate = new Date(day.date);
+      return isSameDay(dayDate, date);
+    });
+    
+    if (!activeDay) {
+      console.log("No plan found for this date:", date);
+      setTodaysMeals([]);
+      return;
+    }
+    
+    // Convert to our Meal format
+    const meals: Meal[] = [];
+    
+    // Add breakfast
+    if (activeDay.meals?.breakfast) {
+      meals.push({
+        id: `breakfast-${activeDay.meals.breakfast.id || Date.now()}`,
+        name: activeDay.meals.breakfast.name,
+        type: 'breakfast',
+        recipe: activeDay.meals.breakfast,
+        consumed: false
+      });
+    }
+    
+    // Add lunch
+    if (activeDay.meals?.lunch) {
+      meals.push({
+        id: `lunch-${activeDay.meals.lunch.id || Date.now()}`,
+        name: activeDay.meals.lunch.name,
+        type: 'lunch',
+        recipe: activeDay.meals.lunch,
+        consumed: false
+      });
+    }
+    
+    // Add dinner
+    if (activeDay.meals?.dinner) {
+      meals.push({
+        id: `dinner-${activeDay.meals.dinner.id || Date.now()}`,
+        name: activeDay.meals.dinner.name,
+        type: 'dinner',
+        recipe: activeDay.meals.dinner,
+        consumed: false
+      });
+    }
+    
+    // Add snacks
+    if (activeDay.meals?.snacks && activeDay.meals.snacks.length > 0) {
+      activeDay.meals.snacks.forEach((snack: any, index: number) => {
+        if (snack) {
+          meals.push({
+            id: `snack-${index}-${snack.id || Date.now()}`,
+            name: snack.name,
+            type: 'snack',
+            recipe: snack,
+            consumed: false
+          });
+        }
+      });
+    }
+    
+    console.log("Processed meals for today:", meals);
+    setTodaysMeals(meals);
   };
 
   // Reset nutrition at midnight
@@ -469,7 +466,7 @@ const HomePage = () => {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-500">{formatMealType(meal.type)}</span>
                     <span className="text-sm bg-amber-50 text-amber-800 px-2 py-1 rounded-full">
-                      {meal.recipe.macros.calories} kcal
+                      {meal.recipe.macros?.calories || 0} kcal
                     </span>
                   </div>
                   
@@ -479,7 +476,7 @@ const HomePage = () => {
                       onClick={() => handleOpenRecipe(meal.recipe)}
                     >
                       <img 
-                        src={meal.recipe.imageSrc} 
+                        src={meal.recipe.imageSrc || meal.recipe.image_url || '/placeholder.svg'} 
                         alt={meal.name}
                         className="w-full h-full object-cover"
                       />
@@ -506,13 +503,13 @@ const HomePage = () => {
                   
                   <div className="flex gap-2 mt-3">
                     <span className="px-3 py-1 bg-blue-100 rounded-full text-xs">
-                      P: {meal.recipe.macros.protein}g
+                      P: {meal.recipe.macros?.protein || 0}g
                     </span>
                     <span className="px-3 py-1 bg-yellow-100 rounded-full text-xs">
-                      C: {meal.recipe.macros.carbs}g
+                      C: {meal.recipe.macros?.carbs || 0}g
                     </span>
                     <span className="px-3 py-1 bg-purple-100 rounded-full text-xs">
-                      F: {meal.recipe.macros.fat}g
+                      F: {meal.recipe.macros?.fat || 0}g
                     </span>
                   </div>
                 </div>
