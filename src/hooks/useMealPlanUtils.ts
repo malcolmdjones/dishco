@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { calculateDailyMacros, defaultGoals, fetchNutritionGoals, recipes as mockRecipes, Recipe, NutritionGoals, MealPlanDay } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
@@ -16,48 +17,18 @@ export const useMealPlanUtils = () => {
   const [aiReasoning, setAiReasoning] = useState<string>("");
   const [dbRecipes, setDbRecipes] = useState<Recipe[]>([]);
 
-  // Get user's nutrition goals from the database
+  // Get user's nutrition goals
   useEffect(() => {
     const getUserGoals = async () => {
       try {
-        if (user?.id) {
-          // Try to get user goals from database first
-          const { data, error } = await supabase
-            .from('nutrition_goals')
-            .select('*')
-            .eq('user_id', user.id)
-            .single();
-
-          if (error && error.code !== 'PGRST116') {
-            console.error('Error fetching nutrition goals:', error);
-            throw error;
-          }
-
-          if (data) {
-            // Use database goals
-            setUserGoals({
-              calories: data.calories || defaultGoals.calories,
-              protein: data.protein || defaultGoals.protein,
-              carbs: data.carbs || defaultGoals.carbs,
-              fat: data.fat || defaultGoals.fat
-            });
-            console.log('Using database nutrition goals:', data);
-          } else {
-            // Fallback to fetching from mock data
-            const goals = await fetchNutritionGoals();
-            setUserGoals(goals);
-            console.log('Using mock nutrition goals:', goals);
-          }
-        }
+        const goals = await fetchNutritionGoals();
+        setUserGoals(goals);
       } catch (error) {
-        console.error('Error in getUserGoals:', error);
-        // Fallback to default goals if there's an error
-        setUserGoals(defaultGoals);
+        console.error('Error fetching nutrition goals:', error);
       }
     };
-    
     getUserGoals();
-  }, [user]);
+  }, []);
 
   // Fetch recipes from the database
   const fetchDbRecipes = useCallback(async () => {

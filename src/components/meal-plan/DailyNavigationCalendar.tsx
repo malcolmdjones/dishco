@@ -31,46 +31,34 @@ const DailyNavigationCalendar: React.FC<DailyNavigationCalendarProps> = ({
     return new Date(dateString).getDate();
   };
 
-  // Get short day name from the date
-  const getDayName = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', { weekday: 'short' }).charAt(0);
-  };
-
   return (
-    <div className="flex items-center justify-between mb-6 px-2">
+    <div className="flex items-center justify-between mb-6">
       <Button 
         variant="ghost" 
         size="icon" 
         onClick={() => navigateDay('prev')} 
         disabled={currentDay === 0}
-        className="text-gray-500"
       >
-        <ArrowLeft size={24} />
+        <ArrowLeft size={18} />
       </Button>
       
       <div className="flex space-x-2 overflow-x-auto">
-        {mealPlan.map((day, idx) => {
-          const dayNumber = getDayNumber(day.date);
-          const dayName = getDayName(day.date);
-          const isActive = idx === currentDay;
-          
-          return (
-            <button 
-              key={idx} 
-              className={`flex flex-col items-center justify-center w-12 h-12 rounded-full ${
-                isActive 
-                  ? 'bg-green-600 text-white' 
-                  : 'bg-gray-100 text-gray-700'
-              }`}
-              onClick={() => setCurrentDay(idx)}
-            >
-              <span className="text-xs uppercase font-medium">
-                {dayName}
-              </span>
-              <span className="text-lg font-bold">{dayNumber}</span>
-            </button>
-          );
-        })}
+        {mealPlan.map((day, idx) => (
+          <button 
+            key={idx} 
+            className={`flex flex-col items-center justify-center size-10 rounded-full ${
+              idx === currentDay 
+                ? 'bg-primary text-white' 
+                : 'bg-gray-100 text-gray-600'
+            }`}
+            onClick={() => setCurrentDay(idx)}
+          >
+            <span className="text-xs uppercase">
+              {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' }).charAt(0)}
+            </span>
+            <span className="text-sm font-medium">{getDayNumber(day.date)}</span>
+          </button>
+        ))}
       </div>
       
       <Button 
@@ -78,9 +66,8 @@ const DailyNavigationCalendar: React.FC<DailyNavigationCalendarProps> = ({
         size="icon"
         onClick={() => navigateDay('next')}
         disabled={currentDay === 6}
-        className="text-gray-500"
       >
-        <ArrowRight size={24} />
+        <ArrowRight size={18} />
       </Button>
     </div>
   );
