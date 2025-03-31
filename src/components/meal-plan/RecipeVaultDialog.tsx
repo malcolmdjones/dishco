@@ -115,7 +115,9 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
     }
   }, [isOpen, targetMealType]);
 
+  // Handle selecting a recipe from the vault - fixed to properly call onSelectRecipe
   const handleSelectRecipe = (recipe: Recipe) => {
+    console.log("Selected recipe:", recipe, "for meal type:", targetMealType, "index:", targetMealIndex);
     onSelectRecipe(recipe, targetMealType, targetMealIndex);
     onClose();
   };

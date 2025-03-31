@@ -151,16 +151,41 @@ const SavedMealPlansPage = () => {
       
       if (error) {
         console.error('Error deleting meal plan:', error);
+        toast({
+          title: "Delete Failed",
+          description: "There was an error deleting the meal plan.",
+          variant: "destructive"
+        });
         return;
       }
       
-      setSavedPlans(savedPlans.filter(plan => plan.id !== id));
+      setSavedPlans(prevPlans => prevPlans.filter(plan => plan.id !== id));
+      
+      const activePlanJson = localStorage.getItem('activePlan');
+      if (activePlanJson) {
+        try {
+          const activePlan = JSON.parse(activePlanJson);
+          if (activePlan.id === id) {
+            localStorage.removeItem('activePlan');
+            localStorage.removeItem('savedMealPlans');
+            localStorage.setItem('planActivatedAt', new Date().toISOString());
+          }
+        } catch (e) {
+          console.error('Error checking active plan:', e);
+        }
+      }
+      
       toast({
         title: "Plan Deleted",
         description: "The meal plan has been removed from your saved plans.",
       });
     } catch (error) {
       console.error('Error deleting meal plan:', error);
+      toast({
+        title: "Delete Failed",
+        description: "There was an error deleting the meal plan.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -240,37 +265,78 @@ const SavedMealPlansPage = () => {
 
     const startDate = selectedDate ? selectedDate : new Date();
     
-    sessionStorage.setItem('activePlan', JSON.stringify({
-      ...selectedPlan.plan_data,
-      startDate: startDate.toISOString()
-    }));
-    
-    toast({
-      title: "Plan Activated",
-      description: "This meal plan is now your active plan starting from " + format(startDate, 'MMMM d, yyyy'),
-    });
-    
-    setIsSelectingStartDate(false);
-    navigate('/planning');
+    try {
+      const activePlanData = {
+        ...selectedPlan.plan_data,
+        name: selectedPlan.name,
+        id: selectedPlan.id,
+        startDate: startDate.toISOString()
+      };
+      
+      localStorage.setItem('activePlan', JSON.stringify(activePlanData));
+      localStorage.setItem('savedMealPlans', JSON.stringify([{
+        id: selectedPlan.id,
+        name: selectedPlan.name,
+        created_at: selectedPlan.created_at,
+        plan_data: activePlanData
+      }]));
+      localStorage.setItem('planActivatedAt', new Date().toISOString());
+      
+      toast({
+        title: "Plan Activated",
+        description: `${selectedPlan.name} is now your active meal plan starting from ${format(startDate, 'MMMM d, yyyy')}.`,
+      });
+      
+      setIsSelectingStartDate(false);
+      navigate('/planning');
+    } catch (error) {
+      console.error('Error activating plan:', error);
+      toast({
+        title: "Error",
+        description: "Failed to activate the meal plan.",
+        variant: "destructive"
+      });
+    }
   };
 
   const calculateTotalCalories = (days) => {
     if (!days || !Array.isArray(days) || days.length === 0) return 0;
     
     let total = 0;
+    let validDayCount = 0;
+    
     days.forEach(day => {
       if (!day || !day.meals) return;
       
-      total += day.meals.breakfast?.macros?.calories || 0;
-      total += day.meals.lunch?.macros?.calories || 0;
-      total += day.meals.dinner?.macros?.calories || 0;
+      let dayTotal = 0;
+      
+      if (day.meals.breakfast && day.meals.breakfast.macros) {
+        dayTotal += day.meals.breakfast.macros.calories || 0;
+      }
+      
+      if (day.meals.lunch && day.meals.lunch.macros) {
+        dayTotal += day.meals.lunch.macros.calories || 0;
+      }
+      
+      if (day.meals.dinner && day.meals.dinner.macros) {
+        dayTotal += day.meals.dinner.macros.calories || 0;
+      }
+      
       if (day.meals.snacks && Array.isArray(day.meals.snacks)) {
         day.meals.snacks.forEach(snack => {
-          total += snack?.macros?.calories || 0;
+          if (snack && snack.macros) {
+            dayTotal += snack.macros.calories || 0;
+          }
         });
       }
+      
+      if (dayTotal > 0) {
+        total += dayTotal;
+        validDayCount++;
+      }
     });
-    return Math.round(total / (days.length || 1));
+    
+    return validDayCount > 0 ? Math.round(total / validDayCount) : 0;
   };
 
   if (savedPlans.length === 0 && !loading) {

@@ -11,6 +11,7 @@ import BottomActionBar from '@/components/meal-plan/BottomActionBar';
 import WeekOverviewDialog from '@/components/meal-plan/WeekOverviewDialog';
 import RecipeVaultDialog from '@/components/meal-plan/RecipeVaultDialog';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 interface CreateMealPlanContentProps {
   currentDay: number;
@@ -43,6 +44,7 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
   userGoals
 }) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   // Local component state
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
@@ -71,8 +73,10 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
     setIsRecipeVaultOpen(true);
   };
 
-  // Add a recipe to the meal plan from the vault
+  // Add a recipe to the meal plan from the vault - Fixed to properly update the meal plan
   const handleAddFromVault = (recipe: Recipe, mealType: string, index?: number) => {
+    console.log("Adding from vault:", recipe, mealType, index);
+    
     // Clone current meal plan
     const newMealPlan = [...mealPlan];
     const currentDayData = { ...newMealPlan[currentDay] };
@@ -91,10 +95,19 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
       currentMeals.snacks = newSnacks;
     }
     
+    // Update the meal plan
     currentDayData.meals = currentMeals;
     newMealPlan[currentDay] = currentDayData;
     
-    // No need to call setMealPlan as it's handled by the hook
+    // Force update to localStorage for syncing
+    localStorage.setItem('tempMealPlan', JSON.stringify(newMealPlan));
+    const timestamp = new Date().toISOString();
+    localStorage.setItem('mealPlanUpdatedAt', timestamp);
+    
+    toast({
+      title: "Recipe Added",
+      description: `Added ${recipe.name} to your meal plan.`,
+    });
   };
 
   // Get current day's data

@@ -32,7 +32,7 @@ const CreateMealPlanPage = () => {
     
     if (storedPlan && storedLockedMeals) {
       try {
-        // Pass to useMealPlanUtils in a future update
+        // This will be handled directly by useMealPlanUtils
         console.log('Loading copied plan', JSON.parse(storedPlan));
         console.log('Loading locked meals', JSON.parse(storedLockedMeals));
         
@@ -41,7 +41,7 @@ const CreateMealPlanPage = () => {
           description: "You're now editing a copy of your saved meal plan.",
         });
         
-        // Clear session storage after loading
+        // Clear session storage after loading to prevent duplicate copies
         sessionStorage.removeItem('planToCopy');
         sessionStorage.removeItem('lockedMeals');
       } catch (error) {
@@ -62,8 +62,34 @@ const CreateMealPlanPage = () => {
     calculateDayTotals,
     checkExceedsGoals,
     fetchDbRecipes,
-    userGoals
+    userGoals,
+    updateMealPlan // This would need to be added to the hook
   } = useMealPlanUtils();
+
+  // Listen for localStorage changes
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const tempMealPlan = localStorage.getItem('tempMealPlan');
+      if (tempMealPlan) {
+        try {
+          const updatedMealPlan = JSON.parse(tempMealPlan);
+          // This would update the meal plan in the hook
+          if (typeof updateMealPlan === 'function') {
+            updateMealPlan(updatedMealPlan);
+          }
+          // Clean up
+          localStorage.removeItem('tempMealPlan');
+        } catch (error) {
+          console.error('Error parsing temp meal plan:', error);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [updateMealPlan]);
 
   // Fetch database recipes when component mounts
   useEffect(() => {

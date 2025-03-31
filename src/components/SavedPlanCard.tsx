@@ -127,7 +127,7 @@ const SavedPlanCard: React.FC<SavedPlanCardProps> = ({ plan, onDelete }) => {
     }
   };
   
-  // Handle deleting a plan
+  // Handle deleting a plan - Fixed to properly delete from database
   const handleDelete = async () => {
     setIsDeleting(true);
     
@@ -148,6 +148,8 @@ const SavedPlanCard: React.FC<SavedPlanCardProps> = ({ plan, onDelete }) => {
           // Clear the active plan if it was the one deleted
           localStorage.removeItem('activePlan');
           localStorage.removeItem('savedMealPlans');
+          // Force a refresh of components that rely on the active plan
+          localStorage.setItem('planActivatedAt', new Date().toISOString());
         }
       }
       

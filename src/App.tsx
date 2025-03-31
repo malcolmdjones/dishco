@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -24,6 +23,7 @@ import RecipeManagementPage from './pages/RecipeManagementPage';
 import CustomRecipeFormPage from "./pages/CustomRecipeFormPage";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import { Route, useLocation, Navigate } from 'react-router-dom';
 
 const queryClient = new QueryClient();
 
@@ -70,3 +70,14 @@ const App = () => (
 );
 
 export default App;
+
+const RedirectRoute = ({ children }) => {
+  const location = useLocation();
+  
+  // Redirect from /add-recipe to /custom-recipe
+  if (location.pathname === '/add-recipe') {
+    return <Navigate to="/custom-recipe" replace />;
+  }
+  
+  return children;
+};

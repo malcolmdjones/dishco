@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { calculateDailyMacros, defaultGoals, fetchNutritionGoals, recipes as mockRecipes, Recipe, NutritionGoals, MealPlanDay } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
@@ -22,47 +21,98 @@ export const useMealPlanUtils = () => {
   const [aiReasoning, setAiReasoning] = useState<string>("");
   const [dbRecipes, setDbRecipes] = useState<Recipe[]>([]);
   const [planActivationTimestamp, setPlanActivationTimestamp] = useState<string | null>(null);
+  const [mealPlanUpdateTimestamp, setMealPlanUpdateTimestamp] = useState<string | null>(null);
 
-  // Watch for plan activation changes
+  // Watch for plan activation changes and meal plan updates
   useEffect(() => {
-    const checkForActivationChanges = () => {
-      const timestamp = localStorage.getItem('planActivatedAt');
-      if (timestamp && timestamp !== planActivationTimestamp) {
-        setPlanActivationTimestamp(timestamp);
+    const checkForChanges = () => {
+      // Check for plan activation changes
+      const activationTimestamp = localStorage.getItem('planActivatedAt');
+      if (activationTimestamp && activationTimestamp !== planActivationTimestamp) {
+        setPlanActivationTimestamp(activationTimestamp);
+        loadActivePlan();
+      }
+      
+      // Check for meal plan updates
+      const updateTimestamp = localStorage.getItem('mealPlanUpdatedAt');
+      if (updateTimestamp && updateTimestamp !== mealPlanUpdateTimestamp) {
+        setMealPlanUpdateTimestamp(updateTimestamp);
         
-        // Load active plan
-        const activePlanJson = localStorage.getItem('activePlan');
-        if (activePlanJson) {
+        // Check for temporary meal plan data
+        const tempMealPlanJson = localStorage.getItem('tempMealPlan');
+        if (tempMealPlanJson) {
           try {
-            const activePlan = JSON.parse(activePlanJson);
-            if (activePlan.days && Array.isArray(activePlan.days)) {
-              setMealPlan(activePlan.days.map((day: any) => ({
-                date: day.date || new Date().toISOString(),
-                meals: day.meals || {
-                  breakfast: null,
-                  lunch: null,
-                  dinner: null,
-                  snacks: [null, null]
-                }
-              })));
-              
-              setLockedMeals(activePlan.lockedMeals || {});
+            const tempMealPlan = JSON.parse(tempMealPlanJson);
+            if (Array.isArray(tempMealPlan)) {
+              setMealPlan(tempMealPlan);
+              localStorage.removeItem('tempMealPlan');
             }
           } catch (error) {
-            console.error('Error loading active plan:', error);
+            console.error('Error parsing temp meal plan:', error);
           }
         }
       }
     };
     
-    // Check initially
-    checkForActivationChanges();
+    // Initial check
+    checkForChanges();
     
-    // Set up interval to check periodically
-    const interval = setInterval(checkForActivationChanges, 2000);
+    // Set interval to check periodically
+    const interval = setInterval(checkForChanges, 1000);
     
     return () => clearInterval(interval);
-  }, [planActivationTimestamp]);
+  }, [planActivationTimestamp, mealPlanUpdateTimestamp]);
+  
+  // Load active plan from localStorage
+  const loadActivePlan = () => {
+    const activePlanJson = localStorage.getItem('activePlan');
+    if (activePlanJson) {
+      try {
+        const activePlan = JSON.parse(activePlanJson);
+        if (activePlan.days && Array.isArray(activePlan.days)) {
+          setMealPlan(activePlan.days.map((day: any) => ({
+            date: day.date || new Date().toISOString(),
+            meals: day.meals || {
+              breakfast: null,
+              lunch: null,
+              dinner: null,
+              snacks: [null, null]
+            }
+          })));
+          
+          // Also set locked meals if available
+          if (activePlan.lockedMeals) {
+            setLockedMeals(activePlan.lockedMeals);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading active plan:', error);
+      }
+    }
+  };
+  
+  // Function to manually update the meal plan (for external components)
+  const updateMealPlan = (newMealPlan: MealPlanDay[]) => {
+    if (Array.isArray(newMealPlan)) {
+      setMealPlan(newMealPlan);
+      
+      // Store updated plan in localStorage
+      const activePlanJson = localStorage.getItem('activePlan');
+      if (activePlanJson) {
+        try {
+          const activePlan = JSON.parse(activePlanJson);
+          const updatedPlan = {
+            ...activePlan,
+            days: newMealPlan
+          };
+          localStorage.setItem('activePlan', JSON.stringify(updatedPlan));
+          localStorage.setItem('planActivatedAt', new Date().toISOString());
+        } catch (error) {
+          console.error('Error updating active plan:', error);
+        }
+      }
+    }
+  };
 
   // Fetch user's nutrition goals from Supabase
   const fetchNutritionGoals = useCallback(async () => {
@@ -504,6 +554,7 @@ export const useMealPlanUtils = () => {
     calculateDayTotals,
     checkExceedsGoals,
     fetchDbRecipes,
-    fetchNutritionGoals
+    fetchNutritionGoals,
+    updateMealPlan
   };
 };
