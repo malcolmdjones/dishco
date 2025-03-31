@@ -50,11 +50,46 @@ const HomePage = () => {
   // Fetch meal plan for the selected date
   const fetchMealPlanForDate = async (date: Date) => {
     try {
-      // Try to fetch from local storage first (for demonstration)
-      const savedMealPlans = JSON.parse(localStorage.getItem('savedMealPlans') || '[]');
+      // Try to fetch from local storage
+      const savedMealPlansJson = localStorage.getItem('savedMealPlans');
+      const activePlanJson = localStorage.getItem('activePlan');
+      
+      if (!savedMealPlansJson && !activePlanJson) {
+        setActiveMealPlan(null);
+        setTodaysMeals([]);
+        return;
+      }
+      
+      let savedMealPlans = [];
+      let activePlan = null;
+      
+      // Try parsing the saved meal plans
+      if (savedMealPlansJson) {
+        savedMealPlans = JSON.parse(savedMealPlansJson);
+      }
+      
+      // If we have an active plan stored separately, use that
+      if (activePlanJson) {
+        try {
+          const parsedActivePlan = JSON.parse(activePlanJson);
+          activePlan = {
+            id: 'active-plan',
+            name: parsedActivePlan.name || 'Active Plan',
+            created_at: new Date().toISOString(),
+            plan_data: parsedActivePlan
+          };
+          
+          // Add to saved meal plans if not already there
+          if (!savedMealPlans.find((plan: any) => plan.id === 'active-plan')) {
+            savedMealPlans = [activePlan, ...savedMealPlans];
+          }
+        } catch (error) {
+          console.error('Error parsing active plan:', error);
+        }
+      }
       
       // Filter meal plans to find one active for the selected date
-      const activePlan = savedMealPlans.find((plan: any) => {
+      const planForDate = savedMealPlans.find((plan: any) => {
         const planData = plan.plan_data;
         if (!planData || !planData.days) return false;
         
@@ -65,11 +100,11 @@ const HomePage = () => {
         });
       });
       
-      setActiveMealPlan(activePlan || null);
+      setActiveMealPlan(planForDate || null);
       
-      if (activePlan) {
+      if (planForDate) {
         // Find the specific day in the plan
-        const planData = activePlan.plan_data;
+        const planData = planForDate.plan_data;
         const activeDay = planData.days.find((day: any) => {
           const dayDate = new Date(day.date);
           return isSameDay(dayDate, date);
@@ -80,48 +115,50 @@ const HomePage = () => {
           const meals: Meal[] = [];
           
           // Add breakfast
-          if (activeDay.breakfast) {
+          if (activeDay.meals?.breakfast) {
             meals.push({
-              id: `breakfast-${activeDay.breakfast.id}`,
-              name: activeDay.breakfast.name,
+              id: `breakfast-${activeDay.meals.breakfast.id}`,
+              name: activeDay.meals.breakfast.name,
               type: 'breakfast',
-              recipe: activeDay.breakfast,
+              recipe: activeDay.meals.breakfast,
               consumed: false
             });
           }
           
           // Add lunch
-          if (activeDay.lunch) {
+          if (activeDay.meals?.lunch) {
             meals.push({
-              id: `lunch-${activeDay.lunch.id}`,
-              name: activeDay.lunch.name,
+              id: `lunch-${activeDay.meals.lunch.id}`,
+              name: activeDay.meals.lunch.name,
               type: 'lunch',
-              recipe: activeDay.lunch,
+              recipe: activeDay.meals.lunch,
               consumed: false
             });
           }
           
           // Add dinner
-          if (activeDay.dinner) {
+          if (activeDay.meals?.dinner) {
             meals.push({
-              id: `dinner-${activeDay.dinner.id}`,
-              name: activeDay.dinner.name,
+              id: `dinner-${activeDay.meals.dinner.id}`,
+              name: activeDay.meals.dinner.name,
               type: 'dinner',
-              recipe: activeDay.dinner,
+              recipe: activeDay.meals.dinner,
               consumed: false
             });
           }
           
           // Add snacks
-          if (activeDay.snacks && activeDay.snacks.length > 0) {
-            activeDay.snacks.forEach((snack: any, index: number) => {
-              meals.push({
-                id: `snack-${index}-${snack.id}`,
-                name: snack.name,
-                type: 'snack',
-                recipe: snack,
-                consumed: false
-              });
+          if (activeDay.meals?.snacks && activeDay.meals.snacks.length > 0) {
+            activeDay.meals.snacks.forEach((snack: any, index: number) => {
+              if (snack) {
+                meals.push({
+                  id: `snack-${index}-${snack.id}`,
+                  name: snack.name,
+                  type: 'snack',
+                  recipe: snack,
+                  consumed: false
+                });
+              }
             });
           }
           

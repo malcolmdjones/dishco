@@ -60,8 +60,22 @@ const SavedPlanCard: React.FC<SavedPlanCardProps> = ({ plan, onDelete }) => {
   // Handle activating a plan
   const handleActivate = () => {
     try {
-      // Store in session storage (to be picked up by the PlanningPage)
-      sessionStorage.setItem('activePlan', JSON.stringify(planData));
+      // Add the plan name to the data
+      const activePlanData = {
+        ...planData,
+        name: plan.name
+      };
+      
+      // Store in localStorage instead of sessionStorage
+      localStorage.setItem('activePlan', JSON.stringify(activePlanData));
+      
+      // Also store in a format compatible with HomePage
+      localStorage.setItem('savedMealPlans', JSON.stringify([{
+        id: plan.id,
+        name: plan.name,
+        created_at: plan.created_at,
+        plan_data: activePlanData
+      }]));
       
       toast({
         title: "Plan Activated",
@@ -87,7 +101,7 @@ const SavedPlanCard: React.FC<SavedPlanCardProps> = ({ plan, onDelete }) => {
       // Get the locked meals data (if any)
       const lockedMeals = planData.lockedMeals || {};
       
-      // Store in session storage (to be picked up by CreateMealPlanPage)
+      // Store in sessionStorage (to be picked up by CreateMealPlanPage)
       sessionStorage.setItem('planToCopy', JSON.stringify(planData));
       sessionStorage.setItem('lockedMeals', JSON.stringify(lockedMeals));
       

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, ArrowRight, Search } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { format, startOfWeek, addDays } from 'date-fns';
+import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
@@ -24,12 +24,20 @@ const PlanningPage = () => {
     const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
     setWeekDays(days);
 
-    // Check for active plan in session storage
-    const storedPlan = sessionStorage.getItem('activePlan');
+    // Check for active plan in localStorage (not sessionStorage)
+    const storedPlan = localStorage.getItem('activePlan');
     if (storedPlan) {
       try {
         const parsedPlan = JSON.parse(storedPlan);
         setActivePlan(parsedPlan);
+        
+        // Also store in localStorage for HomePage to access
+        localStorage.setItem('savedMealPlans', JSON.stringify([{
+          id: 'active-plan',
+          name: parsedPlan.name || 'Active Plan',
+          created_at: new Date().toISOString(),
+          plan_data: parsedPlan
+        }]));
       } catch (error) {
         console.error('Error parsing active plan:', error);
       }
@@ -89,9 +97,15 @@ const PlanningPage = () => {
               <h3 className="font-medium mb-2">{activePlan.name || "Current Plan"}</h3>
               <div className="grid grid-cols-7 gap-1 text-center">
                 {weekDays.map((day, index) => {
-                  const dayPlan = activePlan.days && activePlan.days[index];
+                  // Check if this day has meal data in the active plan
+                  const dayPlan = activePlan.days && activePlan.days.find((planDay: any) => {
+                    const planDate = new Date(planDay.date);
+                    return isSameDay(planDate, day);
+                  });
+                  
                   const hasData = dayPlan && 
-                    (dayPlan.meals.breakfast || dayPlan.meals.lunch || dayPlan.meals.dinner);
+                    (dayPlan.meals?.breakfast || dayPlan.meals?.lunch || dayPlan.meals?.dinner || 
+                     (dayPlan.meals?.snacks && dayPlan.meals.snacks.some((s: any) => s)));
                   
                   return (
                     <div 
