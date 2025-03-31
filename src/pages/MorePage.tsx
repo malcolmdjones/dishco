@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, Heart, Settings, User, Utensils, BookOpen, LogOut, Calendar, AlertTriangle } from 'lucide-react';
@@ -79,10 +80,10 @@ const MorePage = () => {
       description: 'Access your collection of meal plans'
     },
     {
-      name: 'Add External Recipe',
+      name: 'Custom Recipes',
       icon: <Utensils size={20} className="text-green-500" />,
       path: '/add-recipe',
-      description: 'Import recipes from external sources'
+      description: 'View and create your own custom recipes'
     },
     {
       name: 'Dietary Restrictions',

@@ -202,7 +202,7 @@ export const useMealPlanUtils = () => {
       if (dbRecipes.length === 0) {
         toast({
           title: "No Recipes Available",
-          description: "Please add recipes in the Recipe Management page first.",
+          description: "Only admin can add recipes to the recipe vault.",
           variant: "destructive"
         });
         setIsGenerating(false);
@@ -298,7 +298,7 @@ export const useMealPlanUtils = () => {
     if (dbRecipes.length === 0) {
       toast({
         title: "No Recipes Available",
-        description: "Please add recipes in the Recipe Management page first.",
+        description: "Only admin can add recipes to the recipe vault.",
         variant: "destructive"
       });
       return;

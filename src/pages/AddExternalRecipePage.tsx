@@ -1,182 +1,262 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash, Upload } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Plus, Trash, Search, Loader2, ArrowLeft, Eye, Edit } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-
-interface IngredientInput {
-  id: string;
-  name: string;
-  quantity: string;
-  unit: string;
-}
-
-interface NutritionInput {
-  calories: string;
-  protein: string;
-  carbs: string;
-  fat: string;
-}
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import RecipeViewer from '@/components/RecipeViewer';
+import { Recipe } from '@/data/mockData';
 
 const AddExternalRecipePage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [customRecipes, setCustomRecipes] = useState<Recipe[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>([]);
+  const [isAddRecipeOpen, setIsAddRecipeOpen] = useState(false);
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
   
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [sourceUrl, setSourceUrl] = useState('');
-  const [cookingTime, setCookingTime] = useState('');
-  const [servings, setServings] = useState('');
-  const [ingredients, setIngredients] = useState<IngredientInput[]>([
-    { id: '1', name: '', quantity: '', unit: '' }
-  ]);
-  const [instructions, setInstructions] = useState<string[]>(['']);
-  const [nutrition, setNutrition] = useState<NutritionInput>({
-    calories: '',
-    protein: '',
-    carbs: '',
-    fat: ''
-  });
-  const [image, setImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  useEffect(() => {
+    fetchCustomRecipes();
+  }, []);
 
-  const handleAddIngredient = () => {
-    setIngredients([
-      ...ingredients,
-      { id: Date.now().toString(), name: '', quantity: '', unit: '' }
-    ]);
-  };
-
-  const handleRemoveIngredient = (id: string) => {
-    if (ingredients.length > 1) {
-      setIngredients(ingredients.filter(ing => ing.id !== id));
+  useEffect(() => {
+    // Filter recipes based on search query
+    if (searchQuery.trim() === '') {
+      setFilteredRecipes(customRecipes);
+    } else {
+      const query = searchQuery.toLowerCase();
+      setFilteredRecipes(
+        customRecipes.filter(recipe => 
+          recipe.name.toLowerCase().includes(query) || 
+          recipe.description?.toLowerCase().includes(query)
+        )
+      );
     }
-  };
+  }, [searchQuery, customRecipes]);
 
-  const handleIngredientChange = (id: string, field: keyof IngredientInput, value: string) => {
-    setIngredients(ingredients.map(ing => 
-      ing.id === id ? { ...ing, [field]: value } : ing
-    ));
-  };
-
-  const handleAddInstruction = () => {
-    setInstructions([...instructions, '']);
-  };
-
-  const handleRemoveInstruction = (index: number) => {
-    if (instructions.length > 1) {
-      setInstructions(instructions.filter((_, i) => i !== index));
-    }
-  };
-
-  const handleInstructionChange = (index: number, value: string) => {
-    setInstructions(instructions.map((inst, i) => 
-      i === index ? value : inst
-    ));
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setImage(file);
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Basic validation
-    if (!title) {
-      toast({
-        title: "Missing Information",
-        description: "Please provide a recipe title",
-        variant: "destructive"
-      });
-      return;
-    }
-    
+  const fetchCustomRecipes = async () => {
     try {
-      // Generate a unique ID for the recipe
-      const recipeId = `external-${Date.now()}`;
+      setLoading(true);
       
-      // Prepare recipe data
-      const recipeData = {
-        id: recipeId,
-        title,
-        description,
-        source: 'external',
-        sourceUrl,
-        imageUrl: imagePreview || '/placeholder.svg',
-        cookingTime: parseInt(cookingTime) || 0,
-        servings: parseInt(servings) || 1,
-        ingredients: ingredients.filter(ing => ing.name.trim() !== '').map(ing => ({
-          name: ing.name,
-          quantity: ing.quantity,
-          unit: ing.unit
-        })),
-        instructions: instructions.filter(inst => inst.trim() !== ''),
-        nutrition: {
-          calories: parseInt(nutrition.calories) || 0,
-          protein: parseInt(nutrition.protein) || 0,
-          carbs: parseInt(nutrition.carbs) || 0,
-          fat: parseInt(nutrition.fat) || 0
-        },
-        createdAt: new Date().toISOString()
-      };
-      
-      // Save to local storage for now as we don't have a backend
+      // Try to fetch from local storage first (for demonstration)
       const savedRecipes = JSON.parse(localStorage.getItem('externalRecipes') || '[]');
-      localStorage.setItem('externalRecipes', JSON.stringify([...savedRecipes, recipeData]));
       
-      // Add to saved recipes
-      try {
-        // Save to Supabase if available
-        await supabase.from('saved_recipes').insert({
-          recipe_id: recipeId,
-          // In a real app, the user_id would come from authentication
+      // Convert to Recipe format
+      const formattedRecipes: Recipe[] = savedRecipes.map((recipe: any) => ({
+        id: recipe.id,
+        name: recipe.title,
+        description: recipe.description,
+        type: 'other',
+        ingredients: recipe.ingredients.map((ing: any) => ing.name),
+        instructions: recipe.instructions,
+        prepTime: 0,
+        cookTime: parseInt(recipe.cookingTime) || 0,
+        servings: parseInt(recipe.servings) || 1,
+        macros: {
+          calories: parseInt(recipe.nutrition.calories) || 0,
+          protein: parseInt(recipe.nutrition.protein) || 0,
+          carbs: parseInt(recipe.nutrition.carbs) || 0,
+          fat: parseInt(recipe.nutrition.fat) || 0
+        },
+        imageSrc: recipe.imageUrl || '/placeholder.svg',
+        cuisineType: 'other',
+        priceRange: '$',
+        isHighProtein: false,
+        equipment: [],
+        requiresBlender: false,
+        requiresCooking: true
+      }));
+      
+      setCustomRecipes(formattedRecipes);
+      setFilteredRecipes(formattedRecipes);
+    } catch (error: any) {
+      toast({
+        title: 'Error fetching custom recipes',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteRecipe = (recipeId: string) => {
+    try {
+      const savedRecipes = JSON.parse(localStorage.getItem('externalRecipes') || '[]');
+      const updatedRecipes = savedRecipes.filter((recipe: any) => recipe.id !== recipeId);
+      localStorage.setItem('externalRecipes', JSON.stringify(updatedRecipes));
+      
+      setCustomRecipes(prev => prev.filter(recipe => recipe.id !== recipeId));
+      toast({
+        title: 'Recipe deleted',
+        description: 'Custom recipe has been removed',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error deleting recipe',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleViewRecipe = (recipe: Recipe) => {
+    setSelectedRecipe(recipe);
+    setIsRecipeViewerOpen(true);
+  };
+
+  const AddRecipeForm = () => {
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [sourceUrl, setSourceUrl] = useState('');
+    const [cookingTime, setCookingTime] = useState('');
+    const [servings, setServings] = useState('');
+    const [ingredients, setIngredients] = useState<any[]>([
+      { id: '1', name: '', quantity: '', unit: '' }
+    ]);
+    const [instructions, setInstructions] = useState<string[]>(['']);
+    const [nutrition, setNutrition] = useState({
+      calories: '',
+      protein: '',
+      carbs: '',
+      fat: ''
+    });
+    const [image, setImage] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+  
+    const handleAddIngredient = () => {
+      setIngredients([
+        ...ingredients,
+        { id: Date.now().toString(), name: '', quantity: '', unit: '' }
+      ]);
+    };
+  
+    const handleRemoveIngredient = (id: string) => {
+      if (ingredients.length > 1) {
+        setIngredients(ingredients.filter(ing => ing.id !== id));
+      }
+    };
+  
+    const handleIngredientChange = (id: string, field: string, value: string) => {
+      setIngredients(ingredients.map(ing => 
+        ing.id === id ? { ...ing, [field]: value } : ing
+      ));
+    };
+  
+    const handleAddInstruction = () => {
+      setInstructions([...instructions, '']);
+    };
+  
+    const handleRemoveInstruction = (index: number) => {
+      if (instructions.length > 1) {
+        setInstructions(instructions.filter((_, i) => i !== index));
+      }
+    };
+  
+    const handleInstructionChange = (index: number, value: string) => {
+      setInstructions(instructions.map((inst, i) => 
+        i === index ? value : inst
+      ));
+    };
+  
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        setImage(file);
+        
+        // Create preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+  
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      
+      // Basic validation
+      if (!title) {
+        toast({
+          title: "Missing Information",
+          description: "Please provide a recipe title",
+          variant: "destructive"
         });
-      } catch (error) {
-        console.error('Error saving to database:', error);
-        // Fall back to local storage if Supabase fails
-        const savedRecipeIds = JSON.parse(localStorage.getItem('savedRecipeIds') || '[]');
-        localStorage.setItem('savedRecipeIds', JSON.stringify([...savedRecipeIds, recipeId]));
+        return;
       }
       
-      toast({
-        title: "Recipe Added",
-        description: "Your recipe has been saved and added to your collection.",
-      });
-      
-      // Navigate to saved recipes
-      navigate('/saved-recipes');
-    } catch (error) {
-      console.error('Error saving recipe:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save your recipe. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  return (
-    <div className="animate-fade-in pb-20">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold">Add External Recipe</h1>
-        <p className="text-dishco-text-light">Add your own recipes or from other websites</p>
-      </header>
-
+      try {
+        // Generate a unique ID for the recipe
+        const recipeId = `external-${Date.now()}`;
+        
+        // Prepare recipe data
+        const recipeData = {
+          id: recipeId,
+          title,
+          description,
+          source: 'external',
+          sourceUrl,
+          imageUrl: imagePreview || '/placeholder.svg',
+          cookingTime: parseInt(cookingTime) || 0,
+          servings: parseInt(servings) || 1,
+          ingredients: ingredients.filter(ing => ing.name.trim() !== '').map(ing => ({
+            name: ing.name,
+            quantity: ing.quantity,
+            unit: ing.unit
+          })),
+          instructions: instructions.filter(inst => inst.trim() !== ''),
+          nutrition: {
+            calories: parseInt(nutrition.calories) || 0,
+            protein: parseInt(nutrition.protein) || 0,
+            carbs: parseInt(nutrition.carbs) || 0,
+            fat: parseInt(nutrition.fat) || 0
+          },
+          createdAt: new Date().toISOString()
+        };
+        
+        // Save to local storage for now as we don't have a backend
+        const savedRecipes = JSON.parse(localStorage.getItem('externalRecipes') || '[]');
+        localStorage.setItem('externalRecipes', JSON.stringify([...savedRecipes, recipeData]));
+        
+        // Add to saved recipes
+        try {
+          // Save to Supabase if available
+          await supabase.from('saved_recipes').insert({
+            recipe_id: recipeId,
+            // In a real app, the user_id would come from authentication
+          });
+        } catch (error) {
+          console.error('Error saving to database:', error);
+          // Fall back to local storage if Supabase fails
+          const savedRecipeIds = JSON.parse(localStorage.getItem('savedRecipeIds') || '[]');
+          localStorage.setItem('savedRecipeIds', JSON.stringify([...savedRecipeIds, recipeId]));
+        }
+        
+        toast({
+          title: "Recipe Added",
+          description: "Your recipe has been saved and added to your collection.",
+        });
+        
+        // Navigate to saved recipes
+        navigate('/saved-recipes');
+      } catch (error) {
+        console.error('Error saving recipe:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save your recipe. Please try again.",
+          variant: "destructive"
+        });
+      }
+    };
+  
+    return (
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Image Upload */}
         <div className="bg-white rounded-xl shadow-sm p-4">
@@ -217,7 +297,7 @@ const AddExternalRecipePage = () => {
             )}
           </div>
         </div>
-
+  
         {/* Basic Info */}
         <div className="bg-white rounded-xl shadow-sm p-4 space-y-4">
           <h2 className="font-semibold text-lg">Recipe Details</h2>
@@ -238,11 +318,11 @@ const AddExternalRecipePage = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Description
             </label>
-            <Textarea
+            <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Brief description of the recipe"
-              className="resize-none"
+              className="resize-none block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
               rows={3}
             />
           </div>
@@ -284,7 +364,7 @@ const AddExternalRecipePage = () => {
             </div>
           </div>
         </div>
-
+  
         {/* Ingredients */}
         <div className="bg-white rounded-xl shadow-sm p-4 space-y-4">
           <h2 className="font-semibold text-lg">Ingredients</h2>
@@ -332,7 +412,7 @@ const AddExternalRecipePage = () => {
             Add Ingredient
           </Button>
         </div>
-
+  
         {/* Instructions */}
         <div className="bg-white rounded-xl shadow-sm p-4 space-y-4">
           <h2 className="font-semibold text-lg">Instructions</h2>
@@ -342,11 +422,11 @@ const AddExternalRecipePage = () => {
               <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center mt-2">
                 <span className="text-xs font-medium">{index + 1}</span>
               </div>
-              <Textarea
+              <textarea
                 value={instruction}
                 onChange={(e) => handleInstructionChange(index, e.target.value)}
                 placeholder={`Step ${index + 1}`}
-                className="flex-grow resize-none"
+                className="resize-none block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                 rows={2}
               />
               <Button
@@ -373,7 +453,7 @@ const AddExternalRecipePage = () => {
             Add Step
           </Button>
         </div>
-
+  
         {/* Nutrition Info */}
         <div className="bg-white rounded-xl shadow-sm p-4 space-y-4">
           <h2 className="font-semibold text-lg">Nutrition Information (per serving)</h2>
@@ -425,11 +505,140 @@ const AddExternalRecipePage = () => {
             </div>
           </div>
         </div>
-
+  
         <Button type="submit" className="w-full">
           Save Recipe
         </Button>
       </form>
+    );
+  };
+
+  return (
+    <div className="animate-fade-in pb-20">
+      <header className="mb-6 flex items-center justify-between">
+        <div className="flex items-center">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate('/more')} 
+            className="mr-2"
+          >
+            <ArrowLeft size={20} />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">Custom Recipes</h1>
+            <p className="text-dishco-text-light">View and manage your personal recipe collection</p>
+          </div>
+        </div>
+        <Button onClick={() => setIsAddRecipeOpen(true)}>
+          <Plus size={16} className="mr-2" /> Add New
+        </Button>
+      </header>
+
+      <div className="flex items-center mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+          <Input 
+            placeholder="Search custom recipes..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : filteredRecipes.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500 mb-4">No custom recipes found</p>
+          <Button 
+            onClick={() => setIsAddRecipeOpen(true)} 
+            variant="secondary"
+          >
+            <Plus size={16} className="mr-2" /> Add your first custom recipe
+          </Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredRecipes.map(recipe => (
+            <Card key={recipe.id} className="overflow-hidden">
+              {recipe.imageSrc && (
+                <div className="h-48 overflow-hidden">
+                  <img 
+                    src={recipe.imageSrc} 
+                    alt={recipe.name} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              <CardContent className="p-4">
+                <h3 className="text-lg font-semibold mb-1">{recipe.name}</h3>
+                {recipe.description && (
+                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{recipe.description}</p>
+                )}
+                
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {recipe.macros.calories > 0 && (
+                    <span className="text-xs px-2 py-1 bg-amber-100 rounded-md">
+                      {recipe.macros.calories} cal
+                    </span>
+                  )}
+                  {recipe.macros.protein > 0 && (
+                    <span className="text-xs px-2 py-1 bg-blue-100 rounded-md">
+                      {recipe.macros.protein}g protein
+                    </span>
+                  )}
+                </div>
+                
+                <div className="flex justify-between mt-2">
+                  <div className="flex space-x-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleViewRecipe(recipe)}
+                      className="flex items-center"
+                    >
+                      <Eye size={16} className="mr-1" />
+                      View
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="flex items-center"
+                    >
+                      <Edit size={16} className="mr-1" />
+                      Edit
+                    </Button>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="text-red-500 hover:text-red-700 flex items-center"
+                    onClick={() => handleDeleteRecipe(recipe.id)}
+                  >
+                    <Trash size={16} className="mr-1" />
+                    Delete
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <AddRecipeForm />
+
+      {/* Recipe Viewer Dialog */}
+      {selectedRecipe && (
+        <RecipeViewer
+          recipe={selectedRecipe}
+          isOpen={isRecipeViewerOpen}
+          onClose={() => setIsRecipeViewerOpen(false)}
+        />
+      )}
     </div>
   );
 };
