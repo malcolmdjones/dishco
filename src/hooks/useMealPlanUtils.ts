@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { calculateDailyMacros, defaultGoals, fetchNutritionGoals, recipes as mockRecipes, Recipe, NutritionGoals, MealPlanDay } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
@@ -20,6 +21,48 @@ export const useMealPlanUtils = () => {
   const [lockedMeals, setLockedMeals] = useState<{[key: string]: boolean}>({});
   const [aiReasoning, setAiReasoning] = useState<string>("");
   const [dbRecipes, setDbRecipes] = useState<Recipe[]>([]);
+  const [planActivationTimestamp, setPlanActivationTimestamp] = useState<string | null>(null);
+
+  // Watch for plan activation changes
+  useEffect(() => {
+    const checkForActivationChanges = () => {
+      const timestamp = localStorage.getItem('planActivatedAt');
+      if (timestamp && timestamp !== planActivationTimestamp) {
+        setPlanActivationTimestamp(timestamp);
+        
+        // Load active plan
+        const activePlanJson = localStorage.getItem('activePlan');
+        if (activePlanJson) {
+          try {
+            const activePlan = JSON.parse(activePlanJson);
+            if (activePlan.days && Array.isArray(activePlan.days)) {
+              setMealPlan(activePlan.days.map((day: any) => ({
+                date: day.date || new Date().toISOString(),
+                meals: day.meals || {
+                  breakfast: null,
+                  lunch: null,
+                  dinner: null,
+                  snacks: [null, null]
+                }
+              })));
+              
+              setLockedMeals(activePlan.lockedMeals || {});
+            }
+          } catch (error) {
+            console.error('Error loading active plan:', error);
+          }
+        }
+      }
+    };
+    
+    // Check initially
+    checkForActivationChanges();
+    
+    // Set up interval to check periodically
+    const interval = setInterval(checkForActivationChanges, 2000);
+    
+    return () => clearInterval(interval);
+  }, [planActivationTimestamp]);
 
   // Fetch user's nutrition goals from Supabase
   const fetchNutritionGoals = useCallback(async () => {
@@ -131,7 +174,7 @@ export const useMealPlanUtils = () => {
     }
   }, [toast]);
 
-  // Check for a plan to copy from session storage
+  // Check for a plan to copy from session storage or for an active plan
   useEffect(() => {
     const storedPlan = sessionStorage.getItem('planToCopy');
     const storedLockedMeals = sessionStorage.getItem('lockedMeals');
@@ -156,13 +199,45 @@ export const useMealPlanUtils = () => {
         }
       } catch (error) {
         console.error('Error parsing copied plan data:', error);
-        generateFullMealPlan(); // Fallback
+        checkForActivePlan(); // Fallback to active plan
       }
     } else if (mealPlan.length === 0) {
-      // Initialize if no copied plan and no meal plan yet
-      generateFullMealPlan();
+      // Check for active plan first
+      if (!checkForActivePlan()) {
+        // Initialize if no active plan found
+        generateFullMealPlan();
+      }
     }
   }, [userGoals]);
+  
+  // Helper function to check for an active plan in localStorage
+  const checkForActivePlan = () => {
+    const activePlanJson = localStorage.getItem('activePlan');
+    if (activePlanJson) {
+      try {
+        const activePlan = JSON.parse(activePlanJson);
+        if (activePlan.days && Array.isArray(activePlan.days)) {
+          console.log("Loading active plan in useMealPlanUtils:", activePlan);
+          
+          setMealPlan(activePlan.days.map((day: any) => ({
+            date: day.date || new Date().toISOString(),
+            meals: day.meals || {
+              breakfast: null,
+              lunch: null,
+              dinner: null,
+              snacks: [null, null]
+            }
+          })));
+          
+          setLockedMeals(activePlan.lockedMeals || {});
+          return true;
+        }
+      } catch (error) {
+        console.error('Error parsing active plan data:', error);
+      }
+    }
+    return false;
+  };
 
   // Function to generate a meal plan for the entire week
   const generateFullMealPlan = () => {

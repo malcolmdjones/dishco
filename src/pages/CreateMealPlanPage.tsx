@@ -22,6 +22,14 @@ const CreateMealPlanPage = () => {
     const storedPlan = sessionStorage.getItem('planToCopy');
     const storedLockedMeals = sessionStorage.getItem('lockedMeals');
     
+    // Check for activation timestamp
+    const planActivatedAt = localStorage.getItem('planActivatedAt');
+    if (planActivatedAt) {
+      // Force a refresh when navigating to this page
+      const now = new Date().toISOString();
+      localStorage.setItem('planActivatedAt', now);
+    }
+    
     if (storedPlan && storedLockedMeals) {
       try {
         // Pass to useMealPlanUtils in a future update

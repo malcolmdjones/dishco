@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
@@ -28,6 +29,7 @@ const HomePage = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [activeMealPlan, setActiveMealPlan] = useState<any>(null);
   const [todaysMeals, setTodaysMeals] = useState<Meal[]>([]);
+  const [planActivationTimestamp, setPlanActivationTimestamp] = useState<string | null>(null);
   
   const [dailyNutrition, setDailyNutrition] = useState({
     calories: 0,
@@ -40,12 +42,32 @@ const HomePage = () => {
     totalFat: defaultGoals.fat
   });
 
+  // Check for plan activation timestamp changes
+  useEffect(() => {
+    const checkForActivationChanges = () => {
+      const timestamp = localStorage.getItem('planActivatedAt');
+      if (timestamp && timestamp !== planActivationTimestamp) {
+        setPlanActivationTimestamp(timestamp);
+        fetchMealPlanForDate(selectedDate);
+      }
+    };
+    
+    // Check initially
+    checkForActivationChanges();
+    
+    // Set up interval to check periodically
+    const interval = setInterval(checkForActivationChanges, 2000);
+    
+    return () => clearInterval(interval);
+  }, [planActivationTimestamp, selectedDate]);
+
   useEffect(() => {
     fetchMealPlanForDate(selectedDate);
   }, [selectedDate]);
 
   const fetchMealPlanForDate = async (date: Date) => {
     try {
+      console.log("Fetching meal plan for date:", date);
       const activePlanJson = localStorage.getItem('activePlan');
       
       if (!activePlanJson) {
@@ -72,7 +94,7 @@ const HomePage = () => {
       setActiveMealPlan({
         id: activePlan.id || 'active-plan',
         name: activePlan.name || 'Active Plan',
-        created_at: new Date().toISOString(),
+        created_at: activePlan.created_at || new Date().toISOString(),
         plan_data: activePlan
       });
       
@@ -84,10 +106,13 @@ const HomePage = () => {
   };
 
   const processMealsForDate = (planData: any, date: Date) => {
-    if (!planData || !planData.days) {
+    if (!planData || !planData.days || !Array.isArray(planData.days)) {
+      console.log("No valid plan data or days array found");
       setTodaysMeals([]);
       return;
     }
+    
+    console.log("Processing meals for date:", date, "with plan data days:", planData.days.length);
     
     const activeDay = planData.days.find((day: any) => {
       if (!day || !day.date) return false;
@@ -100,6 +125,8 @@ const HomePage = () => {
       setTodaysMeals([]);
       return;
     }
+    
+    console.log("Found active day for date:", date, activeDay);
     
     const meals: Meal[] = [];
     
@@ -133,7 +160,7 @@ const HomePage = () => {
       });
     }
     
-    if (activeDay.meals?.snacks && activeDay.meals.snacks.length > 0) {
+    if (activeDay.meals?.snacks && Array.isArray(activeDay.meals.snacks)) {
       activeDay.meals.snacks.forEach((snack: any, index: number) => {
         if (snack) {
           meals.push({

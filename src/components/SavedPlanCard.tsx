@@ -48,7 +48,7 @@ const SavedPlanCard: React.FC<SavedPlanCardProps> = ({ plan, onDelete }) => {
         if (day.meals.breakfast) mealCount++;
         if (day.meals.lunch) mealCount++;
         if (day.meals.dinner) mealCount++;
-        if (day.meals.snacks) {
+        if (day.meals.snacks && Array.isArray(day.meals.snacks)) {
           day.meals.snacks.forEach((snack: any) => {
             if (snack) mealCount++;
           });
@@ -60,7 +60,7 @@ const SavedPlanCard: React.FC<SavedPlanCardProps> = ({ plan, onDelete }) => {
   // Handle activating a plan
   const handleActivate = () => {
     try {
-      // Add the plan name to the data
+      // Add the plan name and ID to the data
       const activePlanData = {
         ...planData,
         name: plan.name,
@@ -70,15 +70,16 @@ const SavedPlanCard: React.FC<SavedPlanCardProps> = ({ plan, onDelete }) => {
       // Store the complete plan in localStorage
       localStorage.setItem('activePlan', JSON.stringify(activePlanData));
       
-      // Also store the full plan object with metadata for consistency
-      const savedMealPlan = {
+      // Also store the full plan object with metadata
+      localStorage.setItem('savedMealPlans', JSON.stringify([{
         id: plan.id,
         name: plan.name,
         created_at: plan.created_at,
         plan_data: activePlanData
-      };
+      }]));
       
-      localStorage.setItem('savedMealPlans', JSON.stringify([savedMealPlan]));
+      // Force a refresh of other components by setting a timestamp
+      localStorage.setItem('planActivatedAt', new Date().toISOString());
       
       toast({
         title: "Plan Activated",
@@ -138,6 +139,17 @@ const SavedPlanCard: React.FC<SavedPlanCardProps> = ({ plan, onDelete }) => {
         .eq('id', plan.id);
       
       if (error) throw error;
+      
+      // Check if this is the active plan
+      const activePlanJson = localStorage.getItem('activePlan');
+      if (activePlanJson) {
+        const activePlan = JSON.parse(activePlanJson);
+        if (activePlan.id === plan.id) {
+          // Clear the active plan if it was the one deleted
+          localStorage.removeItem('activePlan');
+          localStorage.removeItem('savedMealPlans');
+        }
+      }
       
       // Call the parent component's onDelete callback
       onDelete(plan.id);
