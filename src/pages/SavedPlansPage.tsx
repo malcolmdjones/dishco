@@ -104,13 +104,11 @@ const SavedPlansPage = () => {
         return;
       }
 
-      // Update local state by filtering out the deleted plan
-      setPlans(plans.filter(plan => plan.id !== deletePlanId));
-      
       toast({
         title: "Plan Deleted",
         description: "Your meal plan has been deleted.",
       });
+      fetchPlans();
       setIsDeleteDialogOpen(false);
     } catch (error) {
       console.error('Error deleting plan:', error);
@@ -142,49 +140,19 @@ const SavedPlansPage = () => {
     }
   };
 
-  // Improved calorie calculation function
   const calculateTotalCalories = (days) => {
-    if (!days || !Array.isArray(days) || days.length === 0) return 0;
-    
-    let totalCaloriesSum = 0;
-    let validDayCount = 0;
-    
+    let total = 0;
     days.forEach(day => {
       if (!day || !day.meals) return;
       
-      let dayCalories = 0;
-      
-      // Add breakfast calories
-      if (day.meals.breakfast && day.meals.breakfast.macros) {
-        dayCalories += day.meals.breakfast.macros.calories || 0;
-      }
-      
-      // Add lunch calories
-      if (day.meals.lunch && day.meals.lunch.macros) {
-        dayCalories += day.meals.lunch.macros.calories || 0;
-      }
-      
-      // Add dinner calories
-      if (day.meals.dinner && day.meals.dinner.macros) {
-        dayCalories += day.meals.dinner.macros.calories || 0;
-      }
-      
-      // Add snacks calories
-      if (day.meals.snacks && Array.isArray(day.meals.snacks)) {
-        day.meals.snacks.forEach(snack => {
-          if (snack && snack.macros) {
-            dayCalories += snack.macros.calories || 0;
-          }
-        });
-      }
-      
-      if (dayCalories > 0) {
-        totalCaloriesSum += dayCalories;
-        validDayCount++;
-      }
+      total += day.meals.breakfast?.macros?.calories || 0;
+      total += day.meals.lunch?.macros?.calories || 0;
+      total += day.meals.dinner?.macros?.calories || 0;
+      day.meals.snacks?.forEach(snack => {
+        total += snack?.macros?.calories || 0;
+      });
     });
-    
-    return validDayCount > 0 ? Math.round(totalCaloriesSum / validDayCount) : 0;
+    return Math.round(total / (days.length || 1));
   };
 
   const renderCards = () => {

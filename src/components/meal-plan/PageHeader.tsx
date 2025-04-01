@@ -1,59 +1,52 @@
 
-import React, { useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React from 'react';
 import { Button } from '@/components/ui/button';
-import WeekOverviewDialog from '@/components/meal-plan/WeekOverviewDialog';
-import RecipeVaultDialog from '@/components/meal-plan/RecipeVaultDialog';
-import { useMealPlanUtils } from '@/hooks/useMealPlanUtils';
+import { ArrowLeft, Heart, BookOpen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-const PageHeader = () => {
-  const { mealPlan } = useMealPlanUtils();
-  const [isWeekOverviewOpen, setIsWeekOverviewOpen] = useState(false);
-  const [isRecipeVaultOpen, setIsRecipeVaultOpen] = useState(false);
+interface PageHeaderProps {
+  onOpenVault: () => void;
+  onOpenWeekOverview: () => void;
+}
 
+const PageHeader: React.FC<PageHeaderProps> = ({ onOpenVault, onOpenWeekOverview }) => {
+  const navigate = useNavigate();
+  
   return (
-    <div className="flex items-center justify-between mb-6">
-      <div className="flex items-center">
-        <Link to="/planning">
-          <Button variant="ghost" size="icon" className="mr-2">
+    <div>
+      <div className="flex items-center mb-4 justify-between">
+        <div className="flex items-center">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate('/planning')} 
+            className="mr-2"
+          >
             <ArrowLeft size={20} />
           </Button>
-        </Link>
-        <h1 className="text-xl font-bold">New Meal Plan</h1>
+          <h1 className="text-xl font-bold">New Meal Plan</h1>
+        </div>
+        <div className="flex space-x-2">
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={onOpenVault}
+            title="Recipe Vault"
+          >
+            <Heart size={16} />
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onOpenWeekOverview}
+            className="flex items-center gap-1"
+          >
+            <BookOpen size={16} />
+            Overview
+          </Button>
+        </div>
       </div>
-      
-      <div className="flex gap-2">
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => setIsWeekOverviewOpen(true)}
-        >
-          Week Overview
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => setIsRecipeVaultOpen(true)}
-        >
-          Recipe Vault
-        </Button>
-      </div>
-
-      {/* Week Overview Dialog */}
-      <WeekOverviewDialog
-        isOpen={isWeekOverviewOpen}
-        onClose={() => setIsWeekOverviewOpen(false)}
-        mealPlan={mealPlan}
-      />
-
-      {/* Recipe Vault Dialog */}
-      <RecipeVaultDialog
-        isOpen={isRecipeVaultOpen}
-        onClose={() => setIsRecipeVaultOpen(false)}
-        onSelectRecipe={() => {}}
-        targetMealType=""
-      />
+      <p className="text-dishco-text-light mb-4">Plan and customize your meals</p>
     </div>
   );
 };

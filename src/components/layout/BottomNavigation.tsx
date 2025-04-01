@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, User, BookOpen, Plus, ShoppingCart } from 'lucide-react';
+import { Home, ShoppingCart, Calendar, MoreHorizontal, Plus } from 'lucide-react';
 
 const BottomNavigation = () => {
   const location = useLocation();
@@ -15,7 +15,7 @@ const BottomNavigation = () => {
     },
     {
       name: 'Planning',
-      icon: <BookOpen size={24} />,
+      icon: <Calendar size={24} />,
       path: '/planning',
     },
     {
@@ -31,7 +31,7 @@ const BottomNavigation = () => {
     },
     {
       name: 'More',
-      icon: <User size={24} />,
+      icon: <MoreHorizontal size={24} />,
       path: '/more',
     },
   ];

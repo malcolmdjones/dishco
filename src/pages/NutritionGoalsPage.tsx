@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -5,7 +6,6 @@ import { ArrowLeft, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
 
 type UserGoals = {
   calories: number;
@@ -17,7 +17,6 @@ type UserGoals = {
 const NutritionGoalsPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [goals, setGoals] = useState<UserGoals>({
     calories: 2000,
     protein: 150,
@@ -28,19 +27,15 @@ const NutritionGoalsPage = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      fetchNutritionGoals();
-    }
-  }, [user]);
+    fetchNutritionGoals();
+  }, []);
 
   const fetchNutritionGoals = async () => {
-    if (!user) return;
-    
     try {
+      // For now, we're not authenticating users, so we'll get the first nutrition goals record
       const { data, error } = await supabase
         .from('nutrition_goals')
         .select('*')
-        .eq('user_id', user.id)
         .limit(1)
         .single();
       
@@ -72,45 +67,30 @@ const NutritionGoalsPage = () => {
   };
 
   const handleSave = async () => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to save nutrition goals.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     setLoading(true);
     try {
       if (recordId) {
         // Update existing record
-        const { error } = await supabase
+        await supabase
           .from('nutrition_goals')
           .update({
             calories: goals.calories,
             protein: goals.protein,
             carbs: goals.carbs,
             fat: goals.fat,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString() // Fixed: Convert Date to ISO string
           })
-          .eq('id', recordId)
-          .eq('user_id', user.id);
-          
-        if (error) throw error;
+          .eq('id', recordId);
       } else {
         // Create new record
-        const { error } = await supabase
+        await supabase
           .from('nutrition_goals')
           .insert([{
             calories: goals.calories,
             protein: goals.protein,
             carbs: goals.carbs,
-            fat: goals.fat,
-            user_id: user.id
+            fat: goals.fat
           }]);
-          
-        if (error) throw error;
       }
       
       toast({
@@ -120,11 +100,11 @@ const NutritionGoalsPage = () => {
       
       // Navigate back to More page
       navigate('/more');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving nutrition goals:', error);
       toast({
         title: "Error",
-        description: error.message || "There was a problem saving your goals. Please try again.",
+        description: "There was a problem saving your goals. Please try again.",
         variant: "destructive"
       });
     } finally {

@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Trash2, ChevronRight, Plus, Pencil, BookOpen, Info } from 'lucide-react';
+import { ArrowLeft, Calendar, Trash2, ChevronRight, Plus, Pencil, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,10 +15,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
-import PlanDetailView from '@/components/PlanDetailView';
 import { Database } from '@/integrations/supabase/types';
 import { Json } from '@/integrations/supabase/types';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 
 type SavedMealPlan = {
   id: string;
@@ -40,15 +39,13 @@ const SavedMealPlansPage = () => {
   const [newPlanName, setNewPlanName] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [isSelectingStartDate, setIsSelectingStartDate] = useState(false);
-  const [selectedDay, setSelectedDay] = useState(0);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [planDetailOpen, setPlanDetailOpen] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(0); // 0 = Today, 1 = Tomorrow, etc.
 
   useEffect(() => {
-    fetchPlans();
+    fetchSavedPlans();
   }, []);
 
-  const fetchPlans = async () => {
+  const fetchSavedPlans = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -81,14 +78,66 @@ const SavedMealPlansPage = () => {
     }
   };
 
-  const handleEditPlan = (plan) => {
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('saved_meal_plans')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Error deleting meal plan:', error);
+        return;
+      }
+      
+      setSavedPlans(savedPlans.filter(plan => plan.id !== id));
+      toast({
+        title: "Plan Deleted",
+        description: "The meal plan has been removed from your saved plans.",
+      });
+    } catch (error) {
+      console.error('Error deleting meal plan:', error);
+    }
+  };
+
+  const handleActivate = (id: string) => {
+    const planToActivate = savedPlans.find(plan => plan.id === id);
+    if (!planToActivate) return;
+
+    setSelectedPlan(planToActivate);
+    setIsSelectingStartDate(true);
+  };
+
+  const confirmActivatePlan = () => {
+    if (!selectedPlan) return;
+
+    sessionStorage.setItem('activePlan', JSON.stringify({
+      ...selectedPlan.plan_data,
+      startDay: selectedDay
+    }));
+    
+    toast({
+      title: "Plan Activated",
+      description: "This meal plan is now your active plan for the week.",
+    });
+    
+    setIsSelectingStartDate(false);
+    navigate('/planning');
+  };
+
+  const handleViewPlan = (plan: SavedMealPlan) => {
+    setSelectedPlan(plan);
+    setIsViewingPlan(true);
+  };
+
+  const handleRename = (plan: SavedMealPlan) => {
     setSelectedPlan(plan);
     setNewPlanName(plan.name);
     setNewDescription(plan.plan_data.description || '');
     setIsRenaming(true);
   };
 
-  const handleUpdatePlan = async () => {
+  const savePlanRename = async () => {
     if (!selectedPlan || !newPlanName.trim()) return;
 
     try {
@@ -142,106 +191,28 @@ const SavedMealPlansPage = () => {
     }
   };
 
-  const handleDeletePlan = async (id) => {
-    try {
-      const { error } = await supabase
-        .from('saved_meal_plans')
-        .delete()
-        .eq('id', id);
+  const handleCopyAndEdit = (plan: SavedMealPlan) => {
+    if (!plan.plan_data.days) return;
+    
+    const lockedMeals: {[key: string]: boolean} = {};
+    
+    plan.plan_data.days.forEach((day, dayIndex) => {
+      ['breakfast', 'lunch', 'dinner'].forEach((mealType) => {
+        if (day.meals[mealType]?.id) {
+          lockedMeals[`${mealType}-${day.meals[mealType].id}`] = true;
+        }
+      });
       
-      if (error) {
-        console.error('Error deleting meal plan:', error);
-        toast({
-          title: "Delete Failed",
-          description: "There was an error deleting the meal plan.",
-          variant: "destructive"
+      if (day.meals.snacks) {
+        day.meals.snacks.forEach((snack: any, snackIndex: number) => {
+          if (snack?.id) {
+            lockedMeals[`snacks-${snack.id}-${snackIndex}`] = true;
+          }
         });
-        return;
       }
-      
-      setSavedPlans(prevPlans => prevPlans.filter(plan => plan.id !== id));
-      
-      const activePlanJson = localStorage.getItem('activePlan');
-      if (activePlanJson) {
-        try {
-          const activePlan = JSON.parse(activePlanJson);
-          if (activePlan.id === id) {
-            localStorage.removeItem('activePlan');
-            localStorage.removeItem('savedMealPlans');
-            localStorage.setItem('planActivatedAt', new Date().toISOString());
-          }
-        } catch (e) {
-          console.error('Error checking active plan:', e);
-        }
-      }
-      
-      toast({
-        title: "Plan Deleted",
-        description: "The meal plan has been removed from your saved plans.",
-      });
-    } catch (error) {
-      console.error('Error deleting meal plan:', error);
-      toast({
-        title: "Delete Failed",
-        description: "There was an error deleting the meal plan.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const confirmDeletePlan = async () => {
-    if (!selectedPlan) return;
-
-    try {
-      const { error } = await supabase
-        .from('saved_meal_plans')
-        .delete()
-        .eq('id', selectedPlan.id);
-      
-      if (error) {
-        console.error('Error deleting meal plan:', error);
-        return;
-      }
-      
-      setSavedPlans(savedPlans.filter(plan => plan.id !== selectedPlan.id));
-      toast({
-        title: "Plan Deleted",
-        description: "The meal plan has been removed from your saved plans.",
-      });
-    } catch (error) {
-      console.error('Error deleting meal plan:', error);
-    }
-  };
-
-  const handleViewPlanDetails = (plan) => {
-    setSelectedPlan(plan);
-    setPlanDetailOpen(true);
-  };
-
-  const handleCopyAndEdit = (plan) => {
+    });
+    
     sessionStorage.setItem('planToCopy', JSON.stringify(plan.plan_data));
-    
-    const lockedMeals = {};
-    if (plan.plan_data && plan.plan_data.days) {
-      plan.plan_data.days.forEach((day, dayIndex) => {
-        if (day && day.meals) {
-          ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
-            if (day.meals[mealType]) {
-              lockedMeals[`${dayIndex}-${mealType}`] = true;
-            }
-          });
-          
-          if (day.meals.snacks && Array.isArray(day.meals.snacks)) {
-            day.meals.snacks.forEach((snack, snackIndex) => {
-              if (snack) {
-                lockedMeals[`${dayIndex}-snack-${snackIndex}`] = true;
-              }
-            });
-          }
-        }
-      });
-    }
-    
     sessionStorage.setItem('lockedMeals', JSON.stringify(lockedMeals));
     
     toast({
@@ -249,94 +220,11 @@ const SavedMealPlansPage = () => {
       description: "You can now edit a copy of this meal plan with all meals locked by default.",
     });
     
-    navigate('/create-meal-plan');
+    navigate('/planning');
   };
 
-  const handleActivatePlan = (id) => {
-    const planToActivate = savedPlans.find(plan => plan.id === id);
-    if (!planToActivate) return;
-
-    setSelectedPlan(planToActivate);
-    setIsSelectingStartDate(true);
-  };
-
-  const confirmActivatePlan = () => {
-    if (!selectedPlan) return;
-
-    const startDate = selectedDate ? selectedDate : new Date();
-    
-    try {
-      const activePlanData = {
-        ...selectedPlan.plan_data,
-        name: selectedPlan.name,
-        id: selectedPlan.id,
-        startDate: startDate.toISOString()
-      };
-      
-      localStorage.setItem('activePlan', JSON.stringify(activePlanData));
-      localStorage.setItem('savedMealPlans', JSON.stringify([{
-        id: selectedPlan.id,
-        name: selectedPlan.name,
-        created_at: selectedPlan.created_at,
-        plan_data: activePlanData
-      }]));
-      localStorage.setItem('planActivatedAt', new Date().toISOString());
-      
-      toast({
-        title: "Plan Activated",
-        description: `${selectedPlan.name} is now your active meal plan starting from ${format(startDate, 'MMMM d, yyyy')}.`,
-      });
-      
-      setIsSelectingStartDate(false);
-      navigate('/planning');
-    } catch (error) {
-      console.error('Error activating plan:', error);
-      toast({
-        title: "Error",
-        description: "Failed to activate the meal plan.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const calculateTotalCalories = (days) => {
-    if (!days || !Array.isArray(days) || days.length === 0) return 0;
-    
-    let total = 0;
-    let validDayCount = 0;
-    
-    days.forEach(day => {
-      if (!day || !day.meals) return;
-      
-      let dayTotal = 0;
-      
-      if (day.meals.breakfast && day.meals.breakfast.macros) {
-        dayTotal += day.meals.breakfast.macros.calories || 0;
-      }
-      
-      if (day.meals.lunch && day.meals.lunch.macros) {
-        dayTotal += day.meals.lunch.macros.calories || 0;
-      }
-      
-      if (day.meals.dinner && day.meals.dinner.macros) {
-        dayTotal += day.meals.dinner.macros.calories || 0;
-      }
-      
-      if (day.meals.snacks && Array.isArray(day.meals.snacks)) {
-        day.meals.snacks.forEach(snack => {
-          if (snack && snack.macros) {
-            dayTotal += snack.macros.calories || 0;
-          }
-        });
-      }
-      
-      if (dayTotal > 0) {
-        total += dayTotal;
-        validDayCount++;
-      }
-    });
-    
-    return validDayCount > 0 ? Math.round(total / validDayCount) : 0;
+  const calculateDayNutrition = (day: any) => {
+    return calculateDailyMacros(day.meals);
   };
 
   if (savedPlans.length === 0 && !loading) {
@@ -400,12 +288,12 @@ const SavedMealPlansPage = () => {
             <div 
               key={plan.id} 
               className="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer"
-              onClick={() => handleViewPlanDetails(plan)}
+              onClick={() => handleViewPlan(plan)}
             >
               <div className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start">
-                    <BookOpen size={20} className="text-dishco-primary mr-3 mt-1" />
+                    <Calendar size={20} className="text-dishco-primary mr-3 mt-1" />
                     <div>
                       <h3 className="font-medium">{plan.name}</h3>
                       <p className="text-xs text-dishco-text-light">
@@ -423,7 +311,7 @@ const SavedMealPlansPage = () => {
                       className="p-1.5 rounded-full hover:bg-gray-100"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleEditPlan(plan);
+                        handleRename(plan);
                       }}
                     >
                       <Pencil size={16} />
@@ -432,7 +320,7 @@ const SavedMealPlansPage = () => {
                       className="p-1.5 rounded-full hover:bg-gray-100"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDeletePlan(plan.id);
+                        handleDelete(plan.id);
                       }}
                     >
                       <Trash2 size={16} />
@@ -457,7 +345,7 @@ const SavedMealPlansPage = () => {
                     className="text-xs"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleActivatePlan(plan.id);
+                      handleActivate(plan.id);
                     }}
                   >
                     Use This Plan <ChevronRight size={14} className="ml-1" />
@@ -469,13 +357,141 @@ const SavedMealPlansPage = () => {
         )}
       </div>
 
-      {selectedPlan && (
-        <PlanDetailView
-          plan={selectedPlan}
-          isOpen={planDetailOpen}
-          onClose={() => setPlanDetailOpen(false)}
-        />
-      )}
+      <Dialog open={isViewingPlan} onOpenChange={setIsViewingPlan}>
+        <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar size={18} className="text-dishco-primary" />
+              {selectedPlan?.name}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedPlan?.plan_data.description || 'Custom meal plan'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedPlan && (
+            <div className="space-y-6">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-medium mb-3">Nutrition Overview</h3>
+                <div className="grid grid-cols-4 gap-3">
+                  <div className="flex flex-col items-center">
+                    <div className="w-16 h-16 mb-2">
+                      <CircularProgressbar
+                        value={75}
+                        text={`${calculateDayNutrition(selectedPlan.plan_data.days[0]).calories}`}
+                        styles={buildStyles({
+                          textSize: '28px',
+                          pathColor: '#FFF4D7',
+                          textColor: '#3C3C3C',
+                          trailColor: '#F9F9F9',
+                        })}
+                      />
+                    </div>
+                    <span className="text-xs text-center">Calories</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <div className="w-16 h-16 mb-2">
+                      <CircularProgressbar
+                        value={65}
+                        text={`${calculateDayNutrition(selectedPlan.plan_data.days[0]).protein}g`}
+                        styles={buildStyles({
+                          textSize: '28px',
+                          pathColor: '#DBE9FE',
+                          textColor: '#3C3C3C',
+                          trailColor: '#F9F9F9',
+                        })}
+                      />
+                    </div>
+                    <span className="text-xs text-center">Protein</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <div className="w-16 h-16 mb-2">
+                      <CircularProgressbar
+                        value={80}
+                        text={`${calculateDayNutrition(selectedPlan.plan_data.days[0]).carbs}g`}
+                        styles={buildStyles({
+                          textSize: '28px',
+                          pathColor: '#FEF9C3',
+                          textColor: '#3C3C3C',
+                          trailColor: '#F9F9F9',
+                        })}
+                      />
+                    </div>
+                    <span className="text-xs text-center">Carbs</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <div className="w-16 h-16 mb-2">
+                      <CircularProgressbar
+                        value={60}
+                        text={`${calculateDayNutrition(selectedPlan.plan_data.days[0]).fat}g`}
+                        styles={buildStyles({
+                          textSize: '28px',
+                          pathColor: '#F3E8FF',
+                          textColor: '#3C3C3C',
+                          trailColor: '#F9F9F9',
+                        })}
+                      />
+                    </div>
+                    <span className="text-xs text-center">Fat</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-medium mb-3">Day 1 Meals</h3>
+                <div className="space-y-3">
+                  {selectedPlan.plan_data.days[0].meals.breakfast && (
+                    <MealPreviewCard 
+                      title="Breakfast" 
+                      meal={selectedPlan.plan_data.days[0].meals.breakfast} 
+                    />
+                  )}
+                  {selectedPlan.plan_data.days[0].meals.lunch && (
+                    <MealPreviewCard 
+                      title="Lunch" 
+                      meal={selectedPlan.plan_data.days[0].meals.lunch} 
+                    />
+                  )}
+                  {selectedPlan.plan_data.days[0].meals.dinner && (
+                    <MealPreviewCard 
+                      title="Dinner" 
+                      meal={selectedPlan.plan_data.days[0].meals.dinner} 
+                    />
+                  )}
+                  {selectedPlan.plan_data.days[0].meals.snacks && 
+                    selectedPlan.plan_data.days[0].meals.snacks.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium mb-2">Snacks</h4>
+                      <div className="space-y-2">
+                        {selectedPlan.plan_data.days[0].meals.snacks.map((snack: any, i: number) => (
+                          snack && <MealPreviewCard key={i} meal={snack} isSnack />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-between">
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleCopyAndEdit(selectedPlan)}
+                >
+                  Copy & Edit
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setIsViewingPlan(false);
+                    handleActivate(selectedPlan.id);
+                  }}
+                >
+                  Use This Plan
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isRenaming} onOpenChange={setIsRenaming}>
         <DialogContent className="sm:max-w-[425px]">
@@ -512,7 +528,7 @@ const SavedMealPlansPage = () => {
             <Button variant="outline" onClick={() => setIsRenaming(false)}>
               Cancel
             </Button>
-            <Button onClick={handleUpdatePlan}>
+            <Button onClick={savePlanRename}>
               Save Changes
             </Button>
           </div>
@@ -529,30 +545,104 @@ const SavedMealPlansPage = () => {
           </DialogHeader>
           
           <div className="py-4">
-            <div className="flex justify-center mb-4">
-              <CalendarComponent
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                className="p-3 pointer-events-auto"
-              />
+            <div className="space-y-2">
+              {[0, 1, 2, 3, 4, 5, 6].map((day) => (
+                <div 
+                  key={day}
+                  className={`p-3 border rounded-lg cursor-pointer flex justify-between items-center ${
+                    selectedDay === day ? 'border-dishco-primary bg-dishco-primary bg-opacity-5' : ''
+                  }`}
+                  onClick={() => setSelectedDay(day)}
+                >
+                  <div>
+                    <p className="font-medium">
+                      {day === 0 ? 'Today' : day === 1 ? 'Tomorrow' : `In ${day} days`}
+                    </p>
+                    <p className="text-sm text-dishco-text-light">
+                      {format(new Date(Date.now() + day * 24 * 60 * 60 * 1000), 'EEEE, MMM d')}
+                    </p>
+                  </div>
+                  {selectedDay === day && (
+                    <div className="h-4 w-4 rounded-full bg-dishco-primary"></div>
+                  )}
+                </div>
+              ))}
             </div>
-            
-            <p className="text-center mb-4 text-sm">
-              Selected start date: <span className="font-medium">{selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : 'None'}</span>
-            </p>
           </div>
           
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setIsSelectingStartDate(false)}>
               Cancel
             </Button>
-            <Button onClick={confirmActivatePlan} disabled={!selectedDate}>
+            <Button onClick={confirmActivatePlan}>
               Start Plan
             </Button>
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+};
+
+interface MealPreviewCardProps {
+  title?: string;
+  meal: any;
+  isSnack?: boolean;
+}
+
+const MealPreviewCard: React.FC<MealPreviewCardProps> = ({ title, meal, isSnack = false }) => {
+  const [showDetails, setShowDetails] = useState(false);
+
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <div className="flex items-center p-0">
+        <div className="w-16 h-16 flex-shrink-0">
+          <img 
+            src={meal.imageSrc || '/placeholder.svg'} 
+            alt={meal.name} 
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="p-3 flex-1">
+          {title && !isSnack && <p className="text-xs text-dishco-text-light">{title}</p>}
+          <h4 className="font-medium">{meal.name}</h4>
+          <div className="flex space-x-2 mt-1">
+            <span className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded">P: {meal.macros.protein}g</span>
+            <span className="text-xs px-1.5 py-0.5 bg-yellow-50 text-yellow-600 rounded">C: {meal.macros.carbs}g</span>
+            <span className="text-xs px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded">F: {meal.macros.fat}g</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto h-6 p-0 text-xs"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDetails(!showDetails);
+              }}
+            >
+              <Info size={14} className="mr-1" />
+              Details
+            </Button>
+          </div>
+        </div>
+      </div>
+      
+      {showDetails && (
+        <div className="border-t p-3 bg-gray-50 text-sm">
+          <h5 className="font-medium mb-2">Ingredients</h5>
+          <ul className="list-disc list-inside text-sm space-y-1 mb-3">
+            {meal.ingredients?.map((ingredient: string, i: number) => (
+              <li key={i}>{ingredient}</li>
+            ))}
+          </ul>
+          
+          <h5 className="font-medium mb-2">Instructions</h5>
+          <ol className="list-decimal list-inside text-sm space-y-1">
+            {meal.instructions?.map((step: string, i: number) => (
+              <li key={i}>{step}</li>
+            ))}
+          </ol>
+        </div>
+      )}
     </div>
   );
 };

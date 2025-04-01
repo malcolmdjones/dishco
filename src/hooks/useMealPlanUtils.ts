@@ -1,293 +1,38 @@
-import { useState, useEffect, useCallback } from 'react';
-import { calculateDailyMacros, defaultGoals, fetchNutritionGoals, recipes as mockRecipes, Recipe, NutritionGoals, MealPlanDay } from '@/data/mockData';
+
+import { useState, useEffect } from 'react';
+import { calculateDailyMacros, defaultGoals, fetchNutritionGoals, recipes, Recipe, NutritionGoals, MealPlanDay } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
 
 export const useMealPlanUtils = () => {
   const { toast } = useToast();
-  const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentDay, setCurrentDay] = useState(0);
   const [mealPlan, setMealPlan] = useState<MealPlanDay[]>([]);
-  const [userGoals, setUserGoals] = useState({
-    calories: 2000,
-    protein: 150,
-    carbs: 200,
-    fat: 65
-  });
+  const [userGoals, setUserGoals] = useState<NutritionGoals>(defaultGoals);
   const [isGenerating, setIsGenerating] = useState(false);
   const [lockedMeals, setLockedMeals] = useState<{[key: string]: boolean}>({});
   const [aiReasoning, setAiReasoning] = useState<string>("");
-  const [dbRecipes, setDbRecipes] = useState<Recipe[]>([]);
-  const [planActivationTimestamp, setPlanActivationTimestamp] = useState<string | null>(null);
-  const [mealPlanUpdateTimestamp, setMealPlanUpdateTimestamp] = useState<string | null>(null);
 
-  // Watch for plan activation changes and meal plan updates
+  // Get user's nutrition goals
   useEffect(() => {
-    const checkForChanges = () => {
-      // Check for plan activation changes
-      const activationTimestamp = localStorage.getItem('planActivatedAt');
-      if (activationTimestamp && activationTimestamp !== planActivationTimestamp) {
-        setPlanActivationTimestamp(activationTimestamp);
-        loadActivePlan();
-      }
-      
-      // Check for meal plan updates
-      const updateTimestamp = localStorage.getItem('mealPlanUpdatedAt');
-      if (updateTimestamp && updateTimestamp !== mealPlanUpdateTimestamp) {
-        setMealPlanUpdateTimestamp(updateTimestamp);
-        
-        // Check for temporary meal plan data
-        const tempMealPlanJson = localStorage.getItem('tempMealPlan');
-        if (tempMealPlanJson) {
-          try {
-            const tempMealPlan = JSON.parse(tempMealPlanJson);
-            if (Array.isArray(tempMealPlan)) {
-              setMealPlan(tempMealPlan);
-              localStorage.removeItem('tempMealPlan');
-            }
-          } catch (error) {
-            console.error('Error parsing temp meal plan:', error);
-          }
-        }
+    const getUserGoals = async () => {
+      try {
+        const goals = await fetchNutritionGoals();
+        setUserGoals(goals);
+      } catch (error) {
+        console.error('Error fetching nutrition goals:', error);
       }
     };
-    
-    // Initial check
-    checkForChanges();
-    
-    // Set interval to check periodically
-    const interval = setInterval(checkForChanges, 1000);
-    
-    return () => clearInterval(interval);
-  }, [planActivationTimestamp, mealPlanUpdateTimestamp]);
-  
-  // Load active plan from localStorage
-  const loadActivePlan = () => {
-    const activePlanJson = localStorage.getItem('activePlan');
-    if (activePlanJson) {
-      try {
-        const activePlan = JSON.parse(activePlanJson);
-        if (activePlan.days && Array.isArray(activePlan.days)) {
-          setMealPlan(activePlan.days.map((day: any) => ({
-            date: day.date || new Date().toISOString(),
-            meals: day.meals || {
-              breakfast: null,
-              lunch: null,
-              dinner: null,
-              snacks: [null, null]
-            }
-          })));
-          
-          // Also set locked meals if available
-          if (activePlan.lockedMeals) {
-            setLockedMeals(activePlan.lockedMeals);
-          }
-        }
-      } catch (error) {
-        console.error('Error loading active plan:', error);
-      }
-    }
-  };
-  
-  // Function to manually update the meal plan (for external components)
-  const updateMealPlan = (newMealPlan: MealPlanDay[]) => {
-    if (Array.isArray(newMealPlan)) {
-      setMealPlan(newMealPlan);
-      
-      // Store updated plan in localStorage
-      const activePlanJson = localStorage.getItem('activePlan');
-      if (activePlanJson) {
-        try {
-          const activePlan = JSON.parse(activePlanJson);
-          const updatedPlan = {
-            ...activePlan,
-            days: newMealPlan
-          };
-          localStorage.setItem('activePlan', JSON.stringify(updatedPlan));
-          localStorage.setItem('planActivatedAt', new Date().toISOString());
-        } catch (error) {
-          console.error('Error updating active plan:', error);
-        }
-      }
-    }
-  };
+    getUserGoals();
+  }, []);
 
-  // Fetch user's nutrition goals from Supabase
-  const fetchNutritionGoals = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('nutrition_goals')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching nutrition goals:', error);
-        return;
-      }
-
-      if (data) {
-        console.info('Using database nutrition goals:', data);
-        setUserGoals({
-          calories: data.calories,
-          protein: data.protein,
-          carbs: data.carbs,
-          fat: data.fat
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching nutrition goals:', error);
-    }
-  }, [user]);
-
-  // When user changes, fetch nutrition goals
+  // Initialize or generate meal plan
   useEffect(() => {
-    if (user) {
-      fetchNutritionGoals();
-    }
-  }, [user, fetchNutritionGoals]);
-
-  // Fetch recipes from the database
-  const fetchDbRecipes = useCallback(async () => {
-    try {
-      // First try to fetch user's recipes
-      let { data, error } = await supabase
-        .from('recipes')
-        .select(`
-          *,
-          recipe_ingredients(*),
-          recipe_instructions(*),
-          recipe_equipment(*)
-        `)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        throw error;
-      }
-
-      // Convert database recipes to the Recipe format
-      const formattedRecipes = data.map(dbRecipe => {
-        const recipeType = dbRecipe.meal_type?.toLowerCase() || 'other';
-        
-        // Map database recipe to Recipe format
-        const recipe: Recipe = {
-          id: dbRecipe.id,
-          name: dbRecipe.name,
-          type: recipeType === 'breakfast' ? 'breakfast' : 
-                recipeType === 'lunch' ? 'lunch' : 
-                recipeType === 'dinner' ? 'dinner' : 
-                recipeType === 'snack' ? 'snack' : 'other',
-          description: dbRecipe.description || '',
-          ingredients: dbRecipe.recipe_ingredients?.map(ing => ing.name) || [],
-          instructions: dbRecipe.recipe_instructions?.map(inst => inst.instruction) || [],
-          prepTime: dbRecipe.prep_time || 0,
-          cookTime: dbRecipe.cook_time || 0,
-          servings: dbRecipe.servings || 1,
-          macros: {
-            calories: dbRecipe.calories || 0,
-            protein: dbRecipe.protein || 0,
-            carbs: dbRecipe.carbs || 0,
-            fat: dbRecipe.fat || 0
-          },
-          imageSrc: dbRecipe.image_url || '/placeholder.svg'
-        };
-
-        return recipe;
-      });
-
-      // Set the recipes in state
-      if (formattedRecipes.length > 0) {
-        setDbRecipes(formattedRecipes);
-        console.log('Using database recipes:', formattedRecipes.length);
-      } else {
-        // Fallback to mock recipes if no database recipes are available
-        setDbRecipes([]);
-        toast({
-          title: "No Recipes Found",
-          description: "Please add recipes in the Recipe Management page.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching recipes:', error);
-      // Fallback to empty recipes in case of error
-      setDbRecipes([]);
-      toast({
-        title: "Error Loading Recipes",
-        description: "Please check your connection and try again.",
-        variant: "destructive"
-      });
-    }
-  }, [toast]);
-
-  // Check for a plan to copy from session storage or for an active plan
-  useEffect(() => {
-    const storedPlan = sessionStorage.getItem('planToCopy');
-    const storedLockedMeals = sessionStorage.getItem('lockedMeals');
-    
-    if (storedPlan && storedLockedMeals) {
-      try {
-        const parsedPlan = JSON.parse(storedPlan);
-        const parsedLockedMeals = JSON.parse(storedLockedMeals);
-        
-        if (parsedPlan.days && Array.isArray(parsedPlan.days)) {
-          setMealPlan(parsedPlan.days.map((day: any) => ({
-            date: day.date || new Date().toISOString(),
-            meals: day.meals || {
-              breakfast: null,
-              lunch: null,
-              dinner: null,
-              snacks: [null, null]
-            }
-          })));
-          
-          setLockedMeals(parsedLockedMeals);
-        }
-      } catch (error) {
-        console.error('Error parsing copied plan data:', error);
-        checkForActivePlan(); // Fallback to active plan
-      }
-    } else if (mealPlan.length === 0) {
-      // Check for active plan first
-      if (!checkForActivePlan()) {
-        // Initialize if no active plan found
-        generateFullMealPlan();
-      }
+    if (mealPlan.length === 0) {
+      generateFullMealPlan();
     }
   }, [userGoals]);
-  
-  // Helper function to check for an active plan in localStorage
-  const checkForActivePlan = () => {
-    const activePlanJson = localStorage.getItem('activePlan');
-    if (activePlanJson) {
-      try {
-        const activePlan = JSON.parse(activePlanJson);
-        if (activePlan.days && Array.isArray(activePlan.days)) {
-          console.log("Loading active plan in useMealPlanUtils:", activePlan);
-          
-          setMealPlan(activePlan.days.map((day: any) => ({
-            date: day.date || new Date().toISOString(),
-            meals: day.meals || {
-              breakfast: null,
-              lunch: null,
-              dinner: null,
-              snacks: [null, null]
-            }
-          })));
-          
-          setLockedMeals(activePlan.lockedMeals || {});
-          return true;
-        }
-      } catch (error) {
-        console.error('Error parsing active plan data:', error);
-      }
-    }
-    return false;
-  };
 
   // Function to generate a meal plan for the entire week
   const generateFullMealPlan = () => {
@@ -318,22 +63,6 @@ export const useMealPlanUtils = () => {
     setAiReasoning("");
     
     try {
-      // Make sure we have recipes
-      if (dbRecipes.length === 0) {
-        await fetchDbRecipes();
-      }
-      
-      // Check if we have recipes to work with
-      if (dbRecipes.length === 0) {
-        toast({
-          title: "No Recipes Available",
-          description: "Only admin can add recipes to the recipe vault.",
-          variant: "destructive"
-        });
-        setIsGenerating(false);
-        return;
-      }
-      
       // Prepare locked meals data
       const currentLockedMeals: {[key: string]: any} = {};
       if (mealPlan[currentDay]) {
@@ -365,7 +94,7 @@ export const useMealPlanUtils = () => {
         body: {
           userGoals,
           lockedMeals: currentLockedMeals,
-          availableRecipes: dbRecipes,
+          availableRecipes: recipes,
           currentDay,
         },
       });
@@ -420,61 +149,40 @@ export const useMealPlanUtils = () => {
   
   // Fallback method if AI fails
   const fallbackMealGeneration = () => {
-    if (dbRecipes.length === 0) {
-      toast({
-        title: "No Recipes Available",
-        description: "Only admin can add recipes to the recipe vault.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     setTimeout(() => {
       setMealPlan(prevPlan => {
         const newPlan = [...prevPlan];
         const currentPlanDay = { ...newPlan[currentDay] };
         
-        const availableRecipes = dbRecipes;
-        
         // Filter recipes by meal type
-        const breakfastRecipes = availableRecipes.filter(r => r.type === 'breakfast');
-        const lunchRecipes = availableRecipes.filter(r => r.type === 'lunch');
-        const dinnerRecipes = availableRecipes.filter(r => r.type === 'dinner');
-        const snackRecipes = availableRecipes.filter(r => r.type === 'snack');
+        const breakfastRecipes = recipes.filter(r => r.type === 'breakfast');
+        const lunchRecipes = recipes.filter(r => r.type === 'lunch');
+        const dinnerRecipes = recipes.filter(r => r.type === 'dinner');
+        const snackRecipes = recipes.filter(r => r.type === 'snack');
         
         // Only replace meals that aren't locked
         const newMeals = { ...currentPlanDay.meals };
         
         if (!lockedMeals[`${currentDay}-breakfast`]) {
-          newMeals.breakfast = breakfastRecipes.length > 0 ? 
-            breakfastRecipes[Math.floor(Math.random() * breakfastRecipes.length)] :
-            availableRecipes[Math.floor(Math.random() * availableRecipes.length)];
+          newMeals.breakfast = breakfastRecipes[Math.floor(Math.random() * breakfastRecipes.length)];
         }
         
         if (!lockedMeals[`${currentDay}-lunch`]) {
-          newMeals.lunch = lunchRecipes.length > 0 ? 
-            lunchRecipes[Math.floor(Math.random() * lunchRecipes.length)] :
-            availableRecipes[Math.floor(Math.random() * availableRecipes.length)];
+          newMeals.lunch = lunchRecipes[Math.floor(Math.random() * lunchRecipes.length)];
         }
         
         if (!lockedMeals[`${currentDay}-dinner`]) {
-          newMeals.dinner = dinnerRecipes.length > 0 ? 
-            dinnerRecipes[Math.floor(Math.random() * dinnerRecipes.length)] :
-            availableRecipes[Math.floor(Math.random() * availableRecipes.length)];
+          newMeals.dinner = dinnerRecipes[Math.floor(Math.random() * dinnerRecipes.length)];
         }
         
         // Handle snacks
         const newSnacks = [...(newMeals.snacks || [])];
         if (!lockedMeals[`${currentDay}-snack-0`] || !newSnacks[0]) {
-          newSnacks[0] = snackRecipes.length > 0 ? 
-            snackRecipes[Math.floor(Math.random() * snackRecipes.length)] :
-            availableRecipes[Math.floor(Math.random() * availableRecipes.length)];
+          newSnacks[0] = snackRecipes[Math.floor(Math.random() * snackRecipes.length)];
         }
         
         if (!lockedMeals[`${currentDay}-snack-1`] || !newSnacks[1]) {
-          newSnacks[1] = snackRecipes.length > 0 ? 
-            snackRecipes[Math.floor(Math.random() * snackRecipes.length)] :
-            availableRecipes[Math.floor(Math.random() * availableRecipes.length)];
+          newSnacks[1] = snackRecipes[Math.floor(Math.random() * snackRecipes.length)];
         }
         
         newMeals.snacks = newSnacks;
@@ -513,23 +221,17 @@ export const useMealPlanUtils = () => {
     if (!mealPlan[currentDay]) return userGoals;
     
     const dayMeals = mealPlan[currentDay].meals;
-    const totals = calculateDailyMacros(dayMeals);
-    
-    // Return the user's goals along with the day totals
-    return {
-      ...totals,
-      goals: userGoals
-    };
+    return calculateDailyMacros(dayMeals);
   };
 
   // Check if current meals exceed user goals
   const checkExceedsGoals = () => {
     const totals = calculateDayTotals();
     const exceeds = {
-      calories: totals.calories > userGoals.calories,
-      protein: totals.protein > userGoals.protein,
-      carbs: totals.carbs > userGoals.carbs,
-      fat: totals.fat > userGoals.fat
+      calories: totals.calories > userGoals.calories + 75,
+      protein: totals.protein > userGoals.protein + 2,
+      carbs: totals.carbs > userGoals.carbs + 5,
+      fat: totals.fat > userGoals.fat + 5
     };
     
     return {
@@ -547,14 +249,10 @@ export const useMealPlanUtils = () => {
     isGenerating,
     lockedMeals,
     aiReasoning,
-    dbRecipes,
     generateFullMealPlan,
     regenerateMeals,
     toggleLockMeal,
     calculateDayTotals,
-    checkExceedsGoals,
-    fetchDbRecipes,
-    fetchNutritionGoals,
-    updateMealPlan
+    checkExceedsGoals
   };
 };

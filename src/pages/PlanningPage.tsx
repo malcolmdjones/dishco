@@ -1,84 +1,15 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar, ArrowRight, Search } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
+import { recipes } from '@/data/mockData';
 
 const PlanningPage = () => {
   const { toast } = useToast();
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [activePlan, setActivePlan] = useState<any>(null);
-  const [weekDays, setWeekDays] = useState<Date[]>([]);
-  const [recipes, setRecipes] = useState<any[]>([]);
-
-  useEffect(() => {
-    // Generate current week days
-    const today = new Date();
-    const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Start on Monday
-    const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-    setWeekDays(days);
-
-    // Load active plan from localStorage
-    loadActivePlan();
-
-    // Fetch recipes from the database
-    fetchRecipes();
-  }, []);
-
-  const loadActivePlan = () => {
-    try {
-      // Check for active plan in localStorage
-      const storedPlan = localStorage.getItem('activePlan');
-      if (storedPlan) {
-        const parsedPlan = JSON.parse(storedPlan);
-        console.log('Active plan loaded:', parsedPlan);
-        setActivePlan(parsedPlan);
-      } else {
-        // If no activePlan, check if there's a savedMealPlans entry
-        const savedMealPlans = localStorage.getItem('savedMealPlans');
-        if (savedMealPlans) {
-          const parsedPlans = JSON.parse(savedMealPlans);
-          if (parsedPlans && parsedPlans.length > 0) {
-            const firstPlan = parsedPlans[0];
-            console.log('Using first saved plan as active:', firstPlan);
-            setActivePlan(firstPlan.plan_data);
-            
-            // Also save it as the active plan for consistency
-            localStorage.setItem('activePlan', JSON.stringify(firstPlan.plan_data));
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error loading active plan:', error);
-    }
-  };
-
-  const fetchRecipes = async () => {
-    try {
-      setLoading(true);
-      // Fetch recipes from the database
-      const { data, error } = await supabase
-        .from('recipes')
-        .select('*')
-        .limit(4);
-
-      if (error) throw error;
-      
-      if (data && data.length > 0) {
-        setRecipes(data);
-      }
-    } catch (error) {
-      console.error('Error fetching recipes:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleGeneratePlan = () => {
     navigate('/create-meal-plan');
@@ -103,51 +34,14 @@ const PlanningPage = () => {
               <Button variant="ghost" size="sm" className="text-xs">View Saved Plans</Button>
             </Link>
           </div>
-          
-          {activePlan ? (
-            <div className="mt-2">
-              <h3 className="font-medium mb-2">{activePlan.name || "Current Plan"}</h3>
-              <div className="grid grid-cols-7 gap-1 text-center">
-                {weekDays.map((day, index) => {
-                  // Check if this day has meal data in the active plan
-                  const dayPlan = activePlan.days && activePlan.days.find((planDay: any) => {
-                    const planDate = new Date(planDay.date);
-                    return isSameDay(planDate, day);
-                  });
-                  
-                  const hasData = dayPlan && 
-                    (dayPlan.meals?.breakfast || dayPlan.meals?.lunch || dayPlan.meals?.dinner || 
-                     (dayPlan.meals?.snacks && dayPlan.meals.snacks.some((s: any) => s)));
-                  
-                  return (
-                    <div 
-                      key={index}
-                      className={`p-2 rounded-md ${hasData ? 'bg-green-50' : 'bg-gray-50'}`}
-                    >
-                      <p className="text-xs font-medium">{format(day, 'EEE')}</p>
-                      <p className="text-sm">{format(day, 'd')}</p>
-                      {hasData && (
-                        <div className="w-2 h-2 bg-green-500 rounded-full mx-auto mt-1"></div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-6">
-              <Calendar size={36} className="mx-auto text-gray-300 mb-2" />
-              <p className="text-gray-400 mb-2">No active meal plan</p>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="text-xs"
-                onClick={() => navigate('/saved-plans')}
-              >
-                Activate a plan
-              </Button>
-            </div>
-          )}
+          <p className="text-sm text-dishco-text-light">
+            Here's a summary of your planned meals for the week.
+          </p>
+          {/* Placeholder for weekly calendar/summary */}
+          <div className="mt-4 text-center">
+            <Calendar size={48} className="mx-auto text-gray-300" />
+            <p className="text-gray-400">Coming soon: Weekly meal plan view</p>
+          </div>
         </div>
 
         {/* Generate Meal Plan Button */}
@@ -174,38 +68,24 @@ const PlanningPage = () => {
             Discover new and exciting meal ideas tailored to your preferences.
           </p>
           
-          {recipeSelection.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4">
-              {recipeSelection.map((recipe) => (
-                <div key={recipe.id} className="cursor-pointer" onClick={() => navigate('/explore-recipes')}>
-                  <div className="bg-gray-100 rounded-lg aspect-square mb-2 flex items-center justify-center overflow-hidden">
-                    <img 
-                      src={recipe.image_url || '/placeholder.svg'} 
-                      alt={recipe.name} 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="font-medium text-sm line-clamp-1">{recipe.name}</h3>
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="text-sm text-gray-600">{recipe.calories || 0} cal</span>
-                    <span className="text-xs text-blue-600">{recipe.meal_type || 'Meal'}</span>
-                  </div>
+          <div className="grid grid-cols-2 gap-4">
+            {recipeSelection.map((recipe) => (
+              <div key={recipe.id} className="cursor-pointer" onClick={() => navigate('/explore-recipes')}>
+                <div className="bg-gray-100 rounded-lg aspect-square mb-2 flex items-center justify-center overflow-hidden">
+                  <img 
+                    src={recipe.imageSrc} 
+                    alt={recipe.name} 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-6">
-              <p className="text-gray-400 mb-2">No recipes found</p>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="text-xs"
-                onClick={() => navigate('/recipe-management')}
-              >
-                Add Your First Recipe
-              </Button>
-            </div>
-          )}
+                <h3 className="font-medium text-sm line-clamp-1">{recipe.name}</h3>
+                <div className="flex justify-between items-center mt-1">
+                  <span className="text-sm text-gray-600">{recipe.macros.calories} cal</span>
+                  <span className="text-xs text-blue-600">{recipe.type}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

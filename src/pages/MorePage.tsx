@@ -4,36 +4,27 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, Heart, Settings, User, Utensils, BookOpen, LogOut, Calendar, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
 
 const MorePage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
   const [goals, setGoals] = useState({
     calories: 2000,
     protein: 150,
     carbs: 200,
     fat: 65
   });
-  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    if (user) {
-      fetchNutritionGoals();
-    }
-  }, [user]);
+    fetchNutritionGoals();
+  }, []);
 
   const fetchNutritionGoals = async () => {
-    if (!user) return;
-    
     try {
-      setLoading(true);
-      // With authentication, we can now fetch the user's specific nutrition goals
+      // For now, we're not authenticating users, so we'll get the first nutrition goals record
       const { data, error } = await supabase
         .from('nutrition_goals')
         .select('*')
-        .eq('user_id', user.id)
         .limit(1)
         .single();
       
@@ -52,17 +43,6 @@ const MorePage = () => {
       }
     } catch (error) {
       console.error('Error fetching nutrition goals:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      navigate('/auth');
-    } catch (error) {
-      console.error('Error signing out:', error);
     }
   };
   
@@ -80,10 +60,10 @@ const MorePage = () => {
       description: 'Access your collection of meal plans'
     },
     {
-      name: 'Custom Recipes',
+      name: 'Add External Recipe',
       icon: <Utensils size={20} className="text-green-500" />,
       path: '/add-recipe',
-      description: 'View and create your own custom recipes'
+      description: 'Import recipes from external sources'
     },
     {
       name: 'Dietary Restrictions',
@@ -118,8 +98,8 @@ const MorePage = () => {
           <User size={24} className="text-white" />
         </div>
         <div>
-          <h2 className="font-bold">{user?.email || 'Loading...'}</h2>
-          <p className="text-sm text-dishco-text-light">{user?.email}</p>
+          <h2 className="font-bold">John Doe</h2>
+          <p className="text-sm text-dishco-text-light">john.doe@example.com</p>
         </div>
       </div>
 
@@ -149,43 +129,34 @@ const MorePage = () => {
       {/* Nutrition Goals Summary */}
       <div className="bg-white rounded-xl shadow-md p-4 mb-6">
         <h2 className="text-lg font-semibold mb-3">Current Nutrition Goals</h2>
-        {loading ? (
-          <div className="text-center py-4 text-gray-500">Loading your goals...</div>
-        ) : (
-          <>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-sm text-dishco-text-light">Daily Calories</p>
-                <p className="text-xl font-bold">{goals.calories} kcal</p>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-sm text-dishco-text-light">Protein</p>
-                <p className="text-xl font-bold">{goals.protein}g</p>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-sm text-dishco-text-light">Carbs</p>
-                <p className="text-xl font-bold">{goals.carbs}g</p>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-sm text-dishco-text-light">Fat</p>
-                <p className="text-xl font-bold">{goals.fat}g</p>
-              </div>
-            </div>
-            <button 
-              className="w-full mt-4 py-2 px-4 bg-dishco-primary bg-opacity-10 text-dishco-primary rounded-lg font-medium"
-              onClick={() => navigate('/nutrition-goals')}
-            >
-              Edit Goals
-            </button>
-          </>
-        )}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-sm text-dishco-text-light">Daily Calories</p>
+            <p className="text-xl font-bold">{goals.calories} kcal</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-sm text-dishco-text-light">Protein</p>
+            <p className="text-xl font-bold">{goals.protein}g</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-sm text-dishco-text-light">Carbs</p>
+            <p className="text-xl font-bold">{goals.carbs}g</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-sm text-dishco-text-light">Fat</p>
+            <p className="text-xl font-bold">{goals.fat}g</p>
+          </div>
+        </div>
+        <button 
+          className="w-full mt-4 py-2 px-4 bg-dishco-primary bg-opacity-10 text-dishco-primary rounded-lg font-medium"
+          onClick={() => navigate('/nutrition-goals')}
+        >
+          Edit Goals
+        </button>
       </div>
 
       {/* Logout Button */}
-      <button 
-        className="w-full py-3 border border-gray-300 rounded-xl text-dishco-text-light font-medium flex items-center justify-center"
-        onClick={handleSignOut}
-      >
+      <button className="w-full py-3 border border-gray-300 rounded-xl text-dishco-text-light font-medium flex items-center justify-center">
         <LogOut size={18} className="mr-2" />
         <span>Log Out</span>
       </button>

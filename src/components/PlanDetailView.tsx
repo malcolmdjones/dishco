@@ -2,13 +2,11 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
-import 'react-circular-progressbar/dist/styles.css';
-import { Info, Clock, Utensils } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import RecipeDetail from './RecipeDetail';
 import { calculateDailyMacros } from '@/data/mockData';
+import { Progress } from '@/components/ui/progress';
 
 interface PlanDetailViewProps {
   plan: any;
@@ -17,253 +15,236 @@ interface PlanDetailViewProps {
 }
 
 const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }) => {
-  const [activeTab, setActiveTab] = useState('overview');
-  
+  const [activeDay, setActiveDay] = useState(0);
+  const [selectedRecipe, setSelectedRecipe] = useState<any>(null);
+  const [isRecipeDetailOpen, setIsRecipeDetailOpen] = useState(false);
+
   if (!plan) return null;
+
+  const dailyMacros = calculateDailyMacros(plan.days[activeDay].meals);
   
-  const planData = plan.plan_data || {};
-  const days = planData.days || [];
+  const averageCalories = Math.round(
+    plan.days.reduce((sum: number, day: any) => {
+      const dayMacros = calculateDailyMacros(day.meals);
+      return sum + dayMacros.calories;
+    }, 0) / plan.days.length
+  );
   
-  const calculateTotalCalories = () => {
-    if (!days || days.length === 0) return 0;
-    
-    let total = 0;
-    days.forEach(day => {
-      if (!day || !day.meals) return;
-      
-      total += day.meals.breakfast?.macros?.calories || 0;
-      total += day.meals.lunch?.macros?.calories || 0;
-      total += day.meals.dinner?.macros?.calories || 0;
-      if (day.meals.snacks && Array.isArray(day.meals.snacks)) {
-        day.meals.snacks.forEach(snack => {
-          total += snack?.macros?.calories || 0;
-        });
-      }
-    });
-    return Math.round(total / (days.length || 1));
+  const totalMacros = {
+    protein: Math.round(plan.days.reduce((sum: number, day: any) => {
+      const dayMacros = calculateDailyMacros(day.meals);
+      return sum + dayMacros.protein;
+    }, 0) / plan.days.length),
+    carbs: Math.round(plan.days.reduce((sum: number, day: any) => {
+      const dayMacros = calculateDailyMacros(day.meals);
+      return sum + dayMacros.carbs;
+    }, 0) / plan.days.length),
+    fat: Math.round(plan.days.reduce((sum: number, day: any) => {
+      const dayMacros = calculateDailyMacros(day.meals);
+      return sum + dayMacros.fat;
+    }, 0) / plan.days.length),
   };
   
-  const calculateTotalMacros = () => {
-    if (!days || days.length === 0) return { protein: 0, carbs: 0, fat: 0 };
-    
-    let protein = 0;
-    let carbs = 0;
-    let fat = 0;
-    
-    days.forEach(day => {
-      if (!day || !day.meals) return;
-      
-      protein += day.meals.breakfast?.macros?.protein || 0;
-      protein += day.meals.lunch?.macros?.protein || 0;
-      protein += day.meals.dinner?.macros?.protein || 0;
-      
-      carbs += day.meals.breakfast?.macros?.carbs || 0;
-      carbs += day.meals.lunch?.macros?.carbs || 0;
-      carbs += day.meals.dinner?.macros?.carbs || 0;
-      
-      fat += day.meals.breakfast?.macros?.fat || 0;
-      fat += day.meals.lunch?.macros?.fat || 0;
-      fat += day.meals.dinner?.macros?.fat || 0;
-      
-      if (day.meals.snacks && Array.isArray(day.meals.snacks)) {
-        day.meals.snacks.forEach(snack => {
-          protein += snack?.macros?.protein || 0;
-          carbs += snack?.macros?.carbs || 0;
-          fat += snack?.macros?.fat || 0;
-        });
-      }
-    });
-    
-    return {
-      protein: Math.round(protein / (days.length || 1)),
-      carbs: Math.round(carbs / (days.length || 1)),
-      fat: Math.round(fat / (days.length || 1))
-    };
-  };
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   
-  const totalCalories = calculateTotalCalories();
-  const totalMacros = calculateTotalMacros();
-  
-  const renderMealDetail = (meal, type) => {
-    if (!meal) return <p className="text-sm text-gray-500">No {type} planned</p>;
-    
-    return (
-      <div className="border rounded-lg p-3 mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="font-medium">{meal.name}</h4>
-          <span className="text-sm">{meal.macros?.calories || 0} cal</span>
-        </div>
-        
-        {meal.image && (
-          <img 
-            src={meal.image} 
-            alt={meal.name} 
-            className="w-full h-32 object-cover rounded-md mb-2" 
-          />
-        )}
-        
-        <div className="flex justify-between text-xs text-gray-500 mb-2">
-          <span>P: {meal.macros?.protein || 0}g</span>
-          <span>C: {meal.macros?.carbs || 0}g</span>
-          <span>F: {meal.macros?.fat || 0}g</span>
-        </div>
-        
-        {meal.ingredients && (
-          <div className="mt-3">
-            <h5 className="text-sm font-medium mb-1">Ingredients:</h5>
-            <ul className="text-sm list-disc pl-5">
-              {meal.ingredients.map((ingredient, i) => (
-                <li key={i}>{ingredient}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-        
-        {meal.instructions && (
-          <div className="mt-3">
-            <h5 className="text-sm font-medium mb-1">Instructions:</h5>
-            <ol className="text-sm list-decimal pl-5">
-              {meal.instructions.map((step, i) => (
-                <li key={i}>{step}</li>
-              ))}
-            </ol>
-          </div>
-        )}
-      </div>
-    );
+  const handleOpenRecipe = (recipe: any) => {
+    if (recipe) {
+      setSelectedRecipe(recipe);
+      setIsRecipeDetailOpen(true);
+    }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95%] max-w-md mx-auto overflow-y-auto max-h-[85vh]">
-        <DialogHeader>
-          <DialogTitle>{plan.name}</DialogTitle>
-          <p className="text-sm text-gray-500 mt-1">
-            Created {format(new Date(plan.created_at), 'MMM d, yyyy')}
-          </p>
-          {planData.description && (
-            <p className="text-sm mt-2">{planData.description}</p>
-          )}
-        </DialogHeader>
-        
-        <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="mt-2">
-          <TabsList className="grid grid-cols-2 mb-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="meals">Meals</TabsTrigger>
-          </TabsList>
+    <>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="pr-8">{plan.name}</DialogTitle>
+            <button 
+              className="absolute top-4 right-4 p-2"
+              onClick={onClose}
+            >
+              <X size={18} />
+            </button>
+          </DialogHeader>
           
-          <TabsContent value="overview" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <Card>
-                <CardHeader className="p-4 pb-2">
-                  <CardTitle className="text-base">Daily Calories</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <div className="flex justify-center">
-                    <div className="w-24 h-24">
-                      <CircularProgressbar
-                        value={75}
-                        text={`${totalCalories}`}
-                        styles={buildStyles({
-                          textSize: '22px',
-                          pathColor: '#10b981',
-                          textColor: '#333',
-                        })}
-                      />
-                    </div>
-                  </div>
-                  <p className="text-center text-sm text-gray-500 mt-2">calories/day</p>
-                </CardContent>
-              </Card>
+          <div className="space-y-6">
+            <p className="text-dishco-text-light">{plan.description}</p>
+            
+            <div className="bg-muted/30 p-4 rounded-lg space-y-3">
+              <h3 className="font-medium">Average Daily Nutrition</h3>
               
-              <Card>
-                <CardHeader className="p-4 pb-2">
-                  <CardTitle className="text-base">Daily Macros</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Protein</span>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center text-sm">
+                    <span>Calories</span>
+                    <span className="font-medium">{averageCalories}</span>
+                  </div>
+                  <Progress value={65} className="h-2" />
+                </div>
+                
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center text-sm">
+                    <span>Protein</span>
                     <span className="font-medium">{totalMacros.protein}g</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Carbs</span>
+                  <Progress value={75} indicatorClassName="bg-amber-400" className="h-2" />
+                </div>
+                
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center text-sm">
+                    <span>Carbs</span>
                     <span className="font-medium">{totalMacros.carbs}g</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Fat</span>
+                  <Progress value={60} indicatorClassName="bg-blue-400" className="h-2" />
+                </div>
+                
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center text-sm">
+                    <span>Fat</span>
                     <span className="font-medium">{totalMacros.fat}g</span>
                   </div>
-                </CardContent>
-              </Card>
+                  <Progress value={50} indicatorClassName="bg-green-400" className="h-2" />
+                </div>
+              </div>
             </div>
             
-            <Card>
-              <CardHeader className="p-4 pb-2">
-                <CardTitle className="text-base">Plan Details</CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 pt-0">
+            <div className="space-y-2">
+              <div className="flex overflow-x-auto pb-2 space-x-2">
+                {plan.days.map((day: any, index: number) => (
+                  <Button
+                    key={index}
+                    variant={activeDay === index ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setActiveDay(index)}
+                    className="flex-shrink-0"
+                  >
+                    {days[index % 7]}
+                  </Button>
+                ))}
+              </div>
+              
+              <div className="border rounded-md p-4 space-y-4">
+                <h3 className="font-medium">Day {activeDay + 1}: {days[activeDay % 7]}</h3>
+                
                 <div className="space-y-3">
-                  <div className="flex items-center">
-                    <Info size={18} className="mr-2 text-gray-500" />
-                    <span className="text-sm">{days.length} days meal plan</span>
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Breakfast</h4>
+                    {plan.days[activeDay].meals.breakfast ? (
+                      <div 
+                        className="p-3 bg-muted/20 rounded-md flex items-center cursor-pointer hover:bg-muted/30 transition-colors"
+                        onClick={() => handleOpenRecipe(plan.days[activeDay].meals.breakfast)}
+                      >
+                        <div className="w-10 h-10 rounded-md overflow-hidden mr-3 flex-shrink-0">
+                          <img 
+                            src={plan.days[activeDay].meals.breakfast.imageSrc} 
+                            alt={plan.days[activeDay].meals.breakfast.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{plan.days[activeDay].meals.breakfast.name}</p>
+                          <p className="text-xs text-dishco-text-light">{plan.days[activeDay].meals.breakfast.macros.calories} cal</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-dishco-text-light">No breakfast scheduled</p>
+                    )}
                   </div>
-                  <div className="flex items-center">
-                    <Clock size={18} className="mr-2 text-gray-500" />
-                    <span className="text-sm">Average prep time: 30 mins</span>
+                  
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Lunch</h4>
+                    {plan.days[activeDay].meals.lunch ? (
+                      <div 
+                        className="p-3 bg-muted/20 rounded-md flex items-center cursor-pointer hover:bg-muted/30 transition-colors"
+                        onClick={() => handleOpenRecipe(plan.days[activeDay].meals.lunch)}
+                      >
+                        <div className="w-10 h-10 rounded-md overflow-hidden mr-3 flex-shrink-0">
+                          <img 
+                            src={plan.days[activeDay].meals.lunch.imageSrc} 
+                            alt={plan.days[activeDay].meals.lunch.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{plan.days[activeDay].meals.lunch.name}</p>
+                          <p className="text-xs text-dishco-text-light">{plan.days[activeDay].meals.lunch.macros.calories} cal</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-dishco-text-light">No lunch scheduled</p>
+                    )}
                   </div>
-                  <div className="flex items-center">
-                    <Utensils size={18} className="mr-2 text-gray-500" />
-                    <span className="text-sm">{days.reduce((count, day) => {
-                      if (!day || !day.meals) return count;
-                      let mealCount = 0;
-                      if (day.meals.breakfast) mealCount++;
-                      if (day.meals.lunch) mealCount++;
-                      if (day.meals.dinner) mealCount++;
-                      if (day.meals.snacks) mealCount += day.meals.snacks.length;
-                      return count + mealCount;
-                    }, 0)} total meals</span>
+                  
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Dinner</h4>
+                    {plan.days[activeDay].meals.dinner ? (
+                      <div 
+                        className="p-3 bg-muted/20 rounded-md flex items-center cursor-pointer hover:bg-muted/30 transition-colors"
+                        onClick={() => handleOpenRecipe(plan.days[activeDay].meals.dinner)}
+                      >
+                        <div className="w-10 h-10 rounded-md overflow-hidden mr-3 flex-shrink-0">
+                          <img 
+                            src={plan.days[activeDay].meals.dinner.imageSrc} 
+                            alt={plan.days[activeDay].meals.dinner.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{plan.days[activeDay].meals.dinner.name}</p>
+                          <p className="text-xs text-dishco-text-light">{plan.days[activeDay].meals.dinner.macros.calories} cal</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-dishco-text-light">No dinner scheduled</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Snacks</h4>
+                    {plan.days[activeDay].meals.snacks && plan.days[activeDay].meals.snacks.length > 0 ? (
+                      <div className="space-y-2">
+                        {plan.days[activeDay].meals.snacks.map((snack: any, index: number) => (
+                          snack && (
+                            <div 
+                              key={index}
+                              className="p-3 bg-muted/20 rounded-md flex items-center cursor-pointer hover:bg-muted/30 transition-colors"
+                              onClick={() => handleOpenRecipe(snack)}
+                            >
+                              <div className="w-10 h-10 rounded-md overflow-hidden mr-3 flex-shrink-0">
+                                <img 
+                                  src={snack.imageSrc} 
+                                  alt={snack.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <p className="font-medium text-sm">{snack.name}</p>
+                                <p className="text-xs text-dishco-text-light">{snack.macros.calories} cal</p>
+                              </div>
+                            </div>
+                          )
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-dishco-text-light">No snacks scheduled</p>
+                    )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="meals">
-            {days.map((day, index) => (
-              <div key={index} className="mb-6">
-                <h3 className="font-semibold text-lg mb-3">Day {index + 1}</h3>
-                
-                {day && day.meals ? (
-                  <>
-                    <h4 className="font-medium text-sm mb-2 text-gray-600">Breakfast</h4>
-                    {renderMealDetail(day.meals.breakfast, 'breakfast')}
-                    
-                    <h4 className="font-medium text-sm mb-2 text-gray-600">Lunch</h4>
-                    {renderMealDetail(day.meals.lunch, 'lunch')}
-                    
-                    <h4 className="font-medium text-sm mb-2 text-gray-600">Dinner</h4>
-                    {renderMealDetail(day.meals.dinner, 'dinner')}
-                    
-                    {day.meals.snacks && day.meals.snacks.length > 0 && (
-                      <>
-                        <h4 className="font-medium text-sm mb-2 text-gray-600">Snacks</h4>
-                        {day.meals.snacks.map((snack, i) => (
-                          <div key={i}>
-                            {renderMealDetail(snack, `snack ${i + 1}`)}
-                          </div>
-                        ))}
-                      </>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-sm text-gray-500">No meals planned for this day</p>
-                )}
               </div>
-            ))}
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {selectedRecipe && (
+        <RecipeDetail
+          recipeId={selectedRecipe.id}
+          onClose={() => setIsRecipeDetailOpen(false)}
+          className={isRecipeDetailOpen ? "block" : "hidden"}
+        />
+      )}
+    </>
   );
 };
 

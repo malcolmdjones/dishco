@@ -1,25 +1,17 @@
-import React from 'react';
 
-interface DailyNutritionCardProps {
-  dayTotals: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-    goals?: {
-      calories: number;
-      protein: number;
-      carbs: number;
-      fat: number;
-    };
-  };
-  userGoals?: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  };
-  exceedsGoals: {
+import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+
+interface NutritionGoals {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+interface ExceedsGoals {
+  any: boolean;
+  exceeds: {
     calories: boolean;
     protein: boolean;
     carbs: boolean;
@@ -27,95 +19,95 @@ interface DailyNutritionCardProps {
   };
 }
 
-const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({ 
-  dayTotals, 
+interface DailyNutritionCardProps {
+  dayTotals: NutritionGoals;
+  userGoals: NutritionGoals;
+  exceedsGoals: ExceedsGoals;
+  aiReasoning?: string;
+}
+
+const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
+  dayTotals,
   userGoals,
-  exceedsGoals 
+  exceedsGoals,
+  aiReasoning
 }) => {
-  // Use either the goals from dayTotals, the directly provided userGoals, or fallback to defaults
-  const goals = dayTotals.goals || userGoals || {
-    calories: 2000,
-    protein: 150,
-    carbs: 200,
-    fat: 65
-  };
-  
-  // Calculate percentages of goals
-  const caloriePercent = Math.min(100, Math.round((dayTotals.calories / goals.calories) * 100));
-  const proteinPercent = Math.min(100, Math.round((dayTotals.protein / goals.protein) * 100));
-  const carbsPercent = Math.min(100, Math.round((dayTotals.carbs / goals.carbs) * 100));
-  const fatPercent = Math.min(100, Math.round((dayTotals.fat / goals.fat) * 100));
-  
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-      <h2 className="text-lg font-semibold mb-4">Today's Nutrition</h2>
-      
-      <div className="grid grid-cols-2 gap-4">
-        {/* Calories */}
-        <div>
-          <div className="flex justify-between items-center mb-1">
-            <span className="text-sm font-medium">Calories</span>
-            <span className={`text-sm ${exceedsGoals.calories ? 'text-red-500' : 'text-gray-600'}`}>
-              {dayTotals.calories} / {goals.calories}
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div 
-              className="bg-dishco-primary h-2.5 rounded-full" 
-              style={{ width: `${caloriePercent}%` }}
-            ></div>
-          </div>
-        </div>
+    <Card className="mb-6">
+      <CardContent className="pt-6">
+        <h2 className="text-lg font-semibold mb-4">Daily Nutrition</h2>
         
-        {/* Protein */}
-        <div>
-          <div className="flex justify-between items-center mb-1">
-            <span className="text-sm font-medium">Protein</span>
-            <span className={`text-sm ${exceedsGoals.protein ? 'text-red-500' : 'text-gray-600'}`}>
-              {dayTotals.protein} / {goals.protein}
-            </span>
+        <div className="space-y-6">
+          {/* Calories */}
+          <div>
+            <div className="flex justify-between mb-2">
+              <div>
+                <span className="text-2xl font-semibold">{dayTotals.calories}</span>
+                <span className="text-gray-500 text-sm ml-1">/ {userGoals.calories}</span>
+              </div>
+              <span className="text-lg">Calories</span>
+            </div>
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div 
+                className={`h-full ${exceedsGoals.exceeds.calories ? 'bg-red-500' : 'bg-yellow-400'}`}
+                style={{ width: `${Math.min(100, (dayTotals.calories / userGoals.calories) * 100)}%` }}
+              ></div>
+            </div>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div 
-              className="bg-blue-500 h-2.5 rounded-full" 
-              style={{ width: `${proteinPercent}%` }}
-            ></div>
+          
+          {/* Protein */}
+          <div>
+            <div className="flex justify-between mb-2">
+              <div>
+                <span className="text-2xl font-semibold">{dayTotals.protein}g</span>
+                <span className="text-gray-500 text-sm ml-1">/ {userGoals.protein}g</span>
+              </div>
+              <span className="text-lg">Protein</span>
+            </div>
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div 
+                className={`h-full ${exceedsGoals.exceeds.protein ? 'bg-red-500' : 'bg-blue-400'}`}
+                style={{ width: `${Math.min(100, (dayTotals.protein / userGoals.protein) * 100)}%` }}
+              ></div>
+            </div>
+          </div>
+          
+          {/* Carbs */}
+          <div>
+            <div className="flex justify-between mb-2">
+              <div>
+                <span className="text-2xl font-semibold">{dayTotals.carbs}g</span>
+                <span className="text-gray-500 text-sm ml-1">/ {userGoals.carbs}g</span>
+              </div>
+              <span className="text-lg">Carbs</span>
+            </div>
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div 
+                className={`h-full ${exceedsGoals.exceeds.carbs ? 'bg-red-500' : 'bg-yellow-400'}`}
+                style={{ width: `${Math.min(100, (dayTotals.carbs / userGoals.carbs) * 100)}%` }}
+              ></div>
+            </div>
+          </div>
+          
+          {/* Fat */}
+          <div>
+            <div className="flex justify-between mb-2">
+              <div>
+                <span className="text-2xl font-semibold">{dayTotals.fat}g</span>
+                <span className="text-gray-500 text-sm ml-1">/ {userGoals.fat}g</span>
+              </div>
+              <span className="text-lg">Fat</span>
+            </div>
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div 
+                className={`h-full ${exceedsGoals.exceeds.fat ? 'bg-red-500' : 'bg-purple-400'}`}
+                style={{ width: `${Math.min(100, (dayTotals.fat / userGoals.fat) * 100)}%` }}
+              ></div>
+            </div>
           </div>
         </div>
-        
-        {/* Carbs */}
-        <div>
-          <div className="flex justify-between items-center mb-1">
-            <span className="text-sm font-medium">Carbs</span>
-            <span className={`text-sm ${exceedsGoals.carbs ? 'text-red-500' : 'text-gray-600'}`}>
-              {dayTotals.carbs} / {goals.carbs}
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div 
-              className="bg-green-500 h-2.5 rounded-full" 
-              style={{ width: `${carbsPercent}%` }}
-            ></div>
-          </div>
-        </div>
-        
-        {/* Fat */}
-        <div>
-          <div className="flex justify-between items-center mb-1">
-            <span className="text-sm font-medium">Fat</span>
-            <span className={`text-sm ${exceedsGoals.fat ? 'text-red-500' : 'text-gray-600'}`}>
-              {dayTotals.fat} / {goals.fat}
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div 
-              className="bg-yellow-500 h-2.5 rounded-full" 
-              style={{ width: `${fatPercent}%` }}
-            ></div>
-          </div>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

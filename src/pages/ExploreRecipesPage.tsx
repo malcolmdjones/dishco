@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Filter, ChevronDown, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Search, Filter, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -21,18 +21,15 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Recipe } from '@/data/mockData';
+import { recipes, Recipe } from '@/data/mockData';
 import RecipeViewer from '@/components/RecipeViewer';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/context/AuthContext';
 
 // Define filter types
 type PriceRange = '$' | '$$' | '$$$';
 type CookTime = 'quick' | 'medium' | 'long';
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 type CuisineType = 'american' | 'italian' | 'mexican' | 'indian' | 'chinese' | 'other';
-type Equipment = 'oven' | 'stovetop' | 'air-fryer' | 'blender' | 'grill' | 'slow-cooker';
+type Equipment = 'oven' | 'stovetop' | 'air fryer' | 'blender' | 'grill' | 'slow cooker';
 type CalorieRange = '0-200' | '200-400' | '400-600' | '600-800' | '800+';
 type DietaryNeeds = 'keto' | 'vegan' | 'vegetarian' | 'paleo' | 'gluten-free' | 'dairy-free';
 
@@ -50,18 +47,13 @@ interface Filters {
 
 const ExploreRecipesPage = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [visibleRecipes, setVisibleRecipes] = useState<Recipe[]>([]);
-  const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [savedRecipes, setSavedRecipes] = useState<string[]>([]);
-  const [isSelectedRecipeSaved, setIsSelectedRecipeSaved] = useState(false);
   const recipesPerPage = 8;
   
   // Filter state
@@ -79,91 +71,10 @@ const ExploreRecipesPage = () => {
   const [filtersApplied, setFiltersApplied] = useState(false);
   const [activeFilterCount, setActiveFilterCount] = useState(0);
   
-  // Fetch recipes from Supabase
-  const fetchRecipes = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('recipes')
-        .select(`
-          *,
-          recipe_ingredients(*),
-          recipe_instructions(*),
-          recipe_equipment(*)
-        `)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Format recipes to match Recipe type
-      const formattedRecipes: Recipe[] = data.map(dbRecipe => ({
-        id: dbRecipe.id,
-        name: dbRecipe.name,
-        type: dbRecipe.meal_type?.toLowerCase() || 'other',
-        description: dbRecipe.description || '',
-        ingredients: dbRecipe.recipe_ingredients?.map(ing => ing.name) || [],
-        instructions: dbRecipe.recipe_instructions?.map(inst => inst.instruction) || [],
-        prepTime: dbRecipe.prep_time || 0,
-        cookTime: dbRecipe.cook_time || 0,
-        servings: dbRecipe.servings || 1,
-        macros: {
-          calories: dbRecipe.calories || 0,
-          protein: dbRecipe.protein || 0,
-          carbs: dbRecipe.carbs || 0,
-          fat: dbRecipe.fat || 0
-        },
-        imageSrc: dbRecipe.image_url || '/placeholder.svg',
-        cuisineType: dbRecipe.meal_type || 'other',
-        priceRange: '$',
-        isHighProtein: dbRecipe.protein > 20,
-        equipment: dbRecipe.recipe_equipment?.map(eq => eq.name) || [],
-        requiresBlender: false,
-        requiresCooking: true
-      }));
-      
-      setAllRecipes(formattedRecipes);
-      applyFiltersAndSearch(formattedRecipes);
-    } catch (error) {
-      console.error('Error fetching recipes:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch recipes',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch saved recipes for the current user
-  const fetchSavedRecipes = async () => {
-    if (!user) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('saved_recipes')
-        .select('recipe_id')
-        .eq('user_id', user.id);
-      
-      if (error) {
-        throw error;
-      }
-      
-      if (data) {
-        setSavedRecipes(data.map(item => item.recipe_id));
-      }
-    } catch (error) {
-      console.error('Error fetching saved recipes:', error);
-    }
-  };
-  
   // Effect to load initial recipes
   useEffect(() => {
-    fetchRecipes();
-    fetchSavedRecipes();
-  }, [user]);
+    loadMoreRecipes(true);
+  }, []);
   
   // Effect to detect filter changes
   useEffect(() => {
@@ -181,238 +92,42 @@ const ExploreRecipesPage = () => {
     setActiveFilterCount(count);
   }, [filters]);
   
-  // Toggle recipe saved status
-  const handleToggleSave = async (recipeId: string, isSaved: boolean) => {
-    if (!user) {
-      toast({
-        title: 'Authentication Required',
-        description: 'Please log in to save recipes',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    try {
-      if (isSaved) {
-        // Remove from saved recipes
-        const { error } = await supabase
-          .from('saved_recipes')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('recipe_id', recipeId);
-          
-        if (error) throw error;
-        
-        setSavedRecipes(prev => prev.filter(id => id !== recipeId));
-        setIsSelectedRecipeSaved(false);
-        
-        toast({
-          title: 'Recipe Unsaved',
-          description: 'Recipe removed from your saved recipes'
-        });
-      } else {
-        // Add to saved recipes
-        const { error } = await supabase
-          .from('saved_recipes')
-          .insert({
-            user_id: user.id,
-            recipe_id: recipeId
-          });
-          
-        if (error) throw error;
-        
-        setSavedRecipes(prev => [...prev, recipeId]);
-        setIsSelectedRecipeSaved(true);
-        
-        toast({
-          title: 'Recipe Saved',
-          description: 'Recipe added to your saved recipes'
-        });
-      }
-    } catch (error) {
-      console.error('Error toggling save status:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update saved status',
-        variant: 'destructive'
-      });
-    }
-  };
-  
-  // Apply filters and search to recipes
-  const applyFiltersAndSearch = (recipes = allRecipes) => {
-    // Filter recipes based on current filters and search query
-    const filteredRecipes = recipes.filter(recipe => {
-      // Search query filter
-      if (searchQuery && !recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-          !recipe.description.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return false;
-      }
-      
-      // Meal type filter
-      if (filters.mealType.length > 0 && !filters.mealType.includes(recipe.type as MealType)) {
-        return false;
-      }
-      
-      // Cuisine type filter
-      if (filters.cuisine.length > 0 && recipe.cuisineType && 
-          !filters.cuisine.includes(recipe.cuisineType as CuisineType)) {
-        return false;
-      }
-      
-      // Price range filter
-      if (filters.price.length > 0 && recipe.priceRange &&
-          !filters.price.includes(recipe.priceRange as PriceRange)) {
-        return false;
-      }
-      
-      // Calorie range filter
-      if (filters.calories.length > 0) {
-        const calories = recipe.macros.calories;
-        const matchesCalorieRange = filters.calories.some(range => {
-          if (range === '0-200') return calories >= 0 && calories <= 200;
-          if (range === '200-400') return calories > 200 && calories <= 400;
-          if (range === '400-600') return calories > 400 && calories <= 600;
-          if (range === '600-800') return calories > 600 && calories <= 800;
-          if (range === '800+') return calories > 800;
-          return false;
-        });
-        if (!matchesCalorieRange) return false;
-      }
-      
-      // High protein filter
-      if (filters.highProtein && !recipe.isHighProtein) {
-        return false;
-      }
-      
-      // Cook time filter
-      if (filters.cookTime.length > 0) {
-        const cookTime = recipe.cookTime;
-        const matchesCookTime = filters.cookTime.some(timeRange => {
-          if (timeRange === 'quick') return cookTime <= 15;
-          if (timeRange === 'medium') return cookTime > 15 && cookTime <= 30;
-          if (timeRange === 'long') return cookTime > 30;
-          return false;
-        });
-        if (!matchesCookTime) return false;
-      }
-      
-      // Equipment filter
-      if (filters.equipment.length > 0) {
-        // Some recipes might not have equipment array
-        if (!recipe.equipment || recipe.equipment.length === 0) return false;
-        
-        // Check if recipe has any of the selected equipment
-        const hasSelectedEquipment = filters.equipment.some(equipment => 
-          recipe.equipment?.some(e => e.replace(' ', '-') === equipment)
-        );
-        
-        if (!hasSelectedEquipment) return false;
-      }
-      
-      // Dietary needs filter (to be implemented with recipe tags)
-      // This would require querying recipe tags from the database
-      
-      return true;
-    });
-    
-    // Paginate the filtered recipes
-    const startIndex = 0;
-    const endIndex = recipesPerPage;
-    const paginatedRecipes = filteredRecipes.slice(startIndex, endIndex);
-    
-    setVisibleRecipes(paginatedRecipes);
-    setPage(1);
-    setHasMore(endIndex < filteredRecipes.length);
-  };
-  
   // Load more recipes with pagination
-  const loadMoreRecipes = () => {
+  const loadMoreRecipes = (reset = false) => {
     setLoading(true);
     
+    // Simulate API call delay
     setTimeout(() => {
+      const startIndex = reset ? 0 : (page - 1) * recipesPerPage;
+      const endIndex = startIndex + recipesPerPage;
+      
       // Filter recipes based on current filters and search query
-      const filteredRecipes = allRecipes.filter(recipe => {
-        // Apply the same filters as in applyFiltersAndSearch
+      const filteredRecipes = recipes.filter(recipe => {
         // Search query filter
         if (searchQuery && !recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
             !recipe.description.toLowerCase().includes(searchQuery.toLowerCase())) {
           return false;
         }
         
-        // Meal type filter
-        if (filters.mealType.length > 0 && !filters.mealType.includes(recipe.type as MealType)) {
-          return false;
-        }
-        
-        // Cuisine type filter
-        if (filters.cuisine.length > 0 && recipe.cuisineType && 
-            !filters.cuisine.includes(recipe.cuisineType as CuisineType)) {
-          return false;
-        }
-        
-        // Price range filter
-        if (filters.price.length > 0 && recipe.priceRange &&
-            !filters.price.includes(recipe.priceRange as PriceRange)) {
-          return false;
-        }
-        
-        // Calorie range filter
-        if (filters.calories.length > 0) {
-          const calories = recipe.macros.calories;
-          const matchesCalorieRange = filters.calories.some(range => {
-            if (range === '0-200') return calories >= 0 && calories <= 200;
-            if (range === '200-400') return calories > 200 && calories <= 400;
-            if (range === '400-600') return calories > 400 && calories <= 600;
-            if (range === '600-800') return calories > 600 && calories <= 800;
-            if (range === '800+') return calories > 800;
-            return false;
-          });
-          if (!matchesCalorieRange) return false;
-        }
-        
-        // High protein filter
-        if (filters.highProtein && !recipe.isHighProtein) {
-          return false;
-        }
-        
-        // Cook time filter
-        if (filters.cookTime.length > 0) {
-          const cookTime = recipe.cookTime;
-          const matchesCookTime = filters.cookTime.some(timeRange => {
-            if (timeRange === 'quick') return cookTime <= 15;
-            if (timeRange === 'medium') return cookTime > 15 && cookTime <= 30;
-            if (timeRange === 'long') return cookTime > 30;
-            return false;
-          });
-          if (!matchesCookTime) return false;
-        }
-        
-        // Equipment filter
-        if (filters.equipment.length > 0) {
-          // Some recipes might not have equipment array
-          if (!recipe.equipment || recipe.equipment.length === 0) return false;
-          
-          // Check if recipe has any of the selected equipment
-          const hasSelectedEquipment = filters.equipment.some(equipment => 
-            recipe.equipment?.some(e => e.replace(' ', '-') === equipment)
-          );
-          
-          if (!hasSelectedEquipment) return false;
-        }
+        // Other filters will be implemented here
+        // This is a placeholder for future implementation
         
         return true;
       });
       
-      const startIndex = page * recipesPerPage;
-      const endIndex = startIndex + recipesPerPage;
       const newRecipes = filteredRecipes.slice(startIndex, endIndex);
       
-      setVisibleRecipes(prev => [...prev, ...newRecipes]);
-      setPage(prev => prev + 1);
+      if (reset) {
+        setVisibleRecipes(newRecipes);
+        setPage(1);
+      } else {
+        setVisibleRecipes(prev => [...prev, ...newRecipes]);
+        setPage(prev => prev + 1);
+      }
+      
       setHasMore(endIndex < filteredRecipes.length);
       setLoading(false);
-    }, 300);
+    }, 500);
   };
   
   // Handle search input change
@@ -422,20 +137,19 @@ const ExploreRecipesPage = () => {
   
   // Apply search filter
   const handleSearch = () => {
-    applyFiltersAndSearch();
+    loadMoreRecipes(true);
   };
   
   // Handle recipe selection
   const handleRecipeClick = (recipe: Recipe) => {
     setSelectedRecipe(recipe);
-    setIsSelectedRecipeSaved(savedRecipes.includes(recipe.id));
     setIsRecipeViewerOpen(true);
   };
   
   // Apply all filters
   const applyFilters = () => {
     setFiltersApplied(true);
-    applyFiltersAndSearch();
+    loadMoreRecipes(true);
   };
   
   // Reset all filters
@@ -451,9 +165,7 @@ const ExploreRecipesPage = () => {
       dietary: []
     });
     setFiltersApplied(false);
-    setSearchQuery('');
-    // Reset and re-fetch recipes
-    fetchRecipes();
+    loadMoreRecipes(true);
   };
   
   // Toggle filter item
@@ -623,16 +335,14 @@ const ExploreRecipesPage = () => {
               <div>
                 <h3 className="font-medium mb-2">Equipment Needed</h3>
                 <div className="grid grid-cols-2 gap-2">
-                  {['oven', 'stovetop', 'air-fryer', 'blender', 'grill', 'slow-cooker'].map((equipment) => (
+                  {['oven', 'stovetop', 'air fryer', 'blender', 'grill', 'slow cooker'].map((equipment) => (
                     <div key={equipment} className="flex items-center gap-2">
                       <Checkbox 
                         id={`equipment-${equipment}`} 
-                        checked={filters.equipment.includes(equipment as Equipment)}
-                        onCheckedChange={() => toggleFilter('equipment', equipment as Equipment)}
+                        checked={filters.equipment.includes(equipment.replace(' ', '-') as Equipment)}
+                        onCheckedChange={() => toggleFilter('equipment', equipment.replace(' ', '-') as Equipment)}
                       />
-                      <Label htmlFor={`equipment-${equipment}`}>
-                        {equipment.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                      </Label>
+                      <Label htmlFor={`equipment-${equipment}`}>{equipment.charAt(0).toUpperCase() + equipment.slice(1)}</Label>
                     </div>
                   ))}
                 </div>
@@ -732,18 +442,6 @@ const ExploreRecipesPage = () => {
             </Button>
           ))}
           
-          {filters.cuisine.map(cuisine => (
-            <Button 
-              key={`filter-cuisine-${cuisine}`}
-              variant="outline" 
-              size="sm" 
-              className="flex items-center gap-1 bg-gray-100"
-              onClick={() => toggleFilter('cuisine', cuisine)}
-            >
-              {cuisine.charAt(0).toUpperCase() + cuisine.slice(1)} <X size={14} className="ml-1" />
-            </Button>
-          ))}
-          
           {/* Add more active filter displays here */}
           
           {activeFilterCount > 3 && (
@@ -772,63 +470,58 @@ const ExploreRecipesPage = () => {
         </div>
       )}
       
-      {/* Loading state */}
-      {loading && visibleRecipes.length === 0 && (
-        <div className="flex justify-center items-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
-          <p>Loading recipes...</p>
-        </div>
-      )}
-      
       {/* Recipe Grid */}
-      {!loading && visibleRecipes.length > 0 && (
-        <div className="grid grid-cols-2 gap-4">
-          {visibleRecipes.map(recipe => (
-            <div 
-              key={recipe.id} 
-              className="bg-white rounded-lg overflow-hidden shadow-sm cursor-pointer"
-              onClick={() => handleRecipeClick(recipe)}
-            >
-              <div className="aspect-square bg-gray-100 overflow-hidden">
-                <img 
-                  src={recipe.imageSrc} 
-                  alt={recipe.name} 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="p-3">
-                <h3 className="font-medium text-sm line-clamp-1">{recipe.name}</h3>
-                <div className="flex justify-between items-center mt-1">
-                  <span className="text-sm text-gray-600">{recipe.macros.calories} cal</span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">
-                      {recipe.macros.protein}g protein
-                    </span>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-1 mt-2">
-                  <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-800 rounded">
-                    {recipe.type}
+      <div className="grid grid-cols-2 gap-4">
+        {visibleRecipes.map(recipe => (
+          <div 
+            key={recipe.id} 
+            className="bg-white rounded-lg overflow-hidden shadow-sm cursor-pointer"
+            onClick={() => handleRecipeClick(recipe)}
+          >
+            <div className="aspect-square bg-gray-100 overflow-hidden">
+              <img 
+                src={recipe.imageSrc} 
+                alt={recipe.name} 
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="p-3">
+              <h3 className="font-medium text-sm line-clamp-1">{recipe.name}</h3>
+              <div className="flex justify-between items-center mt-1">
+                <span className="text-sm text-gray-600">{recipe.macros.calories} cal</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">
+                    {recipe.macros.protein}g protein
                   </span>
-                  {recipe.cuisineType && (
-                    <span className="text-xs px-1.5 py-0.5 bg-yellow-100 text-yellow-800 rounded">
-                      {recipe.cuisineType}
-                    </span>
-                  )}
-                  {recipe.isHighProtein && (
-                    <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-800 rounded">
-                      high protein
-                    </span>
-                  )}
                 </div>
+              </div>
+              <div className="flex flex-wrap gap-1 mt-2">
+                <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-800 rounded">
+                  {recipe.type}
+                </span>
+                {/* Additional tags would go here */}
               </div>
             </div>
-          ))}
+          </div>
+        ))}
+      </div>
+      
+      {/* Load More Button */}
+      {hasMore && (
+        <div className="mt-6 text-center">
+          <Button 
+            variant="outline" 
+            onClick={() => loadMoreRecipes()} 
+            disabled={loading}
+            className="w-full"
+          >
+            {loading ? 'Loading...' : 'Load More Recipes'}
+          </Button>
         </div>
       )}
       
       {/* No Results Message */}
-      {!loading && visibleRecipes.length === 0 && (
+      {visibleRecipes.length === 0 && !loading && (
         <div className="text-center py-10">
           <p className="text-gray-500">No recipes found matching your criteria.</p>
           <Button 
@@ -841,28 +534,12 @@ const ExploreRecipesPage = () => {
         </div>
       )}
       
-      {/* Load More Button */}
-      {!loading && hasMore && visibleRecipes.length > 0 && (
-        <div className="mt-6 text-center">
-          <Button 
-            variant="outline" 
-            onClick={loadMoreRecipes} 
-            disabled={loading}
-            className="w-full"
-          >
-            {loading ? 'Loading...' : 'Load More Recipes'}
-          </Button>
-        </div>
-      )}
-      
       {/* Recipe Viewer Dialog */}
       {selectedRecipe && (
         <RecipeViewer
           recipe={selectedRecipe}
           isOpen={isRecipeViewerOpen}
           onClose={() => setIsRecipeViewerOpen(false)}
-          isSaved={isSelectedRecipeSaved}
-          onToggleSave={handleToggleSave}
         />
       )}
     </div>

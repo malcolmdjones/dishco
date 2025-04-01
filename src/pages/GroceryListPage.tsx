@@ -1,14 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
 import { Check, ChevronDown, ChevronUp, Plus, RotateCcw, Search, ShoppingBag, Trash2 } from 'lucide-react';
 import { generateGroceryList } from '../data/mockData';
-import type { GroceryItem, MealPlanDay } from '../data/mockData';
+import type { GroceryItem } from '../data/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
-// Generate initial grocery list with an empty meal plan
-const initialGroceryItems = generateGroceryList([]);
+// Generate initial grocery list
+const initialGroceryItems = generateGroceryList();
 
 const GroceryListPage = () => {
   const { toast } = useToast();
