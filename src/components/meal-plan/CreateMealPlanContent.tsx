@@ -1,15 +1,11 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Recipe } from '@/data/mockData';
-import RecipeViewer from '@/components/RecipeViewer';
-import SavePlanDialog from '@/components/SavePlanDialog';
 import DailyNavigationCalendar from '@/components/meal-plan/DailyNavigationCalendar';
 import DailyNutritionCard from '@/components/meal-plan/DailyNutritionCard';
-import MealCard from '@/components/meal-plan/MealCard';
-import SnacksSection from '@/components/meal-plan/SnacksSection';
 import BottomActionBar from '@/components/meal-plan/BottomActionBar';
-import WeekOverviewDialog from '@/components/meal-plan/WeekOverviewDialog';
-import RecipeVaultDialog from '@/components/meal-plan/RecipeVaultDialog';
+import MealPlanDialogHandlers from '@/components/meal-plan/dialog-handlers/MealPlanDialogHandlers';
+import MealSections from '@/components/meal-plan/meal-sections/MealSections';
 
 interface CreateMealPlanContentProps {
   currentDay: number;
@@ -34,34 +30,12 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
   calculateDayTotals,
   checkExceedsGoals
 }) => {
-  // Local component state
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
-  const [isSavePlanDialogOpen, setIsSavePlanDialogOpen] = useState(false);
-  const [isWeekOverviewOpen, setIsWeekOverviewOpen] = useState(false);
-  const [isRecipeVaultOpen, setIsRecipeVaultOpen] = useState(false);
-  const [targetMealType, setTargetMealType] = useState('');
-  const [targetMealIndex, setTargetMealIndex] = useState<number | undefined>(undefined);
+  // Get current day's data
+  const currentDayData = mealPlan[currentDay];
+  const dayTotals = calculateDayTotals();
+  const goalExceeds = checkExceedsGoals();
 
-  // Handle recipe selection to view details
-  const handleRecipeClick = (recipe: Recipe) => {
-    setSelectedRecipe(recipe);
-    setIsRecipeViewerOpen(true);
-  };
-
-  // Save the current meal plan
-  const handleSavePlan = () => {
-    setIsSavePlanDialogOpen(true);
-  };
-
-  // Open the Recipe Vault dialog
-  const handleOpenVault = (mealType: string, index?: number) => {
-    setTargetMealType(mealType);
-    setTargetMealIndex(index);
-    setIsRecipeVaultOpen(true);
-  };
-
-  // Add a recipe to the meal plan from the vault
+  // Handle adding a recipe from the vault to the meal plan
   const handleAddFromVault = (recipe: Recipe, mealType: string, index?: number) => {
     // Clone current meal plan
     const newMealPlan = [...mealPlan];
@@ -87,114 +61,52 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
     // No need to call setMealPlan as it's handled by the hook
   };
 
-  // Get current day's data
-  const currentDayData = mealPlan[currentDay];
-  const dayTotals = calculateDayTotals();
-  const goalExceeds = checkExceedsGoals();
-
-  if (!currentDayData) {
-    return <div className="p-4">Loading meal plan...</div>;
-  }
-
   return (
     <div className="pb-20 animate-fade-in">
-      {/* Weekly Calendar Navigation */}
-      <DailyNavigationCalendar 
-        mealPlan={mealPlan}
-        currentDay={currentDay}
-        setCurrentDay={setCurrentDay}
-      />
+      <MealPlanDialogHandlers mealPlan={mealPlan}>
+        {({
+          handleRecipeClick,
+          handleSavePlan,
+          handleOpenVault,
+          isRecipeViewerOpen,
+          isSavePlanDialogOpen,
+          isWeekOverviewOpen,
+          isRecipeVaultOpen,
+        }) => (
+          <>
+            {/* Weekly Calendar Navigation */}
+            <DailyNavigationCalendar 
+              mealPlan={mealPlan}
+              currentDay={currentDay}
+              setCurrentDay={setCurrentDay}
+            />
 
-      {/* Daily Nutrition Card */}
-      <DailyNutritionCard 
-        dayTotals={dayTotals}
-        userGoals={calculateDayTotals()}
-        exceedsGoals={goalExceeds}
-      />
+            {/* Daily Nutrition Card */}
+            <DailyNutritionCard 
+              dayTotals={dayTotals}
+              userGoals={calculateDayTotals()}
+              exceedsGoals={goalExceeds}
+            />
 
-      {/* Meal Sections */}
-      <div className="space-y-6">
-        {/* Breakfast */}
-        <MealCard 
-          title="Breakfast"
-          meal={currentDayData.meals.breakfast}
-          isLocked={!!lockedMeals[`${currentDay}-breakfast`]}
-          toggleLock={() => toggleLockMeal('breakfast')}
-          onAddFromVault={() => handleOpenVault('breakfast')}
-          onMealClick={handleRecipeClick}
-        />
-        
-        {/* Lunch */}
-        <MealCard 
-          title="Lunch"
-          meal={currentDayData.meals.lunch}
-          isLocked={!!lockedMeals[`${currentDay}-lunch`]}
-          toggleLock={() => toggleLockMeal('lunch')}
-          onAddFromVault={() => handleOpenVault('lunch')}
-          onMealClick={handleRecipeClick}
-        />
-        
-        {/* Dinner */}
-        <MealCard 
-          title="Dinner"
-          meal={currentDayData.meals.dinner}
-          isLocked={!!lockedMeals[`${currentDay}-dinner`]}
-          toggleLock={() => toggleLockMeal('dinner')}
-          onAddFromVault={() => handleOpenVault('dinner')}
-          onMealClick={handleRecipeClick}
-        />
-        
-        {/* Snacks */}
-        <SnacksSection 
-          snacks={currentDayData.meals.snacks || [null, null]}
-          lockedSnacks={[
-            !!lockedMeals[`${currentDay}-snack-0`],
-            !!lockedMeals[`${currentDay}-snack-1`]
-          ]}
-          toggleLockSnack={(index) => toggleLockMeal('snack', index)}
-          onAddFromVault={(index) => handleOpenVault('snack', index)}
-          onSnackClick={handleRecipeClick}
-        />
-      </div>
+            {/* Meal Sections */}
+            <MealSections
+              currentDayData={currentDayData}
+              currentDay={currentDay}
+              lockedMeals={lockedMeals}
+              toggleLockMeal={toggleLockMeal}
+              onAddFromVault={handleOpenVault}
+              onMealClick={handleRecipeClick}
+            />
 
-      {/* Bottom Action Buttons */}
-      <BottomActionBar 
-        onRegenerate={regenerateMeals}
-        onSave={handleSavePlan}
-        isGenerating={isGenerating}
-      />
-
-      {/* Recipe Viewer Dialog */}
-      {selectedRecipe && (
-        <RecipeViewer
-          recipe={selectedRecipe}
-          isOpen={isRecipeViewerOpen}
-          onClose={() => setIsRecipeViewerOpen(false)}
-        />
-      )}
-
-      {/* Save Plan Dialog */}
-      <SavePlanDialog
-        isOpen={isSavePlanDialogOpen}
-        onClose={() => setIsSavePlanDialogOpen(false)}
-        mealPlan={mealPlan}
-      />
-
-      {/* Week Overview Dialog */}
-      <WeekOverviewDialog
-        isOpen={isWeekOverviewOpen}
-        onClose={() => setIsWeekOverviewOpen(false)}
-        mealPlan={mealPlan}
-      />
-
-      {/* Recipe Vault Dialog */}
-      <RecipeVaultDialog
-        isOpen={isRecipeVaultOpen}
-        onClose={() => setIsRecipeVaultOpen(false)}
-        onSelectRecipe={handleAddFromVault}
-        targetMealType={targetMealType}
-        targetMealIndex={targetMealIndex}
-      />
+            {/* Bottom Action Buttons */}
+            <BottomActionBar 
+              onRegenerate={regenerateMeals}
+              onSave={handleSavePlan}
+              isGenerating={isGenerating}
+            />
+          </>
+        )}
+      </MealPlanDialogHandlers>
     </div>
   );
 };

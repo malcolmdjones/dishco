@@ -7,13 +7,12 @@ interface PageHeaderProps {
   onOpenWeekOverview: () => void;
 }
 
-const PageHeader: React.FC<PageHeaderProps> = ({ onOpenVault, onOpenWeekOverview }) => {
-  return (
-    <PageHeaderContent 
-      onOpenVault={onOpenVault} 
-      onOpenWeekOverview={onOpenWeekOverview} 
-    />
-  );
+/**
+ * Wrapper component for the page header content
+ * This component follows the pass-through pattern to maintain compatibility
+ */
+const PageHeader: React.FC<PageHeaderProps> = (props) => {
+  return <PageHeaderContent {...props} />;
 };
 
 export default PageHeader;
