@@ -1,11 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash, Upload } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Plus, Trash, Upload, ChevronLeft } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
 interface IngredientInput {
@@ -25,6 +25,10 @@ interface NutritionInput {
 const AddExternalRecipePage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const editRecipeId = queryParams.get('edit');
+  const [isEditMode, setIsEditMode] = useState(false);
   
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -43,6 +47,61 @@ const AddExternalRecipePage = () => {
   });
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (editRecipeId) {
+      setIsEditMode(true);
+      loadRecipeData(editRecipeId);
+    }
+  }, [editRecipeId]);
+
+  const loadRecipeData = (recipeId: string) => {
+    try {
+      const savedRecipes = JSON.parse(localStorage.getItem('externalRecipes') || '[]');
+      const recipe = savedRecipes.find((r: any) => r.id === recipeId);
+      
+      if (recipe) {
+        setTitle(recipe.title || '');
+        setDescription(recipe.description || '');
+        setSourceUrl(recipe.sourceUrl || '');
+        setCookingTime(recipe.cookingTime?.toString() || '');
+        setServings(recipe.servings?.toString() || '');
+        
+        if (recipe.ingredients && recipe.ingredients.length > 0) {
+          setIngredients(recipe.ingredients.map((ing: any, index: number) => ({
+            id: index.toString(),
+            name: ing.name || '',
+            quantity: ing.quantity || '',
+            unit: ing.unit || ''
+          })));
+        }
+        
+        if (recipe.instructions && recipe.instructions.length > 0) {
+          setInstructions(recipe.instructions);
+        }
+        
+        if (recipe.nutrition) {
+          setNutrition({
+            calories: recipe.nutrition.calories?.toString() || '',
+            protein: recipe.nutrition.protein?.toString() || '',
+            carbs: recipe.nutrition.carbs?.toString() || '',
+            fat: recipe.nutrition.fat?.toString() || ''
+          });
+        }
+        
+        if (recipe.imageUrl && recipe.imageUrl !== '/placeholder.svg') {
+          setImagePreview(recipe.imageUrl);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading recipe data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load recipe data for editing",
+        variant: "destructive"
+      });
+    }
+  };
 
   const handleAddIngredient = () => {
     setIngredients([
@@ -107,8 +166,8 @@ const AddExternalRecipePage = () => {
     }
     
     try {
-      // Generate a unique ID for the recipe
-      const recipeId = `external-${Date.now()}`;
+      // Generate a unique ID for the recipe if not editing
+      const recipeId = isEditMode ? editRecipeId! : `external-${Date.now()}`;
       
       // Prepare recipe data
       const recipeData = {
@@ -132,34 +191,46 @@ const AddExternalRecipePage = () => {
           carbs: parseInt(nutrition.carbs) || 0,
           fat: parseInt(nutrition.fat) || 0
         },
-        createdAt: new Date().toISOString()
+        createdAt: isEditMode ? undefined : new Date().toISOString()
       };
       
-      // Save to local storage for now as we don't have a backend
+      // Save to local storage
       const savedRecipes = JSON.parse(localStorage.getItem('externalRecipes') || '[]');
-      localStorage.setItem('externalRecipes', JSON.stringify([...savedRecipes, recipeData]));
       
-      // Add to saved recipes
-      try {
-        // Save to Supabase if available
-        await supabase.from('saved_recipes').insert({
-          recipe_id: recipeId,
-          // In a real app, the user_id would come from authentication
-        });
-      } catch (error) {
-        console.error('Error saving to database:', error);
-        // Fall back to local storage if Supabase fails
-        const savedRecipeIds = JSON.parse(localStorage.getItem('savedRecipeIds') || '[]');
-        localStorage.setItem('savedRecipeIds', JSON.stringify([...savedRecipeIds, recipeId]));
+      if (isEditMode) {
+        // Update existing recipe
+        const updatedRecipes = savedRecipes.map((r: any) => 
+          r.id === recipeId ? {...r, ...recipeData} : r
+        );
+        localStorage.setItem('externalRecipes', JSON.stringify(updatedRecipes));
+      } else {
+        // Add new recipe
+        localStorage.setItem('externalRecipes', JSON.stringify([...savedRecipes, recipeData]));
+      
+        // Add to saved recipes
+        try {
+          // Save to Supabase if available
+          await supabase.from('saved_recipes').insert({
+            recipe_id: recipeId,
+            // In a real app, the user_id would come from authentication
+          });
+        } catch (error) {
+          console.error('Error saving to database:', error);
+          // Fall back to local storage if Supabase fails
+          const savedRecipeIds = JSON.parse(localStorage.getItem('savedRecipeIds') || '[]');
+          localStorage.setItem('savedRecipeIds', JSON.stringify([...savedRecipeIds, recipeId]));
+        }
       }
       
       toast({
-        title: "Recipe Added",
-        description: "Your recipe has been saved and added to your collection.",
+        title: isEditMode ? "Recipe Updated" : "Recipe Added",
+        description: isEditMode 
+          ? "Your recipe has been updated successfully." 
+          : "Your recipe has been saved and added to your collection.",
       });
       
-      // Navigate to saved recipes
-      navigate('/saved-recipes');
+      // Navigate to custom recipes
+      navigate('/custom-recipes');
     } catch (error) {
       console.error('Error saving recipe:', error);
       toast({
@@ -172,9 +243,16 @@ const AddExternalRecipePage = () => {
 
   return (
     <div className="animate-fade-in pb-20">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold">Add External Recipe</h1>
-        <p className="text-dishco-text-light">Add your own recipes or from other websites</p>
+      <header className="mb-6 flex items-center">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => navigate('/custom-recipes')} 
+          className="mr-2"
+        >
+          <ChevronLeft size={20} />
+        </Button>
+        <h1 className="text-2xl font-bold">{isEditMode ? 'Edit Recipe' : 'Add Custom Recipe'}</h1>
       </header>
 
       <form onSubmit={handleSubmit} className="space-y-6">

@@ -42,6 +42,255 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      recipe_equipment: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          recipe_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          recipe_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          recipe_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_equipment_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipe_ingredients: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          quantity: string | null
+          recipe_id: string | null
+          unit: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          quantity?: string | null
+          recipe_id?: string | null
+          unit?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          quantity?: string | null
+          recipe_id?: string | null
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_ingredients_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipe_instructions: {
+        Row: {
+          created_at: string | null
+          id: string
+          instruction: string
+          recipe_id: string | null
+          step_number: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          instruction: string
+          recipe_id?: string | null
+          step_number: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          instruction?: string
+          recipe_id?: string | null
+          step_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_instructions_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipe_tag_relations: {
+        Row: {
+          created_at: string | null
+          id: string
+          recipe_id: string | null
+          tag_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          recipe_id?: string | null
+          tag_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          recipe_id?: string | null
+          tag_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_tag_relations_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_tag_relations_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "recipe_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipe_tags: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      recipes: {
+        Row: {
+          calories: number | null
+          carbs: number | null
+          cook_time: number | null
+          created_at: string | null
+          cuisine_type: string | null
+          description: string | null
+          fat: number | null
+          id: string
+          image_url: string | null
+          is_high_protein: boolean | null
+          is_public: boolean | null
+          meal_type: string | null
+          name: string
+          prep_time: number | null
+          price_range: string | null
+          protein: number | null
+          requires_blender: boolean | null
+          requires_cooking: boolean | null
+          servings: number | null
+          type: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          calories?: number | null
+          carbs?: number | null
+          cook_time?: number | null
+          created_at?: string | null
+          cuisine_type?: string | null
+          description?: string | null
+          fat?: number | null
+          id?: string
+          image_url?: string | null
+          is_high_protein?: boolean | null
+          is_public?: boolean | null
+          meal_type?: string | null
+          name: string
+          prep_time?: number | null
+          price_range?: string | null
+          protein?: number | null
+          requires_blender?: boolean | null
+          requires_cooking?: boolean | null
+          servings?: number | null
+          type?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          calories?: number | null
+          carbs?: number | null
+          cook_time?: number | null
+          created_at?: string | null
+          cuisine_type?: string | null
+          description?: string | null
+          fat?: number | null
+          id?: string
+          image_url?: string | null
+          is_high_protein?: boolean | null
+          is_public?: boolean | null
+          meal_type?: string | null
+          name?: string
+          prep_time?: number | null
+          price_range?: string | null
+          protein?: number | null
+          requires_blender?: boolean | null
+          requires_cooking?: boolean | null
+          servings?: number | null
+          type?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       saved_meal_plans: {
         Row: {
           created_at: string | null

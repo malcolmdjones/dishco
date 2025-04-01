@@ -60,10 +60,10 @@ const MorePage = () => {
       description: 'Access your collection of meal plans'
     },
     {
-      name: 'Add External Recipe',
+      name: 'Custom Recipes',
       icon: <Utensils size={20} className="text-green-500" />,
-      path: '/add-recipe',
-      description: 'Import recipes from external sources'
+      path: '/custom-recipes',
+      description: 'View and manage your custom recipes'
     },
     {
       name: 'Dietary Restrictions',

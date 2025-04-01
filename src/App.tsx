@@ -17,6 +17,8 @@ import AccountSettingsPage from "./pages/AccountSettingsPage";
 import SavedPlansPage from "./pages/SavedPlansPage";
 import DietaryRestrictionsPage from "./pages/DietaryRestrictionsPage";
 import AddExternalRecipePage from "./pages/AddExternalRecipePage";
+import CustomRecipesPage from "./pages/CustomRecipesPage";
+import EditCustomRecipePage from "./pages/EditCustomRecipePage";
 import CreateMealPlanPage from "./pages/CreateMealPlanPage";
 import ExploreRecipesPage from "./pages/ExploreRecipesPage";
 
@@ -38,7 +40,9 @@ const App = () => (
           <Route path="/log-meal" element={<AppLayout><LogMealPage /></AppLayout>} />
           <Route path="/saved-plans" element={<AppLayout><SavedPlansPage /></AppLayout>} />
           <Route path="/saved-recipes" element={<AppLayout><SavedRecipesPage /></AppLayout>} />
+          <Route path="/custom-recipes" element={<AppLayout><CustomRecipesPage /></AppLayout>} />
           <Route path="/add-recipe" element={<AppLayout><AddExternalRecipePage /></AppLayout>} />
+          <Route path="/edit-recipe/:recipeId" element={<AppLayout><EditCustomRecipePage /></AppLayout>} />
           <Route path="/nutrition-goals" element={<AppLayout><NutritionGoalsPage /></AppLayout>} />
           <Route path="/settings" element={<AppLayout><AccountSettingsPage /></AppLayout>} />
           <Route path="/dietary-restrictions" element={<AppLayout><DietaryRestrictionsPage /></AppLayout>} />

@@ -9,12 +9,10 @@ interface PageHeaderProps {
 
 const PageHeader: React.FC<PageHeaderProps> = ({ onOpenVault, onOpenWeekOverview }) => {
   return (
-    <div>
-      <PageHeaderContent 
-        onOpenVault={onOpenVault} 
-        onOpenWeekOverview={onOpenWeekOverview} 
-      />
-    </div>
+    <PageHeaderContent 
+      onOpenVault={onOpenVault} 
+      onOpenWeekOverview={onOpenWeekOverview} 
+    />
   );
 };
 
