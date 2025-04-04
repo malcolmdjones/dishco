@@ -1,13 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from '@/components/ui/drawer';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress'; 
-import { Heart, X } from 'lucide-react';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from '@/components/ui/drawer';
+import { Heart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Recipe } from '@/data/mockData';
-import Badge from './Badge';
 import { useRecipes } from '@/hooks/useRecipes';
+
+// Import the new components
+import RecipeHeader from './recipe-viewer/RecipeHeader';
+import RecipeContent from './recipe-viewer/RecipeContent';
+import RecipeFooter from './recipe-viewer/RecipeFooter';
 
 interface RecipeViewerProps {
   recipe: Recipe;
@@ -39,14 +41,6 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
   }, [recipe, propIsSaved, isRecipeSaved]);
   
   if (!recipe) return null;
-
-  // Color definitions for macros
-  const macroColors = {
-    calories: '#FFF4D7',
-    protein: '#DBE9FE',
-    carbs: '#FEF9C3',
-    fat: '#F3E8FF'
-  };
   
   const handleSaveRecipe = async () => {
     if (!recipe.id) return;
@@ -78,128 +72,39 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
   return (
     <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent className="max-h-[90vh] overflow-y-auto">
-        <div className="h-48 w-full overflow-hidden relative">
-          <img 
-            src={imageUrl} 
-            alt={recipe.name} 
-            className="w-full h-full object-cover"
-          />
-          <button 
-            className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md"
-            onClick={onClose}
-          >
-            <X size={18} />
-          </button>
-          {recipe.type && (
-            <div className="absolute top-3 left-3">
-              <Badge 
-                text={recipe.type.charAt(0).toUpperCase() + recipe.type.slice(1)} 
-                variant={recipe.type as any}
-              />
-            </div>
-          )}
-        </div>
+        <RecipeHeader 
+          imageUrl={imageUrl}
+          recipeName={recipe.name}
+          recipeType={recipe.type}
+          onClose={onClose}
+        />
 
         <DrawerHeader>
           <div className="flex justify-between items-start">
             <DrawerTitle className="text-2xl">{recipe.name}</DrawerTitle>
-            <Button
-              variant="ghost"
-              size="icon"
+            <button
+              className="p-2 rounded-full hover:bg-gray-100"
               onClick={handleSaveRecipe}
               disabled={saving}
-              className="mt-1"
             >
               <Heart 
                 size={20} 
                 className={recipeSaved ? "text-red-500 fill-current" : "text-red-500"} 
               />
-            </Button>
+            </button>
           </div>
           <DrawerDescription>{recipe.description}</DrawerDescription>
         </DrawerHeader>
 
-        <div className="px-4">
-          {/* Nutrition Information */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-3">Nutrition Information</h3>
-            <div className="grid grid-cols-4 gap-2">
-              <div className="bg-amber-50 p-2 rounded-md text-center">
-                <div className="text-sm font-medium mb-1">Calories</div>
-                <div className="font-bold">{recipe.macros.calories}</div>
-                <div className="text-xs">kcal</div>
-              </div>
-              <div className="bg-blue-50 p-2 rounded-md text-center">
-                <div className="text-sm font-medium mb-1">Protein</div>
-                <div className="font-bold">{recipe.macros.protein}</div>
-                <div className="text-xs">g</div>
-              </div>
-              <div className="bg-yellow-50 p-2 rounded-md text-center">
-                <div className="text-sm font-medium mb-1">Carbs</div>
-                <div className="font-bold">{recipe.macros.carbs}</div>
-                <div className="text-xs">g</div>
-              </div>
-              <div className="bg-purple-50 p-2 rounded-md text-center">
-                <div className="text-sm font-medium mb-1">Fat</div>
-                <div className="font-bold">{recipe.macros.fat}</div>
-                <div className="text-xs">g</div>
-              </div>
-            </div>
-          </div>
+        <RecipeContent recipe={recipe} />
 
-          {/* Ingredients */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-3">Ingredients</h3>
-            {recipe.ingredients && recipe.ingredients.length > 0 ? (
-              <ul className="list-disc pl-5 space-y-2">
-                {recipe.ingredients.map((ingredient: string, index: number) => (
-                  <li key={index}>{ingredient}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-gray-500">No ingredients listed for this recipe.</p>
-            )}
-          </div>
-
-          {/* Instructions */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-3">Instructions</h3>
-            {recipe.instructions && recipe.instructions.length > 0 ? (
-              <ol className="list-decimal pl-5 space-y-2">
-                {recipe.instructions.map((instruction: string, index: number) => (
-                  <li key={index} className="pl-1">{instruction}</li>
-                ))}
-              </ol>
-            ) : (
-              <p className="text-gray-500">No instructions provided for this recipe.</p>
-            )}
-          </div>
-
-          {/* Additional Notes */}
-          {recipe.notes && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-3">Notes</h3>
-              <p className="text-dishco-text-light">{recipe.notes}</p>
-            </div>
-          )}
-        </div>
-
-        <DrawerFooter className="border-t pt-4">
-          <div className="flex justify-between w-full">
-            <Button 
-              variant="outline" 
-              onClick={handleSaveRecipe}
-              disabled={saving}
-              className="gap-2"
-            >
-              <Heart 
-                size={16} 
-                className={recipeSaved ? "text-red-500 fill-current" : "text-red-500"} 
-              />
-              {recipeSaved ? "Saved" : "Save"}
-            </Button>
-            <Button variant="default" onClick={onClose}>Close</Button>
-          </div>
+        <DrawerFooter>
+          <RecipeFooter 
+            isSaved={recipeSaved}
+            saving={saving}
+            onSave={handleSaveRecipe}
+            onClose={onClose}
+          />
         </DrawerFooter>
       </DrawerContent>
     </Drawer>

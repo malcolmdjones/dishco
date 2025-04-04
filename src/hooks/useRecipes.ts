@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,14 +38,16 @@ export const dbToFrontendRecipe = (dbRecipe: DbRecipe): Recipe => {
     requiresBlender: dbRecipe.requires_blender || false,
     requiresCooking: dbRecipe.requires_cooking || false,
     cookTime: dbRecipe.cook_time || 0,
+    prepTime: dbRecipe.prep_time || 0,
+    servings: dbRecipe.servings || 1,
     macros: {
       calories: dbRecipe.calories || 0,
       protein: dbRecipe.protein || 0,
       carbs: dbRecipe.carbs || 0,
       fat: dbRecipe.fat || 0
     },
-    ingredients: [], // These would need to be fetched separately
-    instructions: [] // These would need to be fetched separately
+    ingredients: [],
+    instructions: []
   };
 };
 
