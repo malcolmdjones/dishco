@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Search, Plus, Info } from 'lucide-react';
@@ -19,10 +19,49 @@ const LogMealPage = () => {
   });
 
   const handleLogMeal = (recipe: any) => {
-    toast({
-      title: "Meal Logged",
-      description: `${recipe.name} has been added to your daily log.`,
-    });
+    // Get current logged meals from localStorage or initialize empty array
+    const existingLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
+    
+    // Check if meal is already logged to avoid duplicates
+    const isDuplicate = existingLoggedMeals.some((meal: any) => meal.id === recipe.id);
+    
+    if (!isDuplicate) {
+      // Add new meal with timestamp and consumed status
+      const newMeal = {
+        id: `${recipe.id}-${Date.now()}`, // Add timestamp to ensure uniqueness
+        name: recipe.name,
+        type: recipe.type || 'snack', // Default to snack if no type
+        recipe: recipe,
+        consumed: true,
+        loggedAt: new Date().toISOString()
+      };
+      
+      // Add to logged meals
+      const updatedLoggedMeals = [...existingLoggedMeals, newMeal];
+      localStorage.setItem('loggedMeals', JSON.stringify(updatedLoggedMeals));
+      
+      // Get current nutrition totals or initialize
+      const currentNutrition = JSON.parse(localStorage.getItem('dailyNutrition') || '{}');
+      const updatedNutrition = {
+        calories: (currentNutrition.calories || 0) + recipe.macros.calories,
+        protein: (currentNutrition.protein || 0) + recipe.macros.protein,
+        carbs: (currentNutrition.carbs || 0) + recipe.macros.carbs,
+        fat: (currentNutrition.fat || 0) + recipe.macros.fat
+      };
+      
+      localStorage.setItem('dailyNutrition', JSON.stringify(updatedNutrition));
+      
+      toast({
+        title: "Meal Logged",
+        description: `${recipe.name} has been added to your daily log.`,
+      });
+    } else {
+      toast({
+        title: "Already Logged",
+        description: "This meal has already been logged today.",
+        variant: "destructive",
+      });
+    }
   };
 
   const categories = [
@@ -32,6 +71,9 @@ const LogMealPage = () => {
     { id: 'dinner', name: 'Dinner' },
     { id: 'snack', name: 'Snack' },
   ];
+
+  // Always use the provided Unsplash image instead of possibly broken imageUrl
+  const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
   return (
     <div className="animate-fade-in pb-16">
@@ -95,7 +137,7 @@ const LogMealPage = () => {
               <div className="flex">
                 <div className="w-20 h-20 bg-gray-200">
                   <img 
-                    src={recipe.imageSrc} 
+                    src={imageUrl} 
                     alt={recipe.name} 
                     className="w-full h-full object-cover"
                   />

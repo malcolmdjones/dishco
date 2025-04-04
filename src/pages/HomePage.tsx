@@ -16,6 +16,7 @@ interface Meal {
   type: string;
   recipe: Recipe;
   consumed: boolean;
+  loggedAt?: string;
 }
 
 const HomePage = () => {
@@ -39,29 +40,53 @@ const HomePage = () => {
   });
   
   // State for today's meals
-  const [todaysMeals, setTodaysMeals] = useState<Meal[]>([
-    {
-      id: '1',
-      name: 'Avocado Toast with Egg',
-      type: 'breakfast',
-      recipe: recipes.find(recipe => recipe.id === '2') || recipes[0],
-      consumed: false
-    },
-    {
-      id: '2',
-      name: 'Grilled Chicken Salad',
-      type: 'lunch',
-      recipe: recipes.find(recipe => recipe.id === '4') || recipes[0],
-      consumed: false
-    },
-    {
-      id: '3',
-      name: 'Baked Salmon with Asparagus',
-      type: 'dinner',
-      recipe: recipes.find(recipe => recipe.id === '7') || recipes[0],
-      consumed: false
+  const [todaysMeals, setTodaysMeals] = useState<Meal[]>([]);
+
+  // Load meals and nutrition from localStorage on component mount
+  useEffect(() => {
+    // Get logged meals from localStorage
+    const storedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
+    if (storedMeals.length > 0) {
+      setTodaysMeals(storedMeals);
+    } else {
+      // Fallback to default meals if none are logged
+      setTodaysMeals([
+        {
+          id: '1',
+          name: 'Avocado Toast with Egg',
+          type: 'breakfast',
+          recipe: recipes.find(recipe => recipe.id === '2') || recipes[0],
+          consumed: false
+        },
+        {
+          id: '2',
+          name: 'Grilled Chicken Salad',
+          type: 'lunch',
+          recipe: recipes.find(recipe => recipe.id === '4') || recipes[0],
+          consumed: false
+        },
+        {
+          id: '3',
+          name: 'Baked Salmon with Asparagus',
+          type: 'dinner',
+          recipe: recipes.find(recipe => recipe.id === '7') || recipes[0],
+          consumed: false
+        }
+      ]);
     }
-  ]);
+    
+    // Get nutrition from localStorage
+    const storedNutrition = JSON.parse(localStorage.getItem('dailyNutrition') || '{}');
+    if (storedNutrition && Object.keys(storedNutrition).length > 0) {
+      setDailyNutrition(prevState => ({
+        ...prevState,
+        calories: storedNutrition.calories || 0,
+        protein: storedNutrition.protein || 0,
+        carbs: storedNutrition.carbs || 0,
+        fat: storedNutrition.fat || 0
+      }));
+    }
+  }, []);
 
   // Reset nutrition at midnight
   useEffect(() => {
@@ -79,7 +104,18 @@ const HomePage = () => {
         fat: 0
       }));
       
-      // Reset consumed status
+      // Reset localStorage nutrition
+      localStorage.setItem('dailyNutrition', JSON.stringify({
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0
+      }));
+      
+      // Clear logged meals
+      localStorage.setItem('loggedMeals', JSON.stringify([]));
+      
+      // Reset consumed status of default meals
       setTodaysMeals(meals => 
         meals.map(meal => ({ ...meal, consumed: false }))
       );
@@ -103,6 +139,17 @@ const HomePage = () => {
           carbs: 0,
           fat: 0
         }));
+        
+        // Reset localStorage nutrition
+        localStorage.setItem('dailyNutrition', JSON.stringify({
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fat: 0
+        }));
+        
+        // Clear logged meals
+        localStorage.setItem('loggedMeals', JSON.stringify([]));
         
         // Reset consumed status
         setTodaysMeals(meals => 
@@ -155,16 +202,26 @@ const HomePage = () => {
     );
     setTodaysMeals(updatedMeals);
     
+    // Update localStorage
+    localStorage.setItem('loggedMeals', JSON.stringify(updatedMeals));
+    
     // Update nutrition based on whether meal was consumed or unconsumed
     if (!meal.consumed) {
       // Add nutrition values
+      const updatedNutrition = {
+        calories: dailyNutrition.calories + meal.recipe.macros.calories,
+        protein: dailyNutrition.protein + meal.recipe.macros.protein,
+        carbs: dailyNutrition.carbs + meal.recipe.macros.carbs,
+        fat: dailyNutrition.fat + meal.recipe.macros.fat
+      };
+      
       setDailyNutrition(prev => ({
         ...prev,
-        calories: prev.calories + meal.recipe.macros.calories,
-        protein: prev.protein + meal.recipe.macros.protein,
-        carbs: prev.carbs + meal.recipe.macros.carbs,
-        fat: prev.fat + meal.recipe.macros.fat
+        ...updatedNutrition
       }));
+      
+      // Update localStorage
+      localStorage.setItem('dailyNutrition', JSON.stringify(updatedNutrition));
       
       toast({
         title: "Meal logged",
@@ -172,13 +229,20 @@ const HomePage = () => {
       });
     } else {
       // Subtract nutrition values
+      const updatedNutrition = {
+        calories: Math.max(0, dailyNutrition.calories - meal.recipe.macros.calories),
+        protein: Math.max(0, dailyNutrition.protein - meal.recipe.macros.protein),
+        carbs: Math.max(0, dailyNutrition.carbs - meal.recipe.macros.carbs),
+        fat: Math.max(0, dailyNutrition.fat - meal.recipe.macros.fat)
+      };
+      
       setDailyNutrition(prev => ({
         ...prev,
-        calories: Math.max(0, prev.calories - meal.recipe.macros.calories),
-        protein: Math.max(0, prev.protein - meal.recipe.macros.protein),
-        carbs: Math.max(0, prev.carbs - meal.recipe.macros.carbs),
-        fat: Math.max(0, prev.fat - meal.recipe.macros.fat)
+        ...updatedNutrition
       }));
+      
+      // Update localStorage
+      localStorage.setItem('dailyNutrition', JSON.stringify(updatedNutrition));
       
       toast({
         title: "Meal unlogged",
@@ -202,6 +266,22 @@ const HomePage = () => {
   const formatMealType = (type: string) => {
     return type.charAt(0).toUpperCase() + type.slice(1);
   };
+
+  // Check if nutrition value is within target range
+  const isWithinTarget = (value: number, target: number, lowerThreshold: number, upperThreshold: number) => {
+    return value >= target - lowerThreshold && value <= target + upperThreshold;
+  };
+
+  // Get the appropriate text color based on whether the target is met
+  const getTextColorClass = (value: number, target: number, lowerThreshold: number, upperThreshold: number) => {
+    if (isWithinTarget(value, target, lowerThreshold, upperThreshold)) {
+      return "text-green-600";
+    }
+    return "";
+  };
+
+  // Always use the provided Unsplash image instead of possibly broken imageUrl
+  const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
   return (
     <div className="animate-fade-in">
@@ -260,13 +340,23 @@ const HomePage = () => {
                 text={`${dailyNutrition.calories}`}
                 styles={buildStyles({
                   textSize: '28px',
-                  pathColor: macroColors.calories,
+                  pathColor: isWithinTarget(dailyNutrition.calories, dailyNutrition.totalCalories, 10, 60) 
+                    ? macroColors.calories 
+                    : 'rgba(239, 68, 68, 0.8)', // red for out of range
                   textColor: '#3C3C3C',
                   trailColor: '#F9F9F9',
+                  // Add pulsating animation for out of range
+                  strokeLinecap: 'round',
+                  pathTransition: isWithinTarget(dailyNutrition.calories, dailyNutrition.totalCalories, 10, 60)
+                    ? 'stroke-dashoffset 0.5s ease 0s'
+                    : 'stroke-dashoffset 0.5s ease 0s, stroke 0.5s ease'
                 })}
+                className={isWithinTarget(dailyNutrition.calories, dailyNutrition.totalCalories, 10, 60) 
+                  ? '' 
+                  : 'animate-pulse'}
               />
             </div>
-            <span className="text-xs text-center">
+            <span className={`text-xs text-center mt-1 ${getTextColorClass(dailyNutrition.calories, dailyNutrition.totalCalories, 10, 60)}`}>
               Calories
             </span>
           </div>
@@ -278,13 +368,22 @@ const HomePage = () => {
                 text={`${dailyNutrition.protein}g`}
                 styles={buildStyles({
                   textSize: '28px',
-                  pathColor: macroColors.protein,
+                  pathColor: isWithinTarget(dailyNutrition.protein, dailyNutrition.totalProtein, 5, 5) 
+                    ? macroColors.protein 
+                    : 'rgba(239, 68, 68, 0.8)', // red for out of range
                   textColor: '#3C3C3C',
                   trailColor: '#F9F9F9',
+                  strokeLinecap: 'round',
+                  pathTransition: isWithinTarget(dailyNutrition.protein, dailyNutrition.totalProtein, 5, 5)
+                    ? 'stroke-dashoffset 0.5s ease 0s'
+                    : 'stroke-dashoffset 0.5s ease 0s, stroke 0.5s ease'
                 })}
+                className={isWithinTarget(dailyNutrition.protein, dailyNutrition.totalProtein, 5, 5) 
+                  ? '' 
+                  : 'animate-pulse'}
               />
             </div>
-            <span className="text-xs text-center">
+            <span className={`text-xs text-center mt-1 ${getTextColorClass(dailyNutrition.protein, dailyNutrition.totalProtein, 5, 5)}`}>
               Protein
             </span>
           </div>
@@ -296,13 +395,22 @@ const HomePage = () => {
                 text={`${dailyNutrition.carbs}g`}
                 styles={buildStyles({
                   textSize: '28px',
-                  pathColor: macroColors.carbs,
+                  pathColor: isWithinTarget(dailyNutrition.carbs, dailyNutrition.totalCarbs, 10, 10) 
+                    ? macroColors.carbs 
+                    : 'rgba(239, 68, 68, 0.8)', // red for out of range
                   textColor: '#3C3C3C',
                   trailColor: '#F9F9F9',
+                  strokeLinecap: 'round',
+                  pathTransition: isWithinTarget(dailyNutrition.carbs, dailyNutrition.totalCarbs, 10, 10)
+                    ? 'stroke-dashoffset 0.5s ease 0s'
+                    : 'stroke-dashoffset 0.5s ease 0s, stroke 0.5s ease'
                 })}
+                className={isWithinTarget(dailyNutrition.carbs, dailyNutrition.totalCarbs, 10, 10) 
+                  ? '' 
+                  : 'animate-pulse'}
               />
             </div>
-            <span className="text-xs text-center">
+            <span className={`text-xs text-center mt-1 ${getTextColorClass(dailyNutrition.carbs, dailyNutrition.totalCarbs, 10, 10)}`}>
               Carbs
             </span>
           </div>
@@ -314,13 +422,22 @@ const HomePage = () => {
                 text={`${dailyNutrition.fat}g`}
                 styles={buildStyles({
                   textSize: '28px',
-                  pathColor: macroColors.fat,
+                  pathColor: isWithinTarget(dailyNutrition.fat, dailyNutrition.totalFat, 5, 5) 
+                    ? macroColors.fat 
+                    : 'rgba(239, 68, 68, 0.8)', // red for out of range
                   textColor: '#3C3C3C',
                   trailColor: '#F9F9F9',
+                  strokeLinecap: 'round',
+                  pathTransition: isWithinTarget(dailyNutrition.fat, dailyNutrition.totalFat, 5, 5)
+                    ? 'stroke-dashoffset 0.5s ease 0s'
+                    : 'stroke-dashoffset 0.5s ease 0s, stroke 0.5s ease'
                 })}
+                className={isWithinTarget(dailyNutrition.fat, dailyNutrition.totalFat, 5, 5) 
+                  ? '' 
+                  : 'animate-pulse'}
               />
             </div>
-            <span className="text-xs text-center">
+            <span className={`text-xs text-center mt-1 ${getTextColorClass(dailyNutrition.fat, dailyNutrition.totalFat, 5, 5)}`}>
               Fat
             </span>
           </div>
@@ -329,62 +446,82 @@ const HomePage = () => {
       
       {/* Today's Meals */}
       <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-4">Today's Meals</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Today's Meals</h2>
+          <Link to="/log-meal">
+            <Button variant="outline" size="sm" className="text-xs">
+              Log More Food
+            </Button>
+          </Link>
+        </div>
         
         <div className="space-y-4">
-          {todaysMeals.map((meal) => (
-            <div key={meal.id} className="bg-white rounded-xl p-4 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-500">{formatMealType(meal.type)}</span>
-                <span className="text-sm bg-amber-50 text-amber-800 px-2 py-1 rounded-full">
-                  {meal.recipe.macros.calories} kcal
-                </span>
-              </div>
-              
-              <div className="flex gap-3">
-                <div 
-                  className="w-20 h-20 rounded-lg overflow-hidden cursor-pointer"
-                  onClick={() => handleOpenRecipe(meal.recipe)}
-                >
-                  <img 
-                    src={meal.recipe.imageSrc} 
-                    alt={meal.name}
-                    className="w-full h-full object-cover"
-                  />
+          {todaysMeals.length === 0 ? (
+            <div className="bg-white rounded-xl p-6 shadow-sm text-center">
+              <p className="text-gray-500">No meals logged today.</p>
+              <Button 
+                variant="outline" 
+                className="mt-3"
+                onClick={() => navigate('/log-meal')}
+              >
+                Log your first meal
+              </Button>
+            </div>
+          ) : (
+            todaysMeals.map((meal) => (
+              <div key={meal.id} className="bg-white rounded-xl p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-500">{formatMealType(meal.type)}</span>
+                  <span className="text-sm bg-amber-50 text-amber-800 px-2 py-1 rounded-full">
+                    {meal.recipe.macros.calories} kcal
+                  </span>
                 </div>
                 
-                <div className="flex-1">
-                  <h3 
-                    className="font-semibold mb-2 cursor-pointer"
+                <div className="flex gap-3">
+                  <div 
+                    className="w-20 h-20 rounded-lg overflow-hidden cursor-pointer"
                     onClick={() => handleOpenRecipe(meal.recipe)}
                   >
-                    {meal.name}
-                  </h3>
+                    <img 
+                      src={imageUrl} 
+                      alt={meal.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                   
-                  <Button
-                    variant={meal.consumed ? "outline" : "outline"}
-                    size="sm"
-                    className={`w-full ${meal.consumed ? 'text-green-600 border-green-600' : ''}`}
-                    onClick={() => handleToggleConsumed(meal)}
-                  >
-                    {meal.consumed ? 'Consumed ✓' : 'Mark as consumed'}
-                  </Button>
+                  <div className="flex-1">
+                    <h3 
+                      className="font-semibold mb-2 cursor-pointer"
+                      onClick={() => handleOpenRecipe(meal.recipe)}
+                    >
+                      {meal.name}
+                    </h3>
+                    
+                    <Button
+                      variant={meal.consumed ? "outline" : "outline"}
+                      size="sm"
+                      className={`w-full ${meal.consumed ? 'text-green-600 border-green-600' : ''}`}
+                      onClick={() => handleToggleConsumed(meal)}
+                    >
+                      {meal.consumed ? 'Consumed ✓' : 'Mark as consumed'}
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2 mt-3">
+                  <span className="px-3 py-1 bg-blue-100 rounded-full text-xs">
+                    P: {meal.recipe.macros.protein}g
+                  </span>
+                  <span className="px-3 py-1 bg-yellow-100 rounded-full text-xs">
+                    C: {meal.recipe.macros.carbs}g
+                  </span>
+                  <span className="px-3 py-1 bg-purple-100 rounded-full text-xs">
+                    F: {meal.recipe.macros.fat}g
+                  </span>
                 </div>
               </div>
-              
-              <div className="flex gap-2 mt-3">
-                <span className="px-3 py-1 bg-blue-100 rounded-full text-xs">
-                  P: {meal.recipe.macros.protein}g
-                </span>
-                <span className="px-3 py-1 bg-yellow-100 rounded-full text-xs">
-                  C: {meal.recipe.macros.carbs}g
-                </span>
-                <span className="px-3 py-1 bg-purple-100 rounded-full text-xs">
-                  F: {meal.recipe.macros.fat}g
-                </span>
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
       
