@@ -21,6 +21,7 @@ import CustomRecipesPage from "./pages/CustomRecipesPage";
 import EditCustomRecipePage from "./pages/EditCustomRecipePage";
 import CreateMealPlanPage from "./pages/CreateMealPlanPage";
 import ExploreRecipesPage from "./pages/ExploreRecipesPage";
+import ExploreSnacksPage from "./pages/ExploreSnacksPage";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/planning" element={<AppLayout><PlanningPage /></AppLayout>} />
           <Route path="/create-meal-plan" element={<AppLayout><CreateMealPlanPage /></AppLayout>} />
           <Route path="/explore-recipes" element={<AppLayout><ExploreRecipesPage /></AppLayout>} />
+          <Route path="/explore-snacks" element={<AppLayout><ExploreSnacksPage /></AppLayout>} />
           <Route path="/grocery" element={<AppLayout><GroceryListPage /></AppLayout>} />
           <Route path="/more" element={<AppLayout><MorePage /></AppLayout>} />
           <Route path="/log-meal" element={<AppLayout><LogMealPage /></AppLayout>} />

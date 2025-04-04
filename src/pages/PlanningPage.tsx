@@ -17,6 +17,8 @@ const PlanningPage = () => {
 
   // Get a selection of 4 recipes for display
   const recipeSelection = recipes.slice(0, 4);
+  // Get 4 snack recipes for the Snack Savvy section
+  const snackSelection = recipes.filter(recipe => recipe.type === 'snack').slice(0, 4);
 
   return (
     <div className="animate-fade-in">
@@ -85,6 +87,58 @@ const PlanningPage = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+        
+        {/* Snack Savvy Section - New Addition */}
+        <div className="bg-white rounded-xl p-4 shadow-sm animate-slide-up">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Snack Savvy</h2>
+            <Link to="/explore-snacks">
+              <Button variant="ghost" size="sm">Explore Snacks</Button>
+            </Link>
+          </div>
+          <p className="text-sm text-dishco-text-light mb-4">
+            Enjoy convenient snacks that fit your macros and your lifestyle.
+          </p>
+          
+          <div className="grid grid-cols-2 gap-4">
+            {snackSelection.length > 0 ? (
+              snackSelection.map((snack) => (
+                <div key={snack.id} className="cursor-pointer" onClick={() => navigate('/explore-snacks')}>
+                  <div className="bg-gray-100 rounded-lg aspect-square mb-2 flex items-center justify-center overflow-hidden">
+                    <img 
+                      src={snack.imageSrc} 
+                      alt={snack.name} 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <h3 className="font-medium text-sm line-clamp-1">{snack.name}</h3>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-sm text-gray-600">{snack.macros.calories} cal</span>
+                    <span className="text-xs text-green-600">Snack</span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              // Fallback to use regular recipes if there aren't enough snack-specific recipes
+              recipeSelection.map((recipe) => (
+                <div key={recipe.id} className="cursor-pointer" onClick={() => navigate('/explore-snacks')}>
+                  <div className="bg-gray-100 rounded-lg aspect-square mb-2 flex items-center justify-center overflow-hidden">
+                    <img 
+                      src={recipe.imageSrc} 
+                      alt={recipe.name} 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <h3 className="font-medium text-sm line-clamp-1">{recipe.name}</h3>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-sm text-gray-600">{recipe.macros.calories} cal</span>
+                    <span className="text-xs text-green-600">Snack</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
