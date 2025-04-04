@@ -31,6 +31,9 @@ import NotificationsPage from "./pages/NotificationsPage";
 import PrivacySecurityPage from "./pages/PrivacySecurityPage";
 import AuthPage from "./pages/AuthPage";
 import AdminPage from "./pages/AdminPage";
+import AdminAddRecipePage from "./pages/admin/AdminAddRecipePage";
+import AdminEditRecipePage from "./pages/admin/AdminEditRecipePage";
+import AdminViewRecipePage from "./pages/admin/AdminViewRecipePage";
 
 // We'll create a protected route component that requires authentication
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -98,7 +101,13 @@ const App = () => (
             <Route path="/notifications" element={<ProtectedRoute><AppLayout><NotificationsPage /></AppLayout></ProtectedRoute>} />
             <Route path="/privacy" element={<ProtectedRoute><AppLayout><PrivacySecurityPage /></AppLayout></ProtectedRoute>} />
             <Route path="/dietary-restrictions" element={<ProtectedRoute><AppLayout><DietaryRestrictionsPage /></AppLayout></ProtectedRoute>} />
-            <Route path="/admin" element={<AdminRoute><AppLayout><AdminPage /></AppLayout></AdminRoute>} />
+            
+            {/* Admin routes */}
+            <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+            <Route path="/admin/add-recipe" element={<AdminRoute><AdminAddRecipePage /></AdminRoute>} />
+            <Route path="/admin/edit-recipe/:recipeId" element={<AdminRoute><AdminEditRecipePage /></AdminRoute>} />
+            <Route path="/admin/recipe/:recipeId" element={<AdminRoute><AdminViewRecipePage /></AdminRoute>} />
+            
             {/* Catch-all route for 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>

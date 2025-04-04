@@ -26,29 +26,37 @@ const AdminPage = () => {
   }
   
   return (
-    <div className="animate-fade-in">
-      <header className="mb-6 flex items-center">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="mr-2"
-          onClick={() => navigate('/')}
-        >
-          <ArrowLeft size={24} />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <p className="text-dishco-text-light">Manage recipes, users and settings</p>
+    <div className="p-6 max-w-[1400px] mx-auto min-h-screen bg-gray-50">
+      <header className="mb-6 flex items-center justify-between">
+        <div className="flex items-center">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="mr-2"
+            onClick={() => navigate('/')}
+          >
+            <ArrowLeft size={24} />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+            <p className="text-dishco-text-light">Manage recipes, users and content</p>
+          </div>
         </div>
       </header>
       
-      <DashboardStats 
-        userCount={userCount}
-        planCount={planCount}
-        recipeCount={recipeCount}
-      />
-      
-      <AdminTabs />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-12">
+          <DashboardStats 
+            userCount={userCount}
+            planCount={planCount}
+            recipeCount={recipeCount}
+          />
+        </div>
+        
+        <div className="lg:col-span-12">
+          <AdminTabs />
+        </div>
+      </div>
     </div>
   );
 };
