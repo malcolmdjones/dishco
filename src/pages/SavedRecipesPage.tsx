@@ -1,68 +1,22 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Search, Heart, Eye, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { recipes } from '../data/mockData';
-import { supabase } from '@/integrations/supabase/client';
 import RecipeDetail from '@/components/RecipeDetail';
+import { useRecipes } from '@/hooks/useRecipes';
 
 const SavedRecipesPage = () => {
   const { toast } = useToast();
-  const [savedRecipeIds, setSavedRecipeIds] = useState<string[]>([]);
+  const { recipes, loading, savedRecipeIds, toggleSaveRecipe } = useRecipes();
   const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
   
-  useEffect(() => {
-    fetchSavedRecipes();
-  }, []);
-
-  const fetchSavedRecipes = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('saved_recipes')
-        .select('recipe_id');
-      
-      if (error) {
-        console.error('Error fetching saved recipes:', error);
-        return;
-      }
-      
-      if (data) {
-        setSavedRecipeIds(data.map(item => item.recipe_id));
-      }
-    } catch (error) {
-      console.error('Error fetching saved recipes:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleUnsave = async (recipeId: string) => {
-    try {
-      const { error } = await supabase
-        .from('saved_recipes')
-        .delete()
-        .eq('recipe_id', recipeId);
-      
-      if (error) {
-        console.error('Error removing recipe from saved:', error);
-        return;
-      }
-      
-      setSavedRecipeIds(savedRecipeIds.filter(id => id !== recipeId));
-      toast({
-        title: "Recipe Removed",
-        description: "Recipe removed from your saved recipes.",
-      });
-    } catch (error) {
-      console.error('Error removing recipe from saved:', error);
-    }
+    await toggleSaveRecipe(recipeId);
   };
 
   const handleViewDetails = (recipeId: string) => {
@@ -74,19 +28,15 @@ const SavedRecipesPage = () => {
   };
 
   const handleToggleSave = (recipeId: string, isSaved: boolean) => {
-    if (!isSaved) {
-      setSavedRecipeIds(savedRecipeIds.filter(id => id !== recipeId));
-    } else {
-      if (!savedRecipeIds.includes(recipeId)) {
-        setSavedRecipeIds([...savedRecipeIds, recipeId]);
-      }
-    }
+    toggleSaveRecipe(recipeId);
   };
 
   const filteredRecipes = recipes.filter(recipe => 
     savedRecipeIds.includes(recipe.id) && 
     recipe.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
   return (
     <div className="animate-fade-in">
@@ -158,7 +108,7 @@ const SavedRecipesPage = () => {
             >
               <div className="h-40 relative">
                 <img 
-                  src={recipe.imageSrc} 
+                  src={recipe.imageSrc || imageUrl} 
                   alt={recipe.name} 
                   className="w-full h-full object-cover"
                 />

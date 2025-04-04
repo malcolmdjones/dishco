@@ -1,15 +1,16 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress'; 
 import { Heart, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { Recipe } from '@/data/mockData';
 import Badge from './Badge';
+import { useRecipes } from '@/hooks/useRecipes';
 
 interface RecipeViewerProps {
-  recipe: any;
+  recipe: Recipe;
   isOpen: boolean;
   onClose: () => void;
   isSaved?: boolean;
@@ -20,12 +21,22 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
   recipe, 
   isOpen, 
   onClose, 
-  isSaved = false,
+  isSaved: propIsSaved,
   onToggleSave
 }) => {
   const { toast } = useToast();
+  const { isRecipeSaved, toggleSaveRecipe } = useRecipes();
   const [saving, setSaving] = useState(false);
-  const [recipeSaved, setRecipeSaved] = useState(isSaved);
+  const [recipeSaved, setRecipeSaved] = useState(false);
+  
+  useEffect(() => {
+    // Use provided value or check from our hook
+    if (propIsSaved !== undefined) {
+      setRecipeSaved(propIsSaved);
+    } else if (recipe?.id) {
+      setRecipeSaved(isRecipeSaved(recipe.id));
+    }
+  }, [recipe, propIsSaved, isRecipeSaved]);
   
   if (!recipe) return null;
 
@@ -42,36 +53,8 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
     
     setSaving(true);
     try {
-      if (recipeSaved) {
-        // Remove from saved recipes
-        const { error } = await supabase
-          .from('saved_recipes')
-          .delete()
-          .eq('recipe_id', recipe.id);
-          
-        if (error) throw error;
-        
-        toast({
-          title: "Recipe removed",
-          description: "Recipe removed from your saved recipes",
-        });
-        
-        setRecipeSaved(false);
-      } else {
-        // Add to saved recipes
-        const { error } = await supabase
-          .from('saved_recipes')
-          .insert([{ recipe_id: recipe.id }]);
-          
-        if (error) throw error;
-        
-        toast({
-          title: "Recipe saved",
-          description: "Recipe added to your saved recipes",
-        });
-        
-        setRecipeSaved(true);
-      }
+      await toggleSaveRecipe(recipe.id);
+      setRecipeSaved(!recipeSaved);
       
       // Call parent handler if exists
       if (onToggleSave) {
@@ -89,21 +72,18 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
     }
   };
 
+  // Use a consistent image
+  const imageUrl = recipe.imageSrc || "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
+
   return (
     <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent className="max-h-[90vh] overflow-y-auto">
         <div className="h-48 w-full overflow-hidden relative">
-          {recipe.imageSrc ? (
-            <img 
-              src={recipe.imageSrc || '/placeholder.svg'} 
-              alt={recipe.name} 
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-              <span className="text-gray-400">No image available</span>
-            </div>
-          )}
+          <img 
+            src={imageUrl} 
+            alt={recipe.name} 
+            className="w-full h-full object-cover"
+          />
           <button 
             className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md"
             onClick={onClose}
@@ -170,21 +150,29 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
           {/* Ingredients */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-3">Ingredients</h3>
-            <ul className="list-disc pl-5 space-y-2">
-              {recipe.ingredients?.map((ingredient: string, index: number) => (
-                <li key={index}>{ingredient}</li>
-              ))}
-            </ul>
+            {recipe.ingredients && recipe.ingredients.length > 0 ? (
+              <ul className="list-disc pl-5 space-y-2">
+                {recipe.ingredients.map((ingredient: string, index: number) => (
+                  <li key={index}>{ingredient}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-500">No ingredients listed for this recipe.</p>
+            )}
           </div>
 
           {/* Instructions */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-3">Instructions</h3>
-            <ol className="list-decimal pl-5 space-y-2">
-              {recipe.instructions?.map((instruction: string, index: number) => (
-                <li key={index} className="pl-1">{instruction}</li>
-              ))}
-            </ol>
+            {recipe.instructions && recipe.instructions.length > 0 ? (
+              <ol className="list-decimal pl-5 space-y-2">
+                {recipe.instructions.map((instruction: string, index: number) => (
+                  <li key={index} className="pl-1">{instruction}</li>
+                ))}
+              </ol>
+            ) : (
+              <p className="text-gray-500">No instructions provided for this recipe.</p>
+            )}
           </div>
 
           {/* Additional Notes */}

@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Heart } from 'lucide-react';
-import { recipes } from '../data/mockData';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import Badge from './Badge';
+import { useRecipes } from '@/hooks/useRecipes';
 
 interface RecipeDetailProps {
   recipeId: string;
@@ -22,6 +21,7 @@ const RecipeDetail: React.FC<RecipeDetailProps> = ({
   className = ''
 }) => {
   const { toast } = useToast();
+  const { recipes, isRecipeSaved, toggleSaveRecipe } = useRecipes();
   const [isSaved, setIsSaved] = useState(propIsSaved || false);
   const [loading, setLoading] = useState(false);
   
@@ -32,64 +32,15 @@ const RecipeDetail: React.FC<RecipeDetailProps> = ({
     if (propIsSaved !== undefined) {
       setIsSaved(propIsSaved);
     } else {
-      // Otherwise check from database
-      checkIfSaved();
+      // Otherwise check from recipe hook
+      setIsSaved(isRecipeSaved(recipeId));
     }
-  }, [recipeId, propIsSaved]);
-
-  const checkIfSaved = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('saved_recipes')
-        .select('*')
-        .eq('recipe_id', recipeId);
-      
-      if (error) {
-        console.error('Error checking if recipe is saved:', error);
-        return;
-      }
-      
-      setIsSaved(data && data.length > 0);
-    } catch (error) {
-      console.error('Error checking if recipe is saved:', error);
-    }
-  };
+  }, [recipeId, propIsSaved, isRecipeSaved]);
   
   const handleToggleSave = async () => {
     setLoading(true);
     try {
-      if (isSaved) {
-        // Remove from saved recipes
-        const { error } = await supabase
-          .from('saved_recipes')
-          .delete()
-          .eq('recipe_id', recipeId);
-        
-        if (error) {
-          console.error('Error removing recipe from saved:', error);
-          return;
-        }
-        
-        toast({
-          title: "Recipe Removed",
-          description: "Recipe removed from your saved recipes.",
-        });
-      } else {
-        // Add to saved recipes
-        const { error } = await supabase
-          .from('saved_recipes')
-          .insert([{ recipe_id: recipeId }]);
-        
-        if (error) {
-          console.error('Error saving recipe:', error);
-          return;
-        }
-        
-        toast({
-          title: "Recipe Saved",
-          description: "Recipe added to your saved recipes.",
-        });
-      }
+      await toggleSaveRecipe(recipeId);
       
       // Update local state
       setIsSaved(!isSaved);
@@ -117,13 +68,14 @@ const RecipeDetail: React.FC<RecipeDetailProps> = ({
   }
 
   const recipeType = recipe.type || 'homemade';
+  const imageUrl = recipe.imageSrc || "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
   return (
     <div className={`fixed inset-0 bg-black/50 z-50 flex items-center justify-center ${className}`}>
       <div className="bg-white rounded-xl p-0 max-w-md w-full max-h-[85vh] overflow-hidden">
         <div className="relative h-48">
           <img 
-            src={recipe.imageSrc} 
+            src={imageUrl} 
             alt={recipe.name} 
             className="w-full h-full object-cover"
           />

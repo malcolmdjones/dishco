@@ -1,13 +1,15 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Search, Plus, Info } from 'lucide-react';
-import { recipes } from '../data/mockData';
 import { Input } from '@/components/ui/input';
+import { useRecipes } from '@/hooks/useRecipes';
+import { Recipe } from '@/data/mockData';
 
 const LogMealPage = () => {
   const { toast } = useToast();
+  const { recipes, loading } = useRecipes();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
@@ -18,7 +20,7 @@ const LogMealPage = () => {
     return matchesSearch && matchesCategory;
   });
 
-  const handleLogMeal = (recipe: any) => {
+  const handleLogMeal = (recipe: Recipe) => {
     // Get current logged meals from localStorage or initialize empty array
     const existingLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
     
@@ -128,7 +130,11 @@ const LogMealPage = () => {
 
       {/* Recipe list */}
       <div className="space-y-4">
-        {filteredRecipes.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500">Loading recipes...</p>
+          </div>
+        ) : filteredRecipes.length === 0 ? (
           <div className="text-center py-8">
             <Info size={48} className="mx-auto text-gray-300 mb-4" />
             <h3 className="text-lg font-medium">No recipes found</h3>
@@ -140,7 +146,7 @@ const LogMealPage = () => {
               <div className="flex">
                 <div className="w-20 h-20 bg-gray-200">
                   <img 
-                    src={imageUrl} 
+                    src={recipe.imageSrc || imageUrl} 
                     alt={recipe.name} 
                     className="w-full h-full object-cover"
                   />

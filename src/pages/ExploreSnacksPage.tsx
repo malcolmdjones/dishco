@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, Filter, X } from 'lucide-react';
@@ -21,8 +22,9 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { recipes, Recipe } from '@/data/mockData';
 import RecipeViewer from '@/components/RecipeViewer';
+import { useRecipes } from '@/hooks/useRecipes';
+import { Recipe } from '@/data/mockData';
 
 // Define filter types
 type PriceRange = '$' | '$$' | '$$$';
@@ -42,10 +44,11 @@ interface Filters {
 
 const ExploreSnacksPage = () => {
   const navigate = useNavigate();
+  const { recipes, loading } = useRecipes();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [visibleSnacks, setVisibleSnacks] = useState<Recipe[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -73,8 +76,10 @@ const ExploreSnacksPage = () => {
   
   // Effect to load initial snacks
   useEffect(() => {
-    loadMoreSnacks(true);
-  }, []);
+    if (recipes.length > 0) {
+      loadMoreSnacks(true);
+    }
+  }, [recipes]);
   
   // Effect to detect filter changes
   useEffect(() => {
@@ -91,7 +96,7 @@ const ExploreSnacksPage = () => {
   
   // Load more snacks with pagination
   const loadMoreSnacks = (reset = false) => {
-    setLoading(true);
+    setLoadingMore(true);
     
     // Simulate API call delay
     setTimeout(() => {
@@ -123,7 +128,7 @@ const ExploreSnacksPage = () => {
       }
       
       setHasMore(endIndex < filteredSnacks.length);
-      setLoading(false);
+      setLoadingMore(false);
     }, 500);
   };
   
@@ -177,6 +182,9 @@ const ExploreSnacksPage = () => {
       };
     });
   };
+
+  // Fixed image URL to avoid 404s
+  const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
   
   return (
     <div className="pb-20 animate-fade-in">
@@ -400,6 +408,13 @@ const ExploreSnacksPage = () => {
         </div>
       )}
       
+      {/* Loading state */}
+      {loading && !loadingMore && (
+        <div className="text-center py-10">
+          <p>Loading snacks...</p>
+        </div>
+      )}
+      
       {/* Snack Grid */}
       <div className="grid grid-cols-2 gap-4">
         {visibleSnacks.map(snack => (
@@ -410,7 +425,7 @@ const ExploreSnacksPage = () => {
           >
             <div className="aspect-square bg-gray-100 overflow-hidden">
               <img 
-                src={snack.imageSrc} 
+                src={snack.imageSrc || imageUrl} 
                 alt={snack.name} 
                 className="w-full h-full object-cover"
               />
@@ -442,10 +457,10 @@ const ExploreSnacksPage = () => {
           <Button 
             variant="outline" 
             onClick={() => loadMoreSnacks()} 
-            disabled={loading}
+            disabled={loadingMore}
             className="w-full"
           >
-            {loading ? 'Loading...' : 'Load More Snacks'}
+            {loadingMore ? 'Loading...' : 'Load More Snacks'}
           </Button>
         </div>
       )}
