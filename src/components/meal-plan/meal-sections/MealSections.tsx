@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Recipe } from '@/data/mockData';
 import MealCard from '@/components/meal-plan/MealCard';
@@ -68,40 +67,150 @@ const MealSections: React.FC<MealSectionsProps> = ({
 
     // Get the recipe that was dragged
     let draggedRecipe: Recipe | null = null;
+    let meals = { ...currentDayData.meals };
     
     // Handle different source types
     if (source.droppableId === 'breakfast') {
-      if (Array.isArray(currentDayData.meals.breakfast)) {
-        draggedRecipe = currentDayData.meals.breakfast[source.index];
-      } else {
-        draggedRecipe = currentDayData.meals.breakfast;
+      if (Array.isArray(meals.breakfast)) {
+        draggedRecipe = meals.breakfast[source.index];
+      } else if (meals.breakfast) {
+        draggedRecipe = meals.breakfast;
       }
     } else if (source.droppableId === 'lunch') {
-      if (Array.isArray(currentDayData.meals.lunch)) {
-        draggedRecipe = currentDayData.meals.lunch[source.index];
-      } else {
-        draggedRecipe = currentDayData.meals.lunch;
+      if (Array.isArray(meals.lunch)) {
+        draggedRecipe = meals.lunch[source.index];
+      } else if (meals.lunch) {
+        draggedRecipe = meals.lunch;
       }
     } else if (source.droppableId === 'dinner') {
-      if (Array.isArray(currentDayData.meals.dinner)) {
-        draggedRecipe = currentDayData.meals.dinner[source.index];
-      } else {
-        draggedRecipe = currentDayData.meals.dinner;
+      if (Array.isArray(meals.dinner)) {
+        draggedRecipe = meals.dinner[source.index];
+      } else if (meals.dinner) {
+        draggedRecipe = meals.dinner;
       }
     } else if (source.droppableId === 'snacks') {
-      draggedRecipe = currentDayData.meals.snacks[source.index];
+      draggedRecipe = meals.snacks?.[source.index] || null;
     }
 
     if (!draggedRecipe) return;
 
-    // Add to destination (without removing from source for now - that's the key change)
-    // The updateMeal function will need to be modified to append rather than replace
+    // Remove from source
+    if (source.droppableId === 'breakfast') {
+      if (Array.isArray(meals.breakfast)) {
+        const newBreakfast = [...meals.breakfast];
+        newBreakfast.splice(source.index, 1);
+        // Add to destination
+        if (destination.droppableId === 'breakfast') {
+          // If dragging within the same section, just reorder
+          newBreakfast.splice(destination.index, 0, draggedRecipe);
+          updateMeal('breakfast', null, -1); // Clear existing
+          newBreakfast.forEach((recipe, idx) => {
+            updateMeal('breakfast', recipe, idx);
+          });
+          return;
+        }
+        // Update the breakfast array after removal
+        updateMeal('breakfast', null, -1); // Clear existing
+        if (newBreakfast.length > 0) {
+          newBreakfast.forEach((recipe, idx) => {
+            updateMeal('breakfast', recipe, idx);
+          });
+        }
+      } else if (meals.breakfast) {
+        // Single item, just remove it
+        updateMeal('breakfast', null, -1); // Clear existing
+      }
+    } else if (source.droppableId === 'lunch') {
+      if (Array.isArray(meals.lunch)) {
+        const newLunch = [...meals.lunch];
+        newLunch.splice(source.index, 1);
+        // If dragging within the same section, just reorder
+        if (destination.droppableId === 'lunch') {
+          newLunch.splice(destination.index, 0, draggedRecipe);
+          updateMeal('lunch', null, -1); // Clear existing
+          newLunch.forEach((recipe, idx) => {
+            updateMeal('lunch', recipe, idx);
+          });
+          return;
+        }
+        // Update the lunch array after removal
+        updateMeal('lunch', null, -1); // Clear existing
+        if (newLunch.length > 0) {
+          newLunch.forEach((recipe, idx) => {
+            updateMeal('lunch', recipe, idx);
+          });
+        }
+      } else if (meals.lunch) {
+        // Single item, just remove it
+        updateMeal('lunch', null, -1); // Clear existing
+      }
+    } else if (source.droppableId === 'dinner') {
+      if (Array.isArray(meals.dinner)) {
+        const newDinner = [...meals.dinner];
+        newDinner.splice(source.index, 1);
+        // If dragging within the same section, just reorder
+        if (destination.droppableId === 'dinner') {
+          newDinner.splice(destination.index, 0, draggedRecipe);
+          updateMeal('dinner', null, -1); // Clear existing
+          newDinner.forEach((recipe, idx) => {
+            updateMeal('dinner', recipe, idx);
+          });
+          return;
+        }
+        // Update the dinner array after removal
+        updateMeal('dinner', null, -1); // Clear existing
+        if (newDinner.length > 0) {
+          newDinner.forEach((recipe, idx) => {
+            updateMeal('dinner', recipe, idx);
+          });
+        }
+      } else if (meals.dinner) {
+        // Single item, just remove it
+        updateMeal('dinner', null, -1); // Clear existing
+      }
+    } else if (source.droppableId === 'snacks') {
+      // For snacks, we'll keep the array structure but set a specific index to null
+      if (Array.isArray(meals.snacks)) {
+        const newSnacks = [...meals.snacks];
+        newSnacks[source.index] = null;
+        updateMeal('snack', null, source.index);
+      }
+    }
+
+    // Add to destination (if not already handled above for same-section reordering)
     if (destination.droppableId === 'breakfast') {
-      updateMeal('breakfast', draggedRecipe, destination.index);
+      if (Array.isArray(meals.breakfast)) {
+        const newBreakfast = [...meals.breakfast];
+        newBreakfast.splice(destination.index, 0, draggedRecipe);
+        updateMeal('breakfast', null, -1); // Clear existing
+        newBreakfast.forEach((recipe, idx) => {
+          updateMeal('breakfast', recipe, idx);
+        });
+      } else {
+        updateMeal('breakfast', draggedRecipe);
+      }
     } else if (destination.droppableId === 'lunch') {
-      updateMeal('lunch', draggedRecipe, destination.index);
+      if (Array.isArray(meals.lunch)) {
+        const newLunch = [...meals.lunch];
+        newLunch.splice(destination.index, 0, draggedRecipe);
+        updateMeal('lunch', null, -1); // Clear existing
+        newLunch.forEach((recipe, idx) => {
+          updateMeal('lunch', recipe, idx);
+        });
+      } else {
+        updateMeal('lunch', draggedRecipe);
+      }
     } else if (destination.droppableId === 'dinner') {
-      updateMeal('dinner', draggedRecipe, destination.index);
+      if (Array.isArray(meals.dinner)) {
+        const newDinner = [...meals.dinner];
+        newDinner.splice(destination.index, 0, draggedRecipe);
+        updateMeal('dinner', null, -1); // Clear existing
+        newDinner.forEach((recipe, idx) => {
+          updateMeal('dinner', recipe, idx);
+        });
+      } else {
+        updateMeal('dinner', draggedRecipe);
+      }
     } else if (destination.droppableId === 'snacks') {
       updateMeal('snack', draggedRecipe, destination.index);
     }

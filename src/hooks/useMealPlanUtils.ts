@@ -189,12 +189,42 @@ export const useMealPlanUtils = () => {
 
   // Update a specific meal in the meal plan
   const updateMeal = (mealType: string, recipe: Recipe | null, index?: number) => {
-    if (!recipe) return;  // Don't update with null recipes
-
     setMealPlan(prevPlan => {
       const newPlan = [...prevPlan];
       const currentPlanDay = { ...newPlan[currentDay] };
       const currentMeals = { ...currentPlanDay.meals };
+
+      // Special case: index of -1 means clear the entire meal type
+      if (index === -1) {
+        if (mealType === 'breakfast') {
+          currentMeals.breakfast = [];
+          currentPlanDay.meals = currentMeals;
+          newPlan[currentDay] = currentPlanDay;
+          return newPlan;
+        }
+        if (mealType === 'lunch') {
+          currentMeals.lunch = [];
+          currentPlanDay.meals = currentMeals;
+          newPlan[currentDay] = currentPlanDay;
+          return newPlan;
+        }
+        if (mealType === 'dinner') {
+          currentMeals.dinner = [];
+          currentPlanDay.meals = currentMeals;
+          newPlan[currentDay] = currentPlanDay;
+          return newPlan;
+        }
+        if (mealType === 'snack') {
+          currentMeals.snacks = [null, null];
+          currentPlanDay.meals = currentMeals;
+          newPlan[currentDay] = currentPlanDay;
+          return newPlan;
+        }
+      }
+
+      if (!recipe && index === undefined) {
+        return prevPlan; // Don't update if recipe is null and no index provided
+      }
 
       if (mealType === 'breakfast') {
         // Initialize the breakfast array if it doesn't exist
@@ -208,8 +238,12 @@ export const useMealPlanUtils = () => {
         // If index is provided, insert at that position, otherwise add to the end
         const breakfastArray = [...currentMeals.breakfast];
         if (typeof index === 'number' && breakfastArray.length > index) {
-          breakfastArray[index] = recipe;
-        } else {
+          if (recipe) {
+            breakfastArray[index] = recipe;
+          } else {
+            breakfastArray.splice(index, 1);
+          }
+        } else if (recipe) {
           breakfastArray.push(recipe);
         }
         currentMeals.breakfast = breakfastArray;
@@ -226,8 +260,12 @@ export const useMealPlanUtils = () => {
         // If index is provided, insert at that position, otherwise add to the end
         const lunchArray = [...currentMeals.lunch];
         if (typeof index === 'number' && lunchArray.length > index) {
-          lunchArray[index] = recipe;
-        } else {
+          if (recipe) {
+            lunchArray[index] = recipe;
+          } else {
+            lunchArray.splice(index, 1);
+          }
+        } else if (recipe) {
           lunchArray.push(recipe);
         }
         currentMeals.lunch = lunchArray;
@@ -244,8 +282,12 @@ export const useMealPlanUtils = () => {
         // If index is provided, insert at that position, otherwise add to the end
         const dinnerArray = [...currentMeals.dinner];
         if (typeof index === 'number' && dinnerArray.length > index) {
-          dinnerArray[index] = recipe;
-        } else {
+          if (recipe) {
+            dinnerArray[index] = recipe;
+          } else {
+            dinnerArray.splice(index, 1);
+          }
+        } else if (recipe) {
           dinnerArray.push(recipe);
         }
         currentMeals.dinner = dinnerArray;
@@ -261,10 +303,12 @@ export const useMealPlanUtils = () => {
       return newPlan;
     });
 
-    toast({
-      title: "Meal Added",
-      description: `Added ${recipe.name} to your meal plan.`,
-    });
+    if (recipe) {
+      toast({
+        title: "Meal Updated",
+        description: `Updated ${mealType} with ${recipe.name}.`,
+      });
+    }
   };
 
   // Calculate current day's nutrition totals

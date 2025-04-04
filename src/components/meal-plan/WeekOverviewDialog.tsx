@@ -42,9 +42,12 @@ const WeekOverviewDialog: React.FC<WeekOverviewDialogProps> = ({
                     <div className="pt-1">
                       <h4 className="text-sm font-medium text-gray-500">Snacks</h4>
                       <div className="pl-2">
-                        {day.meals.snacks?.map((snack, idx) => (
+                        {day.meals.snacks?.filter(Boolean).map((snack, idx) => (
                           <MealOverviewItem key={idx} title={`Snack ${idx + 1}`} meal={snack} isSnack />
                         ))}
+                        {!day.meals.snacks?.some(Boolean) && (
+                          <span className="text-sm text-gray-400">No snacks selected</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -59,7 +62,7 @@ const WeekOverviewDialog: React.FC<WeekOverviewDialogProps> = ({
 };
 
 const MealTypeOverview = ({ title, meals }) => {
-  if (!meals) {
+  if (!meals || (Array.isArray(meals) && meals.length === 0)) {
     return (
       <div className="py-1 border-b last:border-b-0">
         <h4 className="text-sm font-medium text-gray-500">{title}</h4>
