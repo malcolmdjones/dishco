@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -55,7 +56,27 @@ export const useRecipes = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [savedRecipeIds, setSavedRecipeIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
+
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+
+    checkAuth();
+    
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   // Fetch all recipes
   const fetchRecipes = async () => {
@@ -98,6 +119,12 @@ export const useRecipes = () => {
   // Fetch saved recipe IDs for the current user
   const fetchSavedRecipeIds = async () => {
     try {
+      // Check if user is authenticated
+      if (!isAuthenticated) {
+        setSavedRecipeIds([]);
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('saved_recipes')
         .select('recipe_id');
@@ -111,6 +138,7 @@ export const useRecipes = () => {
       }
     } catch (error) {
       console.error('Error fetching saved recipes:', error);
+      setSavedRecipeIds([]);
     }
   };
 
@@ -122,6 +150,16 @@ export const useRecipes = () => {
   // Save or unsave a recipe
   const toggleSaveRecipe = async (recipeId: string) => {
     try {
+      // Check if user is authenticated
+      if (!isAuthenticated) {
+        toast({
+          title: "Authentication Required",
+          description: "You need to be logged in to save recipes.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       if (isRecipeSaved(recipeId)) {
         // Unsave the recipe
         const { error } = await supabase
@@ -138,10 +176,25 @@ export const useRecipes = () => {
           description: "Recipe removed from your saved recipes.",
         });
       } else {
-        // Save the recipe
+        // Get current user session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          toast({
+            title: "Authentication Required",
+            description: "You need to be logged in to save recipes.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        // Save the recipe with user_id
         const { error } = await supabase
           .from('saved_recipes')
-          .insert([{ recipe_id: recipeId }]);
+          .insert([{ 
+            recipe_id: recipeId,
+            user_id: session.user.id
+          }]);
 
         if (error) throw error;
         
@@ -198,12 +251,18 @@ export const useRecipes = () => {
   // Load recipes on component mount
   useEffect(() => {
     fetchRecipes();
-  }, []);
+  }, [isAuthenticated]);
+
+  // Refresh saved recipes when auth state changes
+  useEffect(() => {
+    fetchSavedRecipeIds();
+  }, [isAuthenticated]);
 
   return {
     recipes,
     savedRecipeIds,
     loading,
+    isAuthenticated,
     isRecipeSaved,
     toggleSaveRecipe,
     fetchRecipes,

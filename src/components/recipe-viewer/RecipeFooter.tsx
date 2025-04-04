@@ -2,6 +2,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Heart } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface RecipeFooterProps {
   isSaved: boolean;
@@ -16,12 +18,31 @@ const RecipeFooter: React.FC<RecipeFooterProps> = ({
   onSave,
   onClose
 }) => {
+  const { toast } = useToast();
+  
+  const handleSave = async () => {
+    // Check if user is authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      toast({
+        title: "Authentication Required",
+        description: "You need to be logged in to save recipes.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // If authenticated, proceed with save
+    onSave();
+  };
+
   return (
     <div className="border-t pt-4">
       <div className="flex justify-between w-full">
         <Button 
           variant="outline" 
-          onClick={onSave}
+          onClick={handleSave}
           disabled={saving}
           className="gap-2"
         >

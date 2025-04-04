@@ -35,6 +35,19 @@ const SavePlanDialog: React.FC<SavePlanDialogProps> = ({ isOpen, onClose, mealPl
     setIsSaving(true);
     
     try {
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: "Authentication Required",
+          description: "You need to be logged in to save meal plans.",
+          variant: "destructive"
+        });
+        setIsSaving(false);
+        return;
+      }
+      
       // Prepare data with additional metadata
       const planData = {
         days: mealPlan,
@@ -43,14 +56,13 @@ const SavePlanDialog: React.FC<SavePlanDialogProps> = ({ isOpen, onClose, mealPl
         created_at: new Date().toISOString()
       };
       
-      // Temporarily disable RLS check by using the public interface
-      // This works because we haven't set up RLS policies yet
+      // Insert with user_id from session
       const { data, error } = await supabase
         .from('saved_meal_plans')
         .insert([{ 
           name: planName.trim(),
           plan_data: planData,
-          // Remove user_id since we don't have auth yet and it's causing RLS issues
+          user_id: session.user.id
         }]);
       
       if (error) {
