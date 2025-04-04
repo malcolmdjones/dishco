@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -34,10 +35,10 @@ const AdminPage = () => {
           return;
         }
         
-        // Check if user is an admin using the is_admin RPC function
+        // Fix: Explicitly type the parameters for the RPC call
         const { data: isAdminUser, error: adminCheckError } = await supabase.rpc('is_admin', { 
           user_id: session.user.id 
-        });
+        } as { user_id: string });
           
         if (adminCheckError || !isAdminUser) {
           toast({
