@@ -19,6 +19,7 @@ interface CreateMealPlanContentProps {
   checkExceedsGoals: () => any;
   onOpenVault: (mealType: string, index?: number) => void;
   updateMeal: (mealType: string, recipe: Recipe | null, index?: number) => void;
+  userGoals: any;
 }
 
 const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
@@ -32,7 +33,8 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
   calculateDayTotals,
   checkExceedsGoals,
   onOpenVault,
-  updateMeal
+  updateMeal,
+  userGoals
 }) => {
   // Get current day's data
   const currentDayData = mealPlan[currentDay];
@@ -54,7 +56,7 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
       {/* Daily Nutrition Card */}
       <DailyNutritionCard 
         dayTotals={dayTotals}
-        userGoals={calculateDayTotals().userGoals || dayTotals}
+        userGoals={userGoals}
         exceedsGoals={goalExceeds}
       />
 

@@ -357,7 +357,12 @@ export const useMealPlanUtils = () => {
 
   // Calculate current day's nutrition totals
   const calculateDayTotals = () => {
-    if (!mealPlan[currentDay]) return userGoals;
+    if (!mealPlan[currentDay]) return {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0
+    };
     
     const dayMeals = mealPlan[currentDay].meals;
     return calculateDailyMacros(dayMeals);

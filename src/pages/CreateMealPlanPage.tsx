@@ -20,7 +20,8 @@ const CreateMealPlanPage = () => {
     regenerateMeals,
     updateMeal,
     calculateDayTotals,
-    checkExceedsGoals
+    checkExceedsGoals,
+    userGoals
   } = useMealPlanUtils();
 
   // Local component state for dialog handling
@@ -100,6 +101,7 @@ const CreateMealPlanPage = () => {
           setIsRecipeVaultOpen(true);
         }}
         updateMeal={updateMeal}
+        userGoals={userGoals}
       />
 
       {/* Week Overview Dialog */}
