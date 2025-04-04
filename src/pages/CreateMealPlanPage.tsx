@@ -65,7 +65,6 @@ const CreateMealPlanPage = () => {
   };
 
   // Handle adding a recipe from the vault to the meal plan
-  // Fixed to properly add recipes without replacing existing ones
   const handleAddRecipeToMealPlan = (recipe: Recipe, mealType: string, index?: number) => {
     // If no specific meal type is provided from header button, use breakfast as default
     const actualMealType = mealType || 'breakfast';
