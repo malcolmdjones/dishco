@@ -4,7 +4,6 @@ import { Recipe } from '@/data/mockData';
 import DailyNavigationCalendar from '@/components/meal-plan/DailyNavigationCalendar';
 import DailyNutritionCard from '@/components/meal-plan/DailyNutritionCard';
 import BottomActionBar from '@/components/meal-plan/BottomActionBar';
-import MealPlanDialogHandlers from '@/components/meal-plan/dialog-handlers/MealPlanDialogHandlers';
 import MealSections from '@/components/meal-plan/meal-sections/MealSections';
 
 interface CreateMealPlanContentProps {
@@ -17,6 +16,7 @@ interface CreateMealPlanContentProps {
   regenerateMeals: () => void;
   calculateDayTotals: () => any;
   checkExceedsGoals: () => any;
+  onOpenVault: (mealType: string, index?: number) => void;
 }
 
 const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
@@ -28,85 +28,46 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
   toggleLockMeal,
   regenerateMeals,
   calculateDayTotals,
-  checkExceedsGoals
+  checkExceedsGoals,
+  onOpenVault
 }) => {
   // Get current day's data
   const currentDayData = mealPlan[currentDay];
   const dayTotals = calculateDayTotals();
   const goalExceeds = checkExceedsGoals();
 
-  // Handle adding a recipe from the vault to the meal plan
-  const handleAddFromVault = (recipe: Recipe, mealType: string, index?: number) => {
-    // Clone current meal plan
-    const newMealPlan = [...mealPlan];
-    const currentDayData = { ...newMealPlan[currentDay] };
-    const currentMeals = { ...currentDayData.meals };
-    
-    // Update based on meal type
-    if (mealType === 'breakfast') {
-      currentMeals.breakfast = recipe;
-    } else if (mealType === 'lunch') {
-      currentMeals.lunch = recipe;
-    } else if (mealType === 'dinner') {
-      currentMeals.dinner = recipe;
-    } else if (mealType === 'snack' && index !== undefined) {
-      const newSnacks = [...(currentMeals.snacks || [])];
-      newSnacks[index] = recipe;
-      currentMeals.snacks = newSnacks;
-    }
-    
-    currentDayData.meals = currentMeals;
-    newMealPlan[currentDay] = currentDayData;
-    
-    // No need to call setMealPlan as it's handled by the hook
-  };
-
   return (
     <div className="pb-20 animate-fade-in">
-      <MealPlanDialogHandlers mealPlan={mealPlan}>
-        {({
-          handleRecipeClick,
-          handleSavePlan,
-          handleOpenVault,
-          isRecipeViewerOpen,
-          isSavePlanDialogOpen,
-          isWeekOverviewOpen,
-          isRecipeVaultOpen,
-        }) => (
-          <>
-            {/* Weekly Calendar Navigation */}
-            <DailyNavigationCalendar 
-              mealPlan={mealPlan}
-              currentDay={currentDay}
-              setCurrentDay={setCurrentDay}
-            />
+      {/* Weekly Calendar Navigation */}
+      <DailyNavigationCalendar 
+        mealPlan={mealPlan}
+        currentDay={currentDay}
+        setCurrentDay={setCurrentDay}
+      />
 
-            {/* Daily Nutrition Card */}
-            <DailyNutritionCard 
-              dayTotals={dayTotals}
-              userGoals={calculateDayTotals()}
-              exceedsGoals={goalExceeds}
-            />
+      {/* Daily Nutrition Card */}
+      <DailyNutritionCard 
+        dayTotals={dayTotals}
+        userGoals={calculateDayTotals()}
+        exceedsGoals={goalExceeds}
+      />
 
-            {/* Meal Sections */}
-            <MealSections
-              currentDayData={currentDayData}
-              currentDay={currentDay}
-              lockedMeals={lockedMeals}
-              toggleLockMeal={toggleLockMeal}
-              onAddFromVault={handleOpenVault}
-              onMealClick={handleRecipeClick}
-            />
+      {/* Meal Sections */}
+      <MealSections
+        currentDayData={currentDayData}
+        currentDay={currentDay}
+        lockedMeals={lockedMeals}
+        toggleLockMeal={toggleLockMeal}
+        onAddFromVault={onOpenVault}
+        onMealClick={() => {}} // We'll handle recipe viewing in a future update
+      />
 
-            {/* Bottom Action Buttons */}
-            <BottomActionBar 
-              onRegenerate={regenerateMeals}
-              onSave={handleSavePlan}
-              isGenerating={isGenerating}
-            />
-          </>
-        )}
-      </MealPlanDialogHandlers>
+      {/* Bottom Action Buttons */}
+      <BottomActionBar 
+        onRegenerate={regenerateMeals}
+        onSave={() => {}} // We'll handle meal plan saving in a future update
+        isGenerating={isGenerating}
+      />
     </div>
   );
 };
