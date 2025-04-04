@@ -1,9 +1,11 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Recipe } from '@/data/mockData';
-import MealCard from '@/components/meal-plan/MealCard';
-import RecipeDetail from '@/components/RecipeDetail';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { DragDropContext } from '@hello-pangea/dnd';
+import { MealSectionsProvider } from './MealSectionsContext';
+import RecipeDetailHandler from './recipe-dialog/RecipeDetailHandler';
+import MealSection from './meal-section/MealSection';
+import { handleMealPlanDragEnd } from './MealSectionsDragUtils';
 
 interface MealSectionsProps {
   currentDayData: any;
@@ -24,8 +26,8 @@ const MealSections: React.FC<MealSectionsProps> = ({
   onMealClick,
   updateMeal
 }) => {
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const [isRecipeDetailOpen, setIsRecipeDetailOpen] = useState(false);
+  const [selectedRecipe, setSelectedRecipe] = React.useState<Recipe | null>(null);
+  const [isRecipeDetailOpen, setIsRecipeDetailOpen] = React.useState(false);
 
   if (!currentDayData) {
     return <div className="p-4">Loading meal plan...</div>;
@@ -50,191 +52,67 @@ const MealSections: React.FC<MealSectionsProps> = ({
   };
 
   const handleDragEnd = (result: any) => {
-    const { source, destination } = result;
-    
-    // Dropped outside the list
-    if (!destination) {
-      return;
-    }
-    
-    // Same position
-    if (
-      source.droppableId === destination.droppableId &&
-      source.index === destination.index
-    ) {
-      return;
-    }
-
-    // Get the recipe that was dragged
-    let draggedRecipe: Recipe | null = null;
-    let meals = { ...currentDayData.meals };
-    
-    // Handle different source types
-    if (source.droppableId === 'breakfast') {
-      if (Array.isArray(meals.breakfast) && meals.breakfast[source.index]) {
-        draggedRecipe = meals.breakfast[source.index];
-      } else if (meals.breakfast) {
-        draggedRecipe = meals.breakfast;
-      }
-    } else if (source.droppableId === 'lunch') {
-      if (Array.isArray(meals.lunch) && meals.lunch[source.index]) {
-        draggedRecipe = meals.lunch[source.index];
-      } else if (meals.lunch) {
-        draggedRecipe = meals.lunch;
-      }
-    } else if (source.droppableId === 'dinner') {
-      if (Array.isArray(meals.dinner) && meals.dinner[source.index]) {
-        draggedRecipe = meals.dinner[source.index];
-      } else if (meals.dinner) {
-        draggedRecipe = meals.dinner;
-      }
-    } else if (source.droppableId === 'snacks') {
-      if (Array.isArray(meals.snacks) && meals.snacks[source.index]) {
-        draggedRecipe = meals.snacks[source.index];
-      }
-    }
-
-    if (!draggedRecipe) return;
-
-    // Remove from source
-    if (source.droppableId === 'breakfast') {
-      if (Array.isArray(meals.breakfast)) {
-        const newBreakfast = [...meals.breakfast];
-        newBreakfast[source.index] = null;
-        updateMeal('breakfast', null, source.index);
-      } else {
-        updateMeal('breakfast', null);
-      }
-    } else if (source.droppableId === 'lunch') {
-      if (Array.isArray(meals.lunch)) {
-        const newLunch = [...meals.lunch];
-        newLunch[source.index] = null;
-        updateMeal('lunch', null, source.index);
-      } else {
-        updateMeal('lunch', null);
-      }
-    } else if (source.droppableId === 'dinner') {
-      if (Array.isArray(meals.dinner)) {
-        const newDinner = [...meals.dinner];
-        newDinner[source.index] = null;
-        updateMeal('dinner', null, source.index);
-      } else {
-        updateMeal('dinner', null);
-      }
-    } else if (source.droppableId === 'snacks') {
-      if (Array.isArray(meals.snacks)) {
-        updateMeal('snack', null, source.index);
-      }
-    }
-
-    // Add to destination
-    if (destination.droppableId === 'breakfast') {
-      updateMeal('breakfast', draggedRecipe, destination.index);
-    } else if (destination.droppableId === 'lunch') {
-      updateMeal('lunch', draggedRecipe, destination.index);
-    } else if (destination.droppableId === 'dinner') {
-      updateMeal('dinner', draggedRecipe, destination.index);
-    } else if (destination.droppableId === 'snacks') {
-      updateMeal('snack', draggedRecipe, destination.index);
-    }
-  };
-
-  // Helper function to render a meal section
-  const renderMealSection = (mealType: string, meals: Recipe[] | Recipe | null) => {
-    const mealArray = Array.isArray(meals) ? meals : (meals ? [meals] : [null]);
-    
-    return (
-      <Droppable droppableId={mealType.toLowerCase()} type="MEAL">
-        {(provided) => (
-          <div
-            ref={provided.innerRef}
-            {...provided.droppableProps}
-            className="meal-section"
-          >
-            <h3 className="font-medium text-lg mb-2">{mealType}</h3>
-            {mealArray.length > 0 ? (
-              mealArray.map((meal, index) => (
-                <Draggable 
-                  key={`${mealType}-${index}-${meal?.id || 'empty'}`}
-                  draggableId={`${mealType}-${index}-${meal?.id || 'empty'}`} 
-                  index={index}
-                  isDragDisabled={!!lockedMeals[`${currentDay}-${mealType.toLowerCase()}-${index}`]}
-                >
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      className={snapshot.isDragging ? "opacity-70 mb-6" : "mb-6"}
-                    >
-                      <MealCard 
-                        title=""
-                        meal={meal}
-                        isLocked={!!lockedMeals[`${currentDay}-${mealType.toLowerCase()}-${index}`]}
-                        toggleLock={() => toggleLockMeal(mealType.toLowerCase(), index)}
-                        onAddFromVault={() => onAddFromVault(mealType.toLowerCase(), index)}
-                        onMealClick={handleMealClick}
-                        isDraggable={true}
-                      />
-                    </div>
-                  )}
-                </Draggable>
-              ))
-            ) : (
-              <div className="mb-6">
-                <MealCard 
-                  title=""
-                  meal={null}
-                  isLocked={false}
-                  toggleLock={() => {}}
-                  onAddFromVault={() => onAddFromVault(mealType.toLowerCase())}
-                  onMealClick={handleMealClick}
-                  isDraggable={false}
-                />
-              </div>
-            )}
-            {provided.placeholder}
-            <div className="mb-6 mt-2 text-center">
-              <button 
-                onClick={() => onAddFromVault(mealType.toLowerCase())}
-                className="text-sm text-blue-600 hover:text-blue-800"
-              >
-                + Add {mealType.toLowerCase()} item
-              </button>
-            </div>
-          </div>
-        )}
-      </Droppable>
-    );
+    handleMealPlanDragEnd(result, currentDayData, updateMeal);
   };
 
   return (
-    <DragDropContext onDragEnd={handleDragEnd}>
-      <div>
+    <MealSectionsProvider onMealClick={onMealClick}>
+      <DragDropContext onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-1 gap-4">
           {/* Breakfast */}
-          {renderMealSection("Breakfast", currentDayData.meals.breakfast)}
+          <MealSection
+            mealType="Breakfast"
+            meals={currentDayData.meals.breakfast}
+            lockedMeals={lockedMeals}
+            toggleLock={toggleLockMeal}
+            onAddFromVault={onAddFromVault}
+            onMealClick={handleMealClick}
+            currentDay={currentDay}
+          />
           
           {/* Lunch */}
-          {renderMealSection("Lunch", currentDayData.meals.lunch)}
+          <MealSection
+            mealType="Lunch"
+            meals={currentDayData.meals.lunch}
+            lockedMeals={lockedMeals}
+            toggleLock={toggleLockMeal}
+            onAddFromVault={onAddFromVault}
+            onMealClick={handleMealClick}
+            currentDay={currentDay}
+          />
           
           {/* Dinner */}
-          {renderMealSection("Dinner", currentDayData.meals.dinner)}
+          <MealSection
+            mealType="Dinner"
+            meals={currentDayData.meals.dinner}
+            lockedMeals={lockedMeals}
+            toggleLock={toggleLockMeal}
+            onAddFromVault={onAddFromVault}
+            onMealClick={handleMealClick}
+            currentDay={currentDay}
+          />
           
           {/* Snacks */}
-          {renderMealSection("Snacks", currentDayData.meals.snacks)}
+          <MealSection
+            mealType="Snacks"
+            meals={currentDayData.meals.snacks}
+            lockedMeals={lockedMeals}
+            toggleLock={toggleLockMeal}
+            onAddFromVault={onAddFromVault}
+            onMealClick={handleMealClick}
+            currentDay={currentDay}
+          />
         </div>
 
         {/* Recipe Detail Dialog */}
-        {selectedRecipe && isRecipeDetailOpen && (
-          <RecipeDetail
-            recipeId={selectedRecipe.id}
-            onClose={handleCloseRecipeDetail}
-            onToggleSave={handleToggleSave}
-          />
-        )}
-      </div>
-    </DragDropContext>
+        <RecipeDetailHandler
+          selectedRecipe={selectedRecipe}
+          isRecipeDetailOpen={isRecipeDetailOpen}
+          handleCloseRecipeDetail={handleCloseRecipeDetail}
+          handleToggleSave={handleToggleSave}
+        />
+      </DragDropContext>
+    </MealSectionsProvider>
   );
 };
 
