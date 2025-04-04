@@ -65,14 +65,14 @@ const CreateMealPlanPage = () => {
   };
 
   // Handle adding a recipe from the vault to the meal plan
+  // Fixed to properly add recipes without replacing existing ones
   const handleAddRecipeToMealPlan = (recipe: Recipe, mealType: string, index?: number) => {
     // If no specific meal type is provided from header button, use breakfast as default
-    // and always add as the first item
     const actualMealType = mealType || 'breakfast';
-    const actualIndex = typeof index !== 'undefined' ? index : 0;
     
-    // Use the updateMeal function to update the meal plan
-    updateMeal(actualMealType, recipe, actualIndex);
+    // Important: Don't specify an index here, which will make updateMeal add to the beginning
+    // rather than replacing at a specific index
+    updateMeal(actualMealType, recipe);
     
     // Close the dialog after adding the recipe
     setIsRecipeVaultOpen(false);

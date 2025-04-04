@@ -271,7 +271,7 @@ export const useMealPlanUtils = () => {
         return prevPlan; // Don't update if recipe is null and no index provided
       }
 
-      const MAX_MEALS_PER_TYPE = 10; // Increased from 5 to 10
+      const MAX_MEALS_PER_TYPE = 10; // INCREASED from 5 to 10
 
       if (mealType === 'breakfast') {
         // Initialize the breakfast array if it doesn't exist

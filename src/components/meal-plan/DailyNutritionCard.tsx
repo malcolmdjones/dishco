@@ -40,9 +40,9 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
         <h2 className="text-lg font-semibold mb-4">Daily Nutrition</h2>
         
         <div className="flex justify-between items-center">
-          {/* All circular progress bars inside flex items-center for consistent alignment */}
+          {/* Calories */}
           <div className="flex-1 flex flex-col items-center">
-            <div className="w-20 h-20 flex items-center justify-center">
+            <div className="w-20 h-20">
               <CircularProgressbar 
                 value={dayTotals.calories} 
                 maxValue={userGoals.calories} 
@@ -61,7 +61,7 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
           
           {/* Protein */}
           <div className="flex-1 flex flex-col items-center">
-            <div className="w-20 h-20 flex items-center justify-center">
+            <div className="w-20 h-20">
               <CircularProgressbar 
                 value={dayTotals.protein} 
                 maxValue={userGoals.protein} 
@@ -80,7 +80,7 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
           
           {/* Carbs */}
           <div className="flex-1 flex flex-col items-center">
-            <div className="w-20 h-20 flex items-center justify-center">
+            <div className="w-20 h-20">
               <CircularProgressbar 
                 value={dayTotals.carbs} 
                 maxValue={userGoals.carbs} 
@@ -99,7 +99,7 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
           
           {/* Fat */}
           <div className="flex-1 flex flex-col items-center">
-            <div className="w-20 h-20 flex items-center justify-center">
+            <div className="w-20 h-20">
               <CircularProgressbar 
                 value={dayTotals.fat} 
                 maxValue={userGoals.fat} 
