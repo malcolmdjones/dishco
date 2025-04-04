@@ -57,97 +57,25 @@ export const useMealPlanUtils = () => {
     regenerateMeals();
   };
 
-  // Function to regenerate meals for the current day using AI
+  // Function to regenerate meals for the current day using fallback method instead of AI
   const regenerateMeals = async () => {
     setIsGenerating(true);
     setAiReasoning("");
     
     try {
-      // Prepare locked meals data
-      const currentLockedMeals: {[key: string]: any} = {};
-      if (mealPlan[currentDay]) {
-        const currentMeals = mealPlan[currentDay].meals;
-        
-        if (lockedMeals[`${currentDay}-breakfast`] && currentMeals.breakfast) {
-          currentLockedMeals.breakfast = currentMeals.breakfast;
-        }
-        
-        if (lockedMeals[`${currentDay}-lunch`] && currentMeals.lunch) {
-          currentLockedMeals.lunch = currentMeals.lunch;
-        }
-        
-        if (lockedMeals[`${currentDay}-dinner`] && currentMeals.dinner) {
-          currentLockedMeals.dinner = currentMeals.dinner;
-        }
-        
-        if (lockedMeals[`${currentDay}-snack-0`] && currentMeals.snacks?.[0]) {
-          currentLockedMeals['snack-0'] = currentMeals.snacks[0];
-        }
-        
-        if (lockedMeals[`${currentDay}-snack-1`] && currentMeals.snacks?.[1]) {
-          currentLockedMeals['snack-1'] = currentMeals.snacks[1];
-        }
-      }
-      
-      // Call the Supabase Edge Function
-      const { data, error } = await supabase.functions.invoke('meal-plan-ai', {
-        body: {
-          userGoals,
-          lockedMeals: currentLockedMeals,
-          availableRecipes: recipes,
-          currentDay,
-        },
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Apply the AI-generated meal plan to the current day
-      if (data && data.mealPlan) {
-        setMealPlan(prevPlan => {
-          const newPlan = [...prevPlan];
-          const currentPlanDay = { ...newPlan[currentDay] };
-          
-          currentPlanDay.meals = {
-            breakfast: data.mealPlan.breakfast,
-            lunch: data.mealPlan.lunch,
-            dinner: data.mealPlan.dinner,
-            snacks: data.mealPlan.snacks
-          };
-          
-          newPlan[currentDay] = currentPlanDay;
-          return newPlan;
-        });
-        
-        // Store AI reasoning if provided
-        if (data.reasoning) {
-          setAiReasoning(data.reasoning);
-        }
-        
-        toast({
-          title: "Meal Plan Updated",
-          description: "Your meals have been generated based on your nutrition goals.",
-        });
-      } else {
-        throw new Error("Received invalid data from AI service");
-      }
+      // Use only the fallback method for meal generation
+      fallbackMealGeneration();
     } catch (error) {
       console.error("Error generating meal plan:", error);
       toast({
         title: "Error Generating Meal Plan",
-        description: error.message || "Failed to generate meal plan. Please try again.",
+        description: "Failed to generate meal plan. Please try again.",
         variant: "destructive"
       });
-      
-      // Fallback to the original method if AI fails
-      fallbackMealGeneration();
-    } finally {
-      setIsGenerating(false);
     }
   };
   
-  // Fallback method if AI fails
+  // Fallback method for meal generation
   const fallbackMealGeneration = () => {
     setTimeout(() => {
       setMealPlan(prevPlan => {
@@ -177,11 +105,11 @@ export const useMealPlanUtils = () => {
         
         // Handle snacks
         const newSnacks = [...(newMeals.snacks || [])];
-        if (!lockedMeals[`${currentDay}-snack-0`] || !newSnacks[0]) {
+        if (!lockedMeals[`${currentDay}-snack-0`]) {
           newSnacks[0] = snackRecipes[Math.floor(Math.random() * snackRecipes.length)];
         }
         
-        if (!lockedMeals[`${currentDay}-snack-1`] || !newSnacks[1]) {
+        if (!lockedMeals[`${currentDay}-snack-1`]) {
           newSnacks[1] = snackRecipes[Math.floor(Math.random() * snackRecipes.length)];
         }
         
@@ -193,9 +121,11 @@ export const useMealPlanUtils = () => {
       });
       
       toast({
-        title: "Meal Plan Updated (Fallback Mode)",
-        description: "Your meals have been regenerated using our basic algorithm.",
+        title: "Meal Plan Updated",
+        description: "Your meals have been regenerated.",
       });
+      
+      setIsGenerating(false);
     }, 1000);
   };
 
@@ -213,6 +143,36 @@ export const useMealPlanUtils = () => {
       description: lockedMeals[key] 
         ? "This meal can now be changed when regenerating." 
         : "This meal will stay the same when regenerating.",
+    });
+  };
+
+  // Update a specific meal in the meal plan
+  const updateMeal = (mealType: string, recipe: Recipe, index?: number) => {
+    setMealPlan(prevPlan => {
+      const newPlan = [...prevPlan];
+      const currentPlanDay = { ...newPlan[currentDay] };
+      const currentMeals = { ...currentPlanDay.meals };
+
+      if (mealType === 'breakfast') {
+        currentMeals.breakfast = recipe;
+      } else if (mealType === 'lunch') {
+        currentMeals.lunch = recipe;
+      } else if (mealType === 'dinner') {
+        currentMeals.dinner = recipe;
+      } else if (mealType === 'snack' && index !== undefined) {
+        const newSnacks = [...(currentMeals.snacks || [])];
+        newSnacks[index] = recipe;
+        currentMeals.snacks = newSnacks;
+      }
+
+      currentPlanDay.meals = currentMeals;
+      newPlan[currentDay] = currentPlanDay;
+      return newPlan;
+    });
+
+    toast({
+      title: "Meal Added",
+      description: `Added ${recipe.name} to your meal plan.`,
     });
   };
 
@@ -252,6 +212,7 @@ export const useMealPlanUtils = () => {
     generateFullMealPlan,
     regenerateMeals,
     toggleLockMeal,
+    updateMeal,
     calculateDayTotals,
     checkExceedsGoals
   };

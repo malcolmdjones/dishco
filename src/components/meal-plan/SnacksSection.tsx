@@ -37,9 +37,9 @@ const SnacksSection: React.FC<SnacksSectionProps> = ({
               >
                 {/* Image Section */}
                 <div className="relative h-32 bg-gray-100">
-                  {snack.imageUrl ? (
+                  {snack.imageSrc ? (
                     <img 
-                      src={snack.imageUrl} 
+                      src={snack.imageSrc} 
                       alt={snack.name} 
                       className="w-full h-full object-cover"
                     />

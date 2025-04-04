@@ -17,6 +17,7 @@ const CreateMealPlanPage = () => {
     lockedMeals,
     toggleLockMeal,
     regenerateMeals,
+    updateMeal,
     calculateDayTotals,
     checkExceedsGoals
   } = useMealPlanUtils();
@@ -45,26 +46,8 @@ const CreateMealPlanPage = () => {
     const actualMealType = mealType || 'breakfast';
     const actualIndex = typeof index !== 'undefined' ? index : undefined;
     
-    // Clone current meal plan
-    const newMealPlan = [...mealPlan];
-    const currentDayData = { ...newMealPlan[currentDay] };
-    const currentMeals = { ...currentDayData.meals };
-    
-    // Update based on meal type
-    if (actualMealType === 'breakfast') {
-      currentMeals.breakfast = recipe;
-    } else if (actualMealType === 'lunch') {
-      currentMeals.lunch = recipe;
-    } else if (actualMealType === 'dinner') {
-      currentMeals.dinner = recipe;
-    } else if (actualMealType === 'snack' && actualIndex !== undefined) {
-      const newSnacks = [...(currentMeals.snacks || [])];
-      newSnacks[actualIndex] = recipe;
-      currentMeals.snacks = newSnacks;
-    }
-    
-    currentDayData.meals = currentMeals;
-    newMealPlan[currentDay] = currentDayData;
+    // Use the updateMeal function to update the meal plan
+    updateMeal(actualMealType, recipe, actualIndex);
   };
 
   return (
