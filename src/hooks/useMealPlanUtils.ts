@@ -1,11 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { calculateDailyMacros, defaultGoals, fetchNutritionGoals, recipes, Recipe, NutritionGoals, MealPlanDay } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-
-// We don't need to extend MealPlanDay anymore since we've updated the base interface
-// to support arrays of recipes
 
 export const useMealPlanUtils = () => {
   const { toast } = useToast();
@@ -17,17 +13,47 @@ export const useMealPlanUtils = () => {
   const [lockedMeals, setLockedMeals] = useState<{[key: string]: boolean}>({});
   const [aiReasoning, setAiReasoning] = useState<string>("");
 
-  // Get user's nutrition goals
+  // Get user's nutrition goals from Supabase
   useEffect(() => {
-    const getUserGoals = async () => {
+    const fetchUserNutritionGoals = async () => {
       try {
-        const goals = await fetchNutritionGoals();
-        setUserGoals(goals);
+        // Try to fetch user's goals from Supabase
+        const { data, error } = await supabase
+          .from('nutrition_goals')
+          .select('*')
+          .limit(1)
+          .single();
+          
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching nutrition goals:', error);
+          // Fall back to local goals if error
+          const localGoals = await fetchNutritionGoals();
+          setUserGoals(localGoals);
+          return;
+        }
+        
+        if (data) {
+          // Use Supabase nutrition goals
+          setUserGoals({
+            calories: data.calories,
+            protein: data.protein,
+            carbs: data.carbs,
+            fat: data.fat
+          });
+        } else {
+          // Fall back to local goals if no data
+          const localGoals = await fetchNutritionGoals();
+          setUserGoals(localGoals);
+        }
       } catch (error) {
         console.error('Error fetching nutrition goals:', error);
+        // Fall back to local goals on catch
+        const localGoals = await fetchNutritionGoals();
+        setUserGoals(localGoals);
       }
     };
-    getUserGoals();
+    
+    fetchUserNutritionGoals();
   }, []);
 
   // Initialize or generate meal plan
@@ -60,7 +86,7 @@ export const useMealPlanUtils = () => {
     regenerateMeals();
   };
 
-  // Function to regenerate meals for the current day using fallback method instead of AI
+  // Function to regenerate meals for the current day
   const regenerateMeals = async () => {
     setIsGenerating(true);
     setAiReasoning("");
@@ -102,56 +128,56 @@ export const useMealPlanUtils = () => {
 
         // Handle breakfast meals
         if (Array.isArray(newMeals.breakfast)) {
-          const updatedBreakfast = [...newMeals.breakfast];
+          let updatedBreakfast = [...newMeals.breakfast];
           
-          // Remove unlocked breakfast items
-          const filteredBreakfast = updatedBreakfast.filter((_, index) => 
+          // Keep only locked breakfast items
+          updatedBreakfast = updatedBreakfast.filter((meal, index) => 
             lockedMeals[`${currentDay}-breakfast-${index}`]
           );
           
-          // Add a random breakfast item if empty or all were unlocked and removed
-          if (filteredBreakfast.length === 0) {
+          // Add a random breakfast if empty (all were unlocked)
+          if (updatedBreakfast.length === 0) {
             const randomBreakfast = breakfastRecipes[Math.floor(Math.random() * breakfastRecipes.length)];
-            filteredBreakfast.push(randomBreakfast);
+            updatedBreakfast.push(randomBreakfast);
           }
           
-          newMeals.breakfast = filteredBreakfast;
+          newMeals.breakfast = updatedBreakfast;
         }
         
         // Handle lunch meals
         if (Array.isArray(newMeals.lunch)) {
-          const updatedLunch = [...newMeals.lunch];
+          let updatedLunch = [...newMeals.lunch];
           
-          // Remove unlocked lunch items
-          const filteredLunch = updatedLunch.filter((_, index) => 
+          // Keep only locked lunch items
+          updatedLunch = updatedLunch.filter((meal, index) => 
             lockedMeals[`${currentDay}-lunch-${index}`]
           );
           
-          // Add a random lunch item if empty or all were unlocked and removed
-          if (filteredLunch.length === 0) {
+          // Add a random lunch if empty (all were unlocked)
+          if (updatedLunch.length === 0) {
             const randomLunch = lunchRecipes[Math.floor(Math.random() * lunchRecipes.length)];
-            filteredLunch.push(randomLunch);
+            updatedLunch.push(randomLunch);
           }
           
-          newMeals.lunch = filteredLunch;
+          newMeals.lunch = updatedLunch;
         }
         
         // Handle dinner meals
         if (Array.isArray(newMeals.dinner)) {
-          const updatedDinner = [...newMeals.dinner];
+          let updatedDinner = [...newMeals.dinner];
           
-          // Remove unlocked dinner items
-          const filteredDinner = updatedDinner.filter((_, index) => 
+          // Keep only locked dinner items
+          updatedDinner = updatedDinner.filter((meal, index) => 
             lockedMeals[`${currentDay}-dinner-${index}`]
           );
           
-          // Add a random dinner item if empty or all were unlocked and removed
-          if (filteredDinner.length === 0) {
+          // Add a random dinner if empty (all were unlocked)
+          if (updatedDinner.length === 0) {
             const randomDinner = dinnerRecipes[Math.floor(Math.random() * dinnerRecipes.length)];
-            filteredDinner.push(randomDinner);
+            updatedDinner.push(randomDinner);
           }
           
-          newMeals.dinner = filteredDinner;
+          newMeals.dinner = updatedDinner;
         }
         
         // Handle snacks

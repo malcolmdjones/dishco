@@ -54,7 +54,7 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
       {/* Daily Nutrition Card */}
       <DailyNutritionCard 
         dayTotals={dayTotals}
-        userGoals={calculateDayTotals()}
+        userGoals={calculateDayTotals().userGoals || dayTotals}
         exceedsGoals={goalExceeds}
       />
 

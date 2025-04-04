@@ -35,26 +35,25 @@ const SavePlanDialog: React.FC<SavePlanDialogProps> = ({ isOpen, onClose, mealPl
     setIsSaving(true);
     
     try {
+      // Prepare data with additional metadata
       const planData = {
         days: mealPlan,
-        description: description.trim()
+        description: description.trim(),
+        tags: ['auto-generated'],
+        created_at: new Date().toISOString()
       };
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('saved_meal_plans')
         .insert([{ 
           name: planName.trim(),
-          plan_data: planData
+          plan_data: planData,
+          user_id: null // Will be replaced with actual user_id when auth is implemented
         }]);
       
       if (error) {
         console.error('Error saving meal plan:', error);
-        toast({
-          title: "Save Failed",
-          description: "There was an error saving your meal plan.",
-          variant: "destructive"
-        });
-        return;
+        throw error;
       }
       
       toast({
@@ -62,13 +61,17 @@ const SavePlanDialog: React.FC<SavePlanDialogProps> = ({ isOpen, onClose, mealPl
         description: "Your meal plan has been saved successfully.",
       });
       
+      // Reset form
+      setPlanName('');
+      setDescription('');
+      
       onClose();
       navigate('/saved-plans');
     } catch (error) {
       console.error('Error saving meal plan:', error);
       toast({
         title: "Save Failed",
-        description: "There was an error saving your meal plan.",
+        description: "There was an error saving your meal plan. Please try again.",
         variant: "destructive"
       });
     } finally {

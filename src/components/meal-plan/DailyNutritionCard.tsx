@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { CircularProgressbar } from 'react-circular-progressbar';
+import 'react-circular-progressbar/dist/styles.css';
 
 interface NutritionGoals {
   calories: number;
@@ -36,74 +37,79 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
   return (
     <Card className="mb-6">
       <CardContent className="pt-6">
-        <h2 className="text-lg font-semibold mb-6">Daily Nutrition</h2>
+        <h2 className="text-lg font-semibold mb-4">Daily Nutrition</h2>
         
-        <div className="grid grid-cols-4 gap-6">
+        <div className="flex justify-between items-center">
           {/* Calories */}
-          <div className="flex flex-col items-center">
-            <Progress 
-              type="circular"
-              size="lg"
-              value={dayTotals.calories} 
-              max={userGoals.calories}
-              showValue={true}
-              indicatorClassName="text-[#FEF7CD]"
-            />
-            <div className="mt-2 text-center">
-              <span className="text-sm text-gray-700">{dayTotals.calories} / {userGoals.calories}</span>
-              <p className="text-sm text-amber-500">Calories</p>
+          <div className="flex-1 flex flex-col items-center">
+            <div className="w-20 h-20">
+              <CircularProgressbar 
+                value={dayTotals.calories} 
+                maxValue={userGoals.calories} 
+                text={`${dayTotals.calories}`}
+                styles={{
+                  path: { stroke: "#FFF4D7" },
+                  text: { fill: '#3c3c3c', fontSize: '30px' }
+                }}
+              />
             </div>
+            <span className="text-xs text-center mt-1">
+              {dayTotals.calories} / {userGoals.calories} Cal
+            </span>
           </div>
           
           {/* Protein */}
-          <div className="flex flex-col items-center">
-            <Progress 
-              type="circular"
-              size="lg"
-              value={dayTotals.protein} 
-              max={userGoals.protein}
-              showValue={true}
-              valueSuffix="g"
-              indicatorClassName="text-[#D3E4FD]"
-            />
-            <div className="mt-2 text-center">
-              <span className="text-sm text-gray-700">{dayTotals.protein}g / {userGoals.protein}g</span>
-              <p className="text-sm text-blue-500">Protein</p>
+          <div className="flex-1 flex flex-col items-center">
+            <div className="w-20 h-20">
+              <CircularProgressbar 
+                value={dayTotals.protein} 
+                maxValue={userGoals.protein} 
+                text={`${dayTotals.protein}g`}
+                styles={{
+                  path: { stroke: "#DBE9FE" },
+                  text: { fill: '#3c3c3c', fontSize: '30px' }
+                }}
+              />
             </div>
+            <span className="text-xs text-center mt-1 text-amber-600">
+              {dayTotals.protein}g / {userGoals.protein}g
+            </span>
           </div>
           
           {/* Carbs */}
-          <div className="flex flex-col items-center">
-            <Progress 
-              type="circular"
-              size="lg"
-              value={dayTotals.carbs} 
-              max={userGoals.carbs}
-              showValue={true}
-              valueSuffix="g"
-              indicatorClassName="text-[#FEF7CD]"
-            />
-            <div className="mt-2 text-center">
-              <span className="text-sm text-gray-700">{dayTotals.carbs}g / {userGoals.carbs}g</span>
-              <p className="text-sm text-amber-500">Carbs</p>
+          <div className="flex-1 flex flex-col items-center">
+            <div className="w-20 h-20">
+              <CircularProgressbar 
+                value={dayTotals.carbs} 
+                maxValue={userGoals.carbs} 
+                text={`${dayTotals.carbs}g`}
+                styles={{
+                  path: { stroke: "#FEF9C3" },
+                  text: { fill: '#3c3c3c', fontSize: '30px' }
+                }}
+              />
             </div>
+            <span className="text-xs text-center mt-1">
+              {dayTotals.carbs}g / {userGoals.carbs}g
+            </span>
           </div>
           
           {/* Fat */}
-          <div className="flex flex-col items-center">
-            <Progress 
-              type="circular"
-              size="lg"
-              value={dayTotals.fat} 
-              max={userGoals.fat}
-              showValue={true}
-              valueSuffix="g"
-              indicatorClassName="text-[#E5DEFF]"
-            />
-            <div className="mt-2 text-center">
-              <span className="text-sm text-gray-700">{dayTotals.fat}g / {userGoals.fat}g</span>
-              <p className="text-sm text-green-500">Fat</p>
+          <div className="flex-1 flex flex-col items-center">
+            <div className="w-20 h-20">
+              <CircularProgressbar 
+                value={dayTotals.fat} 
+                maxValue={userGoals.fat} 
+                text={`${dayTotals.fat}g`}
+                styles={{
+                  path: { stroke: "#F3E8FF" },
+                  text: { fill: '#3c3c3c', fontSize: '30px' }
+                }}
+              />
             </div>
+            <span className="text-xs text-center mt-1 text-green-600">
+              {dayTotals.fat}g / {userGoals.fat}g
+            </span>
           </div>
         </div>
       </CardContent>
