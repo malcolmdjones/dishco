@@ -26,7 +26,7 @@ const MealSections: React.FC<MealSectionsProps> = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* Breakfast */}
       <MealCard 
         title="Breakfast"

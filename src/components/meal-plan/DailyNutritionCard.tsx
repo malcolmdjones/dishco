@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 
 interface NutritionGoals {
   calories: number;
@@ -35,67 +36,74 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
   return (
     <Card className="mb-6">
       <CardContent className="pt-6">
-        <h2 className="text-lg font-semibold mb-4">Daily Nutrition</h2>
+        <h2 className="text-lg font-semibold mb-6">Daily Nutrition</h2>
         
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-4 gap-6">
           {/* Calories */}
-          <div className="flex flex-col">
-            <div className="flex items-end mb-2 gap-1">
-              <span className="text-2xl font-semibold">{dayTotals.calories}</span>
-              <span className="text-gray-500 text-sm">/ {userGoals.calories}</span>
+          <div className="flex flex-col items-center">
+            <Progress 
+              type="circular"
+              size="lg"
+              value={dayTotals.calories} 
+              max={userGoals.calories}
+              showValue={true}
+              indicatorClassName={exceedsGoals.exceeds.calories ? "text-red-500" : "text-yellow-400"}
+            />
+            <div className="mt-2 text-center">
+              <span className="text-sm text-gray-500">{dayTotals.calories} / {userGoals.calories}</span>
+              <p className="text-sm text-gray-700">Calories</p>
             </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
-              <div 
-                className={`h-full ${exceedsGoals.exceeds.calories ? 'bg-red-500' : 'bg-yellow-400'}`}
-                style={{ width: `${Math.min(100, (dayTotals.calories / userGoals.calories) * 100)}%` }}
-              ></div>
-            </div>
-            <span className="text-sm text-gray-700">Calories</span>
           </div>
           
           {/* Protein */}
-          <div className="flex flex-col">
-            <div className="flex items-end mb-2 gap-1">
-              <span className="text-2xl font-semibold">{dayTotals.protein}g</span>
-              <span className="text-gray-500 text-sm">/ {userGoals.protein}g</span>
+          <div className="flex flex-col items-center">
+            <Progress 
+              type="circular"
+              size="lg"
+              value={dayTotals.protein} 
+              max={userGoals.protein}
+              showValue={true}
+              valueSuffix="g"
+              indicatorClassName={exceedsGoals.exceeds.protein ? "text-red-500" : "text-blue-400"}
+            />
+            <div className="mt-2 text-center">
+              <span className="text-sm text-gray-500">{dayTotals.protein}g / {userGoals.protein}g</span>
+              <p className="text-sm text-gray-700">Protein</p>
             </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
-              <div 
-                className={`h-full ${exceedsGoals.exceeds.protein ? 'bg-red-500' : 'bg-blue-400'}`}
-                style={{ width: `${Math.min(100, (dayTotals.protein / userGoals.protein) * 100)}%` }}
-              ></div>
-            </div>
-            <span className="text-sm text-gray-700">Protein</span>
           </div>
           
           {/* Carbs */}
-          <div className="flex flex-col">
-            <div className="flex items-end mb-2 gap-1">
-              <span className="text-2xl font-semibold">{dayTotals.carbs}g</span>
-              <span className="text-gray-500 text-sm">/ {userGoals.carbs}g</span>
+          <div className="flex flex-col items-center">
+            <Progress 
+              type="circular"
+              size="lg"
+              value={dayTotals.carbs} 
+              max={userGoals.carbs}
+              showValue={true}
+              valueSuffix="g"
+              indicatorClassName={exceedsGoals.exceeds.carbs ? "text-red-500" : "text-yellow-400"}
+            />
+            <div className="mt-2 text-center">
+              <span className="text-sm text-gray-500">{dayTotals.carbs}g / {userGoals.carbs}g</span>
+              <p className="text-sm text-gray-700">Carbs</p>
             </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
-              <div 
-                className={`h-full ${exceedsGoals.exceeds.carbs ? 'bg-red-500' : 'bg-yellow-400'}`}
-                style={{ width: `${Math.min(100, (dayTotals.carbs / userGoals.carbs) * 100)}%` }}
-              ></div>
-            </div>
-            <span className="text-sm text-gray-700">Carbs</span>
           </div>
           
           {/* Fat */}
-          <div className="flex flex-col">
-            <div className="flex items-end mb-2 gap-1">
-              <span className="text-2xl font-semibold">{dayTotals.fat}g</span>
-              <span className="text-gray-500 text-sm">/ {userGoals.fat}g</span>
+          <div className="flex flex-col items-center">
+            <Progress 
+              type="circular"
+              size="lg"
+              value={dayTotals.fat} 
+              max={userGoals.fat}
+              showValue={true}
+              valueSuffix="g"
+              indicatorClassName={exceedsGoals.exceeds.fat ? "text-red-500" : "text-purple-400"}
+            />
+            <div className="mt-2 text-center">
+              <span className="text-sm text-gray-500">{dayTotals.fat}g / {userGoals.fat}g</span>
+              <p className="text-sm text-gray-700">Fat</p>
             </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
-              <div 
-                className={`h-full ${exceedsGoals.exceeds.fat ? 'bg-red-500' : 'bg-purple-400'}`}
-                style={{ width: `${Math.min(100, (dayTotals.fat / userGoals.fat) * 100)}%` }}
-              ></div>
-            </div>
-            <span className="text-sm text-gray-700">Fat</span>
           </div>
         </div>
       </CardContent>

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Lock, Unlock, CookingPot, Zap, Blend } from 'lucide-react';
+import { Plus, Lock, Unlock, CookingPot, Zap, Blend, Info } from 'lucide-react';
 import { Recipe } from '@/data/mockData';
 
 interface SnacksSectionProps {
@@ -20,85 +20,95 @@ const SnacksSection: React.FC<SnacksSectionProps> = ({
   onSnackClick
 }) => {
   return (
-    <div className="bg-white rounded-xl p-4 shadow-sm">
-      <h3 className="font-medium mb-4">Snacks</h3>
-      
-      <div className="space-y-4">
+    <div className="mb-6">
+      <h3 className="font-medium text-lg mb-2">Snacks</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {snacks.map((snack, idx) => (
           <div 
             key={idx} 
-            className={`border-b pb-4 last:border-b-0 last:pb-0 ${
-              lockedSnacks[idx] ? 'border-2 border-green-500 rounded-lg p-2 -mx-2 animate-pulse' : ''
+            className={`bg-white rounded-xl shadow-sm overflow-hidden ${
+              lockedSnacks[idx] ? 'border-2 border-green-500' : ''
             }`}
           >
-            <div className="flex justify-between items-center mb-2">
-              <div className="text-sm text-gray-600"></div>
-              <div className="flex gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className={`h-8 w-8 ${lockedSnacks[idx] ? 'text-green-500' : ''}`}
-                  onClick={() => toggleLockSnack(idx)}
-                >
-                  {lockedSnacks[idx] ? <Lock size={16} /> : <Unlock size={16} />}
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={() => onAddFromVault(idx)}
-                >
-                  <Plus size={16} />
-                </Button>
-              </div>
-            </div>
-            
             {snack ? (
               <div 
                 className="cursor-pointer" 
                 onClick={() => onSnackClick(snack)}
               >
-                <div className="flex justify-between items-center">
-                  <h4 className="font-medium">{snack.name}</h4>
-                  <div className="flex gap-1">
-                    {snack.requiresBlender && (
-                      <span className="text-gray-500" title="Requires blender">
-                        <Blend size={14} />
-                      </span>
-                    )}
-                    {snack.requiresCooking && (
-                      <span className="text-gray-500" title="Requires cooking">
-                        <CookingPot size={14} />
-                      </span>
-                    )}
-                    {snack.cookTime && snack.cookTime <= 15 && (
-                      <span className="text-amber-500" title="Quick to prepare">
-                        <Zap size={14} />
-                      </span>
-                    )}
+                {/* Image Section */}
+                <div className="relative h-32 bg-gray-100">
+                  {snack.imageUrl ? (
+                    <img 
+                      src={snack.imageUrl} 
+                      alt={snack.name} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="text-gray-400">No image available</div>
+                    </div>
+                  )}
+                  
+                  {/* Calorie Badge */}
+                  <div className="absolute bottom-2 right-2 bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                    {snack.macros.calories} kcal
+                  </div>
+                  
+                  {/* Lock/Unlock and Info Buttons */}
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    <Button 
+                      variant="secondary" 
+                      size="icon" 
+                      className={`h-6 w-6 rounded-full bg-white shadow-md ${lockedSnacks[idx] ? 'text-green-500' : 'text-gray-500'}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleLockSnack(idx);
+                      }}
+                    >
+                      {lockedSnacks[idx] ? <Lock size={12} /> : <Unlock size={12} />}
+                    </Button>
+                    <Button 
+                      variant="secondary" 
+                      size="icon" 
+                      className="h-6 w-6 rounded-full bg-white shadow-md text-gray-500"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddFromVault(idx);
+                      }}
+                    >
+                      <Info size={12} />
+                    </Button>
                   </div>
                 </div>
-                <p className="text-sm text-gray-500 line-clamp-2">{snack.description}</p>
-                <div className="flex justify-between items-center mt-2">
-                  <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">
-                    {snack.macros.calories} kcal
-                  </span>
-                  <div className="flex gap-2">
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                
+                {/* Content Section */}
+                <div className="p-3">
+                  <h4 className="font-medium text-sm mb-1">{snack.name}</h4>
+                  
+                  {/* Macros */}
+                  <div className="flex flex-wrap gap-1">
+                    <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">
                       P: {snack.macros.protein}g
                     </span>
-                    <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">
+                    <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs">
                       C: {snack.macros.carbs}g
                     </span>
-                    <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
+                    <span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full text-xs">
                       F: {snack.macros.fat}g
                     </span>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="h-20 bg-gray-50 rounded flex items-center justify-center">
-                <p className="text-gray-400 text-sm">No snack selected</p>
+              <div className="h-32 bg-gray-50 flex flex-col items-center justify-center p-3">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => onAddFromVault(idx)}
+                >
+                  <Plus size={14} className="mr-1" />
+                  Add snack
+                </Button>
               </div>
             )}
           </div>

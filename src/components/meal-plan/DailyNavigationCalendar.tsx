@@ -31,6 +31,11 @@ const DailyNavigationCalendar: React.FC<DailyNavigationCalendarProps> = ({
     return new Date(dateString).getDate();
   };
 
+  // Get day of week
+  const getDayOfWeek = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', { weekday: 'short' }).charAt(0);
+  };
+
   return (
     <div className="flex items-center justify-between mb-6">
       <Button 
@@ -38,27 +43,39 @@ const DailyNavigationCalendar: React.FC<DailyNavigationCalendarProps> = ({
         size="icon" 
         onClick={() => navigateDay('prev')} 
         disabled={currentDay === 0}
+        className="text-gray-400"
       >
-        <ArrowLeft size={18} />
+        <ArrowLeft size={24} />
       </Button>
       
-      <div className="flex space-x-2 overflow-x-auto">
-        {mealPlan.map((day, idx) => (
-          <button 
-            key={idx} 
-            className={`flex flex-col items-center justify-center size-10 rounded-full ${
-              idx === currentDay 
-                ? 'bg-primary text-white' 
-                : 'bg-gray-100 text-gray-600'
-            }`}
-            onClick={() => setCurrentDay(idx)}
-          >
-            <span className="text-xs uppercase">
-              {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' }).charAt(0)}
-            </span>
-            <span className="text-sm font-medium">{getDayNumber(day.date)}</span>
-          </button>
-        ))}
+      <div className="grid grid-cols-7 gap-1">
+        {mealPlan.map((day, idx) => {
+          const isCurrentDay = idx === currentDay;
+          const dayNumber = getDayNumber(day.date);
+          const dayOfWeek = getDayOfWeek(day.date);
+          const isWeekend = idx === 0 || idx === 6;
+          
+          return (
+            <button 
+              key={idx} 
+              className={`flex flex-col items-center justify-center ${isWeekend ? 'text-gray-400' : ''}`}
+              onClick={() => setCurrentDay(idx)}
+            >
+              <span className="text-xs uppercase mb-1">
+                {dayOfWeek}
+              </span>
+              <div 
+                className={`flex items-center justify-center w-10 h-10 rounded-full ${
+                  isCurrentDay 
+                    ? 'bg-primary text-white' 
+                    : 'text-gray-700'
+                }`}
+              >
+                <span className={`text-lg ${isCurrentDay ? 'font-medium' : ''}`}>{dayNumber}</span>
+              </div>
+            </button>
+          );
+        })}
       </div>
       
       <Button 
@@ -66,8 +83,9 @@ const DailyNavigationCalendar: React.FC<DailyNavigationCalendarProps> = ({
         size="icon"
         onClick={() => navigateDay('next')}
         disabled={currentDay === 6}
+        className="text-gray-400"
       >
-        <ArrowRight size={18} />
+        <ArrowRight size={24} />
       </Button>
     </div>
   );

@@ -37,7 +37,7 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
   const goalExceeds = checkExceedsGoals();
 
   return (
-    <div className="pb-20 animate-fade-in">
+    <div className="pb-24 px-4 animate-fade-in">
       {/* Weekly Calendar Navigation */}
       <DailyNavigationCalendar 
         mealPlan={mealPlan}
