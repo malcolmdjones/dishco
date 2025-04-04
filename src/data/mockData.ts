@@ -62,6 +62,37 @@ export const fetchNutritionGoals = async (): Promise<NutritionGoals> => {
   return defaultGoals;
 };
 
+// Stock images for different meal types
+const stockImages = {
+  breakfast: [
+    "https://images.unsplash.com/photo-1533089860892-a71c4c8219ec?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1594003543508-2c11d13a0c95?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"
+  ],
+  lunch: [
+    "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1547496502-affa22d38842?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"
+  ],
+  dinner: [
+    "https://images.unsplash.com/photo-1564834733143-6701a4b8fec9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1574894709920-11b28e7367e3?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"
+  ],
+  snack: [
+    "https://images.unsplash.com/photo-1599642080669-0db91ed448fc?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1624712656107-1108e7de24b2?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1621797739778-8f1bce0d49d5?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1613728913901-bc5b7d1c1337?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"
+  ]
+};
+
+// Helper function to get a stock image based on recipe type
+const getStockImage = (type: string) => {
+  const images = stockImages[type as keyof typeof stockImages] || stockImages.snack;
+  return images[Math.floor(Math.random() * images.length)];
+};
+
 // Mock recipes data
 export const recipes: Recipe[] = [
   {
@@ -89,7 +120,7 @@ export const recipes: Recipe[] = [
       carbs: 55,
       fat: 8
     },
-    imageSrc: '/placeholder.svg',
+    imageSrc: getStockImage('breakfast'),
     type: 'breakfast',
     requiresBlender: false,
     requiresCooking: false,
@@ -122,7 +153,7 @@ export const recipes: Recipe[] = [
       carbs: 20,
       fat: 18
     },
-    imageSrc: '/placeholder.svg',
+    imageSrc: getStockImage('breakfast'),
     type: 'breakfast',
     requiresBlender: false,
     requiresCooking: true,
@@ -153,7 +184,7 @@ export const recipes: Recipe[] = [
       carbs: 25,
       fat: 8
     },
-    imageSrc: '/placeholder.svg',
+    imageSrc: getStockImage('breakfast'),
     type: 'breakfast',
     requiresBlender: false,
     requiresCooking: false,
@@ -185,7 +216,7 @@ export const recipes: Recipe[] = [
       carbs: 15,
       fat: 12
     },
-    imageSrc: '/placeholder.svg',
+    imageSrc: getStockImage('lunch'),
     type: 'lunch',
     requiresBlender: false,
     requiresCooking: true,
@@ -217,7 +248,7 @@ export const recipes: Recipe[] = [
       carbs: 45,
       fat: 12
     },
-    imageSrc: '/placeholder.svg',
+    imageSrc: getStockImage('lunch'),
     type: 'lunch',
     requiresBlender: false,
     requiresCooking: true,
@@ -249,7 +280,7 @@ export const recipes: Recipe[] = [
       carbs: 30,
       fat: 8
     },
-    imageSrc: '/placeholder.svg',
+    imageSrc: getStockImage('lunch'),
     type: 'lunch',
     requiresBlender: false,
     requiresCooking: false,
@@ -282,7 +313,7 @@ export const recipes: Recipe[] = [
       carbs: 5,
       fat: 18
     },
-    imageSrc: '/placeholder.svg',
+    imageSrc: getStockImage('dinner'),
     type: 'dinner',
     requiresBlender: false,
     requiresCooking: true,
@@ -315,7 +346,7 @@ export const recipes: Recipe[] = [
       carbs: 35,
       fat: 15
     },
-    imageSrc: '/placeholder.svg',
+    imageSrc: getStockImage('dinner'),
     type: 'dinner',
     requiresBlender: false,
     requiresCooking: true,
@@ -348,7 +379,7 @@ export const recipes: Recipe[] = [
       carbs: 25,
       fat: 12
     },
-    imageSrc: '/placeholder.svg',
+    imageSrc: getStockImage('dinner'),
     type: 'dinner',
     requiresBlender: false,
     requiresCooking: true,
@@ -375,7 +406,7 @@ export const recipes: Recipe[] = [
       carbs: 20,
       fat: 8
     },
-    imageSrc: '/placeholder.svg',
+    imageSrc: getStockImage('snack'),
     type: 'snack',
     requiresBlender: false,
     requiresCooking: false,
@@ -402,7 +433,7 @@ export const recipes: Recipe[] = [
       carbs: 10,
       fat: 0
     },
-    imageSrc: '/placeholder.svg',
+    imageSrc: getStockImage('snack'),
     type: 'snack',
     requiresBlender: false,
     requiresCooking: false,
@@ -432,7 +463,7 @@ export const recipes: Recipe[] = [
       carbs: 15,
       fat: 3
     },
-    imageSrc: '/placeholder.svg',
+    imageSrc: getStockImage('snack'),
     type: 'snack',
     requiresBlender: true,
     requiresCooking: false,
@@ -461,7 +492,7 @@ export const recipes: Recipe[] = [
       carbs: 8,
       fat: 9
     },
-    imageSrc: '/placeholder.svg',
+    imageSrc: getStockImage('snack'),
     type: 'snack',
     requiresBlender: false,
     requiresCooking: false,
@@ -492,7 +523,7 @@ export const recipes: Recipe[] = [
       carbs: 15,
       fat: 0
     },
-    imageSrc: '/placeholder.svg',
+    imageSrc: getStockImage('snack'),
     type: 'snack',
     requiresBlender: false,
     requiresCooking: true,
@@ -525,7 +556,7 @@ export const recipes: Recipe[] = [
       carbs: 32,
       fat: 10
     },
-    imageSrc: '/placeholder.svg',
+    imageSrc: getStockImage('breakfast'),
     type: 'breakfast',
     requiresBlender: true,
     requiresCooking: true,

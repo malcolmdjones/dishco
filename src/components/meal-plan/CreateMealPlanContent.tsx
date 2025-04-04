@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Recipe } from '@/data/mockData';
 import DailyNavigationCalendar from '@/components/meal-plan/DailyNavigationCalendar';
 import DailyNutritionCard from '@/components/meal-plan/DailyNutritionCard';
 import BottomActionBar from '@/components/meal-plan/BottomActionBar';
 import MealSections from '@/components/meal-plan/meal-sections/MealSections';
+import SavePlanDialog from '@/components/SavePlanDialog';
 
 interface CreateMealPlanContentProps {
   currentDay: number;
@@ -37,6 +38,9 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
   const currentDayData = mealPlan[currentDay];
   const dayTotals = calculateDayTotals();
   const goalExceeds = checkExceedsGoals();
+  
+  // State for save dialog
+  const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
 
   return (
     <div className="pb-24 px-4 animate-fade-in">
@@ -68,8 +72,15 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
       {/* Bottom Action Buttons */}
       <BottomActionBar 
         onRegenerate={regenerateMeals}
-        onSave={() => {}} // We'll handle meal plan saving in a future update
+        onSave={() => setIsSaveDialogOpen(true)}
         isGenerating={isGenerating}
+      />
+
+      {/* Save Plan Dialog */}
+      <SavePlanDialog 
+        isOpen={isSaveDialogOpen}
+        onClose={() => setIsSaveDialogOpen(false)}
+        mealPlan={mealPlan}
       />
     </div>
   );
