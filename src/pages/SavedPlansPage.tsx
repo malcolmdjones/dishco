@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -101,17 +100,30 @@ const SavedPlansPage = () => {
 
       if (error) {
         console.error('Error deleting plan:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete the meal plan.",
+          variant: "destructive"
+        });
         return;
       }
 
+      setPlans(prevPlans => prevPlans.filter(plan => plan.id !== deletePlanId));
+      
       toast({
         title: "Plan Deleted",
         description: "Your meal plan has been deleted.",
       });
-      fetchPlans();
+      
       setIsDeleteDialogOpen(false);
+      setDeletePlanId(null);
     } catch (error) {
       console.error('Error deleting plan:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete the meal plan.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -170,8 +182,7 @@ const SavedPlansPage = () => {
       const days = planData.days || [];
       
       return (
-        <Card key={index} className="relative overflow-hidden animate-fade-in">
-          {/* Position edit and delete icons in top right corner */}
+        <Card key={plan.id} className="relative overflow-hidden animate-fade-in">
           <div className="absolute top-3 right-3 flex gap-2 z-10">
             <Button
               variant="ghost"
@@ -283,7 +294,6 @@ const SavedPlansPage = () => {
         {renderCards()}
       </div>
 
-      {/* Edit Plan Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -319,7 +329,6 @@ const SavedPlansPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Plan Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
