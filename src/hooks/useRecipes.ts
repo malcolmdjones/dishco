@@ -24,8 +24,10 @@ export interface DbRecipe {
   price_range?: string;
   meal_type?: string;
   is_high_protein?: boolean;
+  is_public?: boolean;  // Added this property to fix TypeScript errors
   created_at?: string;
   updated_at?: string;
+  user_id?: string;     // Added user_id to handle ownership
 }
 
 // Convert database recipe to frontend recipe format
