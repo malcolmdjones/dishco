@@ -271,6 +271,8 @@ export const useMealPlanUtils = () => {
         return prevPlan; // Don't update if recipe is null and no index provided
       }
 
+      const MAX_MEALS_PER_TYPE = 10; // Increased from 5 to 10
+
       if (mealType === 'breakfast') {
         // Initialize the breakfast array if it doesn't exist
         if (!currentMeals.breakfast) {
@@ -290,8 +292,16 @@ export const useMealPlanUtils = () => {
             breakfastArray.splice(index, 1);
           }
         } else if (recipe) {
-          // Add to the beginning of the array
-          breakfastArray.unshift(recipe);
+          // Add to the beginning of the array, limit to MAX_MEALS_PER_TYPE meals
+          if (breakfastArray.length < MAX_MEALS_PER_TYPE) {
+            breakfastArray.unshift(recipe);
+          } else {
+            toast({
+              title: "Maximum Reached",
+              description: `You can have up to ${MAX_MEALS_PER_TYPE} breakfast items.`,
+              variant: "destructive"
+            });
+          }
         }
         currentMeals.breakfast = breakfastArray;
       } 
@@ -314,8 +324,16 @@ export const useMealPlanUtils = () => {
             lunchArray.splice(index, 1);
           }
         } else if (recipe) {
-          // Add to the beginning of the array
-          lunchArray.unshift(recipe);
+          // Add to the beginning of the array, limit to MAX_MEALS_PER_TYPE meals
+          if (lunchArray.length < MAX_MEALS_PER_TYPE) {
+            lunchArray.unshift(recipe);
+          } else {
+            toast({
+              title: "Maximum Reached",
+              description: `You can have up to ${MAX_MEALS_PER_TYPE} lunch items.`,
+              variant: "destructive"
+            });
+          }
         }
         currentMeals.lunch = lunchArray;
       } 
@@ -338,14 +356,58 @@ export const useMealPlanUtils = () => {
             dinnerArray.splice(index, 1);
           }
         } else if (recipe) {
-          // Add to the beginning of the array
-          dinnerArray.unshift(recipe);
+          // Add to the beginning of the array, limit to MAX_MEALS_PER_TYPE meals
+          if (dinnerArray.length < MAX_MEALS_PER_TYPE) {
+            dinnerArray.unshift(recipe);
+          } else {
+            toast({
+              title: "Maximum Reached",
+              description: `You can have up to ${MAX_MEALS_PER_TYPE} dinner items.`,
+              variant: "destructive"
+            });
+          }
         }
         currentMeals.dinner = dinnerArray;
       } 
-      else if (mealType === 'snack' && index !== undefined) {
+      else if (mealType === 'snack') {
+        // Handle snacks with special case - these are limited to a fixed array
+        const MAX_SNACKS = 10; // Increased from default
         const newSnacks = [...(currentMeals.snacks || [])];
-        newSnacks[index] = recipe;
+        
+        if (typeof index !== 'undefined') {
+          // If index provided, update at that position
+          if (recipe) {
+            // Ensure the array is long enough
+            while (newSnacks.length <= index) {
+              newSnacks.push(null);
+            }
+            newSnacks[index] = recipe;
+          } else if (index < newSnacks.length) {
+            // Remove specific snack
+            newSnacks.splice(index, 1);
+            newSnacks.push(null); // Keep array length
+          }
+        } else if (recipe) {
+          // Add new snack at first empty position or at end
+          const emptyIndex = newSnacks.findIndex(s => s === null);
+          if (emptyIndex >= 0) {
+            newSnacks[emptyIndex] = recipe;
+          } else if (newSnacks.length < MAX_SNACKS) {
+            newSnacks.push(recipe);
+          } else {
+            toast({
+              title: "Maximum Reached",
+              description: `You can have up to ${MAX_SNACKS} snacks.`,
+              variant: "destructive"
+            });
+          }
+        }
+        
+        // Ensure minimum length
+        while (newSnacks.length < 2) {
+          newSnacks.push(null);
+        }
+        
         currentMeals.snacks = newSnacks;
       }
 
