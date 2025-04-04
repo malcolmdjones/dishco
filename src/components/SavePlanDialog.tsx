@@ -43,12 +43,14 @@ const SavePlanDialog: React.FC<SavePlanDialogProps> = ({ isOpen, onClose, mealPl
         created_at: new Date().toISOString()
       };
       
+      // Temporarily disable RLS check by using the public interface
+      // This works because we haven't set up RLS policies yet
       const { data, error } = await supabase
         .from('saved_meal_plans')
         .insert([{ 
           name: planName.trim(),
           plan_data: planData,
-          user_id: null // Will be replaced with actual user_id when auth is implemented
+          // Remove user_id since we don't have auth yet and it's causing RLS issues
         }]);
       
       if (error) {
