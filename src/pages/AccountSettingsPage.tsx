@@ -4,17 +4,35 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronRight, User, Mail, Lock, Bell, Shield, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 const AccountSettingsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, signOut, isAuthenticated } = useAuth();
 
-  const handleLogout = () => {
-    // Implementation for logout
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out.",
-    });
+  React.useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/auth');
+    }
+  }, [isAuthenticated, navigate]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
+      navigate('/auth');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast({
+        title: "Error",
+        description: "Failed to log out. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const settingsMenu = [
@@ -50,6 +68,10 @@ const AccountSettingsPage = () => {
     }
   ];
 
+  if (!isAuthenticated) {
+    return null; // Will redirect in useEffect
+  }
+
   return (
     <div className="animate-fade-in">
       <header className="mb-6 flex items-center">
@@ -73,8 +95,8 @@ const AccountSettingsPage = () => {
           <User size={28} className="text-white" />
         </div>
         <div>
-          <h2 className="font-bold text-lg">John Doe</h2>
-          <p className="text-sm text-dishco-text-light">john.doe@example.com</p>
+          <h2 className="font-bold text-lg">{user?.user_metadata?.name || 'User'}</h2>
+          <p className="text-sm text-dishco-text-light">{user?.email}</p>
           <Link to="/edit-profile">
             <Button variant="outline" size="sm" className="mt-2">
               Edit Profile

@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronRight, Heart, Settings, User, Utensils, BookOpen, LogOut, Calendar, AlertTriangle, Cookie } from 'lucide-react';
+import { ChevronRight, Heart, Settings, User, Utensils, BookOpen, LogOut, Calendar, AlertTriangle, Cookie, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 const MorePage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user, isAdmin, isAuthenticated, signOut } = useAuth();
   const [goals, setGoals] = useState({
     calories: 2000,
     protein: 150,
@@ -16,8 +17,13 @@ const MorePage = () => {
   });
   
   useEffect(() => {
-    fetchNutritionGoals();
-  }, []);
+    // If not authenticated, redirect to auth page
+    if (!isAuthenticated) {
+      navigate('/auth');
+    } else {
+      fetchNutritionGoals();
+    }
+  }, [isAuthenticated, navigate]);
 
   const fetchNutritionGoals = async () => {
     try {
@@ -43,6 +49,24 @@ const MorePage = () => {
       }
     } catch (error) {
       console.error('Error fetching nutrition goals:', error);
+    }
+  };
+  
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
+      navigate('/auth');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast({
+        title: "Error",
+        description: "Failed to log out. Please try again.",
+        variant: "destructive"
+      });
     }
   };
   
@@ -90,6 +114,32 @@ const MorePage = () => {
       description: 'Manage your profile and preferences'
     }
   ];
+  
+  // Add admin panel menu item for admin users
+  if (isAdmin) {
+    menuItems.push({
+      name: 'Admin Panel',
+      icon: <ShieldCheck size={20} className="text-red-500" />,
+      path: '/admin',
+      description: 'Access admin controls and management'
+    });
+  }
+
+  // If not authenticated, show a login prompt
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <h2 className="text-xl font-bold mb-4">Please Sign In</h2>
+        <p className="text-dishco-text-light mb-6">Sign in to access your profile and settings</p>
+        <button 
+          className="bg-dishco-primary text-white py-2 px-6 rounded-lg"
+          onClick={() => navigate('/auth')}
+        >
+          Sign In
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in">
@@ -104,8 +154,8 @@ const MorePage = () => {
           <User size={24} className="text-white" />
         </div>
         <div>
-          <h2 className="font-bold">John Doe</h2>
-          <p className="text-sm text-dishco-text-light">john.doe@example.com</p>
+          <h2 className="font-bold">{user?.user_metadata?.name || user?.email}</h2>
+          <p className="text-sm text-dishco-text-light">{user?.email}</p>
         </div>
       </div>
 
@@ -162,7 +212,10 @@ const MorePage = () => {
       </div>
 
       {/* Logout Button */}
-      <button className="w-full py-3 border border-gray-300 rounded-xl text-dishco-text-light font-medium flex items-center justify-center">
+      <button 
+        className="w-full py-3 border border-gray-300 rounded-xl text-dishco-text-light font-medium flex items-center justify-center"
+        onClick={handleLogout}
+      >
         <LogOut size={18} className="mr-2" />
         <span>Log Out</span>
       </button>
