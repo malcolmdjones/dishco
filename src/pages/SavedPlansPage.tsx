@@ -41,6 +41,11 @@ const SavedPlansPage = () => {
 
       if (error) {
         console.error('Error fetching plans:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch your meal plans.",
+          variant: "destructive"
+        });
         return;
       }
 
@@ -49,6 +54,11 @@ const SavedPlansPage = () => {
       }
     } catch (error) {
       console.error('Error fetching plans:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch your meal plans.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -177,7 +187,7 @@ const SavedPlansPage = () => {
       );
     }
 
-    return plans.map((plan, index) => {
+    return plans.map((plan) => {
       const planData = plan.plan_data || {};
       const days = planData.days || [];
       
