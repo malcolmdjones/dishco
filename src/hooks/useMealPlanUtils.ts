@@ -98,60 +98,78 @@ export const useMealPlanUtils = () => {
         if (!newMeals.breakfast) newMeals.breakfast = [];
         if (!newMeals.lunch) newMeals.lunch = [];
         if (!newMeals.dinner) newMeals.dinner = [];
+        if (!newMeals.snacks) newMeals.snacks = [];
 
-        // Check if breakfast meals have any unlocked items, if not add one
-        let hasUnlockedBreakfast = false;
+        // Handle breakfast meals
         if (Array.isArray(newMeals.breakfast)) {
-          newMeals.breakfast.forEach((_, index) => {
-            if (!lockedMeals[`${currentDay}-breakfast-${index}`]) {
-              hasUnlockedBreakfast = true;
-            }
-          });
+          const updatedBreakfast = [...newMeals.breakfast];
           
-          if (!hasUnlockedBreakfast && newMeals.breakfast.length === 0) {
+          // Remove unlocked breakfast items
+          const filteredBreakfast = updatedBreakfast.filter((_, index) => 
+            lockedMeals[`${currentDay}-breakfast-${index}`]
+          );
+          
+          // Add a random breakfast item if empty or all were unlocked and removed
+          if (filteredBreakfast.length === 0) {
             const randomBreakfast = breakfastRecipes[Math.floor(Math.random() * breakfastRecipes.length)];
-            newMeals.breakfast = [randomBreakfast];
+            filteredBreakfast.push(randomBreakfast);
           }
+          
+          newMeals.breakfast = filteredBreakfast;
         }
         
-        // Check if lunch meals have any unlocked items, if not add one
-        let hasUnlockedLunch = false;
+        // Handle lunch meals
         if (Array.isArray(newMeals.lunch)) {
-          newMeals.lunch.forEach((_, index) => {
-            if (!lockedMeals[`${currentDay}-lunch-${index}`]) {
-              hasUnlockedLunch = true;
-            }
-          });
+          const updatedLunch = [...newMeals.lunch];
           
-          if (!hasUnlockedLunch && newMeals.lunch.length === 0) {
+          // Remove unlocked lunch items
+          const filteredLunch = updatedLunch.filter((_, index) => 
+            lockedMeals[`${currentDay}-lunch-${index}`]
+          );
+          
+          // Add a random lunch item if empty or all were unlocked and removed
+          if (filteredLunch.length === 0) {
             const randomLunch = lunchRecipes[Math.floor(Math.random() * lunchRecipes.length)];
-            newMeals.lunch = [randomLunch];
+            filteredLunch.push(randomLunch);
           }
+          
+          newMeals.lunch = filteredLunch;
         }
         
-        // Check if dinner meals have any unlocked items, if not add one
-        let hasUnlockedDinner = false;
+        // Handle dinner meals
         if (Array.isArray(newMeals.dinner)) {
-          newMeals.dinner.forEach((_, index) => {
-            if (!lockedMeals[`${currentDay}-dinner-${index}`]) {
-              hasUnlockedDinner = true;
-            }
-          });
+          const updatedDinner = [...newMeals.dinner];
           
-          if (!hasUnlockedDinner && newMeals.dinner.length === 0) {
+          // Remove unlocked dinner items
+          const filteredDinner = updatedDinner.filter((_, index) => 
+            lockedMeals[`${currentDay}-dinner-${index}`]
+          );
+          
+          // Add a random dinner item if empty or all were unlocked and removed
+          if (filteredDinner.length === 0) {
             const randomDinner = dinnerRecipes[Math.floor(Math.random() * dinnerRecipes.length)];
-            newMeals.dinner = [randomDinner];
+            filteredDinner.push(randomDinner);
           }
+          
+          newMeals.dinner = filteredDinner;
         }
         
         // Handle snacks
-        const newSnacks = [...(newMeals.snacks || [])];
-        if (!lockedMeals[`${currentDay}-snack-0`] && !newSnacks[0]) {
+        const newSnacks = [...(newMeals.snacks || [null, null])];
+        
+        // Only replace snack 0 if not locked
+        if (!lockedMeals[`${currentDay}-snack-0`]) {
           newSnacks[0] = snackRecipes[Math.floor(Math.random() * snackRecipes.length)];
         }
         
-        if (!lockedMeals[`${currentDay}-snack-1`] && !newSnacks[1]) {
+        // Only replace snack 1 if not locked
+        if (!lockedMeals[`${currentDay}-snack-1`]) {
           newSnacks[1] = snackRecipes[Math.floor(Math.random() * snackRecipes.length)];
+        }
+        
+        // Ensure we have at least 2 snack slots
+        while (newSnacks.length < 2) {
+          newSnacks.push(null);
         }
         
         newMeals.snacks = newSnacks;
