@@ -40,9 +40,9 @@ export interface NutritionGoals {
 export interface MealPlanDay {
   date: string;
   meals: {
-    breakfast: Recipe | null;
-    lunch: Recipe | null;
-    dinner: Recipe | null;
+    breakfast: Recipe[] | Recipe | null;
+    lunch: Recipe[] | Recipe | null;
+    dinner: Recipe[] | Recipe | null;
     snacks: (Recipe | null)[];
   };
 }
@@ -677,9 +677,9 @@ export const generateMockMealPlan = (): MealPlanDay[] => {
 
 // Calculate daily macros based on meals
 export const calculateDailyMacros = (meals: {
-  breakfast: Recipe | null;
-  lunch: Recipe | null;
-  dinner: Recipe | null;
+  breakfast: Recipe[] | Recipe | null;
+  lunch: Recipe[] | Recipe | null;
+  dinner: Recipe[] | Recipe | null;
   snacks: (Recipe | null)[];
 }): NutritionGoals => {
   let calories = 0;
@@ -689,26 +689,53 @@ export const calculateDailyMacros = (meals: {
   
   // Add macros from breakfast
   if (meals.breakfast) {
-    calories += meals.breakfast.macros.calories;
-    protein += meals.breakfast.macros.protein;
-    carbs += meals.breakfast.macros.carbs;
-    fat += meals.breakfast.macros.fat;
+    if (Array.isArray(meals.breakfast)) {
+      meals.breakfast.forEach(recipe => {
+        calories += recipe.macros.calories;
+        protein += recipe.macros.protein;
+        carbs += recipe.macros.carbs;
+        fat += recipe.macros.fat;
+      });
+    } else {
+      calories += meals.breakfast.macros.calories;
+      protein += meals.breakfast.macros.protein;
+      carbs += meals.breakfast.macros.carbs;
+      fat += meals.breakfast.macros.fat;
+    }
   }
   
   // Add macros from lunch
   if (meals.lunch) {
-    calories += meals.lunch.macros.calories;
-    protein += meals.lunch.macros.protein;
-    carbs += meals.lunch.macros.carbs;
-    fat += meals.lunch.macros.fat;
+    if (Array.isArray(meals.lunch)) {
+      meals.lunch.forEach(recipe => {
+        calories += recipe.macros.calories;
+        protein += recipe.macros.protein;
+        carbs += recipe.macros.carbs;
+        fat += recipe.macros.fat;
+      });
+    } else {
+      calories += meals.lunch.macros.calories;
+      protein += meals.lunch.macros.protein;
+      carbs += meals.lunch.macros.carbs;
+      fat += meals.lunch.macros.fat;
+    }
   }
   
   // Add macros from dinner
   if (meals.dinner) {
-    calories += meals.dinner.macros.calories;
-    protein += meals.dinner.macros.protein;
-    carbs += meals.dinner.macros.carbs;
-    fat += meals.dinner.macros.fat;
+    if (Array.isArray(meals.dinner)) {
+      meals.dinner.forEach(recipe => {
+        calories += recipe.macros.calories;
+        protein += recipe.macros.protein;
+        carbs += recipe.macros.carbs;
+        fat += recipe.macros.fat;
+      });
+    } else {
+      calories += meals.dinner.macros.calories;
+      protein += meals.dinner.macros.protein;
+      carbs += meals.dinner.macros.carbs;
+      fat += meals.dinner.macros.fat;
+    }
   }
   
   // Add macros from snacks

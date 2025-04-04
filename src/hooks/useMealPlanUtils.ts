@@ -4,21 +4,14 @@ import { calculateDailyMacros, defaultGoals, fetchNutritionGoals, recipes, Recip
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-// Extended type for meals with multiple recipes per meal type
-interface ExtendedMealPlanDay extends MealPlanDay {
-  meals: {
-    breakfast: Recipe[] | null;
-    lunch: Recipe[] | null;
-    dinner: Recipe[] | null;
-    snacks: (Recipe | null)[];
-  }
-}
+// We don't need to extend MealPlanDay anymore since we've updated the base interface
+// to support arrays of recipes
 
 export const useMealPlanUtils = () => {
   const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentDay, setCurrentDay] = useState(0);
-  const [mealPlan, setMealPlan] = useState<ExtendedMealPlanDay[]>([]);
+  const [mealPlan, setMealPlan] = useState<MealPlanDay[]>([]);
   const [userGoals, setUserGoals] = useState<NutritionGoals>(defaultGoals);
   const [isGenerating, setIsGenerating] = useState(false);
   const [lockedMeals, setLockedMeals] = useState<{[key: string]: boolean}>({});
@@ -48,7 +41,7 @@ export const useMealPlanUtils = () => {
   const generateFullMealPlan = () => {
     setIsGenerating(true);
     // Create a 7-day meal plan
-    const newPlan: ExtendedMealPlanDay[] = Array.from({ length: 7 }).map((_, i) => {
+    const newPlan: MealPlanDay[] = Array.from({ length: 7 }).map((_, i) => {
       const date = new Date(currentDate);
       date.setDate(currentDate.getDate() + i - currentDay); // Adjust to keep current day in sync
       

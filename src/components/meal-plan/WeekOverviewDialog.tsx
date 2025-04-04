@@ -3,7 +3,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { format } from 'date-fns';
-import { MealPlanDay } from '@/data/mockData';
+import { MealPlanDay, Recipe } from '@/data/mockData';
 
 interface WeekOverviewDialogProps {
   isOpen: boolean;
@@ -36,9 +36,9 @@ const WeekOverviewDialog: React.FC<WeekOverviewDialogProps> = ({
                 </div>
                 <CardContent className="p-3">
                   <div className="space-y-2">
-                    <MealOverviewItem title="Breakfast" meal={day.meals.breakfast} />
-                    <MealOverviewItem title="Lunch" meal={day.meals.lunch} />
-                    <MealOverviewItem title="Dinner" meal={day.meals.dinner} />
+                    <MealTypeOverview title="Breakfast" meals={day.meals.breakfast} />
+                    <MealTypeOverview title="Lunch" meals={day.meals.lunch} />
+                    <MealTypeOverview title="Dinner" meals={day.meals.dinner} />
                     <div className="pt-1">
                       <h4 className="text-sm font-medium text-gray-500">Snacks</h4>
                       <div className="pl-2">
@@ -55,6 +55,37 @@ const WeekOverviewDialog: React.FC<WeekOverviewDialogProps> = ({
         </div>
       </DialogContent>
     </Dialog>
+  );
+};
+
+const MealTypeOverview = ({ title, meals }) => {
+  if (!meals) {
+    return (
+      <div className="py-1 border-b last:border-b-0">
+        <h4 className="text-sm font-medium text-gray-500">{title}</h4>
+        <span className="text-sm text-gray-400">No {title.toLowerCase()} selected</span>
+      </div>
+    );
+  }
+
+  const mealArray = Array.isArray(meals) ? meals : [meals];
+  
+  return (
+    <div className="py-1 border-b last:border-b-0">
+      <h4 className="text-sm font-medium text-gray-500">{title}</h4>
+      {mealArray.length > 0 ? (
+        mealArray.map((meal, idx) => (
+          <div key={idx} className="flex justify-between items-center">
+            <span className="text-sm">{meal.name}</span>
+            <span className="text-xs bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded">
+              {meal.macros.calories} kcal
+            </span>
+          </div>
+        ))
+      ) : (
+        <span className="text-sm text-gray-400">No {title.toLowerCase()} selected</span>
+      )}
+    </div>
   );
 };
 
