@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { calculateDailyMacros, defaultGoals, fetchNutritionGoals, recipes, Recipe, NutritionGoals, MealPlanDay } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
@@ -288,6 +289,7 @@ export const useMealPlanUtils = () => {
             breakfastArray.splice(index, 1);
           }
         } else if (recipe) {
+          // FIX: Add to the array instead of replacing
           breakfastArray.push(recipe);
         }
         currentMeals.breakfast = breakfastArray;
@@ -310,6 +312,7 @@ export const useMealPlanUtils = () => {
             lunchArray.splice(index, 1);
           }
         } else if (recipe) {
+          // FIX: Add to the array instead of replacing
           lunchArray.push(recipe);
         }
         currentMeals.lunch = lunchArray;
@@ -332,13 +335,31 @@ export const useMealPlanUtils = () => {
             dinnerArray.splice(index, 1);
           }
         } else if (recipe) {
+          // FIX: Add to the array instead of replacing
           dinnerArray.push(recipe);
         }
         currentMeals.dinner = dinnerArray;
       } 
-      else if (mealType === 'snack' && index !== undefined) {
+      else if (mealType === 'snack') {
         const newSnacks = [...(currentMeals.snacks || [])];
-        newSnacks[index] = recipe;
+        
+        // If no index is provided, find first empty slot or add to the end
+        if (index === undefined) {
+          const emptyIndex = newSnacks.findIndex(snack => snack === null);
+          if (emptyIndex !== -1) {
+            newSnacks[emptyIndex] = recipe;
+          } else {
+            // FIX: Add to the array instead of replacing
+            newSnacks.push(recipe);
+          }
+        } else {
+          // If index is provided, update or add at that position
+          while (newSnacks.length <= index) {
+            newSnacks.push(null);
+          }
+          newSnacks[index] = recipe;
+        }
+        
         currentMeals.snacks = newSnacks;
       }
 
@@ -350,7 +371,7 @@ export const useMealPlanUtils = () => {
     if (recipe) {
       toast({
         title: "Meal Updated",
-        description: `Updated ${mealType} with ${recipe.name}.`,
+        description: `Added ${recipe.name} to ${mealType}.`,
       });
     }
   };

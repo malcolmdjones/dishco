@@ -132,35 +132,6 @@ const MorePage = () => {
         ))}
       </div>
 
-      {/* Nutrition Goals Summary */}
-      <div className="bg-white rounded-xl shadow-md p-4 mb-6">
-        <h2 className="text-lg font-semibold mb-3">Current Nutrition Goals</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-sm text-dishco-text-light">Daily Calories</p>
-            <p className="text-xl font-bold">{goals.calories} kcal</p>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-sm text-dishco-text-light">Protein</p>
-            <p className="text-xl font-bold">{goals.protein}g</p>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-sm text-dishco-text-light">Carbs</p>
-            <p className="text-xl font-bold">{goals.carbs}g</p>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-sm text-dishco-text-light">Fat</p>
-            <p className="text-xl font-bold">{goals.fat}g</p>
-          </div>
-        </div>
-        <button 
-          className="w-full mt-4 py-2 px-4 bg-dishco-primary bg-opacity-10 text-dishco-primary rounded-lg font-medium"
-          onClick={() => navigate('/nutrition-goals')}
-        >
-          Edit Goals
-        </button>
-      </div>
-
       {/* Logout Button */}
       <button className="w-full py-3 border border-gray-300 rounded-xl text-dishco-text-light font-medium flex items-center justify-center">
         <LogOut size={18} className="mr-2" />
