@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
-import { format, addDays, subDays, isToday } from 'date-fns';
+import { format, addDays, subDays, isToday, isEqual, parseISO, startOfDay } from 'date-fns';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import { ChevronLeft, ChevronRight, Home } from 'lucide-react';
@@ -42,14 +41,23 @@ const HomePage = () => {
   // State for today's meals
   const [todaysMeals, setTodaysMeals] = useState<Meal[]>([]);
 
-  // Load meals and nutrition from localStorage on component mount
+  // Load and filter meals based on selected date
   useEffect(() => {
     // Get logged meals from localStorage
     const storedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
-    if (storedMeals.length > 0) {
-      setTodaysMeals(storedMeals);
-    } else {
-      // Fallback to default meals if none are logged
+    
+    // Filter meals for the selected date
+    const selectedDateStart = startOfDay(selectedDate);
+    const filteredMeals = storedMeals.filter((meal: Meal) => {
+      if (!meal.loggedAt) return false;
+      const mealDate = startOfDay(parseISO(meal.loggedAt));
+      return isEqual(mealDate, selectedDateStart);
+    });
+    
+    if (filteredMeals.length > 0) {
+      setTodaysMeals(filteredMeals);
+    } else if (isToday(selectedDate)) {
+      // Fallback to default meals only if it's today and no meals are logged
       setTodaysMeals([
         {
           id: '1',
@@ -73,20 +81,41 @@ const HomePage = () => {
           consumed: false
         }
       ]);
+    } else {
+      // Empty array for past dates with no logged meals
+      setTodaysMeals([]);
     }
     
-    // Get nutrition from localStorage
-    const storedNutrition = JSON.parse(localStorage.getItem('dailyNutrition') || '{}');
-    if (storedNutrition && Object.keys(storedNutrition).length > 0) {
-      setDailyNutrition(prevState => ({
-        ...prevState,
-        calories: storedNutrition.calories || 0,
-        protein: storedNutrition.protein || 0,
-        carbs: storedNutrition.carbs || 0,
-        fat: storedNutrition.fat || 0
-      }));
-    }
-  }, []);
+    // Calculate nutrition for the selected date
+    calculateNutritionForDate(filteredMeals);
+  }, [selectedDate]);
+
+  // Calculate nutrition values based on consumed meals for the selected date
+  const calculateNutritionForDate = (meals: Meal[]) => {
+    const consumedMeals = meals.filter(meal => meal.consumed);
+    
+    const calculatedNutrition = {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0
+    };
+    
+    consumedMeals.forEach(meal => {
+      calculatedNutrition.calories += meal.recipe.macros.calories;
+      calculatedNutrition.protein += meal.recipe.macros.protein;
+      calculatedNutrition.carbs += meal.recipe.macros.carbs;
+      calculatedNutrition.fat += meal.recipe.macros.fat;
+    });
+    
+    setDailyNutrition(prev => ({
+      ...prev,
+      calories: calculatedNutrition.calories,
+      protein: calculatedNutrition.protein,
+      carbs: calculatedNutrition.carbs,
+      fat: calculatedNutrition.fat
+    }));
+  };
 
   // Reset nutrition at midnight
   useEffect(() => {
@@ -95,32 +124,8 @@ const HomePage = () => {
     const today = new Date().toDateString();
     
     if (lastResetDate !== today) {
-      // Reset nutrition
-      setDailyNutrition(prev => ({
-        ...prev,
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0
-      }));
-      
-      // Reset localStorage nutrition
-      localStorage.setItem('dailyNutrition', JSON.stringify({
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0
-      }));
-      
-      // Clear logged meals
-      localStorage.setItem('loggedMeals', JSON.stringify([]));
-      
-      // Reset consumed status of default meals
-      setTodaysMeals(meals => 
-        meals.map(meal => ({ ...meal, consumed: false }))
-      );
-      
-      // Store current date
+      // No need to reset the display values as they're now calculated per selected date
+      // We just need to update the reset date
       localStorage.setItem('lastNutritionResetDate', today);
     }
     
@@ -131,32 +136,7 @@ const HomePage = () => {
       const minutes = now.getMinutes();
       
       if (hours === 0 && minutes === 0) {
-        // Reset nutrition at midnight
-        setDailyNutrition(prev => ({
-          ...prev,
-          calories: 0,
-          protein: 0,
-          carbs: 0,
-          fat: 0
-        }));
-        
-        // Reset localStorage nutrition
-        localStorage.setItem('dailyNutrition', JSON.stringify({
-          calories: 0,
-          protein: 0,
-          carbs: 0,
-          fat: 0
-        }));
-        
-        // Clear logged meals
-        localStorage.setItem('loggedMeals', JSON.stringify([]));
-        
-        // Reset consumed status
-        setTodaysMeals(meals => 
-          meals.map(meal => ({ ...meal, consumed: false }))
-        );
-        
-        // Store current date
+        // Store current date as reset date
         localStorage.setItem('lastNutritionResetDate', now.toDateString());
       }
     };
@@ -196,14 +176,18 @@ const HomePage = () => {
   
   // Function to toggle meal consumption
   const handleToggleConsumed = (meal: Meal) => {
-    // Update the meal
-    const updatedMeals = todaysMeals.map(m => 
+    // Update the meal in the current view
+    const updatedTodaysMeals = todaysMeals.map(m => 
       m.id === meal.id ? { ...m, consumed: !m.consumed } : m
     );
-    setTodaysMeals(updatedMeals);
+    setTodaysMeals(updatedTodaysMeals);
     
-    // Update localStorage
-    localStorage.setItem('loggedMeals', JSON.stringify(updatedMeals));
+    // Update the meal in localStorage
+    const storedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
+    const updatedStoredMeals = storedMeals.map((m: Meal) => 
+      m.id === meal.id ? { ...m, consumed: !m.consumed } : m
+    );
+    localStorage.setItem('loggedMeals', JSON.stringify(updatedStoredMeals));
     
     // Update nutrition based on whether meal was consumed or unconsumed
     if (!meal.consumed) {
@@ -219,9 +203,6 @@ const HomePage = () => {
         ...prev,
         ...updatedNutrition
       }));
-      
-      // Update localStorage
-      localStorage.setItem('dailyNutrition', JSON.stringify(updatedNutrition));
       
       toast({
         title: "Meal logged",
@@ -240,9 +221,6 @@ const HomePage = () => {
         ...prev,
         ...updatedNutrition
       }));
-      
-      // Update localStorage
-      localStorage.setItem('dailyNutrition', JSON.stringify(updatedNutrition));
       
       toast({
         title: "Meal unlogged",
@@ -345,7 +323,6 @@ const HomePage = () => {
                     : 'rgba(239, 68, 68, 0.8)', // red for out of range
                   textColor: '#3C3C3C',
                   trailColor: '#F9F9F9',
-                  // Add pulsating animation for out of range
                   strokeLinecap: 'round',
                   pathTransition: isWithinTarget(dailyNutrition.calories, dailyNutrition.totalCalories, 10, 60)
                     ? 'stroke-dashoffset 0.5s ease 0s'

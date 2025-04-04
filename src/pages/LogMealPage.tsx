@@ -22,18 +22,21 @@ const LogMealPage = () => {
     // Get current logged meals from localStorage or initialize empty array
     const existingLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
     
-    // Check if meal is already logged to avoid duplicates
-    const isDuplicate = existingLoggedMeals.some((meal: any) => meal.id === recipe.id);
+    // Create a unique ID that includes the current timestamp
+    const uniqueId = `${recipe.id}-${Date.now()}`;
+    
+    // Check if this exact meal was already logged today (using the unique ID)
+    const isDuplicate = existingLoggedMeals.some((meal: any) => meal.id === uniqueId);
     
     if (!isDuplicate) {
       // Add new meal with timestamp and consumed status
       const newMeal = {
-        id: `${recipe.id}-${Date.now()}`, // Add timestamp to ensure uniqueness
+        id: uniqueId,
         name: recipe.name,
         type: recipe.type || 'snack', // Default to snack if no type
         recipe: recipe,
         consumed: true,
-        loggedAt: new Date().toISOString()
+        loggedAt: new Date().toISOString() // Store the current date/time
       };
       
       // Add to logged meals
