@@ -39,17 +39,7 @@ const WeekOverviewDialog: React.FC<WeekOverviewDialogProps> = ({
                     <MealTypeOverview title="Breakfast" meals={day.meals.breakfast} />
                     <MealTypeOverview title="Lunch" meals={day.meals.lunch} />
                     <MealTypeOverview title="Dinner" meals={day.meals.dinner} />
-                    <div className="pt-1">
-                      <h4 className="text-sm font-medium text-gray-500">Snacks</h4>
-                      <div className="pl-2">
-                        {day.meals.snacks?.filter(Boolean).map((snack, idx) => (
-                          <MealOverviewItem key={idx} title={`Snack ${idx + 1}`} meal={snack} isSnack />
-                        ))}
-                        {!day.meals.snacks?.some(Boolean) && (
-                          <span className="text-sm text-gray-400">No snacks selected</span>
-                        )}
-                      </div>
-                    </div>
+                    <MealTypeOverview title="Snacks" meals={day.meals.snacks} isSnack={true} />
                   </div>
                 </CardContent>
               </Card>
@@ -61,7 +51,7 @@ const WeekOverviewDialog: React.FC<WeekOverviewDialogProps> = ({
   );
 };
 
-const MealTypeOverview = ({ title, meals }) => {
+const MealTypeOverview = ({ title, meals, isSnack = false }) => {
   if (!meals || (Array.isArray(meals) && meals.length === 0)) {
     return (
       <div className="py-1 border-b last:border-b-0">
@@ -71,7 +61,7 @@ const MealTypeOverview = ({ title, meals }) => {
     );
   }
 
-  const mealArray = Array.isArray(meals) ? meals : [meals];
+  const mealArray = Array.isArray(meals) ? meals.filter(Boolean) : [meals].filter(Boolean);
   
   return (
     <div className="py-1 border-b last:border-b-0">
@@ -85,24 +75,6 @@ const MealTypeOverview = ({ title, meals }) => {
             </span>
           </div>
         ))
-      ) : (
-        <span className="text-sm text-gray-400">No {title.toLowerCase()} selected</span>
-      )}
-    </div>
-  );
-};
-
-const MealOverviewItem = ({ title, meal, isSnack = false }) => {
-  return (
-    <div className={`${isSnack ? '' : 'py-1 border-b last:border-b-0'}`}>
-      {!isSnack && <h4 className="text-sm font-medium text-gray-500">{title}</h4>}
-      {meal ? (
-        <div className="flex justify-between items-center">
-          <span className="text-sm">{meal.name}</span>
-          <span className="text-xs bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded">
-            {meal.macros.calories} kcal
-          </span>
-        </div>
       ) : (
         <span className="text-sm text-gray-400">No {title.toLowerCase()} selected</span>
       )}
