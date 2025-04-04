@@ -56,12 +56,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const checkAdminStatus = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('role', 'admin')
-        .single();
+      // Use the is_admin function instead of directly querying the user_roles table
+      const { data, error } = await supabase.rpc('is_admin', { user_id: userId });
         
       setIsAdmin(!!data && !error);
     } catch (error) {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,18 +5,19 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Users, BarChart2, Plus, Settings } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from '@/hooks/useAuth';
 
 const AdminPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [userCount, setUserCount] = useState(0);
   const [planCount, setMealPlanCount] = useState(0);
   const [recipeCount, setRecipeCount] = useState(0);
   
   useEffect(() => {
-    const checkAdminStatus = async () => {
+    const checkAdminAndFetchStats = async () => {
       try {
         setLoading(true);
         
@@ -34,15 +34,12 @@ const AdminPage = () => {
           return;
         }
         
-        // Check if user is an admin
-        const { data, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .eq('role', 'admin')
-          .single();
+        // Check if user is an admin using the is_admin RPC function
+        const { data: isAdminUser, error: adminCheckError } = await supabase.rpc('is_admin', { 
+          user_id: session.user.id 
+        });
           
-        if (error || !data) {
+        if (adminCheckError || !isAdminUser) {
           toast({
             title: "Access denied",
             description: "You don't have permission to access the admin panel.",
@@ -51,8 +48,6 @@ const AdminPage = () => {
           navigate('/');
           return;
         }
-        
-        setIsAdmin(true);
         
         // Fetch dashboard stats
         await fetchDashboardStats();
@@ -70,7 +65,7 @@ const AdminPage = () => {
       }
     };
     
-    checkAdminStatus();
+    checkAdminAndFetchStats();
   }, [navigate, toast]);
   
   const fetchDashboardStats = async () => {
