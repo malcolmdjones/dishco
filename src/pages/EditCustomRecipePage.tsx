@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Trash } from 'lucide-react';
@@ -41,6 +40,7 @@ const EditCustomRecipePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
   useEffect(() => {
     if (recipeId) {
@@ -51,7 +51,6 @@ const EditCustomRecipePage = () => {
   const fetchRecipe = (id: string) => {
     setIsLoading(true);
     try {
-      // Load from localStorage for now
       const savedRecipes = JSON.parse(localStorage.getItem('externalRecipes') || '[]');
       const foundRecipe = savedRecipes.find((r: CustomRecipe) => r.id === id);
       
@@ -79,12 +78,10 @@ const EditCustomRecipePage = () => {
 
   const handleDelete = () => {
     try {
-      // Remove from localStorage
       const savedRecipes = JSON.parse(localStorage.getItem('externalRecipes') || '[]');
       const updatedRecipes = savedRecipes.filter((r: CustomRecipe) => r.id !== recipeId);
       localStorage.setItem('externalRecipes', JSON.stringify(updatedRecipes));
       
-      // Also remove from saved recipes if it's there
       const savedRecipeIds = JSON.parse(localStorage.getItem('savedRecipeIds') || '[]');
       const updatedSavedIds = savedRecipeIds.filter((id: string) => id !== recipeId);
       localStorage.setItem('savedRecipeIds', JSON.stringify(updatedSavedIds));
@@ -159,22 +156,14 @@ const EditCustomRecipePage = () => {
       </header>
 
       <div className="space-y-6">
-        {/* Recipe Image */}
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          {recipe.imageUrl && recipe.imageUrl !== '/placeholder.svg' ? (
-            <img 
-              src={recipe.imageUrl} 
-              alt={recipe.title} 
-              className="w-full h-64 object-cover"
-            />
-          ) : (
-            <div className="w-full h-64 flex items-center justify-center bg-gray-100">
-              <span className="text-gray-400">No image</span>
-            </div>
-          )}
+          <img 
+            src={imageUrl} 
+            alt={recipe.title} 
+            className="w-full h-64 object-cover"
+          />
         </div>
 
-        {/* Recipe Details */}
         <div className="bg-white rounded-xl shadow-sm p-4">
           <h2 className="text-xl font-semibold mb-2">{recipe.title}</h2>
           <p className="text-gray-600 mb-4">{recipe.description || "No description provided"}</p>
@@ -205,7 +194,6 @@ const EditCustomRecipePage = () => {
           )}
         </div>
 
-        {/* Ingredients */}
         <div className="bg-white rounded-xl shadow-sm p-4">
           <h3 className="font-semibold text-lg mb-3">Ingredients</h3>
           <ul className="space-y-2">
@@ -218,7 +206,6 @@ const EditCustomRecipePage = () => {
           </ul>
         </div>
 
-        {/* Instructions */}
         <div className="bg-white rounded-xl shadow-sm p-4">
           <h3 className="font-semibold text-lg mb-3">Instructions</h3>
           <ol className="space-y-4">
@@ -233,7 +220,6 @@ const EditCustomRecipePage = () => {
           </ol>
         </div>
 
-        {/* Nutrition Info */}
         <div className="bg-white rounded-xl shadow-sm p-4">
           <h3 className="font-semibold text-lg mb-3">Nutrition (per serving)</h3>
           <div className="grid grid-cols-2 gap-4">
@@ -256,7 +242,6 @@ const EditCustomRecipePage = () => {
           </div>
         </div>
 
-        {/* Edit Button */}
         <Button 
           onClick={() => navigate(`/add-recipe?edit=${recipeId}`)}
           className="w-full"

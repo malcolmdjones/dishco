@@ -10,6 +10,9 @@ const PlanningPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  
+  // Fixed image URL to avoid 404s
+  const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
   const handleGeneratePlan = () => {
     navigate('/create-meal-plan');
@@ -75,7 +78,7 @@ const PlanningPage = () => {
               <div key={recipe.id} className="cursor-pointer" onClick={() => navigate('/explore-recipes')}>
                 <div className="bg-gray-100 rounded-lg aspect-square mb-2 flex items-center justify-center overflow-hidden">
                   <img 
-                    src={recipe.imageSrc} 
+                    src={imageUrl} 
                     alt={recipe.name} 
                     className="w-full h-full object-cover"
                   />
@@ -108,7 +111,7 @@ const PlanningPage = () => {
                 <div key={snack.id} className="cursor-pointer" onClick={() => navigate('/explore-snacks')}>
                   <div className="bg-gray-100 rounded-lg aspect-square mb-2 flex items-center justify-center overflow-hidden">
                     <img 
-                      src={snack.imageSrc} 
+                      src={imageUrl} 
                       alt={snack.name} 
                       className="w-full h-full object-cover"
                     />
@@ -126,7 +129,7 @@ const PlanningPage = () => {
                 <div key={recipe.id} className="cursor-pointer" onClick={() => navigate('/explore-snacks')}>
                   <div className="bg-gray-100 rounded-lg aspect-square mb-2 flex items-center justify-center overflow-hidden">
                     <img 
-                      src={recipe.imageSrc} 
+                      src={imageUrl} 
                       alt={recipe.name} 
                       className="w-full h-full object-cover"
                     />

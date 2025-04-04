@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Lock, Unlock, Info } from 'lucide-react';
@@ -25,6 +24,8 @@ const SnacksSection: React.FC<SnacksSectionProps> = ({
   isDraggable = false,
   currentDay = 0
 }) => {
+  const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
+
   return (
     <div className="mb-6">
       <h3 className="font-medium text-lg mb-2">Snacks</h3>
@@ -53,26 +54,17 @@ const SnacksSection: React.FC<SnacksSectionProps> = ({
                         className="cursor-pointer cursor-grab active:cursor-grabbing" 
                         onClick={() => onSnackClick(snack)}
                       >
-                        {/* Image Section */}
                         <div className="relative h-32 bg-gray-100">
-                          {snack.imageSrc ? (
-                            <img 
-                              src={snack.imageSrc} 
-                              alt={snack.name} 
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <div className="text-gray-400">No image available</div>
-                            </div>
-                          )}
+                          <img 
+                            src={imageUrl} 
+                            alt={snack.name} 
+                            className="w-full h-full object-cover"
+                          />
                           
-                          {/* Calorie Badge */}
                           <div className="absolute bottom-2 right-2 bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-medium">
                             {snack.macros.calories} kcal
                           </div>
                           
-                          {/* Lock/Unlock and Info Buttons */}
                           <div className="absolute top-2 right-2 flex gap-1">
                             <Button 
                               variant="secondary" 
@@ -99,11 +91,9 @@ const SnacksSection: React.FC<SnacksSectionProps> = ({
                           </div>
                         </div>
                         
-                        {/* Content Section */}
                         <div className="p-3">
                           <h4 className="font-medium text-sm mb-1">{snack.name}</h4>
                           
-                          {/* Macros */}
                           <div className="flex flex-wrap gap-1">
                             <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">
                               P: {snack.macros.protein}g
@@ -139,26 +129,17 @@ const SnacksSection: React.FC<SnacksSectionProps> = ({
                     className="cursor-pointer" 
                     onClick={() => onSnackClick(snack)}
                   >
-                    {/* Image Section */}
                     <div className="relative h-32 bg-gray-100">
-                      {snack.imageSrc ? (
-                        <img 
-                          src={snack.imageSrc} 
-                          alt={snack.name} 
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <div className="text-gray-400">No image available</div>
-                        </div>
-                      )}
+                      <img 
+                        src={imageUrl} 
+                        alt={snack.name} 
+                        className="w-full h-full object-cover"
+                      />
                       
-                      {/* Calorie Badge */}
                       <div className="absolute bottom-2 right-2 bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-medium">
                         {snack.macros.calories} kcal
                       </div>
                       
-                      {/* Lock/Unlock and Info Buttons */}
                       <div className="absolute top-2 right-2 flex gap-1">
                         <Button 
                           variant="secondary" 
@@ -185,11 +166,9 @@ const SnacksSection: React.FC<SnacksSectionProps> = ({
                       </div>
                     </div>
                     
-                    {/* Content Section */}
                     <div className="p-3">
                       <h4 className="font-medium text-sm mb-1">{snack.name}</h4>
                       
-                      {/* Macros */}
                       <div className="flex flex-wrap gap-1">
                         <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">
                           P: {snack.macros.protein}g

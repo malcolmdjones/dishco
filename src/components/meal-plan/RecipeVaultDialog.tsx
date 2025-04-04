@@ -30,6 +30,8 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>(recipes);
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  // Fixed image URL to avoid 404s
+  const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
   // Set initial filter based on target meal type
   useEffect(() => {

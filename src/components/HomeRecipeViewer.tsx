@@ -14,6 +14,8 @@ const HomeRecipeViewer: React.FC<HomeRecipeViewerProps> = ({ className }) => {
   const [isRecipeDrawerOpen, setIsRecipeDrawerOpen] = useState(false);
   const [savedRecipeIds, setSavedRecipeIds] = useState<string[]>([]);
   const { toast } = useToast();
+  // Fixed image URL to avoid 404s
+  const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
   React.useEffect(() => {
     fetchSavedRecipes();
@@ -98,7 +100,7 @@ const HomeRecipeViewer: React.FC<HomeRecipeViewerProps> = ({ className }) => {
           >
             <div className="h-20 w-full">
               <img 
-                src={recipe.imageSrc || '/placeholder.svg'} 
+                src={imageUrl} 
                 alt={recipe.name} 
                 className="w-full h-full object-cover"
               />

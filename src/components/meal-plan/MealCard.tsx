@@ -23,25 +23,22 @@ const MealCard: React.FC<MealCardProps> = ({
   onMealClick,
   isDraggable = false
 }) => {
+  // Always use the provided Unsplash image
+  const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
+
   return (
     <div className="mb-6">
       <h3 className="font-medium text-lg mb-2">{title}</h3>
       <div className={`bg-white rounded-xl shadow-sm overflow-hidden ${isLocked ? 'border-2 border-green-500' : ''}`}>
         {meal ? (
           <div className={`cursor-pointer ${isDraggable ? 'cursor-grab active:cursor-grabbing' : ''}`} onClick={() => onMealClick(meal)}>
-            {/* Image Section */}
+            {/* Image Section - Using the fixed image URL */}
             <div className="relative h-48 bg-gray-100">
-              {meal.imageSrc ? (
-                <img 
-                  src={meal.imageSrc} 
-                  alt={meal.name} 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <div className="text-gray-400">No image available</div>
-                </div>
-              )}
+              <img 
+                src={imageUrl} 
+                alt={meal.name} 
+                className="w-full h-full object-cover"
+              />
               
               {/* Calorie Badge */}
               <div className="absolute bottom-3 right-3 bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
