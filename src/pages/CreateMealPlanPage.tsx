@@ -48,6 +48,9 @@ const CreateMealPlanPage = () => {
     
     // Use the updateMeal function to update the meal plan
     updateMeal(actualMealType, recipe, actualIndex);
+    
+    // Close the dialog after adding the recipe
+    setIsRecipeVaultOpen(false);
   };
 
   return (
@@ -72,6 +75,7 @@ const CreateMealPlanPage = () => {
           setTargetMealIndex(index);
           setIsRecipeVaultOpen(true);
         }}
+        updateMeal={updateMeal}
       />
 
       {/* Week Overview Dialog */}

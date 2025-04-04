@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Lock, Unlock, CookingPot, Zap, Blend, Info } from 'lucide-react';
+import { Plus, Lock, Unlock, Info } from 'lucide-react';
 import { Recipe } from '@/data/mockData';
 
 interface MealCardProps {
@@ -11,6 +11,7 @@ interface MealCardProps {
   toggleLock: () => void;
   onAddFromVault: () => void;
   onMealClick: (recipe: Recipe) => void;
+  isDraggable?: boolean;
 }
 
 const MealCard: React.FC<MealCardProps> = ({
@@ -19,14 +20,15 @@ const MealCard: React.FC<MealCardProps> = ({
   isLocked,
   toggleLock,
   onAddFromVault,
-  onMealClick
+  onMealClick,
+  isDraggable = false
 }) => {
   return (
     <div className="mb-6">
       <h3 className="font-medium text-lg mb-2">{title}</h3>
       <div className={`bg-white rounded-xl shadow-sm overflow-hidden ${isLocked ? 'border-2 border-green-500' : ''}`}>
         {meal ? (
-          <div className="cursor-pointer" onClick={() => onMealClick(meal)}>
+          <div className={`cursor-pointer ${isDraggable ? 'cursor-grab active:cursor-grabbing' : ''}`} onClick={() => onMealClick(meal)}>
             {/* Image Section */}
             <div className="relative h-48 bg-gray-100">
               {meal.imageSrc ? (
@@ -90,6 +92,11 @@ const MealCard: React.FC<MealCardProps> = ({
                   F: {meal.macros.fat}g
                 </span>
               </div>
+              {isDraggable && !isLocked && (
+                <div className="mt-2 text-xs text-gray-400">
+                  Drag to move
+                </div>
+              )}
             </div>
           </div>
         ) : (

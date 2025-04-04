@@ -17,6 +17,7 @@ interface CreateMealPlanContentProps {
   calculateDayTotals: () => any;
   checkExceedsGoals: () => any;
   onOpenVault: (mealType: string, index?: number) => void;
+  updateMeal: (mealType: string, recipe: Recipe | null, index?: number) => void;
 }
 
 const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
@@ -29,7 +30,8 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
   regenerateMeals,
   calculateDayTotals,
   checkExceedsGoals,
-  onOpenVault
+  onOpenVault,
+  updateMeal
 }) => {
   // Get current day's data
   const currentDayData = mealPlan[currentDay];
@@ -60,6 +62,7 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
         toggleLockMeal={toggleLockMeal}
         onAddFromVault={onOpenVault}
         onMealClick={() => {}} // We'll handle recipe viewing in a future update
+        updateMeal={updateMeal}
       />
 
       {/* Bottom Action Buttons */}
