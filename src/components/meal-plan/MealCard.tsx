@@ -29,9 +29,9 @@ const MealCard: React.FC<MealCardProps> = ({
           <div className="cursor-pointer" onClick={() => onMealClick(meal)}>
             {/* Image Section */}
             <div className="relative h-48 bg-gray-100">
-              {meal.imageUrl ? (
+              {meal.imageSrc ? (
                 <img 
-                  src={meal.imageUrl} 
+                  src={meal.imageSrc} 
                   alt={meal.name} 
                   className="w-full h-full object-cover"
                 />

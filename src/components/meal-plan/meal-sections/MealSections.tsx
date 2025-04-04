@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Recipe } from '@/data/mockData';
 import MealCard from '@/components/meal-plan/MealCard';
 import SnacksSection from '@/components/meal-plan/SnacksSection';
+import RecipeDetail from '@/components/RecipeDetail';
 
 interface MealSectionsProps {
   currentDayData: any;
@@ -21,9 +22,30 @@ const MealSections: React.FC<MealSectionsProps> = ({
   onAddFromVault,
   onMealClick
 }) => {
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [isRecipeDetailOpen, setIsRecipeDetailOpen] = useState(false);
+
   if (!currentDayData) {
     return <div className="p-4">Loading meal plan...</div>;
   }
+
+  const handleMealClick = (recipe: Recipe) => {
+    setSelectedRecipe(recipe);
+    setIsRecipeDetailOpen(true);
+    // Also call the parent onMealClick if needed
+    onMealClick(recipe);
+  };
+
+  const handleCloseRecipeDetail = () => {
+    setIsRecipeDetailOpen(false);
+    setSelectedRecipe(null);
+  };
+
+  const handleToggleSave = (recipeId: string, isSaved: boolean) => {
+    // This would typically update some state or call an API
+    console.log(`Recipe ${recipeId} saved state: ${isSaved}`);
+    return Promise.resolve();
+  };
 
   return (
     <div>
@@ -34,7 +56,7 @@ const MealSections: React.FC<MealSectionsProps> = ({
         isLocked={!!lockedMeals[`${currentDay}-breakfast`]}
         toggleLock={() => toggleLockMeal('breakfast')}
         onAddFromVault={() => onAddFromVault('breakfast')}
-        onMealClick={onMealClick}
+        onMealClick={handleMealClick}
       />
       
       {/* Lunch */}
@@ -44,7 +66,7 @@ const MealSections: React.FC<MealSectionsProps> = ({
         isLocked={!!lockedMeals[`${currentDay}-lunch`]}
         toggleLock={() => toggleLockMeal('lunch')}
         onAddFromVault={() => onAddFromVault('lunch')}
-        onMealClick={onMealClick}
+        onMealClick={handleMealClick}
       />
       
       {/* Dinner */}
@@ -54,7 +76,7 @@ const MealSections: React.FC<MealSectionsProps> = ({
         isLocked={!!lockedMeals[`${currentDay}-dinner`]}
         toggleLock={() => toggleLockMeal('dinner')}
         onAddFromVault={() => onAddFromVault('dinner')}
-        onMealClick={onMealClick}
+        onMealClick={handleMealClick}
       />
       
       {/* Snacks */}
@@ -66,8 +88,17 @@ const MealSections: React.FC<MealSectionsProps> = ({
         ]}
         toggleLockSnack={(index) => toggleLockMeal('snack', index)}
         onAddFromVault={(index) => onAddFromVault('snack', index)}
-        onSnackClick={onMealClick}
+        onSnackClick={handleMealClick}
       />
+
+      {/* Recipe Detail Dialog */}
+      {selectedRecipe && isRecipeDetailOpen && (
+        <RecipeDetail
+          recipeId={selectedRecipe.id}
+          onClose={handleCloseRecipeDetail}
+          onToggleSave={handleToggleSave}
+        />
+      )}
     </div>
   );
 };

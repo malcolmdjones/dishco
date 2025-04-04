@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { CustomRecipe } from '@/hooks/useCustomRecipes';
+import { Clock, Users } from 'lucide-react';
 
 interface RecipeCardProps {
   recipe: CustomRecipe;
@@ -30,9 +31,19 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onViewEdit }) => {
           {recipe.description || "No description provided"}
         </p>
         <div className="flex justify-between items-center">
-          <div className="flex items-center text-sm text-gray-500">
-            <span className="mr-3">{recipe.cookingTime || 0} mins</span>
-            <span>{recipe.servings || 1} servings</span>
+          <div className="flex items-center text-sm text-gray-500 gap-3">
+            {recipe.cookingTime && (
+              <div className="flex items-center">
+                <Clock size={14} className="mr-1" />
+                <span>{recipe.cookingTime} mins</span>
+              </div>
+            )}
+            {recipe.servings && (
+              <div className="flex items-center">
+                <Users size={14} className="mr-1" />
+                <span>{recipe.servings} servings</span>
+              </div>
+            )}
           </div>
           <Button
             size="sm"

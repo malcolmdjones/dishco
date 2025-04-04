@@ -47,11 +47,11 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
               value={dayTotals.calories} 
               max={userGoals.calories}
               showValue={true}
-              indicatorClassName={exceedsGoals.exceeds.calories ? "text-red-500" : "text-yellow-400"}
+              indicatorClassName="text-[#FEF7CD]"
             />
             <div className="mt-2 text-center">
-              <span className="text-sm text-gray-500">{dayTotals.calories} / {userGoals.calories}</span>
-              <p className="text-sm text-gray-700">Calories</p>
+              <span className="text-sm text-gray-700">{dayTotals.calories} / {userGoals.calories}</span>
+              <p className="text-sm text-amber-500">Calories</p>
             </div>
           </div>
           
@@ -64,11 +64,11 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
               max={userGoals.protein}
               showValue={true}
               valueSuffix="g"
-              indicatorClassName={exceedsGoals.exceeds.protein ? "text-red-500" : "text-blue-400"}
+              indicatorClassName="text-[#D3E4FD]"
             />
             <div className="mt-2 text-center">
-              <span className="text-sm text-gray-500">{dayTotals.protein}g / {userGoals.protein}g</span>
-              <p className="text-sm text-gray-700">Protein</p>
+              <span className="text-sm text-gray-700">{dayTotals.protein}g / {userGoals.protein}g</span>
+              <p className="text-sm text-blue-500">Protein</p>
             </div>
           </div>
           
@@ -81,11 +81,11 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
               max={userGoals.carbs}
               showValue={true}
               valueSuffix="g"
-              indicatorClassName={exceedsGoals.exceeds.carbs ? "text-red-500" : "text-yellow-400"}
+              indicatorClassName="text-[#FEF7CD]"
             />
             <div className="mt-2 text-center">
-              <span className="text-sm text-gray-500">{dayTotals.carbs}g / {userGoals.carbs}g</span>
-              <p className="text-sm text-gray-700">Carbs</p>
+              <span className="text-sm text-gray-700">{dayTotals.carbs}g / {userGoals.carbs}g</span>
+              <p className="text-sm text-amber-500">Carbs</p>
             </div>
           </div>
           
@@ -98,11 +98,11 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
               max={userGoals.fat}
               showValue={true}
               valueSuffix="g"
-              indicatorClassName={exceedsGoals.exceeds.fat ? "text-red-500" : "text-purple-400"}
+              indicatorClassName="text-[#E5DEFF]"
             />
             <div className="mt-2 text-center">
-              <span className="text-sm text-gray-500">{dayTotals.fat}g / {userGoals.fat}g</span>
-              <p className="text-sm text-gray-700">Fat</p>
+              <span className="text-sm text-gray-700">{dayTotals.fat}g / {userGoals.fat}g</span>
+              <p className="text-sm text-green-500">Fat</p>
             </div>
           </div>
         </div>
