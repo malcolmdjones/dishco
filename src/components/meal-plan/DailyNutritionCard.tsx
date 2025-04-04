@@ -49,7 +49,8 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
                 text={`${dayTotals.calories}`}
                 styles={{
                   path: { stroke: "#FFF4D7" },
-                  text: { fill: '#3c3c3c', fontSize: '30px' }
+                  text: { fill: '#3c3c3c', fontSize: '30px' },
+                  trail: { stroke: '#f9f9f9' }
                 }}
               />
             </div>
@@ -67,7 +68,8 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
                 text={`${dayTotals.protein}g`}
                 styles={{
                   path: { stroke: "#DBE9FE" },
-                  text: { fill: '#3c3c3c', fontSize: '30px' }
+                  text: { fill: '#3c3c3c', fontSize: '30px' },
+                  trail: { stroke: '#f9f9f9' }
                 }}
               />
             </div>
@@ -85,7 +87,8 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
                 text={`${dayTotals.carbs}g`}
                 styles={{
                   path: { stroke: "#FEF9C3" },
-                  text: { fill: '#3c3c3c', fontSize: '30px' }
+                  text: { fill: '#3c3c3c', fontSize: '30px' },
+                  trail: { stroke: '#f9f9f9' }
                 }}
               />
             </div>
@@ -103,7 +106,8 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
                 text={`${dayTotals.fat}g`}
                 styles={{
                   path: { stroke: "#F3E8FF" },
-                  text: { fill: '#3c3c3c', fontSize: '30px' }
+                  text: { fill: '#3c3c3c', fontSize: '30px' },
+                  trail: { stroke: '#f9f9f9' }
                 }}
               />
             </div>

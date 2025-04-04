@@ -65,6 +65,13 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
   // Get unique recipe types
   const recipeTypes = [...new Set(recipes.map(recipe => recipe.type))];
 
+  // Handle recipe selection, always add as new recipe
+  const handleSelectRecipe = (recipe: Recipe) => {
+    // Pass undefined for index to add as new recipe rather than replacing existing one
+    onSelectRecipe(recipe, targetMealType);
+    onClose();
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
@@ -112,10 +119,7 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
               <div 
                 key={recipe.id} 
                 className="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer"
-                onClick={() => {
-                  onSelectRecipe(recipe, targetMealType, targetMealIndex);
-                  onClose();
-                }}
+                onClick={() => handleSelectRecipe(recipe)}
               >
                 <div className="flex justify-between items-start">
                   <h3 className="font-medium">{recipe.name}</h3>

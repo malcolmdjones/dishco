@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { calculateDailyMacros, defaultGoals, fetchNutritionGoals, recipes, Recipe, NutritionGoals, MealPlanDay } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
@@ -279,16 +280,18 @@ export const useMealPlanUtils = () => {
           currentMeals.breakfast = [currentMeals.breakfast];
         }
         
-        // If index is provided, insert at that position, otherwise add to the end
+        // If index is provided, insert at that position, otherwise add to the beginning
         const breakfastArray = [...currentMeals.breakfast];
         if (typeof index === 'number' && breakfastArray.length > index) {
+          // Replace or remove specific meal
           if (recipe) {
             breakfastArray[index] = recipe;
           } else {
             breakfastArray.splice(index, 1);
           }
         } else if (recipe) {
-          breakfastArray.push(recipe);
+          // Add to the beginning of the array
+          breakfastArray.unshift(recipe);
         }
         currentMeals.breakfast = breakfastArray;
       } 
@@ -301,16 +304,18 @@ export const useMealPlanUtils = () => {
           currentMeals.lunch = [currentMeals.lunch];
         }
         
-        // If index is provided, insert at that position, otherwise add to the end
+        // If index is provided, insert at that position, otherwise add to the beginning
         const lunchArray = [...currentMeals.lunch];
         if (typeof index === 'number' && lunchArray.length > index) {
+          // Replace or remove specific meal
           if (recipe) {
             lunchArray[index] = recipe;
           } else {
             lunchArray.splice(index, 1);
           }
         } else if (recipe) {
-          lunchArray.push(recipe);
+          // Add to the beginning of the array
+          lunchArray.unshift(recipe);
         }
         currentMeals.lunch = lunchArray;
       } 
@@ -323,16 +328,18 @@ export const useMealPlanUtils = () => {
           currentMeals.dinner = [currentMeals.dinner];
         }
         
-        // If index is provided, insert at that position, otherwise add to the end
+        // If index is provided, insert at that position, otherwise add to the beginning
         const dinnerArray = [...currentMeals.dinner];
         if (typeof index === 'number' && dinnerArray.length > index) {
+          // Replace or remove specific meal
           if (recipe) {
             dinnerArray[index] = recipe;
           } else {
             dinnerArray.splice(index, 1);
           }
         } else if (recipe) {
-          dinnerArray.push(recipe);
+          // Add to the beginning of the array
+          dinnerArray.unshift(recipe);
         }
         currentMeals.dinner = dinnerArray;
       } 
@@ -350,7 +357,7 @@ export const useMealPlanUtils = () => {
     if (recipe) {
       toast({
         title: "Meal Updated",
-        description: `Updated ${mealType} with ${recipe.name}.`,
+        description: `Added ${recipe.name} to ${mealType}.`,
       });
     }
   };
