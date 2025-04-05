@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { motion } from 'framer-motion';
 import { Recipe } from '@/data/mockData';
 import { Clock, Flame } from 'lucide-react';
@@ -8,9 +8,10 @@ interface RecipeCardProps {
   recipe: Recipe;
 }
 
-const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
+const RecipeCard = forwardRef<HTMLDivElement, RecipeCardProps>(({ recipe }, ref) => {
   return (
     <motion.div 
+      ref={ref}
       className="w-full bg-white rounded-3xl shadow-xl overflow-hidden"
       whileHover={{ scale: 1.02 }}
       transition={{ type: "spring", stiffness: 300 }}
@@ -62,6 +63,8 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
       </div>
     </motion.div>
   );
-};
+});
+
+RecipeCard.displayName = "RecipeCard";
 
 export default RecipeCard;

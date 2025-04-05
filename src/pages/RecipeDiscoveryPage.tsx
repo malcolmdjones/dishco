@@ -1,8 +1,8 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Heart, X, Filter } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useSwipeable } from 'react-swipeable';
+import { motion, useMotionValue, useTransform, PanInfo, useAnimation } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { useRecipes } from '@/hooks/useRecipes';
 import { useRecipePreferences } from '@/hooks/useRecipePreferences';
@@ -17,11 +17,21 @@ const RecipeDiscoveryPage = () => {
   const { toast } = useToast();
   const [shuffledRecipes, setShuffledRecipes] = useState<Recipe[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [direction, setDirection] = useState<'left' | 'right' | null>(null);
   const [showLiked, setShowLiked] = useState(false);
   const [likedRecipes, setLikedRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
-  const dragConstraintsRef = useRef(null);
+  
+  // Motion values for dragging
+  const x = useMotionValue(0);
+  const rotate = useTransform(x, [-200, 200], [-30, 30]);
+  const cardOpacity = useTransform(x, [-200, 0, 200], [0.5, 1, 0.5]);
+  const likeScale = useTransform(x, [0, 150], [0.5, 1.5]);
+  const nopeScale = useTransform(x, [-150, 0], [1.5, 0.5]);
+  const controls = useAnimation();
+
+  // Refs for indicators
+  const likeIndicatorRef = useRef<HTMLDivElement>(null);
+  const nopeIndicatorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (recipes.length > 0) {
@@ -41,32 +51,40 @@ const RecipeDiscoveryPage = () => {
   const handleLike = () => {
     if (!currentRecipe) return;
     
-    setDirection('right');
-    
-    setRecipePreference(currentRecipe.id, true);
-    
-    toast({
-      title: "Recipe liked!",
-      description: `Added ${currentRecipe.name} to your liked recipes`,
-    });
-    
-    setTimeout(() => {
-      setCurrentIndex(prevIndex => prevIndex + 1);
-      setDirection(null);
-    }, 300);
+    controls.start({ x: 500, opacity: 0, transition: { duration: 0.5 } })
+      .then(() => {
+        setRecipePreference(currentRecipe.id, true);
+        
+        toast({
+          title: "Recipe liked!",
+          description: `Added ${currentRecipe.name} to your liked recipes`,
+        });
+        
+        setCurrentIndex(prevIndex => prevIndex + 1);
+        x.set(0);
+      });
   };
 
   const handleDislike = () => {
     if (!currentRecipe) return;
     
-    setDirection('left');
-    
-    setRecipePreference(currentRecipe.id, false);
-    
-    setTimeout(() => {
-      setCurrentIndex(prevIndex => prevIndex + 1);
-      setDirection(null);
-    }, 300);
+    controls.start({ x: -500, opacity: 0, transition: { duration: 0.5 } })
+      .then(() => {
+        setRecipePreference(currentRecipe.id, false);
+        setCurrentIndex(prevIndex => prevIndex + 1);
+        x.set(0);
+      });
+  };
+
+  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const threshold = 150;
+    if (info.offset.x > threshold) {
+      handleLike();
+    } else if (info.offset.x < -threshold) {
+      handleDislike();
+    } else {
+      controls.start({ x: 0, opacity: 1, transition: { type: 'spring', stiffness: 300, damping: 20 } });
+    }
   };
 
   const handleSaveRecipe = async (recipe: Recipe) => {
@@ -88,12 +106,6 @@ const RecipeDiscoveryPage = () => {
   };
 
   const isFinished = currentIndex >= shuffledRecipes.length;
-
-  const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => handleDislike(),
-    onSwipedRight: () => handleLike(),
-    trackMouse: true
-  });
 
   if (loading || recipesLoading) {
     return (
@@ -231,30 +243,40 @@ const RecipeDiscoveryPage = () => {
           <div className="flex flex-col items-center justify-center h-[calc(100vh-150px)]">
             {!isFinished && currentRecipe ? (
               <div>
-                <div 
-                  ref={dragConstraintsRef} 
-                  className="w-full max-w-md relative"
-                  {...swipeHandlers}
-                >
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={currentIndex}
-                      initial={{ scale: 0.95, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ 
-                        x: direction === 'left' ? -300 : direction === 'right' ? 300 : 0, 
-                        opacity: 0,
-                        rotate: direction === 'left' ? -20 : direction === 'right' ? 20 : 0
-                      }}
-                      transition={{ duration: 0.3 }}
-                      className="w-full"
-                    >
-                      <RecipeCard recipe={currentRecipe} />
-                    </motion.div>
-                  </AnimatePresence>
+                <div className="w-full max-w-md relative">
+                  <motion.div
+                    className="absolute top-20 left-1/2 transform -translate-x-1/2 z-30 bg-green-500 rounded-full px-6 py-3"
+                    style={{ scale: likeScale, opacity: useTransform(x, [0, 100], [0, 0.8]) }}
+                    ref={likeIndicatorRef}
+                  >
+                    <span className="text-white font-bold text-2xl">LIKE</span>
+                  </motion.div>
+                  
+                  <motion.div
+                    className="absolute top-20 left-1/2 transform -translate-x-1/2 z-30 bg-red-500 rounded-full px-6 py-3"
+                    style={{ scale: nopeScale, opacity: useTransform(x, [-100, 0], [0.8, 0]) }}
+                    ref={nopeIndicatorRef}
+                  >
+                    <span className="text-white font-bold text-2xl">NOPE</span>
+                  </motion.div>
+
+                  <motion.div
+                    style={{ 
+                      x, 
+                      rotate,
+                      opacity: cardOpacity
+                    }}
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    onDragEnd={handleDragEnd}
+                    animate={controls}
+                    className="w-full touch-none"
+                  >
+                    <RecipeCard recipe={currentRecipe} />
+                  </motion.div>
                 </div>
                 
-                <div className="text-center mt-4 mb-4">
+                <div className="text-center mt-8 mb-4">
                   <p className="text-sm text-gray-500">
                     <span className="mr-2">👈 Swipe left to pass</span> | 
                     <span className="ml-2">Swipe right to like 👉</span>
