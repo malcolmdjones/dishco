@@ -3,14 +3,6 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-interface RecipePreference {
-  id: string;
-  recipe_id: string;
-  user_id: string;
-  liked: boolean;
-  created_at?: string;
-}
-
 export const useRecipePreferences = () => {
   const [likedRecipeIds, setLikedRecipeIds] = useState<string[]>([]);
   const [dislikedRecipeIds, setDislikedRecipeIds] = useState<string[]>([]);
@@ -47,18 +39,19 @@ export const useRecipePreferences = () => {
     try {
       setLoading(true);
       
+      // We'll use saved_recipes table instead of recipe_preferences
       const { data, error } = await supabase
-        .from('recipe_preferences')
-        .select('recipe_id, liked');
+        .from('saved_recipes')
+        .select('*');
 
       if (error) throw error;
 
       if (data) {
-        const liked = data.filter(pref => pref.liked).map(pref => pref.recipe_id);
-        const disliked = data.filter(pref => !pref.liked).map(pref => pref.recipe_id);
+        // For now, we'll treat all saved recipes as liked recipes
+        // In a real application, you might want to add a 'liked' field to the saved_recipes table
+        const savedRecipeIds = data.map(item => item.recipe_id);
         
-        setLikedRecipeIds(liked);
-        setDislikedRecipeIds(disliked);
+        setLikedRecipeIds(savedRecipeIds);
       }
     } catch (error) {
       console.error('Error fetching recipe preferences:', error);
@@ -79,18 +72,6 @@ export const useRecipePreferences = () => {
     }
 
     try {
-      // Check if preference already exists
-      const { data: existingPref, error: queryError } = await supabase
-        .from('recipe_preferences')
-        .select('*')
-        .eq('recipe_id', recipeId)
-        .single();
-
-      if (queryError && queryError.code !== 'PGRST116') {
-        // If error is not 'no rows found', throw it
-        throw queryError;
-      }
-
       // Get current user session
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -103,34 +84,27 @@ export const useRecipePreferences = () => {
         return;
       }
 
-      if (existingPref) {
-        // Update existing preference
+      if (liked) {
+        // If recipe is liked, save it
         const { error } = await supabase
-          .from('recipe_preferences')
-          .update({ liked })
-          .eq('id', existingPref.id);
-
-        if (error) throw error;
-      } else {
-        // Insert new preference
-        const { error } = await supabase
-          .from('recipe_preferences')
+          .from('saved_recipes')
           .insert({ 
             recipe_id: recipeId,
-            user_id: session.user.id,
-            liked
+            user_id: session.user.id
           });
 
-        if (error) throw error;
-      }
+        if (error && error.code !== '23505') { // Ignore duplicate key violations
+          throw error;
+        }
 
-      // Update local state
-      if (liked) {
+        // Update local state to include the liked recipe
         setLikedRecipeIds(prev => [...prev, recipeId]);
-        setDislikedRecipeIds(prev => prev.filter(id => id !== recipeId));
       } else {
+        // If recipe is disliked, remove it from saved_recipes if it exists
+        await removePreference(recipeId);
+        
+        // Add to disliked recipes in local state
         setDislikedRecipeIds(prev => [...prev, recipeId]);
-        setLikedRecipeIds(prev => prev.filter(id => id !== recipeId));
       }
     } catch (error) {
       console.error('Error setting recipe preference:', error);
@@ -157,8 +131,9 @@ export const useRecipePreferences = () => {
     if (!isAuthenticated) return;
 
     try {
+      // Remove from saved_recipes table
       const { error } = await supabase
-        .from('recipe_preferences')
+        .from('saved_recipes')
         .delete()
         .eq('recipe_id', recipeId);
 
@@ -166,7 +141,6 @@ export const useRecipePreferences = () => {
       
       // Update local state
       setLikedRecipeIds(prev => prev.filter(id => id !== recipeId));
-      setDislikedRecipeIds(prev => prev.filter(id => id !== recipeId));
     } catch (error) {
       console.error('Error removing recipe preference:', error);
     }
