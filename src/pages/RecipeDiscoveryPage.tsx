@@ -21,7 +21,7 @@ const RecipeDiscoveryPage = () => {
   const [likedRecipes, setLikedRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Motion values for dragging
+  // Motion values for dragging - declare ALL motion hooks unconditionally at the top level
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-30, 30]);
   const cardOpacity = useTransform(x, [-200, 0, 200], [0.5, 1, 0.5]);
@@ -29,7 +29,7 @@ const RecipeDiscoveryPage = () => {
   const nopeScale = useTransform(x, [-150, 0], [1.5, 0.5]);
   const controls = useAnimation();
 
-  // Refs for indicators
+  // Refs for indicators - declare ALL refs unconditionally at the top level
   const likeIndicatorRef = useRef<HTMLDivElement>(null);
   const nopeIndicatorRef = useRef<HTMLDivElement>(null);
 
@@ -47,6 +47,7 @@ const RecipeDiscoveryPage = () => {
   }, [recipes, likedRecipeIds]);
 
   const currentRecipe = shuffledRecipes[currentIndex];
+  const isFinished = currentIndex >= shuffledRecipes.length;
 
   const handleLike = () => {
     if (!currentRecipe) return;
@@ -105,8 +106,6 @@ const RecipeDiscoveryPage = () => {
     });
   };
 
-  const isFinished = currentIndex >= shuffledRecipes.length;
-
   if (loading || recipesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -118,6 +117,186 @@ const RecipeDiscoveryPage = () => {
       </div>
     );
   }
+
+  // Render content for showing liked recipes
+  const renderLikedRecipes = () => {
+    return (
+      <div className="animate-fade-in">
+        <h2 className="text-xl font-semibold mb-4">Liked Recipes</h2>
+        {likedRecipes.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {likedRecipes.map(recipe => (
+              <motion.div 
+                key={recipe.id}
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="hover-scale"
+              >
+                <div 
+                  className="bg-white rounded-xl shadow-md overflow-hidden cursor-pointer"
+                  onClick={() => {}} // We'll implement recipe detail view later
+                >
+                  <div className="relative h-48">
+                    <img 
+                      src={recipe.imageSrc} 
+                      alt={recipe.name} 
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute bottom-2 right-2 bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                      {recipe.macros.calories} kcal
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-medium text-lg">{recipe.name}</h3>
+                    <div className="flex justify-between items-center mt-2">
+                      <div className="flex gap-1">
+                        <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">
+                          P: {recipe.macros.protein}g
+                        </span>
+                        <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs">
+                          C: {recipe.macros.carbs}g
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSaveRecipe(recipe);
+                          }}
+                        >
+                          <Heart size={18} fill={isRecipeSaved(recipe.id) ? "#ea384c" : "transparent"} color={isRecipeSaved(recipe.id) ? "#ea384c" : "currentColor"} />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveFromLiked(recipe.id);
+                          }}
+                        >
+                          <X size={18} />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16">
+            <Heart size={64} className="text-gray-300 mb-4" />
+            <p className="text-gray-500 text-center">No liked recipes yet</p>
+            <p className="text-gray-400 text-sm text-center mt-2">Start swiping to discover recipes you'll love</p>
+            <Button 
+              variant="default" 
+              className="mt-6"
+              onClick={() => setShowLiked(false)}
+            >
+              Start Discovering
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Render content for the recipe discovery swiper
+  const renderRecipeSwiper = () => {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-150px)]">
+        {!isFinished && currentRecipe ? (
+          <div>
+            <div className="w-full max-w-md relative">
+              <motion.div
+                className="absolute top-20 left-1/2 transform -translate-x-1/2 z-30 bg-green-500 rounded-full px-6 py-3"
+                style={{ scale: likeScale, opacity: useTransform(x, [0, 100], [0, 0.8]) }}
+                ref={likeIndicatorRef}
+              >
+                <span className="text-white font-bold text-2xl">LIKE</span>
+              </motion.div>
+              
+              <motion.div
+                className="absolute top-20 left-1/2 transform -translate-x-1/2 z-30 bg-red-500 rounded-full px-6 py-3"
+                style={{ scale: nopeScale, opacity: useTransform(x, [-100, 0], [0.8, 0]) }}
+                ref={nopeIndicatorRef}
+              >
+                <span className="text-white font-bold text-2xl">NOPE</span>
+              </motion.div>
+
+              <motion.div
+                style={{ 
+                  x, 
+                  rotate,
+                  opacity: cardOpacity
+                }}
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                onDragEnd={handleDragEnd}
+                animate={controls}
+                className="w-full touch-none"
+              >
+                <RecipeCard recipe={currentRecipe} />
+              </motion.div>
+            </div>
+            
+            <div className="text-center mt-8 mb-4">
+              <p className="text-sm text-gray-500">
+                <span className="mr-2">👈 Swipe left to pass</span> | 
+                <span className="ml-2">Swipe right to like 👉</span>
+              </p>
+            </div>
+
+            <div className="flex justify-center gap-6">
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg"
+                onClick={handleDislike}
+              >
+                <X size={24} className="text-red-500" />
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg"
+                onClick={handleLike}
+              >
+                <Heart size={32} fill="white" className="text-white" />
+              </motion.button>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">No more recipes!</h2>
+            <p className="text-gray-500 mb-6">Check out your liked recipes or refresh to start over</p>
+            <div className="flex gap-4 justify-center">
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  const reshuffled = [...recipes].sort(() => Math.random() - 0.5);
+                  setShuffledRecipes(reshuffled);
+                  setCurrentIndex(0);
+                }}
+              >
+                Start Over
+              </Button>
+              <Button 
+                variant="default"
+                onClick={() => setShowLiked(true)}
+              >
+                View Liked ({likedRecipes.length})
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen pb-16 animate-fade-in">
@@ -155,177 +334,7 @@ const RecipeDiscoveryPage = () => {
       </div>
 
       <div className="pt-20 px-4">
-        {showLiked ? (
-          <div className="animate-fade-in">
-            <h2 className="text-xl font-semibold mb-4">Liked Recipes</h2>
-            {likedRecipes.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {likedRecipes.map(recipe => (
-                  <motion.div 
-                    key={recipe.id}
-                    initial={{ scale: 0.95, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.95, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="hover-scale"
-                  >
-                    <div 
-                      className="bg-white rounded-xl shadow-md overflow-hidden cursor-pointer"
-                      onClick={() => {}} // We'll implement recipe detail view later
-                    >
-                      <div className="relative h-48">
-                        <img 
-                          src={recipe.imageSrc} 
-                          alt={recipe.name} 
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute bottom-2 right-2 bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-medium">
-                          {recipe.macros.calories} kcal
-                        </div>
-                      </div>
-                      <div className="p-4">
-                        <h3 className="font-medium text-lg">{recipe.name}</h3>
-                        <div className="flex justify-between items-center mt-2">
-                          <div className="flex gap-1">
-                            <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">
-                              P: {recipe.macros.protein}g
-                            </span>
-                            <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs">
-                              C: {recipe.macros.carbs}g
-                            </span>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSaveRecipe(recipe);
-                              }}
-                            >
-                              <Heart size={18} fill={isRecipeSaved(recipe.id) ? "#ea384c" : "transparent"} color={isRecipeSaved(recipe.id) ? "#ea384c" : "currentColor"} />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveFromLiked(recipe.id);
-                              }}
-                            >
-                              <X size={18} />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-16">
-                <Heart size={64} className="text-gray-300 mb-4" />
-                <p className="text-gray-500 text-center">No liked recipes yet</p>
-                <p className="text-gray-400 text-sm text-center mt-2">Start swiping to discover recipes you'll love</p>
-                <Button 
-                  variant="default" 
-                  className="mt-6"
-                  onClick={() => setShowLiked(false)}
-                >
-                  Start Discovering
-                </Button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-[calc(100vh-150px)]">
-            {!isFinished && currentRecipe ? (
-              <div>
-                <div className="w-full max-w-md relative">
-                  <motion.div
-                    className="absolute top-20 left-1/2 transform -translate-x-1/2 z-30 bg-green-500 rounded-full px-6 py-3"
-                    style={{ scale: likeScale, opacity: useTransform(x, [0, 100], [0, 0.8]) }}
-                    ref={likeIndicatorRef}
-                  >
-                    <span className="text-white font-bold text-2xl">LIKE</span>
-                  </motion.div>
-                  
-                  <motion.div
-                    className="absolute top-20 left-1/2 transform -translate-x-1/2 z-30 bg-red-500 rounded-full px-6 py-3"
-                    style={{ scale: nopeScale, opacity: useTransform(x, [-100, 0], [0.8, 0]) }}
-                    ref={nopeIndicatorRef}
-                  >
-                    <span className="text-white font-bold text-2xl">NOPE</span>
-                  </motion.div>
-
-                  <motion.div
-                    style={{ 
-                      x, 
-                      rotate,
-                      opacity: cardOpacity
-                    }}
-                    drag="x"
-                    dragConstraints={{ left: 0, right: 0 }}
-                    onDragEnd={handleDragEnd}
-                    animate={controls}
-                    className="w-full touch-none"
-                  >
-                    <RecipeCard recipe={currentRecipe} />
-                  </motion.div>
-                </div>
-                
-                <div className="text-center mt-8 mb-4">
-                  <p className="text-sm text-gray-500">
-                    <span className="mr-2">👈 Swipe left to pass</span> | 
-                    <span className="ml-2">Swipe right to like 👉</span>
-                  </p>
-                </div>
-
-                <div className="flex justify-center gap-6">
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg"
-                    onClick={handleDislike}
-                  >
-                    <X size={24} className="text-red-500" />
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg"
-                    onClick={handleLike}
-                  >
-                    <Heart size={32} fill="white" className="text-white" />
-                  </motion.button>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center">
-                <h2 className="text-2xl font-bold mb-4">No more recipes!</h2>
-                <p className="text-gray-500 mb-6">Check out your liked recipes or refresh to start over</p>
-                <div className="flex gap-4 justify-center">
-                  <Button 
-                    variant="outline"
-                    onClick={() => {
-                      const reshuffled = [...recipes].sort(() => Math.random() - 0.5);
-                      setShuffledRecipes(reshuffled);
-                      setCurrentIndex(0);
-                    }}
-                  >
-                    Start Over
-                  </Button>
-                  <Button 
-                    variant="default"
-                    onClick={() => setShowLiked(true)}
-                  >
-                    View Liked ({likedRecipes.length})
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        {showLiked ? renderLikedRecipes() : renderRecipeSwiper()}
       </div>
     </div>
   );
