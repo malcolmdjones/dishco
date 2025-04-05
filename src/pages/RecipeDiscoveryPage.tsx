@@ -23,8 +23,8 @@ const RecipeDiscoveryPage = () => {
 
   // Shuffle recipes when component mounts
   useEffect(() => {
-    // Filter and shuffle recipes
-    const filteredRecipes = [...recipes].filter(recipe => !recipe.excludedByPreferences);
+    // Filter and shuffle recipes - we don't have excludedByPreferences so we'll remove that check
+    const filteredRecipes = [...recipes];
     const shuffled = [...filteredRecipes].sort(() => Math.random() - 0.5);
     setShuffledRecipes(shuffled);
   }, [recipes]);
