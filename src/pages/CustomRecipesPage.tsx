@@ -48,7 +48,16 @@ const CustomRecipesPage = () => {
           {recipes.map((recipe) => (
             <RecipeCard 
               key={recipe.id} 
-              recipe={recipe}
+              recipe={{
+                id: recipe.id,
+                name: recipe.title,
+                description: recipe.description,
+                imageSrc: recipe.imageUrl,
+                type: 'custom',
+                servings: recipe.servings,
+                cookTime: recipe.cookingTime,
+                macros: { calories: 0, protein: 0, carbs: 0, fat: 0 }
+              }}
               onViewEdit={() => navigate(`/edit-recipe/${recipe.id}`)}
             />
           ))}

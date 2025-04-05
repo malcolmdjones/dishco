@@ -24,11 +24,14 @@ export interface DbRecipe {
   price_range?: string;
   meal_type?: string;
   is_high_protein?: boolean;
-  is_public?: boolean;  // Added this property to fix TypeScript errors
+  is_public?: boolean;  
   created_at?: string;
   updated_at?: string;
-  user_id?: string;     // Added user_id to handle ownership
+  user_id?: string;
 }
+
+// Standard image URL to use when no image is available
+const DEFAULT_IMAGE_URL = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
 // Convert database recipe to frontend recipe format
 export const dbToFrontendRecipe = (dbRecipe: DbRecipe): Recipe => {
@@ -37,7 +40,7 @@ export const dbToFrontendRecipe = (dbRecipe: DbRecipe): Recipe => {
     name: dbRecipe.name,
     description: dbRecipe.description || '',
     type: dbRecipe.type || 'meal',
-    imageSrc: dbRecipe.image_url || "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80",
+    imageSrc: dbRecipe.image_url || DEFAULT_IMAGE_URL,
     requiresBlender: dbRecipe.requires_blender || false,
     requiresCooking: dbRecipe.requires_cooking || false,
     cookTime: dbRecipe.cook_time || 0,
@@ -60,7 +63,7 @@ const frontendToDbRecipe = (recipe: Recipe): Omit<DbRecipe, 'id' | 'created_at' 
     name: recipe.name,
     description: recipe.description || '',
     type: recipe.type || 'meal',
-    image_url: recipe.imageSrc || "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80",
+    image_url: recipe.imageSrc || DEFAULT_IMAGE_URL,
     requires_blender: recipe.requiresBlender || false,
     requires_cooking: recipe.requiresCooking || false,
     cook_time: recipe.cookTime || 0,
@@ -104,6 +107,7 @@ export const useRecipes = () => {
   // Import mock recipes to database if they don't exist
   const importMockRecipesToDb = async () => {
     try {
+      console.log("Checking for existing recipes in database...");
       // First, get all existing recipes from the database to check if we need to import
       const { data: existingRecipes, error: fetchError } = await supabase
         .from('recipes')
@@ -113,6 +117,7 @@ export const useRecipes = () => {
       
       // Create a map of existing recipe names for quick lookup
       const existingRecipeNames = new Set(existingRecipes?.map(r => r.name.toLowerCase()) || []);
+      console.log(`Found ${existingRecipeNames.size} existing recipes in database`);
       
       // Filter out mock recipes that already exist in the database (by name)
       const recipesToImport = mockRecipes.filter(
@@ -123,6 +128,8 @@ export const useRecipes = () => {
         console.log('All mock recipes already exist in the database');
         return;
       }
+
+      console.log(`Importing ${recipesToImport.length} mock recipes to database...`);
 
       // Convert mock recipes to the database format
       const dbRecipesToInsert = recipesToImport.map(frontendToDbRecipe);
@@ -137,6 +144,36 @@ export const useRecipes = () => {
       console.log(`Successfully imported ${recipesToImport.length} mock recipes to the database`);
     } catch (error) {
       console.error('Error importing mock recipes to database:', error);
+    }
+  };
+
+  // Fetch recipe ingredients and instructions
+  const fetchRecipeDetails = async (recipeId: string) => {
+    try {
+      // Fetch ingredients
+      const { data: ingredients, error: ingredientsError } = await supabase
+        .from('recipe_ingredients')
+        .select('*')
+        .eq('recipe_id', recipeId);
+      
+      if (ingredientsError) throw ingredientsError;
+      
+      // Fetch instructions
+      const { data: instructions, error: instructionsError } = await supabase
+        .from('recipe_instructions')
+        .select('*')
+        .eq('recipe_id', recipeId)
+        .order('step_number', { ascending: true });
+      
+      if (instructionsError) throw instructionsError;
+      
+      return {
+        ingredients: ingredients?.map(i => `${i.quantity || ''} ${i.unit || ''} ${i.name}`.trim()) || [],
+        instructions: instructions?.map(i => i.instruction) || []
+      };
+    } catch (error) {
+      console.error('Error fetching recipe details:', error);
+      return { ingredients: [], instructions: [] };
     }
   };
 
@@ -162,7 +199,20 @@ export const useRecipes = () => {
       } else {
         // Convert db recipes to frontend format
         const frontendRecipes = dbRecipes.map(dbToFrontendRecipe);
-        setRecipes(frontendRecipes);
+        
+        // Fetch details for each recipe
+        const recipesWithDetails = await Promise.all(
+          frontendRecipes.map(async (recipe) => {
+            const details = await fetchRecipeDetails(recipe.id);
+            return {
+              ...recipe,
+              ingredients: details.ingredients,
+              instructions: details.instructions
+            };
+          })
+        );
+        
+        setRecipes(recipesWithDetails);
       }
 
       // Fetch saved recipe IDs
@@ -174,7 +224,6 @@ export const useRecipes = () => {
         description: "Failed to load recipes.",
         variant: "destructive"
       });
-      // Don't fall back to mock recipes anymore as we're consolidating to the database
       setRecipes([]);
     } finally {
       setLoading(false);

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useCustomRecipes, CustomRecipe } from '@/hooks/useCustomRecipes';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,45 +16,18 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-interface CustomRecipe {
-  id: string;
-  title: string;
-  description: string;
-  imageUrl: string;
-  sourceUrl: string;
-  cookingTime: number;
-  servings: number;
-  ingredients: Array<{name: string; quantity: string; unit: string}>;
-  instructions: string[];
-  nutrition: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  };
-  createdAt: string;
-}
-
 const EditCustomRecipePage = () => {
   const { recipeId } = useParams<{ recipeId: string }>();
   const [recipe, setRecipe] = useState<CustomRecipe | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { recipes, deleteRecipe } = useCustomRecipes();
   const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
   useEffect(() => {
-    if (recipeId) {
-      fetchRecipe(recipeId);
-    }
-  }, [recipeId]);
-
-  const fetchRecipe = (id: string) => {
-    setIsLoading(true);
-    try {
-      const savedRecipes = JSON.parse(localStorage.getItem('externalRecipes') || '[]');
-      const foundRecipe = savedRecipes.find((r: CustomRecipe) => r.id === id);
-      
+    if (recipeId && recipes.length > 0) {
+      const foundRecipe = recipes.find(r => r.id === recipeId);
       if (foundRecipe) {
         setRecipe(foundRecipe);
       } else {
@@ -64,33 +38,15 @@ const EditCustomRecipePage = () => {
         });
         navigate('/custom-recipes');
       }
-    } catch (error) {
-      console.error('Error loading recipe:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load the recipe",
-        variant: "destructive"
-      });
-    } finally {
       setIsLoading(false);
     }
-  };
+  }, [recipeId, recipes, navigate, toast]);
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
+    if (!recipeId) return;
+    
     try {
-      const savedRecipes = JSON.parse(localStorage.getItem('externalRecipes') || '[]');
-      const updatedRecipes = savedRecipes.filter((r: CustomRecipe) => r.id !== recipeId);
-      localStorage.setItem('externalRecipes', JSON.stringify(updatedRecipes));
-      
-      const savedRecipeIds = JSON.parse(localStorage.getItem('savedRecipeIds') || '[]');
-      const updatedSavedIds = savedRecipeIds.filter((id: string) => id !== recipeId);
-      localStorage.setItem('savedRecipeIds', JSON.stringify(updatedSavedIds));
-      
-      toast({
-        title: "Recipe Deleted",
-        description: "Your recipe has been successfully deleted",
-      });
-      
+      await deleteRecipe(recipeId);
       navigate('/custom-recipes');
     } catch (error) {
       console.error('Error deleting recipe:', error);
@@ -158,7 +114,7 @@ const EditCustomRecipePage = () => {
       <div className="space-y-6">
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <img 
-            src={imageUrl} 
+            src={recipe.imageUrl || imageUrl} 
             alt={recipe.title} 
             className="w-full h-64 object-cover"
           />
@@ -194,53 +150,59 @@ const EditCustomRecipePage = () => {
           )}
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <h3 className="font-semibold text-lg mb-3">Ingredients</h3>
-          <ul className="space-y-2">
-            {recipe.ingredients.map((ingredient, index) => (
-              <li key={index} className="flex items-center gap-2">
-                <span className="w-12 text-sm font-medium">{ingredient.quantity} {ingredient.unit}</span>
-                <span>{ingredient.name}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {recipe.ingredients && recipe.ingredients.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <h3 className="font-semibold text-lg mb-3">Ingredients</h3>
+            <ul className="space-y-2">
+              {recipe.ingredients.map((ingredient, index) => (
+                <li key={index} className="flex items-center gap-2">
+                  <span className="w-12 text-sm font-medium">{ingredient.quantity} {ingredient.unit}</span>
+                  <span>{ingredient.name}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <h3 className="font-semibold text-lg mb-3">Instructions</h3>
-          <ol className="space-y-4">
-            {recipe.instructions.map((instruction, index) => (
-              <li key={index} className="flex">
-                <div className="mr-3 flex-shrink-0 w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
-                  <span className="text-xs font-medium">{index + 1}</span>
-                </div>
-                <p>{instruction}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
+        {recipe.instructions && recipe.instructions.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <h3 className="font-semibold text-lg mb-3">Instructions</h3>
+            <ol className="space-y-4">
+              {recipe.instructions.map((instruction, index) => (
+                <li key={index} className="flex">
+                  <div className="mr-3 flex-shrink-0 w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-xs font-medium">{index + 1}</span>
+                  </div>
+                  <p>{instruction}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
 
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <h3 className="font-semibold text-lg mb-3">Nutrition (per serving)</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-sm text-gray-500">Calories</p>
-              <p className="font-medium">{recipe.nutrition.calories || 0} kcal</p>
-            </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-sm text-gray-500">Protein</p>
-              <p className="font-medium">{recipe.nutrition.protein || 0}g</p>
-            </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-sm text-gray-500">Carbs</p>
-              <p className="font-medium">{recipe.nutrition.carbs || 0}g</p>
-            </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-sm text-gray-500">Fat</p>
-              <p className="font-medium">{recipe.nutrition.fat || 0}g</p>
+        {recipe.nutrition && (
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <h3 className="font-semibold text-lg mb-3">Nutrition (per serving)</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-sm text-gray-500">Calories</p>
+                <p className="font-medium">{recipe.nutrition.calories || 0} kcal</p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-sm text-gray-500">Protein</p>
+                <p className="font-medium">{recipe.nutrition.protein || 0}g</p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-sm text-gray-500">Carbs</p>
+                <p className="font-medium">{recipe.nutrition.carbs || 0}g</p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-sm text-gray-500">Fat</p>
+                <p className="font-medium">{recipe.nutrition.fat || 0}g</p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <Button 
           onClick={() => navigate(`/add-recipe?edit=${recipeId}`)}
