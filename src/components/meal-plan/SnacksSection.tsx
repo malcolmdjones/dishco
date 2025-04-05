@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Lock, Unlock, Info } from 'lucide-react';
@@ -183,16 +184,14 @@ const SnacksSection: React.FC<SnacksSectionProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <div className="h-32 bg-gray-50 flex flex-col items-center justify-center p-3">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => onAddFromVault(idx)}
-                    >
-                      <Plus size={14} className="mr-1" />
-                      Add snack
-                    </Button>
-                  </div>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => onAddFromVault(idx)}
+                    className="h-32 w-full flex flex-col items-center justify-center bg-gray-50"
+                  >
+                    <Plus size={24} className="mb-2" />
+                    Add snack
+                  </Button>
                 )}
               </div>
             )}

@@ -34,6 +34,7 @@ import AdminPage from "./pages/AdminPage";
 import AdminAddRecipePage from "./pages/admin/AdminAddRecipePage";
 import AdminEditRecipePage from "./pages/admin/AdminEditRecipePage";
 import AdminViewRecipePage from "./pages/admin/AdminViewRecipePage";
+import RecipeDiscoveryPage from "./pages/RecipeDiscoveryPage";
 
 // We'll create a protected route component that requires authentication
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -84,6 +85,7 @@ const App = () => (
             <Route path="/create-meal-plan" element={<ProtectedRoute><AppLayout><CreateMealPlanPage /></AppLayout></ProtectedRoute>} />
             <Route path="/explore-recipes" element={<AppLayout><ExploreRecipesPage /></AppLayout>} />
             <Route path="/explore-snacks" element={<AppLayout><ExploreSnacksPage /></AppLayout>} />
+            <Route path="/recipe-discovery" element={<AppLayout><RecipeDiscoveryPage /></AppLayout>} />
             <Route path="/grocery" element={<ProtectedRoute><AppLayout><GroceryListPage /></AppLayout></ProtectedRoute>} />
             <Route path="/more" element={<AppLayout><MorePage /></AppLayout>} />
             <Route path="/log-meal" element={<ProtectedRoute><AppLayout><LogMealPage /></AppLayout></ProtectedRoute>} />
