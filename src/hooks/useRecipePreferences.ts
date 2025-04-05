@@ -85,7 +85,7 @@ export const useRecipePreferences = () => {
       }
 
       if (liked) {
-        // If recipe is liked, save it
+        // If recipe is liked, save it to saved_recipes table
         const { error } = await supabase
           .from('saved_recipes')
           .insert({ 
@@ -98,7 +98,17 @@ export const useRecipePreferences = () => {
         }
 
         // Update local state to include the liked recipe
-        setLikedRecipeIds(prev => [...prev, recipeId]);
+        setLikedRecipeIds(prev => {
+          if (!prev.includes(recipeId)) {
+            return [...prev, recipeId];
+          }
+          return prev;
+        });
+        
+        toast({
+          title: "Recipe Liked",
+          description: "Recipe added to your liked recipes",
+        });
       } else {
         // If recipe is disliked, remove it from saved_recipes if it exists
         await removePreference(recipeId);

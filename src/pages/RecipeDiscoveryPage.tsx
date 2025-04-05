@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, X, Star, Filter } from 'lucide-react';
+import { ArrowLeft, Heart, X, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSwipeable } from 'react-swipeable';
 import { useToast } from '@/hooks/use-toast';
@@ -24,7 +23,6 @@ const RecipeDiscoveryPage = () => {
   const [loading, setLoading] = useState(true);
   const dragConstraintsRef = useRef(null);
 
-  // Shuffle recipes when they load
   useEffect(() => {
     if (recipes.length > 0) {
       const shuffled = [...recipes].sort(() => Math.random() - 0.5);
@@ -33,7 +31,6 @@ const RecipeDiscoveryPage = () => {
     }
   }, [recipes]);
 
-  // Update liked recipes when likedRecipeIds changes
   useEffect(() => {
     const liked = recipes.filter(recipe => likedRecipeIds.includes(recipe.id));
     setLikedRecipes(liked);
@@ -46,7 +43,6 @@ const RecipeDiscoveryPage = () => {
     
     setDirection('right');
     
-    // Set recipe preference in database
     setRecipePreference(currentRecipe.id, true);
     
     toast({
@@ -65,7 +61,6 @@ const RecipeDiscoveryPage = () => {
     
     setDirection('left');
     
-    // Set recipe preference as disliked
     setRecipePreference(currentRecipe.id, false);
     
     setTimeout(() => {
@@ -85,7 +80,6 @@ const RecipeDiscoveryPage = () => {
   };
 
   const handleRemoveFromLiked = (recipeId: string) => {
-    // Remove from liked recipes using the setRecipePreference hook
     setRecipePreference(recipeId, false);
     toast({
       title: "Recipe removed",
@@ -101,7 +95,6 @@ const RecipeDiscoveryPage = () => {
     trackMouse: true
   });
 
-  // Show loading state
   if (loading || recipesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -237,29 +230,38 @@ const RecipeDiscoveryPage = () => {
         ) : (
           <div className="flex flex-col items-center justify-center h-[calc(100vh-150px)]">
             {!isFinished && currentRecipe ? (
-              <div 
-                ref={dragConstraintsRef} 
-                className="w-full max-w-md relative"
-                {...swipeHandlers}
-              >
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentIndex}
-                    initial={{ scale: 0.95, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ 
-                      x: direction === 'left' ? -300 : direction === 'right' ? 300 : 0, 
-                      opacity: 0,
-                      rotate: direction === 'left' ? -20 : direction === 'right' ? 20 : 0
-                    }}
-                    transition={{ duration: 0.3 }}
-                    className="w-full"
-                  >
-                    <RecipeCard recipe={currentRecipe} />
-                  </motion.div>
-                </AnimatePresence>
+              <div>
+                <div 
+                  ref={dragConstraintsRef} 
+                  className="w-full max-w-md relative"
+                  {...swipeHandlers}
+                >
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={currentIndex}
+                      initial={{ scale: 0.95, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ 
+                        x: direction === 'left' ? -300 : direction === 'right' ? 300 : 0, 
+                        opacity: 0,
+                        rotate: direction === 'left' ? -20 : direction === 'right' ? 20 : 0
+                      }}
+                      transition={{ duration: 0.3 }}
+                      className="w-full"
+                    >
+                      <RecipeCard recipe={currentRecipe} />
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+                
+                <div className="text-center mt-4 mb-4">
+                  <p className="text-sm text-gray-500">
+                    <span className="mr-2">👈 Swipe left to pass</span> | 
+                    <span className="ml-2">Swipe right to like 👉</span>
+                  </p>
+                </div>
 
-                <div className="absolute -bottom-20 left-0 right-0 flex justify-center gap-6">
+                <div className="flex justify-center gap-6">
                   <motion.button
                     whileTap={{ scale: 0.9 }}
                     className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg"
@@ -273,17 +275,6 @@ const RecipeDiscoveryPage = () => {
                     onClick={handleLike}
                   >
                     <Heart size={32} fill="white" className="text-white" />
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg"
-                    onClick={() => handleSaveRecipe(currentRecipe)}
-                  >
-                    <Heart 
-                      size={24} 
-                      className={isRecipeSaved(currentRecipe.id) ? "text-red-500" : "text-green-500"} 
-                      fill={isRecipeSaved(currentRecipe.id) ? "#ea384c" : "transparent"}
-                    />
                   </motion.button>
                 </div>
               </div>

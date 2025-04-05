@@ -15,15 +15,15 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
       whileHover={{ scale: 1.02 }}
       transition={{ type: "spring", stiffness: 300 }}
     >
-      <div className="relative h-[500px]">
+      <div className="relative h-[600px]">
         <img 
           src={recipe.imageSrc || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxleHBsb3JlLWZlZWR8MXx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"} 
           alt={recipe.name} 
           className="w-full h-full object-cover"
         />
         
-        {/* Full gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/20" />
+        {/* Full gradient overlay - lighter to see more of the image */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-black/10" />
         
         {/* Recipe info overlaid on image */}
         <div className="absolute inset-0 flex flex-col justify-between p-6">
@@ -56,16 +56,6 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
                 <Flame size={14} className="text-white" />
                 {recipe.macros.calories} kcal
               </span>
-            </div>
-            
-            {/* Swipe instructions */}
-            <div className="mt-4 flex justify-center">
-              <div className="text-center px-4 py-2 bg-white/10 backdrop-blur-md rounded-full">
-                <p className="text-sm text-white/90">
-                  <span className="mr-2">👈 Swipe left to pass</span> | 
-                  <span className="ml-2">Swipe right to like 👉</span>
-                </p>
-              </div>
             </div>
           </div>
         </div>
