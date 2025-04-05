@@ -19,28 +19,30 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
   const [selectedRecipe, setSelectedRecipe] = useState<any>(null);
   const [isRecipeDetailOpen, setIsRecipeDetailOpen] = useState(false);
 
-  if (!plan) return null;
+  if (!plan || !plan.days || !Array.isArray(plan.days) || plan.days.length === 0) {
+    return null;
+  }
 
-  const dailyMacros = calculateDailyMacros(plan.days[activeDay].meals);
+  const dailyMacros = calculateDailyMacros(plan.days[activeDay]?.meals || {});
   
   const averageCalories = Math.round(
     plan.days.reduce((sum: number, day: any) => {
-      const dayMacros = calculateDailyMacros(day.meals);
+      const dayMacros = calculateDailyMacros(day?.meals || {});
       return sum + dayMacros.calories;
     }, 0) / plan.days.length
   );
   
   const totalMacros = {
     protein: Math.round(plan.days.reduce((sum: number, day: any) => {
-      const dayMacros = calculateDailyMacros(day.meals);
+      const dayMacros = calculateDailyMacros(day?.meals || {});
       return sum + dayMacros.protein;
     }, 0) / plan.days.length),
     carbs: Math.round(plan.days.reduce((sum: number, day: any) => {
-      const dayMacros = calculateDailyMacros(day.meals);
+      const dayMacros = calculateDailyMacros(day?.meals || {});
       return sum + dayMacros.carbs;
     }, 0) / plan.days.length),
     fat: Math.round(plan.days.reduce((sum: number, day: any) => {
-      const dayMacros = calculateDailyMacros(day.meals);
+      const dayMacros = calculateDailyMacros(day?.meals || {});
       return sum + dayMacros.fat;
     }, 0) / plan.days.length),
   };
@@ -130,7 +132,7 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
                 <div className="space-y-3">
                   <div>
                     <h4 className="text-sm font-medium mb-2">Breakfast</h4>
-                    {plan.days[activeDay].meals.breakfast ? (
+                    {plan.days[activeDay]?.meals?.breakfast ? (
                       <div 
                         className="p-3 bg-muted/20 rounded-md flex items-center cursor-pointer hover:bg-muted/30 transition-colors"
                         onClick={() => handleOpenRecipe(plan.days[activeDay].meals.breakfast)}
@@ -144,7 +146,7 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
                         </div>
                         <div className="flex-1">
                           <p className="font-medium text-sm">{plan.days[activeDay].meals.breakfast.name}</p>
-                          <p className="text-xs text-dishco-text-light">{plan.days[activeDay].meals.breakfast.macros.calories} cal</p>
+                          <p className="text-xs text-dishco-text-light">{plan.days[activeDay].meals.breakfast.macros?.calories} cal</p>
                         </div>
                       </div>
                     ) : (
@@ -154,7 +156,7 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
                   
                   <div>
                     <h4 className="text-sm font-medium mb-2">Lunch</h4>
-                    {plan.days[activeDay].meals.lunch ? (
+                    {plan.days[activeDay]?.meals?.lunch ? (
                       <div 
                         className="p-3 bg-muted/20 rounded-md flex items-center cursor-pointer hover:bg-muted/30 transition-colors"
                         onClick={() => handleOpenRecipe(plan.days[activeDay].meals.lunch)}
@@ -168,7 +170,7 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
                         </div>
                         <div className="flex-1">
                           <p className="font-medium text-sm">{plan.days[activeDay].meals.lunch.name}</p>
-                          <p className="text-xs text-dishco-text-light">{plan.days[activeDay].meals.lunch.macros.calories} cal</p>
+                          <p className="text-xs text-dishco-text-light">{plan.days[activeDay].meals.lunch.macros?.calories} cal</p>
                         </div>
                       </div>
                     ) : (
@@ -178,7 +180,7 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
                   
                   <div>
                     <h4 className="text-sm font-medium mb-2">Dinner</h4>
-                    {plan.days[activeDay].meals.dinner ? (
+                    {plan.days[activeDay]?.meals?.dinner ? (
                       <div 
                         className="p-3 bg-muted/20 rounded-md flex items-center cursor-pointer hover:bg-muted/30 transition-colors"
                         onClick={() => handleOpenRecipe(plan.days[activeDay].meals.dinner)}
@@ -192,7 +194,7 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
                         </div>
                         <div className="flex-1">
                           <p className="font-medium text-sm">{plan.days[activeDay].meals.dinner.name}</p>
-                          <p className="text-xs text-dishco-text-light">{plan.days[activeDay].meals.dinner.macros.calories} cal</p>
+                          <p className="text-xs text-dishco-text-light">{plan.days[activeDay].meals.dinner.macros?.calories} cal</p>
                         </div>
                       </div>
                     ) : (
@@ -202,7 +204,7 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
                   
                   <div>
                     <h4 className="text-sm font-medium mb-2">Snacks</h4>
-                    {plan.days[activeDay].meals.snacks && plan.days[activeDay].meals.snacks.length > 0 ? (
+                    {plan.days[activeDay]?.meals?.snacks && Array.isArray(plan.days[activeDay].meals.snacks) && plan.days[activeDay].meals.snacks.length > 0 ? (
                       <div className="space-y-2">
                         {plan.days[activeDay].meals.snacks.map((snack: any, index: number) => (
                           snack && (
@@ -220,7 +222,7 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
                               </div>
                               <div className="flex-1">
                                 <p className="font-medium text-sm">{snack.name}</p>
-                                <p className="text-xs text-dishco-text-light">{snack.macros.calories} cal</p>
+                                <p className="text-xs text-dishco-text-light">{snack.macros?.calories} cal</p>
                               </div>
                             </div>
                           )
