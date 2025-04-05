@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Trash2, ChevronRight, Plus, Pencil, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,9 +11,12 @@ import { format } from 'date-fns';
 import { calculateDailyMacros } from '@/data/mockData';
 import { useSavedMealPlans } from '@/hooks/useSavedMealPlans';
 import MealPlanDetailView from '@/components/MealPlanDetailView';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const SavedMealPlansPage = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const {
     plans,
     isLoading,
@@ -42,6 +44,46 @@ const SavedMealPlansPage = () => {
   const [isSelectingStartDay, setIsSelectingStartDay] = useState(false);
   const [planToActivateId, setPlanToActivateId] = useState<string | null>(null);
   const [selectedStartDay, setSelectedStartDay] = useState(0);
+
+  useEffect(() => {
+    // Remove the specific meal plans when component loads
+    removeSpecificPlans();
+  }, []);
+
+  const removeSpecificPlans = async () => {
+    try {
+      // Delete meal plans with these names
+      const plansToRemove = ['new 1', 'new', 'test', 'test1'];
+      
+      // Get the plans first
+      const { data, error: fetchError } = await supabase
+        .from('saved_meal_plans')
+        .select('id, name')
+        .in('name', plansToRemove);
+      
+      if (fetchError) {
+        console.error('Error fetching plans to remove:', fetchError);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        // Delete the found plans
+        const planIds = data.map(plan => plan.id);
+        const { error: deleteError } = await supabase
+          .from('saved_meal_plans')
+          .delete()
+          .in('id', planIds);
+        
+        if (deleteError) {
+          console.error('Error deleting specific plans:', deleteError);
+        } else {
+          console.log('Successfully removed test meal plans');
+        }
+      }
+    } catch (error) {
+      console.error('Error in removing specific plans:', error);
+    }
+  };
 
   const handleEditPlan = (planId: string) => {
     const plan = plans.find(p => p.id === planId);
