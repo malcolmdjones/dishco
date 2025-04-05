@@ -9,12 +9,16 @@ interface WeekOverviewDialogProps {
   isOpen: boolean;
   onClose: () => void;
   mealPlan: MealPlanDay[];
+  currentDay?: number;
+  setCurrentDay?: (day: number) => void;
 }
 
 const WeekOverviewDialog: React.FC<WeekOverviewDialogProps> = ({
   isOpen,
   onClose,
-  mealPlan
+  mealPlan,
+  currentDay,
+  setCurrentDay
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -28,7 +32,11 @@ const WeekOverviewDialog: React.FC<WeekOverviewDialogProps> = ({
           {mealPlan.map((day, index) => {
             const date = new Date(day.date);
             return (
-              <Card key={index} className="overflow-hidden">
+              <Card 
+                key={index} 
+                className={`overflow-hidden ${currentDay === index ? 'ring-2 ring-primary' : ''}`}
+                onClick={() => setCurrentDay && setCurrentDay(index)}
+              >
                 <div className="bg-green-50 p-3 border-b">
                   <h3 className="font-semibold">
                     {format(date, 'EEEE, MMMM d')}

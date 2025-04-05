@@ -5,13 +5,19 @@ import { ArrowLeft, Heart, BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface PageHeaderContentProps {
-  onOpenVault: () => void;
-  onOpenWeekOverview: () => void;
+  title: string;
+  showWeekViewButton?: boolean;
+  showBackButton?: boolean;
+  onBackClick?: () => void;
+  onWeekViewClick?: () => void;
 }
 
 const PageHeaderContent: React.FC<PageHeaderContentProps> = ({ 
-  onOpenVault, 
-  onOpenWeekOverview 
+  title,
+  showBackButton,
+  showWeekViewButton,
+  onBackClick,
+  onWeekViewClick
 }) => {
   const navigate = useNavigate();
   
@@ -19,34 +25,30 @@ const PageHeaderContent: React.FC<PageHeaderContentProps> = ({
     <>
       <div className="flex items-center mb-4 justify-between">
         <div className="flex items-center">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => navigate('/planning')} 
-            className="mr-2"
-          >
-            <ArrowLeft size={20} />
-          </Button>
-          <h1 className="text-xl font-bold">New Meal Plan</h1>
+          {showBackButton && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onBackClick || (() => navigate('/planning'))} 
+              className="mr-2"
+            >
+              <ArrowLeft size={20} />
+            </Button>
+          )}
+          <h1 className="text-xl font-bold">{title}</h1>
         </div>
         <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={onOpenVault}
-            title="Recipe Vault"
-          >
-            <Heart size={16} />
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onOpenWeekOverview}
-            className="flex items-center gap-1"
-          >
-            <BookOpen size={16} />
-            Overview
-          </Button>
+          {showWeekViewButton && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onWeekViewClick}
+              className="flex items-center gap-1"
+            >
+              <BookOpen size={16} />
+              Overview
+            </Button>
+          )}
         </div>
       </div>
       <p className="text-dishco-text-light mb-4">Plan and customize your meals</p>

@@ -22,7 +22,8 @@ export const useMealPlanUtils = () => {
     setLockedMeals,
     aiReasoning,
     setAiReasoning,
-    generateFullMealPlan
+    generateFullMealPlan,
+    preferences
   } = useMealPlanState();
 
   // Meal generation functionality
@@ -65,6 +66,7 @@ export const useMealPlanUtils = () => {
     toggleLockMeal,
     updateMeal,
     calculateDayTotals,
-    checkExceedsGoals
+    checkExceedsGoals,
+    preferences
   };
 };

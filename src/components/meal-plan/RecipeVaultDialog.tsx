@@ -16,8 +16,8 @@ import { useRecipes } from '@/hooks/useRecipes';
 interface RecipeVaultDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectRecipe: (recipe: Recipe, mealType: string, index?: number) => void;
-  targetMealType: string;
+  onSelectRecipe: (recipe: Recipe) => void;
+  mealType: string;
   targetMealIndex?: number;
 }
 
@@ -25,7 +25,7 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
   isOpen,
   onClose,
   onSelectRecipe,
-  targetMealType,
+  mealType,
   targetMealIndex
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,13 +39,13 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
 
   // Set initial filter based on target meal type
   useEffect(() => {
-    if (targetMealType && isOpen) {
-      // Convert targetMealType to recipe type format
-      let type = targetMealType.toLowerCase();
+    if (mealType && isOpen) {
+      // Convert mealType to recipe type format
+      let type = mealType.toLowerCase();
       if (type === 'snack') type = 'snack';
       setSelectedType(type);
     }
-  }, [targetMealType, isOpen]);
+  }, [mealType, isOpen]);
 
   // Filter recipes based on search term and selected type
   useEffect(() => {
@@ -74,7 +74,7 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
   // Handle recipe selection, always add as new recipe
   const handleSelectRecipe = (recipe: Recipe) => {
     // Pass undefined for index to add as new recipe rather than replacing existing one
-    onSelectRecipe(recipe, targetMealType);
+    onSelectRecipe(recipe);
     onClose();
   };
 

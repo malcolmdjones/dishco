@@ -94,9 +94,6 @@ const CreateMealPlanPage = () => {
         <SheetContent side="bottom" className="h-[50vh]">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold">AI's Meal Plan Reasoning</h3>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => {}}>
-              <X className="h-4 w-4" />
-            </Button>
           </div>
           <div className="prose max-w-none">
             <p>{aiReasoning}</p>

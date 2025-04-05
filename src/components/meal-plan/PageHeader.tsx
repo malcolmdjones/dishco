@@ -3,8 +3,11 @@ import React from 'react';
 import PageHeaderContent from './PageHeaderContent';
 
 interface PageHeaderProps {
-  onOpenVault: () => void;
-  onOpenWeekOverview: () => void;
+  title: string;
+  showWeekViewButton?: boolean;
+  showBackButton?: boolean;
+  onBackClick?: () => void;
+  onWeekViewClick?: () => void;
 }
 
 /**
