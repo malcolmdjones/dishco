@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { CustomRecipe } from '@/hooks/useCustomRecipes';
 import { Clock, Users } from 'lucide-react';
+import { getRecipeImage } from '@/utils/recipeUtils';
 
 interface RecipeCardProps {
   recipe: CustomRecipe;
@@ -10,8 +11,7 @@ interface RecipeCardProps {
 }
 
 const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onViewEdit }) => {
-  // Always use the provided Unsplash image instead of possibly broken imageUrl
-  const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
+  const imageUrl = getRecipeImage(recipe.imageUrl);
 
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">

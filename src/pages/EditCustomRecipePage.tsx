@@ -5,6 +5,7 @@ import { ChevronLeft, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useCustomRecipes, CustomRecipe } from '@/hooks/useCustomRecipes';
+import { getRecipeImage } from '@/utils/recipeUtils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +25,6 @@ const EditCustomRecipePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { recipes, deleteRecipe } = useCustomRecipes();
-  const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
   useEffect(() => {
     if (recipeId && recipes.length > 0) {
@@ -75,6 +75,8 @@ const EditCustomRecipePage = () => {
     );
   }
 
+  const imageUrl = getRecipeImage(recipe.imageUrl);
+
   return (
     <div className="animate-fade-in pb-20">
       <header className="mb-6 flex items-center justify-between">
@@ -115,7 +117,7 @@ const EditCustomRecipePage = () => {
       <div className="space-y-6">
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <img 
-            src={recipe.imageUrl || imageUrl} 
+            src={imageUrl} 
             alt={recipe.title} 
             className="w-full h-64 object-cover"
           />
