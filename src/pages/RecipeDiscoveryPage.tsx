@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Heart, X, Star, Filter } from 'lucide-react';
@@ -6,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSwipeable } from 'react-swipeable';
 import { useToast } from '@/hooks/use-toast';
 import { useRecipes } from '@/hooks/useRecipes';
+import { useRecipePreferences } from '@/hooks/useRecipePreferences';
 import { Button } from '@/components/ui/button';
 import RecipeCard from '@/components/recipe-discovery/RecipeCard';
 import { Recipe } from '@/data/mockData';
@@ -13,6 +13,7 @@ import { Recipe } from '@/data/mockData';
 const RecipeDiscoveryPage = () => {
   const navigate = useNavigate();
   const { recipes, isRecipeSaved, toggleSaveRecipe } = useRecipes();
+  const { isRecipeLiked, setRecipePreference } = useRecipePreferences();
   const { toast } = useToast();
   const [shuffledRecipes, setShuffledRecipes] = useState<Recipe[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -21,9 +22,7 @@ const RecipeDiscoveryPage = () => {
   const [showLiked, setShowLiked] = useState(false);
   const dragConstraintsRef = useRef(null);
 
-  // Shuffle recipes when component mounts
   useEffect(() => {
-    // Filter and shuffle recipes - we don't have excludedByPreferences so we'll remove that check
     const filteredRecipes = [...recipes];
     const shuffled = [...filteredRecipes].sort(() => Math.random() - 0.5);
     setShuffledRecipes(shuffled);
@@ -37,12 +36,13 @@ const RecipeDiscoveryPage = () => {
     setDirection('right');
     setLikedRecipes(prev => [...prev, currentRecipe]);
     
+    setRecipePreference(currentRecipe.id, true);
+    
     toast({
       title: "Recipe liked!",
       description: `Added ${currentRecipe.name} to your liked recipes`,
     });
     
-    // Move to next recipe after a delay
     setTimeout(() => {
       setCurrentIndex(prevIndex => prevIndex + 1);
       setDirection(null);
@@ -54,19 +54,18 @@ const RecipeDiscoveryPage = () => {
     
     setDirection('left');
     
-    // Move to next recipe after a delay
+    setRecipePreference(currentRecipe.id, false);
+    
     setTimeout(() => {
       setCurrentIndex(prevIndex => prevIndex + 1);
       setDirection(null);
     }, 300);
   };
 
-  // Swipe handlers
-  const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => handleDislike(),
-    onSwipedRight: () => handleLike(),
-    trackMouse: true
-  });
+  useEffect(() => {
+    const liked = recipes.filter(recipe => isRecipeLiked(recipe.id));
+    setLikedRecipes(liked);
+  }, [recipes, isRecipeLiked]);
 
   const handleSaveRecipe = async (recipe: Recipe) => {
     await toggleSaveRecipe(recipe.id);
@@ -80,18 +79,23 @@ const RecipeDiscoveryPage = () => {
 
   const handleRemoveFromLiked = (recipeId: string) => {
     setLikedRecipes(prev => prev.filter(recipe => recipe.id !== recipeId));
+    setRecipePreference(recipeId, false);
     toast({
       title: "Recipe removed",
       description: "Recipe removed from your liked recipes",
     });
   };
 
-  // If we've gone through all recipes
   const isFinished = currentIndex >= shuffledRecipes.length;
+
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => handleDislike(),
+    onSwipedRight: () => handleLike(),
+    trackMouse: true
+  });
 
   return (
     <div className="min-h-screen pb-16 animate-fade-in">
-      {/* Header */}
       <div className="fixed top-0 left-0 right-0 z-10 bg-white bg-opacity-90 backdrop-blur-sm p-4 flex items-center justify-between">
         <div className="flex items-center">
           <Button 
@@ -126,7 +130,6 @@ const RecipeDiscoveryPage = () => {
       </div>
 
       <div className="pt-20 px-4">
-        {/* Liked Recipes View */}
         {showLiked ? (
           <div className="animate-fade-in">
             <h2 className="text-xl font-semibold mb-4">Liked Recipes</h2>
@@ -236,7 +239,6 @@ const RecipeDiscoveryPage = () => {
                   </motion.div>
                 </AnimatePresence>
 
-                {/* Action Buttons */}
                 <div className="absolute bottom-10 left-0 right-0 flex justify-center gap-6">
                   <motion.button
                     whileTap={{ scale: 0.9 }}
@@ -273,7 +275,6 @@ const RecipeDiscoveryPage = () => {
                   <Button 
                     variant="outline"
                     onClick={() => {
-                      // Reshuffle recipes
                       const reshuffled = [...shuffledRecipes].sort(() => Math.random() - 0.5);
                       setShuffledRecipes(reshuffled);
                       setCurrentIndex(0);

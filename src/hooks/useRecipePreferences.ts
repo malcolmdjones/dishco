@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 interface RecipePreference {
+  id: string;
   recipe_id: string;
   user_id: string;
   liked: boolean;
@@ -79,41 +80,46 @@ export const useRecipePreferences = () => {
 
     try {
       // Check if preference already exists
-      const { data: existingPref } = await supabase
+      const { data: existingPref, error: queryError } = await supabase
         .from('recipe_preferences')
         .select('*')
         .eq('recipe_id', recipeId)
         .single();
+
+      if (queryError && queryError.code !== 'PGRST116') {
+        // If error is not 'no rows found', throw it
+        throw queryError;
+      }
+
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: "Authentication Required",
+          description: "You need to be logged in to save preferences.",
+          variant: "destructive"
+        });
+        return;
+      }
 
       if (existingPref) {
         // Update existing preference
         const { error } = await supabase
           .from('recipe_preferences')
           .update({ liked })
-          .eq('recipe_id', recipeId);
+          .eq('id', existingPref.id);
 
         if (error) throw error;
       } else {
-        // Get current user session
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          toast({
-            title: "Authentication Required",
-            description: "You need to be logged in to save preferences.",
-            variant: "destructive"
-          });
-          return;
-        }
-        
         // Insert new preference
         const { error } = await supabase
           .from('recipe_preferences')
-          .insert([{ 
+          .insert({ 
             recipe_id: recipeId,
             user_id: session.user.id,
             liked
-          }]);
+          });
 
         if (error) throw error;
       }
