@@ -1,233 +1,114 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Trash2, ChevronRight, Plus, Pencil, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { calculateDailyMacros } from '@/data/mockData';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
-import 'react-circular-progressbar/dist/styles.css';
-import { Database } from '@/integrations/supabase/types';
-import { Json } from '@/integrations/supabase/types';
-
-type SavedMealPlan = {
-  id: string;
-  name: string;
-  created_at: string;
-  plan_data: {
-    days: any[];
-    description?: string;
-  };
-};
+import { format } from 'date-fns';
+import { calculateDailyMacros } from '@/data/mockData';
+import { useSavedMealPlans } from '@/hooks/useSavedMealPlans';
+import MealPlanDetailView from '@/components/MealPlanDetailView';
 
 const SavedMealPlansPage = () => {
-  const { toast } = useToast();
   const navigate = useNavigate();
-  const [savedPlans, setSavedPlans] = useState<SavedMealPlan[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedPlan, setSelectedPlan] = useState<SavedMealPlan | null>(null);
-  const [isViewingPlan, setIsViewingPlan] = useState(false);
-  const [isRenaming, setIsRenaming] = useState(false);
+  const {
+    plans,
+    isLoading,
+    selectedPlan,
+    isPlanDetailOpen,
+    setIsPlanDetailOpen,
+    deletePlan,
+    updatePlan,
+    viewPlanDetails,
+    activatePlan,
+    copyAndEditPlan
+  } = useSavedMealPlans();
+
+  // State for editing plan details
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [newPlanName, setNewPlanName] = useState('');
-  const [newDescription, setNewDescription] = useState('');
-  const [isSelectingStartDate, setIsSelectingStartDate] = useState(false);
-  const [selectedDay, setSelectedDay] = useState(0); // 0 = Today, 1 = Tomorrow, etc.
+  const [newPlanDescription, setNewPlanDescription] = useState('');
 
-  useEffect(() => {
-    fetchSavedPlans();
-  }, []);
+  // State for confirming deletion
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [planToDeleteId, setPlanToDeleteId] = useState<string | null>(null);
 
-  const fetchSavedPlans = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('saved_meal_plans')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching saved meal plans:', error);
-        return;
-      }
-      
-      if (data) {
-        const typedPlans: SavedMealPlan[] = data.map(plan => ({
-          id: plan.id,
-          name: plan.name,
-          created_at: plan.created_at as string,
-          plan_data: {
-            days: (plan.plan_data as any)?.days || [],
-            description: (plan.plan_data as any)?.description
-          }
-        }));
-        
-        setSavedPlans(typedPlans);
-      }
-    } catch (error) {
-      console.error('Error fetching saved meal plans:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // State for activating plan
+  const [isSelectingStartDay, setIsSelectingStartDay] = useState(false);
+  const [planToActivateId, setPlanToActivateId] = useState<string | null>(null);
+  const [selectedStartDay, setSelectedStartDay] = useState(0);
 
-  const handleDelete = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('saved_meal_plans')
-        .delete()
-        .eq('id', id);
-      
-      if (error) {
-        console.error('Error deleting meal plan:', error);
-        return;
-      }
-      
-      setSavedPlans(savedPlans.filter(plan => plan.id !== id));
-      toast({
-        title: "Plan Deleted",
-        description: "The meal plan has been removed from your saved plans.",
-      });
-    } catch (error) {
-      console.error('Error deleting meal plan:', error);
-    }
-  };
-
-  const handleActivate = (id: string) => {
-    const planToActivate = savedPlans.find(plan => plan.id === id);
-    if (!planToActivate) return;
-
-    setSelectedPlan(planToActivate);
-    setIsSelectingStartDate(true);
-  };
-
-  const confirmActivatePlan = () => {
-    if (!selectedPlan) return;
-
-    sessionStorage.setItem('activePlan', JSON.stringify({
-      ...selectedPlan.plan_data,
-      startDay: selectedDay
-    }));
+  const handleEditPlan = (planId: string) => {
+    const plan = plans.find(p => p.id === planId);
+    if (!plan) return;
     
-    toast({
-      title: "Plan Activated",
-      description: "This meal plan is now your active plan for the week.",
-    });
-    
-    setIsSelectingStartDate(false);
-    navigate('/planning');
-  };
-
-  const handleViewPlan = (plan: SavedMealPlan) => {
-    setSelectedPlan(plan);
-    setIsViewingPlan(true);
-  };
-
-  const handleRename = (plan: SavedMealPlan) => {
-    setSelectedPlan(plan);
+    setEditingPlanId(planId);
     setNewPlanName(plan.name);
-    setNewDescription(plan.plan_data.description || '');
-    setIsRenaming(true);
+    setNewPlanDescription(plan.plan_data.description || '');
+    setIsEditing(true);
   };
 
-  const savePlanRename = async () => {
-    if (!selectedPlan || !newPlanName.trim()) return;
-
-    try {
-      const { error } = await supabase
-        .from('saved_meal_plans')
-        .update({ 
-          name: newPlanName.trim(),
-          plan_data: {
-            ...selectedPlan.plan_data,
-            description: newDescription.trim()
-          }
-        })
-        .eq('id', selectedPlan.id);
-      
-      if (error) {
-        console.error('Error updating meal plan:', error);
-        toast({
-          title: "Update Failed",
-          description: "There was an error updating your meal plan.",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      setSavedPlans(savedPlans.map(plan => 
-        plan.id === selectedPlan.id 
-          ? {
-              ...plan, 
-              name: newPlanName.trim(),
-              plan_data: {
-                ...plan.plan_data,
-                description: newDescription.trim()
-              }
-            } 
-          : plan
-      ));
-      
-      toast({
-        title: "Plan Updated",
-        description: "Your meal plan has been updated successfully.",
-      });
-      
-      setIsRenaming(false);
-    } catch (error) {
-      console.error('Error updating meal plan:', error);
-      toast({
-        title: "Update Failed",
-        description: "There was an error updating your meal plan.",
-        variant: "destructive"
-      });
-    }
+  const handleSaveEdit = async () => {
+    if (!editingPlanId) return;
+    
+    await updatePlan(editingPlanId, {
+      name: newPlanName,
+      description: newPlanDescription
+    });
+    
+    setIsEditing(false);
+    setEditingPlanId(null);
   };
 
-  const handleCopyAndEdit = (plan: SavedMealPlan) => {
-    if (!plan.plan_data.days) return;
+  const handleConfirmDelete = (planId: string) => {
+    setPlanToDeleteId(planId);
+    setIsConfirmingDelete(true);
+  };
+
+  const handleDeletePlan = async () => {
+    if (!planToDeleteId) return;
     
-    const lockedMeals: {[key: string]: boolean} = {};
+    await deletePlan(planToDeleteId);
+    setIsConfirmingDelete(false);
+    setPlanToDeleteId(null);
+  };
+
+  const handleActivatePlan = (planId: string) => {
+    setPlanToActivateId(planId);
+    setSelectedStartDay(0);
+    setIsSelectingStartDay(true);
+  };
+
+  const handleConfirmActivate = () => {
+    if (!planToActivateId) return;
     
-    plan.plan_data.days.forEach((day, dayIndex) => {
-      ['breakfast', 'lunch', 'dinner'].forEach((mealType) => {
-        if (day.meals[mealType]?.id) {
-          lockedMeals[`${mealType}-${day.meals[mealType].id}`] = true;
-        }
-      });
-      
-      if (day.meals.snacks) {
-        day.meals.snacks.forEach((snack: any, snackIndex: number) => {
-          if (snack?.id) {
-            lockedMeals[`snacks-${snack.id}-${snackIndex}`] = true;
-          }
-        });
-      }
-    });
+    const plan = plans.find(p => p.id === planToActivateId);
+    if (!plan) return;
     
-    sessionStorage.setItem('planToCopy', JSON.stringify(plan.plan_data));
-    sessionStorage.setItem('lockedMeals', JSON.stringify(lockedMeals));
-    
-    toast({
-      title: "Copy & Edit Mode",
-      description: "You can now edit a copy of this meal plan with all meals locked by default.",
-    });
-    
+    activatePlan(plan, selectedStartDay);
+    setIsSelectingStartDay(false);
+    setPlanToActivateId(null);
     navigate('/planning');
   };
 
-  const calculateDayNutrition = (day: any) => {
-    return calculateDailyMacros(day.meals);
+  const calculateAverageCalories = (days: any[]) => {
+    if (!days || !Array.isArray(days) || days.length === 0) return 0;
+    
+    return Math.round(
+      days.reduce((sum: number, day: any) => {
+        const dayMacros = calculateDailyMacros(day?.meals || {});
+        return sum + (dayMacros.calories || 0);
+      }, 0) / days.length
+    );
   };
 
-  if (savedPlans.length === 0 && !loading) {
+  // Render empty state if no plans
+  if (plans.length === 0 && !isLoading) {
     return (
       <div className="animate-fade-in">
         <header className="mb-6 flex items-center">
@@ -279,221 +160,78 @@ const SavedMealPlansPage = () => {
       </Button>
 
       <div className="space-y-4">
-        {loading ? (
+        {isLoading ? (
           <div className="text-center py-12">
             <p>Loading saved meal plans...</p>
           </div>
         ) : (
-          savedPlans.map(plan => (
-            <div 
-              key={plan.id} 
-              className="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer"
-              onClick={() => handleViewPlan(plan)}
-            >
-              <div className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start">
+          plans.map(plan => (
+            <Card key={plan.id} className="bg-white overflow-hidden">
+              <CardHeader className="p-4 pb-3 cursor-pointer" onClick={() => viewPlanDetails(plan)}>
+                <div className="flex justify-between items-start">
+                  <div className="flex">
                     <Calendar size={20} className="text-dishco-primary mr-3 mt-1" />
                     <div>
                       <h3 className="font-medium">{plan.name}</h3>
                       <p className="text-xs text-dishco-text-light">
                         Created {format(new Date(plan.created_at), 'MMM d, yyyy')}
                       </p>
-                      <p className="text-sm mt-1">
-                        {plan.plan_data && plan.plan_data.description ? 
-                          plan.plan_data.description : 
-                          'Custom meal plan'}
-                      </p>
                     </div>
                   </div>
                   <div className="flex space-x-1" onClick={e => e.stopPropagation()}>
-                    <button 
-                      className="p-1.5 rounded-full hover:bg-gray-100"
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleRename(plan);
+                        handleEditPlan(plan.id);
                       }}
                     >
                       <Pencil size={16} />
-                    </button>
-                    <button 
-                      className="p-1.5 rounded-full hover:bg-gray-100"
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDelete(plan.id);
+                        handleConfirmDelete(plan.id);
                       }}
                     >
                       <Trash2 size={16} />
-                    </button>
+                    </Button>
                   </div>
                 </div>
-                
-                <div className="flex justify-between mt-4" onClick={e => e.stopPropagation()}>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="text-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCopyAndEdit(plan);
-                    }}
-                  >
-                    Copy & Edit
-                  </Button>
-                  <Button 
-                    size="sm"
-                    className="text-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleActivate(plan.id);
-                    }}
-                  >
-                    Use This Plan <ChevronRight size={14} className="ml-1" />
-                  </Button>
+                <p className="text-sm mt-2 line-clamp-2">
+                  {plan.plan_data.description || "Custom meal plan"}
+                </p>
+                <div className="mt-2 text-sm">
+                  <span className="font-medium">{calculateAverageCalories(plan.plan_data.days)} calories/day</span> · <span>{plan.plan_data.days?.length || 0} days</span>
                 </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      <Dialog open={isViewingPlan} onOpenChange={setIsViewingPlan}>
-        <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Calendar size={18} className="text-dishco-primary" />
-              {selectedPlan?.name}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedPlan?.plan_data.description || 'Custom meal plan'}
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedPlan && (
-            <div className="space-y-6">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-medium mb-3">Nutrition Overview</h3>
-                <div className="grid grid-cols-4 gap-3">
-                  <div className="flex flex-col items-center">
-                    <div className="w-16 h-16 mb-2">
-                      <CircularProgressbar
-                        value={75}
-                        text={`${calculateDayNutrition(selectedPlan.plan_data.days[0]).calories}`}
-                        styles={buildStyles({
-                          textSize: '28px',
-                          pathColor: '#FFF4D7',
-                          textColor: '#3C3C3C',
-                          trailColor: '#F9F9F9',
-                        })}
-                      />
-                    </div>
-                    <span className="text-xs text-center">Calories</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="w-16 h-16 mb-2">
-                      <CircularProgressbar
-                        value={65}
-                        text={`${calculateDayNutrition(selectedPlan.plan_data.days[0]).protein}g`}
-                        styles={buildStyles({
-                          textSize: '28px',
-                          pathColor: '#DBE9FE',
-                          textColor: '#3C3C3C',
-                          trailColor: '#F9F9F9',
-                        })}
-                      />
-                    </div>
-                    <span className="text-xs text-center">Protein</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="w-16 h-16 mb-2">
-                      <CircularProgressbar
-                        value={80}
-                        text={`${calculateDayNutrition(selectedPlan.plan_data.days[0]).carbs}g`}
-                        styles={buildStyles({
-                          textSize: '28px',
-                          pathColor: '#FEF9C3',
-                          textColor: '#3C3C3C',
-                          trailColor: '#F9F9F9',
-                        })}
-                      />
-                    </div>
-                    <span className="text-xs text-center">Carbs</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="w-16 h-16 mb-2">
-                      <CircularProgressbar
-                        value={60}
-                        text={`${calculateDayNutrition(selectedPlan.plan_data.days[0]).fat}g`}
-                        styles={buildStyles({
-                          textSize: '28px',
-                          pathColor: '#F3E8FF',
-                          textColor: '#3C3C3C',
-                          trailColor: '#F9F9F9',
-                        })}
-                      />
-                    </div>
-                    <span className="text-xs text-center">Fat</span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="font-medium mb-3">Day 1 Meals</h3>
-                <div className="space-y-3">
-                  {selectedPlan.plan_data.days[0].meals.breakfast && (
-                    <MealPreviewCard 
-                      title="Breakfast" 
-                      meal={selectedPlan.plan_data.days[0].meals.breakfast} 
-                    />
-                  )}
-                  {selectedPlan.plan_data.days[0].meals.lunch && (
-                    <MealPreviewCard 
-                      title="Lunch" 
-                      meal={selectedPlan.plan_data.days[0].meals.lunch} 
-                    />
-                  )}
-                  {selectedPlan.plan_data.days[0].meals.dinner && (
-                    <MealPreviewCard 
-                      title="Dinner" 
-                      meal={selectedPlan.plan_data.days[0].meals.dinner} 
-                    />
-                  )}
-                  {selectedPlan.plan_data.days[0].meals.snacks && 
-                    selectedPlan.plan_data.days[0].meals.snacks.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium mb-2">Snacks</h4>
-                      <div className="space-y-2">
-                        {selectedPlan.plan_data.days[0].meals.snacks.map((snack: any, i: number) => (
-                          snack && <MealPreviewCard key={i} meal={snack} isSnack />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex justify-between">
+              </CardHeader>
+              <CardFooter className="p-4 pt-2 flex justify-between" onClick={e => e.stopPropagation()}>
                 <Button 
                   variant="outline" 
-                  onClick={() => handleCopyAndEdit(selectedPlan)}
+                  size="sm"
+                  onClick={() => copyAndEditPlan(plan)}
                 >
                   Copy & Edit
                 </Button>
                 <Button 
-                  onClick={() => {
-                    setIsViewingPlan(false);
-                    handleActivate(selectedPlan.id);
-                  }}
+                  size="sm"
+                  onClick={() => handleActivatePlan(plan.id)}
                 >
-                  Use This Plan
+                  Use This Plan <ChevronRight size={14} className="ml-1" />
                 </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+              </CardFooter>
+            </Card>
+          ))
+        )}
+      </div>
 
-      <Dialog open={isRenaming} onOpenChange={setIsRenaming}>
+      {/* Edit Plan Dialog */}
+      <Dialog open={isEditing} onOpenChange={setIsEditing}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Edit Plan</DialogTitle>
@@ -516,29 +254,51 @@ const SavedMealPlansPage = () => {
               <Label htmlFor="plan-description">Description (Optional)</Label>
               <Textarea
                 id="plan-description"
-                value={newDescription}
-                onChange={(e) => setNewDescription(e.target.value)}
+                value={newPlanDescription}
+                onChange={(e) => setNewPlanDescription(e.target.value)}
                 className="resize-none"
                 rows={3}
               />
             </div>
           </div>
           
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setIsRenaming(false)}>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditing(false)}>
               Cancel
             </Button>
-            <Button onClick={savePlanRename}>
+            <Button onClick={handleSaveEdit}>
               Save Changes
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isSelectingStartDate} onOpenChange={setIsSelectingStartDate}>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isConfirmingDelete} onOpenChange={setIsConfirmingDelete}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Select Start Date</DialogTitle>
+            <DialogTitle>Delete Meal Plan</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this meal plan? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsConfirmingDelete(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeletePlan}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Start Day Selection Dialog */}
+      <Dialog open={isSelectingStartDay} onOpenChange={setIsSelectingStartDay}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>When to Start?</DialogTitle>
             <DialogDescription>
               Choose which day to start this meal plan.
             </DialogDescription>
@@ -550,9 +310,9 @@ const SavedMealPlansPage = () => {
                 <div 
                   key={day}
                   className={`p-3 border rounded-lg cursor-pointer flex justify-between items-center ${
-                    selectedDay === day ? 'border-dishco-primary bg-dishco-primary bg-opacity-5' : ''
+                    selectedStartDay === day ? 'border-dishco-primary bg-dishco-primary bg-opacity-5' : ''
                   }`}
-                  onClick={() => setSelectedDay(day)}
+                  onClick={() => setSelectedStartDay(day)}
                 >
                   <div>
                     <p className="font-medium">
@@ -562,7 +322,7 @@ const SavedMealPlansPage = () => {
                       {format(new Date(Date.now() + day * 24 * 60 * 60 * 1000), 'EEEE, MMM d')}
                     </p>
                   </div>
-                  {selectedDay === day && (
+                  {selectedStartDay === day && (
                     <div className="h-4 w-4 rounded-full bg-dishco-primary"></div>
                   )}
                 </div>
@@ -570,79 +330,23 @@ const SavedMealPlansPage = () => {
             </div>
           </div>
           
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setIsSelectingStartDate(false)}>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSelectingStartDay(false)}>
               Cancel
             </Button>
-            <Button onClick={confirmActivatePlan}>
+            <Button onClick={handleConfirmActivate}>
               Start Plan
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-};
 
-interface MealPreviewCardProps {
-  title?: string;
-  meal: any;
-  isSnack?: boolean;
-}
-
-const MealPreviewCard: React.FC<MealPreviewCardProps> = ({ title, meal, isSnack = false }) => {
-  const [showDetails, setShowDetails] = useState(false);
-
-  return (
-    <div className="border rounded-lg overflow-hidden">
-      <div className="flex items-center p-0">
-        <div className="w-16 h-16 flex-shrink-0">
-          <img 
-            src={meal.imageSrc || '/placeholder.svg'} 
-            alt={meal.name} 
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="p-3 flex-1">
-          {title && !isSnack && <p className="text-xs text-dishco-text-light">{title}</p>}
-          <h4 className="font-medium">{meal.name}</h4>
-          <div className="flex space-x-2 mt-1">
-            <span className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded">P: {meal.macros.protein}g</span>
-            <span className="text-xs px-1.5 py-0.5 bg-yellow-50 text-yellow-600 rounded">C: {meal.macros.carbs}g</span>
-            <span className="text-xs px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded">F: {meal.macros.fat}g</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="ml-auto h-6 p-0 text-xs"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowDetails(!showDetails);
-              }}
-            >
-              <Info size={14} className="mr-1" />
-              Details
-            </Button>
-          </div>
-        </div>
-      </div>
-      
-      {showDetails && (
-        <div className="border-t p-3 bg-gray-50 text-sm">
-          <h5 className="font-medium mb-2">Ingredients</h5>
-          <ul className="list-disc list-inside text-sm space-y-1 mb-3">
-            {meal.ingredients?.map((ingredient: string, i: number) => (
-              <li key={i}>{ingredient}</li>
-            ))}
-          </ul>
-          
-          <h5 className="font-medium mb-2">Instructions</h5>
-          <ol className="list-decimal list-inside text-sm space-y-1">
-            {meal.instructions?.map((step: string, i: number) => (
-              <li key={i}>{step}</li>
-            ))}
-          </ol>
-        </div>
-      )}
+      {/* Meal Plan Detail View */}
+      <MealPlanDetailView 
+        plan={selectedPlan} 
+        isOpen={isPlanDetailOpen} 
+        onClose={() => setIsPlanDetailOpen(false)}
+      />
     </div>
   );
 };
