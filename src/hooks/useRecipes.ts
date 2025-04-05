@@ -54,6 +54,27 @@ export const dbToFrontendRecipe = (dbRecipe: DbRecipe): Recipe => {
   };
 };
 
+// Convert frontend recipe to database format for insertion
+const frontendToDbRecipe = (recipe: Recipe): Omit<DbRecipe, 'id' | 'created_at' | 'updated_at'> => {
+  return {
+    name: recipe.name,
+    description: recipe.description || '',
+    type: recipe.type || 'meal',
+    image_url: recipe.imageSrc || "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80",
+    requires_blender: recipe.requiresBlender || false,
+    requires_cooking: recipe.requiresCooking || false,
+    cook_time: recipe.cookTime || 0,
+    prep_time: recipe.prepTime || 0,
+    servings: recipe.servings || 1,
+    calories: recipe.macros.calories || 0,
+    protein: recipe.macros.protein || 0,
+    carbs: recipe.macros.carbs || 0,
+    fat: recipe.macros.fat || 0,
+    is_public: true,
+    meal_type: 'main'
+  };
+};
+
 export const useRecipes = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [savedRecipeIds, setSavedRecipeIds] = useState<string[]>([]);
@@ -80,11 +101,53 @@ export const useRecipes = () => {
     };
   }, []);
 
+  // Import mock recipes to database if they don't exist
+  const importMockRecipesToDb = async () => {
+    try {
+      // First, get all existing recipes from the database to check if we need to import
+      const { data: existingRecipes, error: fetchError } = await supabase
+        .from('recipes')
+        .select('id, name');
+      
+      if (fetchError) throw fetchError;
+      
+      // Create a map of existing recipe names for quick lookup
+      const existingRecipeNames = new Set(existingRecipes?.map(r => r.name.toLowerCase()) || []);
+      
+      // Filter out mock recipes that already exist in the database (by name)
+      const recipesToImport = mockRecipes.filter(
+        recipe => !existingRecipeNames.has(recipe.name.toLowerCase())
+      );
+      
+      if (recipesToImport.length === 0) {
+        console.log('All mock recipes already exist in the database');
+        return;
+      }
+
+      // Convert mock recipes to the database format
+      const dbRecipesToInsert = recipesToImport.map(frontendToDbRecipe);
+      
+      // Insert the new recipes into the database
+      const { error: insertError } = await supabase
+        .from('recipes')
+        .insert(dbRecipesToInsert);
+      
+      if (insertError) throw insertError;
+      
+      console.log(`Successfully imported ${recipesToImport.length} mock recipes to the database`);
+    } catch (error) {
+      console.error('Error importing mock recipes to database:', error);
+    }
+  };
+
   // Fetch all recipes
   const fetchRecipes = async () => {
     setLoading(true);
     try {
-      // Check if we have recipes in Supabase
+      // Import mock recipes to database first (if needed)
+      await importMockRecipesToDb();
+
+      // Then fetch all recipes from the database
       const { data: dbRecipes, error } = await supabase
         .from('recipes')
         .select('*');
@@ -93,10 +156,9 @@ export const useRecipes = () => {
         throw error;
       }
 
-      // If no recipes in the database, use mock recipes for now
       if (!dbRecipes || dbRecipes.length === 0) {
-        console.log('No recipes found in database, using mock data');
-        setRecipes(mockRecipes);
+        console.log('No recipes found in database even after import attempt');
+        setRecipes([]);
       } else {
         // Convert db recipes to frontend format
         const frontendRecipes = dbRecipes.map(dbToFrontendRecipe);
@@ -109,10 +171,11 @@ export const useRecipes = () => {
       console.error('Error fetching recipes:', error);
       toast({
         title: "Error",
-        description: "Failed to load recipes. Using mock data instead.",
+        description: "Failed to load recipes.",
         variant: "destructive"
       });
-      setRecipes(mockRecipes);
+      // Don't fall back to mock recipes anymore as we're consolidating to the database
+      setRecipes([]);
     } finally {
       setLoading(false);
     }
