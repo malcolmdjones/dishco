@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronRight, Heart, Settings, User, Utensils, BookOpen, LogOut, Calendar, AlertTriangle, Cookie, ShieldCheck } from 'lucide-react';
+import { ChevronRight, Heart, Settings, User, Utensils, LogOut, Calendar, AlertTriangle, Cookie, ShieldCheck, ShoppingCart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -102,10 +103,10 @@ const MorePage = () => {
       description: 'Set your food preferences and allergies'
     },
     {
-      name: 'Nutrition Goals',
-      icon: <BookOpen size={20} className="text-blue-500" />,
-      path: '/nutrition-goals',
-      description: 'Set your daily macro and calorie targets'
+      name: 'Grocery List',
+      icon: <ShoppingCart size={20} className="text-blue-500" />,
+      path: '/grocery',
+      description: 'View and manage your shopping list'
     },
     {
       name: 'Account Settings',
