@@ -1,4 +1,3 @@
-
 import { MealPlanDay, Recipe } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
 
@@ -68,7 +67,7 @@ export const useMealManagement = ({
           return newPlan;
         }
         if (mealType === 'snack') {
-          currentMeals.snacks = [null, null];
+          currentMeals.snacks = [null]; // Changed to only have one null item
           currentPlanDay.meals = currentMeals;
           newPlan[currentDay] = currentPlanDay;
           return newPlan;
@@ -176,45 +175,11 @@ export const useMealManagement = ({
         currentMeals.dinner = dinnerArray;
       } 
       else if (mealType === 'snack') {
-        // Handle snacks with special case - these are limited to a fixed array
-        const MAX_SNACKS = 10; // Increased from default
-        const newSnacks = [...(currentMeals.snacks || [])];
+        // Modified to only handle a single snack
+        currentMeals.snacks = recipe ? [recipe] : [null];
         
-        if (typeof index !== 'undefined') {
-          // If index provided, update at that position
-          if (recipe) {
-            // Ensure the array is long enough
-            while (newSnacks.length <= index) {
-              newSnacks.push(null);
-            }
-            newSnacks[index] = recipe;
-          } else if (index < newSnacks.length) {
-            // Remove specific snack
-            newSnacks.splice(index, 1);
-            newSnacks.push(null); // Keep array length
-          }
-        } else if (recipe) {
-          // Add new snack at first empty position or at end
-          const emptyIndex = newSnacks.findIndex(s => s === null);
-          if (emptyIndex >= 0) {
-            newSnacks[emptyIndex] = recipe;
-          } else if (newSnacks.length < MAX_SNACKS) {
-            newSnacks.push(recipe);
-          } else {
-            toast({
-              title: "Maximum Reached",
-              description: `You can have up to ${MAX_SNACKS} snacks.`,
-              variant: "destructive"
-            });
-          }
-        }
-        
-        // Ensure minimum length
-        while (newSnacks.length < 2) {
-          newSnacks.push(null);
-        }
-        
-        currentMeals.snacks = newSnacks;
+        currentPlanDay.meals = currentMeals;
+        newPlan[currentDay] = currentPlanDay;
       }
 
       currentPlanDay.meals = currentMeals;

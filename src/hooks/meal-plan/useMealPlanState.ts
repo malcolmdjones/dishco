@@ -93,7 +93,7 @@ export const useMealPlanState = () => {
           breakfast: [],
           lunch: [],
           dinner: [],
-          snacks: [null, null]
+          snacks: [null] // Changed to only have one null item
         }
       };
     });
