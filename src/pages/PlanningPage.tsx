@@ -5,18 +5,20 @@ import { Calendar, ArrowRight, Search } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useRecipes } from '@/hooks/useRecipes';
+import MealPlanOnboarding from '@/components/meal-plan/MealPlanOnboarding';
 
 const PlanningPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const { recipes, loading: recipesLoading } = useRecipes();
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   
   // Fixed image URL to avoid 404s
   const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
   const handleGeneratePlan = () => {
-    navigate('/create-meal-plan');
+    setIsOnboardingOpen(true);
   };
 
   // Get a selection of 4 recipes for display
@@ -147,6 +149,12 @@ const PlanningPage = () => {
           </div>
         </div>
       )}
+
+      {/* Onboarding Flow Dialog */}
+      <MealPlanOnboarding 
+        isOpen={isOnboardingOpen}
+        onClose={() => setIsOnboardingOpen(false)}
+      />
     </div>
   );
 };

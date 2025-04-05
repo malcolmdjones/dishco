@@ -1,87 +1,59 @@
 
 import React, { useState } from 'react';
-import { useMealPlanUtils } from '@/hooks/useMealPlanUtils';
+import { useNavigate } from 'react-router-dom';
+import { X } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
+
 import PageHeader from '@/components/meal-plan/PageHeader';
+import { useMealPlanUtils } from '@/hooks/useMealPlanUtils';
 import CreateMealPlanContent from '@/components/meal-plan/CreateMealPlanContent';
-import WeekOverviewDialog from '@/components/meal-plan/WeekOverviewDialog';
 import RecipeVaultDialog from '@/components/meal-plan/RecipeVaultDialog';
-import { Recipe } from '@/data/mockData';
-import RecipeDetailHandler from '@/components/meal-plan/meal-sections/recipe-dialog/RecipeDetailHandler';
+import WeekOverviewDialog from '@/components/meal-plan/WeekOverviewDialog';
 
 const CreateMealPlanPage = () => {
-  // Use our custom hook for meal plan logic
+  const navigate = useNavigate();
+  const [isVaultOpen, setIsVaultOpen] = useState(false);
+  const [isWeekOverviewOpen, setIsWeekOverviewOpen] = useState(false);
+  const [currentVaultMealType, setCurrentVaultMealType] = useState('');
+  const [currentVaultIndex, setCurrentVaultIndex] = useState<number | undefined>(undefined);
+  
   const {
     currentDay,
     setCurrentDay,
     mealPlan,
+    userGoals,
     isGenerating,
     lockedMeals,
-    toggleLockMeal,
+    aiReasoning,
     regenerateMeals,
+    toggleLockMeal,
     updateMeal,
     calculateDayTotals,
     checkExceedsGoals,
-    userGoals
+    preferences
   } = useMealPlanUtils();
 
-  // Local component state for dialog handling
-  const [isWeekOverviewOpen, setIsWeekOverviewOpen] = useState(false);
-  const [isRecipeVaultOpen, setIsRecipeVaultOpen] = useState(false);
-  const [targetMealType, setTargetMealType] = useState('');
-  const [targetMealIndex, setTargetMealIndex] = useState<number | undefined>(undefined);
-  
-  // Recipe detail dialog state
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const [isRecipeDetailOpen, setIsRecipeDetailOpen] = useState(false);
-
-  // Handle opening the Recipe Vault dialog without a specific meal
-  const handleOpenVault = () => {
-    setTargetMealType('');
-    setTargetMealIndex(undefined);
-    setIsRecipeVaultOpen(true);
+  const handleOpenVault = (mealType: string, index?: number) => {
+    setCurrentVaultMealType(mealType);
+    setCurrentVaultIndex(index);
+    setIsVaultOpen(true);
   };
 
-  // Handle opening the Week Overview dialog
-  const handleOpenWeekOverview = () => {
-    setIsWeekOverviewOpen(true);
-  };
-  
-  // Handle opening recipe details
-  const handleOpenRecipeDetail = (recipe: Recipe) => {
-    setSelectedRecipe(recipe);
-    setIsRecipeDetailOpen(true);
-  };
-  
-  // Handle closing recipe details
-  const handleCloseRecipeDetail = () => {
-    setIsRecipeDetailOpen(false);
-    setSelectedRecipe(null);
-  };
-  
-  // Handle save toggling for recipes
-  const handleToggleSave = async (recipeId: string, isSaved: boolean) => {
-    console.log(`${isSaved ? 'Saved' : 'Unsaved'} recipe with id: ${recipeId}`);
-    // In a real app, we would update the database here
-  };
-
-  // Handle adding a recipe from the vault to the meal plan
-  const handleAddRecipeToMealPlan = (recipe: Recipe, mealType: string, index?: number) => {
-    // If no specific meal type is provided from header button, use breakfast as default
-    const actualMealType = mealType || 'breakfast';
-    
-    // Important: Don't specify an index here, which will make updateMeal add to the beginning
-    // rather than replacing at a specific index
-    updateMeal(actualMealType, recipe);
-    
-    // Close the dialog after adding the recipe
-    setIsRecipeVaultOpen(false);
+  const handleSelectedRecipe = (recipe: any | null) => {
+    updateMeal(currentVaultMealType, recipe, currentVaultIndex);
+    setIsVaultOpen(false);
   };
 
   return (
     <div className="animate-fade-in">
       <PageHeader 
-        onOpenVault={handleOpenVault} 
-        onOpenWeekOverview={handleOpenWeekOverview} 
+        title="Create Meal Plan"
+        showWeekViewButton
+        showBackButton
+        onBackClick={() => navigate('/planning')}
+        onWeekViewClick={() => setIsWeekOverviewOpen(true)}
       />
 
       <CreateMealPlanContent 
@@ -94,13 +66,18 @@ const CreateMealPlanPage = () => {
         regenerateMeals={regenerateMeals}
         calculateDayTotals={calculateDayTotals}
         checkExceedsGoals={checkExceedsGoals}
-        onOpenVault={(mealType, index) => {
-          setTargetMealType(mealType);
-          setTargetMealIndex(index);
-          setIsRecipeVaultOpen(true);
-        }}
+        onOpenVault={handleOpenVault}
         updateMeal={updateMeal}
         userGoals={userGoals}
+        preferences={preferences}
+      />
+
+      {/* Recipe Vault Dialog */}
+      <RecipeVaultDialog 
+        isOpen={isVaultOpen}
+        onClose={() => setIsVaultOpen(false)}
+        onSelectRecipe={handleSelectedRecipe}
+        mealType={currentVaultMealType}
       />
 
       {/* Week Overview Dialog */}
@@ -108,24 +85,24 @@ const CreateMealPlanPage = () => {
         isOpen={isWeekOverviewOpen}
         onClose={() => setIsWeekOverviewOpen(false)}
         mealPlan={mealPlan}
+        currentDay={currentDay}
+        setCurrentDay={setCurrentDay}
       />
 
-      {/* Recipe Vault Dialog */}
-      <RecipeVaultDialog
-        isOpen={isRecipeVaultOpen}
-        onClose={() => setIsRecipeVaultOpen(false)}
-        onSelectRecipe={handleAddRecipeToMealPlan}
-        targetMealType={targetMealType}
-        targetMealIndex={targetMealIndex}
-      />
-      
-      {/* Recipe Detail Handler */}
-      <RecipeDetailHandler
-        selectedRecipe={selectedRecipe}
-        isRecipeDetailOpen={isRecipeDetailOpen}
-        handleCloseRecipeDetail={handleCloseRecipeDetail}
-        handleToggleSave={handleToggleSave}
-      />
+      {/* AI Reasoning Sheet */}
+      <Sheet open={!!aiReasoning} onOpenChange={() => {}}>
+        <SheetContent side="bottom" className="h-[50vh]">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">AI's Meal Plan Reasoning</h3>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => {}}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="prose max-w-none">
+            <p>{aiReasoning}</p>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

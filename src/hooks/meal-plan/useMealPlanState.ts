@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { MealPlanDay, NutritionGoals, defaultGoals, fetchNutritionGoals } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -9,6 +10,15 @@ import { useToast } from '@/hooks/use-toast';
  */
 export const useMealPlanState = () => {
   const { toast } = useToast();
+  const location = useLocation();
+  const preferences = location.state?.preferences || {
+    days: 7,
+    mealMood: [],
+    proteinFocus: [],
+    cravings: [],
+    cuisineVibes: []
+  };
+  
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentDay, setCurrentDay] = useState(0);
   const [mealPlan, setMealPlan] = useState<MealPlanDay[]>([]);
@@ -70,8 +80,10 @@ export const useMealPlanState = () => {
   // Function to generate a meal plan for the entire week
   const generateFullMealPlan = () => {
     setIsGenerating(true);
-    // Create a 7-day meal plan
-    const newPlan: MealPlanDay[] = Array.from({ length: 7 }).map((_, i) => {
+    // Create a meal plan with the number of days from preferences (default 7)
+    const days = preferences.days || 7;
+    
+    const newPlan: MealPlanDay[] = Array.from({ length: days }).map((_, i) => {
       const date = new Date(currentDate);
       date.setDate(currentDate.getDate() + i - currentDay); // Adjust to keep current day in sync
       
@@ -87,6 +99,17 @@ export const useMealPlanState = () => {
     });
     
     setMealPlan(newPlan);
+    
+    // Apply preferences here when you integrate with an actual meal generation algorithm
+    console.log('Generating meal plan with preferences:', preferences);
+    
+    // For development, you might want to see the preferences in a toast
+    if (Object.keys(preferences).length > 1) {
+      toast({
+        title: `Creating a ${days}-day meal plan`,
+        description: `Based on your selected preferences`
+      });
+    }
   };
 
   return {
@@ -103,6 +126,7 @@ export const useMealPlanState = () => {
     setLockedMeals,
     aiReasoning,
     setAiReasoning,
-    generateFullMealPlan
+    generateFullMealPlan,
+    preferences
   };
 };
