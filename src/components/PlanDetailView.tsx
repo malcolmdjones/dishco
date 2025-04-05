@@ -240,7 +240,11 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
       {selectedRecipe && (
         <RecipeDetail
           recipeId={selectedRecipe.id}
-          onClose={() => setIsRecipeDetailOpen(false)}
+          onClose={() => {
+            setIsRecipeDetailOpen(false);
+            setSelectedRecipe(null);
+          }}
+          isOpen={isRecipeDetailOpen}
           className={isRecipeDetailOpen ? "block" : "hidden"}
         />
       )}

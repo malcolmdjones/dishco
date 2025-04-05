@@ -13,6 +13,7 @@ interface RecipeDetailProps {
   onToggleSave?: (recipeId: string, isSaved: boolean) => void;
   isSaved?: boolean;
   className?: string;
+  isOpen?: boolean;
 }
 
 const RecipeDetail: React.FC<RecipeDetailProps> = ({ 
@@ -20,7 +21,8 @@ const RecipeDetail: React.FC<RecipeDetailProps> = ({
   onClose, 
   onToggleSave,
   isSaved: propIsSaved,
-  className = ''
+  className = '',
+  isOpen = true
 }) => {
   const { toast } = useToast();
   const { recipes, isRecipeSaved, toggleSaveRecipe } = useRecipes();
@@ -53,6 +55,8 @@ const RecipeDetail: React.FC<RecipeDetailProps> = ({
       setLoading(false);
     }
   };
+  
+  if (!isOpen) return null;
   
   if (!recipe) {
     return (
