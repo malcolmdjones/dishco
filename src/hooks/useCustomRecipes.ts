@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,12 +7,21 @@ import { v4 as uuidv4 } from 'uuid';
 export interface CustomRecipe {
   id: string;
   title: string;
-  description: string;
-  imageUrl: string;
-  cookingTime: number;
-  servings: number;
+  description: string | null;
+  imageUrl: string | null;
+  cookingTime: number | null;
+  servings: number | null;
   createdAt: string;
-  user_id?: string;
+  user_id?: string | null;
+  sourceUrl?: string | null;
+  ingredients?: Array<{ name: string; quantity: string; unit: string }> | null;
+  instructions?: string[] | null;
+  nutrition?: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  } | null;
 }
 
 export const useCustomRecipes = () => {
@@ -24,7 +34,7 @@ export const useCustomRecipes = () => {
     return !!session;
   };
 
-  const migrateLegacyRecipes = async (isAuthenticated: boolean) => {
+  const migrateLocalRecipes = async (isAuthenticated: boolean) => {
     try {
       if (!isAuthenticated) return [];
       
@@ -54,7 +64,9 @@ export const useCustomRecipes = () => {
       
       const recipesToInsert = recipesToMigrate.map((recipe: CustomRecipe) => ({
         ...recipe,
-        user_id: user.id
+        id: recipe.id || uuidv4(),
+        user_id: user.id,
+        createdAt: recipe.createdAt || new Date().toISOString()
       }));
       
       const { error } = await supabase
@@ -85,7 +97,7 @@ export const useCustomRecipes = () => {
         return;
       }
       
-      await migrateLegacyRecipes(isAuthenticated);
+      await migrateLocalRecipes(isAuthenticated);
       
       const { data, error } = await supabase
         .from('custom_recipes')

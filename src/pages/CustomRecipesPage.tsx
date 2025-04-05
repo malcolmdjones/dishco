@@ -51,12 +51,12 @@ const CustomRecipesPage = () => {
               recipe={{
                 id: recipe.id,
                 name: recipe.title,
-                description: recipe.description,
-                imageSrc: recipe.imageUrl,
+                description: recipe.description || "",
+                imageSrc: recipe.imageUrl || "",
                 type: 'custom',
-                servings: recipe.servings,
-                cookTime: recipe.cookingTime,
-                macros: { calories: 0, protein: 0, carbs: 0, fat: 0 }
+                servings: recipe.servings || 0,
+                cookTime: recipe.cookingTime || 0,
+                macros: recipe.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 }
               }}
               onViewEdit={() => navigate(`/edit-recipe/${recipe.id}`)}
             />

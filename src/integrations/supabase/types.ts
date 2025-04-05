@@ -9,6 +9,51 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      custom_recipes: {
+        Row: {
+          cookingtime: number | null
+          createdat: string
+          description: string | null
+          id: string
+          imageurl: string | null
+          ingredients: Json | null
+          instructions: string[] | null
+          nutrition: Json | null
+          servings: number | null
+          sourceurl: string | null
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          cookingtime?: number | null
+          createdat?: string
+          description?: string | null
+          id: string
+          imageurl?: string | null
+          ingredients?: Json | null
+          instructions?: string[] | null
+          nutrition?: Json | null
+          servings?: number | null
+          sourceurl?: string | null
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          cookingtime?: number | null
+          createdat?: string
+          description?: string | null
+          id?: string
+          imageurl?: string | null
+          ingredients?: Json | null
+          instructions?: string[] | null
+          nutrition?: Json | null
+          servings?: number | null
+          sourceurl?: string | null
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       nutrition_goals: {
         Row: {
           calories: number

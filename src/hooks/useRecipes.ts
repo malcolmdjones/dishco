@@ -1,37 +1,34 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { recipes as mockRecipes, Recipe } from '@/data/mockData';
+import { getRecipeImage } from '@/utils/recipeUtils';
 
 // Define the types for recipes from the database
 export interface DbRecipe {
   id: string;
   name: string;
-  description: string;
-  type: string;
-  image_url: string;
-  requires_blender: boolean;
-  requires_cooking: boolean;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  cook_time?: number;
-  prep_time?: number;
-  servings?: number;
-  cuisine_type?: string;
-  price_range?: string;
-  meal_type?: string;
-  is_high_protein?: boolean;
-  is_public?: boolean;  
-  created_at?: string;
-  updated_at?: string;
-  user_id?: string;
+  description: string | null;
+  type: string | null;
+  image_url: string | null;
+  requires_blender: boolean | null;
+  requires_cooking: boolean | null;
+  calories: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fat: number | null;
+  cook_time?: number | null;
+  prep_time?: number | null;
+  servings?: number | null;
+  cuisine_type?: string | null;
+  price_range?: string | null;
+  meal_type?: string | null;
+  is_high_protein?: boolean | null;
+  is_public?: boolean | null;  
+  created_at?: string | null;
+  updated_at?: string | null;
+  user_id?: string | null;
 }
-
-// Standard image URL to use when no image is available
-const DEFAULT_IMAGE_URL = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
 // Convert database recipe to frontend recipe format
 export const dbToFrontendRecipe = (dbRecipe: DbRecipe): Recipe => {
@@ -40,7 +37,7 @@ export const dbToFrontendRecipe = (dbRecipe: DbRecipe): Recipe => {
     name: dbRecipe.name,
     description: dbRecipe.description || '',
     type: dbRecipe.type || 'meal',
-    imageSrc: dbRecipe.image_url || DEFAULT_IMAGE_URL,
+    imageSrc: getRecipeImage(dbRecipe.image_url),
     requiresBlender: dbRecipe.requires_blender || false,
     requiresCooking: dbRecipe.requires_cooking || false,
     cookTime: dbRecipe.cook_time || 0,
@@ -63,7 +60,7 @@ const frontendToDbRecipe = (recipe: Recipe): Omit<DbRecipe, 'id' | 'created_at' 
     name: recipe.name,
     description: recipe.description || '',
     type: recipe.type || 'meal',
-    image_url: recipe.imageSrc || DEFAULT_IMAGE_URL,
+    image_url: recipe.imageSrc || null,
     requires_blender: recipe.requiresBlender || false,
     requires_cooking: recipe.requiresCooking || false,
     cook_time: recipe.cookTime || 0,
@@ -142,6 +139,52 @@ export const useRecipes = () => {
       if (insertError) throw insertError;
       
       console.log(`Successfully imported ${recipesToImport.length} mock recipes to the database`);
+
+      // After inserting recipes, add ingredients and instructions
+      for (const recipe of recipesToImport) {
+        // Add ingredients
+        if (recipe.ingredients && recipe.ingredients.length > 0) {
+          const ingredients = recipe.ingredients.map((ingredient, index) => {
+            // Parse the ingredient string (usually in format "quantity unit name")
+            const parts = ingredient.split(' ');
+            const quantity = parts[0] || '';
+            const unit = parts[1] || '';
+            const name = parts.slice(2).join(' ');
+            
+            return {
+              recipe_id: recipe.id,
+              name: name || ingredient, // Fallback to full string if parsing failed
+              quantity,
+              unit
+            };
+          });
+          
+          const { error: ingredientsError } = await supabase
+            .from('recipe_ingredients')
+            .insert(ingredients);
+            
+          if (ingredientsError) {
+            console.error('Error importing ingredients:', ingredientsError);
+          }
+        }
+        
+        // Add instructions
+        if (recipe.instructions && recipe.instructions.length > 0) {
+          const instructions = recipe.instructions.map((instruction, index) => ({
+            recipe_id: recipe.id,
+            instruction,
+            step_number: index + 1
+          }));
+          
+          const { error: instructionsError } = await supabase
+            .from('recipe_instructions')
+            .insert(instructions);
+            
+          if (instructionsError) {
+            console.error('Error importing instructions:', instructionsError);
+          }
+        }
+      }
     } catch (error) {
       console.error('Error importing mock recipes to database:', error);
     }
