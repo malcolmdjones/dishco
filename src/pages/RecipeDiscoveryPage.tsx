@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Heart, X, Star, Filter } from 'lucide-react';
@@ -12,21 +13,31 @@ import { Recipe } from '@/data/mockData';
 
 const RecipeDiscoveryPage = () => {
   const navigate = useNavigate();
-  const { recipes, isRecipeSaved, toggleSaveRecipe } = useRecipes();
-  const { isRecipeLiked, setRecipePreference } = useRecipePreferences();
+  const { recipes, isRecipeSaved, toggleSaveRecipe, loading: recipesLoading } = useRecipes();
+  const { isRecipeLiked, setRecipePreference, likedRecipeIds } = useRecipePreferences();
   const { toast } = useToast();
   const [shuffledRecipes, setShuffledRecipes] = useState<Recipe[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState<'left' | 'right' | null>(null);
-  const [likedRecipes, setLikedRecipes] = useState<Recipe[]>([]);
   const [showLiked, setShowLiked] = useState(false);
+  const [likedRecipes, setLikedRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(true);
   const dragConstraintsRef = useRef(null);
 
+  // Shuffle recipes when they load
   useEffect(() => {
-    const filteredRecipes = [...recipes];
-    const shuffled = [...filteredRecipes].sort(() => Math.random() - 0.5);
-    setShuffledRecipes(shuffled);
+    if (recipes.length > 0) {
+      const shuffled = [...recipes].sort(() => Math.random() - 0.5);
+      setShuffledRecipes(shuffled);
+      setLoading(false);
+    }
   }, [recipes]);
+
+  // Update liked recipes when likedRecipeIds changes
+  useEffect(() => {
+    const liked = recipes.filter(recipe => likedRecipeIds.includes(recipe.id));
+    setLikedRecipes(liked);
+  }, [recipes, likedRecipeIds]);
 
   const currentRecipe = shuffledRecipes[currentIndex];
 
@@ -34,8 +45,8 @@ const RecipeDiscoveryPage = () => {
     if (!currentRecipe) return;
     
     setDirection('right');
-    setLikedRecipes(prev => [...prev, currentRecipe]);
     
+    // Set recipe preference in database
     setRecipePreference(currentRecipe.id, true);
     
     toast({
@@ -54,6 +65,7 @@ const RecipeDiscoveryPage = () => {
     
     setDirection('left');
     
+    // Set recipe preference as disliked
     setRecipePreference(currentRecipe.id, false);
     
     setTimeout(() => {
@@ -61,11 +73,6 @@ const RecipeDiscoveryPage = () => {
       setDirection(null);
     }, 300);
   };
-
-  useEffect(() => {
-    const liked = recipes.filter(recipe => isRecipeLiked(recipe.id));
-    setLikedRecipes(liked);
-  }, [recipes, isRecipeLiked]);
 
   const handleSaveRecipe = async (recipe: Recipe) => {
     await toggleSaveRecipe(recipe.id);
@@ -78,7 +85,7 @@ const RecipeDiscoveryPage = () => {
   };
 
   const handleRemoveFromLiked = (recipeId: string) => {
-    setLikedRecipes(prev => prev.filter(recipe => recipe.id !== recipeId));
+    // Remove from liked recipes using the setRecipePreference hook
     setRecipePreference(recipeId, false);
     toast({
       title: "Recipe removed",
@@ -93,6 +100,19 @@ const RecipeDiscoveryPage = () => {
     onSwipedRight: () => handleLike(),
     trackMouse: true
   });
+
+  // Show loading state
+  if (loading || recipesLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse flex flex-col items-center">
+          <div className="w-16 h-16 bg-gray-200 rounded-full mb-4"></div>
+          <div className="h-4 w-32 bg-gray-200 rounded mb-2"></div>
+          <div className="h-3 w-24 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-16 animate-fade-in">
@@ -219,7 +239,7 @@ const RecipeDiscoveryPage = () => {
             {!isFinished && currentRecipe ? (
               <div 
                 ref={dragConstraintsRef} 
-                className="w-full max-w-lg relative"
+                className="w-full max-w-md relative"
                 {...swipeHandlers}
               >
                 <AnimatePresence mode="wait">
@@ -239,7 +259,7 @@ const RecipeDiscoveryPage = () => {
                   </motion.div>
                 </AnimatePresence>
 
-                <div className="absolute bottom-10 left-0 right-0 flex justify-center gap-6">
+                <div className="absolute -bottom-20 left-0 right-0 flex justify-center gap-6">
                   <motion.button
                     whileTap={{ scale: 0.9 }}
                     className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg"
@@ -252,7 +272,7 @@ const RecipeDiscoveryPage = () => {
                     className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg"
                     onClick={handleLike}
                   >
-                    <Star size={32} className="text-white" />
+                    <Heart size={32} fill="white" className="text-white" />
                   </motion.button>
                   <motion.button
                     whileTap={{ scale: 0.9 }}
@@ -275,7 +295,7 @@ const RecipeDiscoveryPage = () => {
                   <Button 
                     variant="outline"
                     onClick={() => {
-                      const reshuffled = [...shuffledRecipes].sort(() => Math.random() - 0.5);
+                      const reshuffled = [...recipes].sort(() => Math.random() - 0.5);
                       setShuffledRecipes(reshuffled);
                       setCurrentIndex(0);
                     }}
