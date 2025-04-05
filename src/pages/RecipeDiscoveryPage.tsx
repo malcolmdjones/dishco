@@ -118,7 +118,16 @@ const RecipeDiscoveryPage = () => {
     );
   }
 
-  // Render content for showing liked recipes
+  // Render content based on the current view state
+  const renderContent = () => {
+    if (showLiked) {
+      return renderLikedRecipes();
+    } else {
+      return renderRecipeSwiperContent();
+    }
+  };
+
+  // Render liked recipes section
   const renderLikedRecipes = () => {
     return (
       <div className="animate-fade-in">
@@ -207,94 +216,94 @@ const RecipeDiscoveryPage = () => {
     );
   };
 
-  // Render content for the recipe discovery swiper
-  const renderRecipeSwiper = () => {
+  // Render recipe swiper content
+  const renderRecipeSwiperContent = () => {
+    if (isFinished) {
+      return (
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">No more recipes!</h2>
+          <p className="text-gray-500 mb-6">Check out your liked recipes or refresh to start over</p>
+          <div className="flex gap-4 justify-center">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                const reshuffled = [...recipes].sort(() => Math.random() - 0.5);
+                setShuffledRecipes(reshuffled);
+                setCurrentIndex(0);
+              }}
+            >
+              Start Over
+            </Button>
+            <Button 
+              variant="default"
+              onClick={() => setShowLiked(true)}
+            >
+              View Liked ({likedRecipes.length})
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-150px)]">
-        {!isFinished && currentRecipe ? (
-          <div>
-            <div className="w-full max-w-md relative">
-              <motion.div
-                className="absolute top-20 left-1/2 transform -translate-x-1/2 z-30 bg-green-500 rounded-full px-6 py-3"
-                style={{ scale: likeScale, opacity: useTransform(x, [0, 100], [0, 0.8]) }}
-                ref={likeIndicatorRef}
-              >
-                <span className="text-white font-bold text-2xl">LIKE</span>
-              </motion.div>
-              
-              <motion.div
-                className="absolute top-20 left-1/2 transform -translate-x-1/2 z-30 bg-red-500 rounded-full px-6 py-3"
-                style={{ scale: nopeScale, opacity: useTransform(x, [-100, 0], [0.8, 0]) }}
-                ref={nopeIndicatorRef}
-              >
-                <span className="text-white font-bold text-2xl">NOPE</span>
-              </motion.div>
+      <>
+        <div className="relative w-full max-w-md mx-auto mb-6">
+          <motion.div
+            className="absolute top-20 left-1/2 transform -translate-x-1/2 z-30 bg-green-500 rounded-full px-6 py-3"
+            style={{ scale: likeScale, opacity: useTransform(x, [0, 100], [0, 0.8]) }}
+            ref={likeIndicatorRef}
+          >
+            <span className="text-white font-bold text-2xl">LIKE</span>
+          </motion.div>
+          
+          <motion.div
+            className="absolute top-20 left-1/2 transform -translate-x-1/2 z-30 bg-red-500 rounded-full px-6 py-3"
+            style={{ scale: nopeScale, opacity: useTransform(x, [-100, 0], [0.8, 0]) }}
+            ref={nopeIndicatorRef}
+          >
+            <span className="text-white font-bold text-2xl">NOPE</span>
+          </motion.div>
 
-              <motion.div
-                style={{ 
-                  x, 
-                  rotate,
-                  opacity: cardOpacity
-                }}
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                onDragEnd={handleDragEnd}
-                animate={controls}
-                className="w-full touch-none"
-              >
-                <RecipeCard recipe={currentRecipe} />
-              </motion.div>
-            </div>
-            
-            <div className="text-center mt-8 mb-4">
-              <p className="text-sm text-gray-500">
-                <span className="mr-2">👈 Swipe left to pass</span> | 
-                <span className="ml-2">Swipe right to like 👉</span>
-              </p>
-            </div>
+          <motion.div
+            style={{ 
+              x, 
+              rotate,
+              opacity: cardOpacity
+            }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            onDragEnd={handleDragEnd}
+            animate={controls}
+            className="w-full touch-none"
+          >
+            {currentRecipe && <RecipeCard recipe={currentRecipe} />}
+          </motion.div>
+        </div>
+        
+        <div className="text-center mt-8 mb-4">
+          <p className="text-sm text-gray-500">
+            <span className="mr-2">👈 Swipe left to pass</span> | 
+            <span className="ml-2">Swipe right to like 👉</span>
+          </p>
+        </div>
 
-            <div className="flex justify-center gap-6">
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg"
-                onClick={handleDislike}
-              >
-                <X size={24} className="text-red-500" />
-              </motion.button>
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg"
-                onClick={handleLike}
-              >
-                <Heart size={32} fill="white" className="text-white" />
-              </motion.button>
-            </div>
-          </div>
-        ) : (
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">No more recipes!</h2>
-            <p className="text-gray-500 mb-6">Check out your liked recipes or refresh to start over</p>
-            <div className="flex gap-4 justify-center">
-              <Button 
-                variant="outline"
-                onClick={() => {
-                  const reshuffled = [...recipes].sort(() => Math.random() - 0.5);
-                  setShuffledRecipes(reshuffled);
-                  setCurrentIndex(0);
-                }}
-              >
-                Start Over
-              </Button>
-              <Button 
-                variant="default"
-                onClick={() => setShowLiked(true)}
-              >
-                View Liked ({likedRecipes.length})
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
+        <div className="flex justify-center gap-6">
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg"
+            onClick={handleDislike}
+          >
+            <X size={24} className="text-red-500" />
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg"
+            onClick={handleLike}
+          >
+            <Heart size={32} fill="white" className="text-white" />
+          </motion.button>
+        </div>
+      </>
     );
   };
 
@@ -334,7 +343,9 @@ const RecipeDiscoveryPage = () => {
       </div>
 
       <div className="pt-20 px-4">
-        {showLiked ? renderLikedRecipes() : renderRecipeSwiper()}
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-150px)]">
+          {renderContent()}
+        </div>
       </div>
     </div>
   );
