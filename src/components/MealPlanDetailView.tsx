@@ -5,15 +5,56 @@ import { format } from 'date-fns';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import RecipeDetail from './RecipeDetail';
-import { calculateDailyMacros } from '@/data/mockData';
 import { Progress } from '@/components/ui/progress';
 import { MealPlan } from '@/hooks/useSavedMealPlans';
+import { Recipe } from '@/data/mockData';
 
 interface MealPlanDetailViewProps {
   plan: MealPlan | null;
   isOpen: boolean;
   onClose: () => void;
 }
+
+// Helper function to safely calculate daily macros
+const safeCalculateDailyMacros = (meals: any = {}) => {
+  let calories = 0;
+  let protein = 0;
+  let carbs = 0;
+  let fat = 0;
+  
+  // Safely add macros from each meal type
+  const processMeal = (meal: any) => {
+    if (!meal) return;
+    
+    if (Array.isArray(meal)) {
+      meal.forEach(item => {
+        if (item?.macros) {
+          calories += item.macros.calories || 0;
+          protein += item.macros.protein || 0;
+          carbs += item.macros.carbs || 0;
+          fat += item.macros.fat || 0;
+        }
+      });
+    } else if (meal?.macros) {
+      calories += meal.macros.calories || 0;
+      protein += meal.macros.protein || 0;
+      carbs += meal.macros.carbs || 0;
+      fat += meal.macros.fat || 0;
+    }
+  };
+  
+  // Process each meal type
+  processMeal(meals.breakfast);
+  processMeal(meals.lunch);
+  processMeal(meals.dinner);
+  
+  // Process snacks
+  if (meals.snacks && Array.isArray(meals.snacks)) {
+    meals.snacks.forEach((snack: any) => processMeal(snack));
+  }
+  
+  return { calories, protein, carbs, fat };
+};
 
 const MealPlanDetailView: React.FC<MealPlanDetailViewProps> = ({ plan, isOpen, onClose }) => {
   const [activeDay, setActiveDay] = useState(0);
@@ -26,30 +67,46 @@ const MealPlanDetailView: React.FC<MealPlanDetailViewProps> = ({ plan, isOpen, o
   }
 
   const days = plan.plan_data.days;
-  const currentDay = days[activeDay] || { meals: {} };
-  const dailyMacros = calculateDailyMacros(currentDay.meals || {});
+  const currentDay = days[activeDay] || { date: '', meals: {} };
+  // Initialize with empty object if meals is undefined
+  const currentMeals = currentDay.meals || {};
   
-  const averageCalories = Math.round(
-    days.reduce((sum: number, day: any) => {
-      const dayMacros = calculateDailyMacros(day?.meals || {});
-      return sum + (dayMacros.calories || 0);
-    }, 0) / Math.max(days.length, 1)
-  );
+  const dailyMacros = safeCalculateDailyMacros(currentMeals);
   
-  const totalMacros = {
-    protein: Math.round(days.reduce((sum: number, day: any) => {
-      const dayMacros = calculateDailyMacros(day?.meals || {});
-      return sum + (dayMacros.protein || 0);
-    }, 0) / Math.max(days.length, 1)),
-    carbs: Math.round(days.reduce((sum: number, day: any) => {
-      const dayMacros = calculateDailyMacros(day?.meals || {});
-      return sum + (dayMacros.carbs || 0);
-    }, 0) / Math.max(days.length, 1)),
-    fat: Math.round(days.reduce((sum: number, day: any) => {
-      const dayMacros = calculateDailyMacros(day?.meals || {});
-      return sum + (dayMacros.fat || 0);
-    }, 0) / Math.max(days.length, 1)),
+  // Calculate average macros across all days
+  const calculateAverageMacros = () => {
+    const totals = {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0
+    };
+    
+    let validDaysCount = 0;
+    
+    days.forEach((day: any) => {
+      if (day && day.meals) {
+        const dayMacros = safeCalculateDailyMacros(day.meals);
+        totals.calories += dayMacros.calories;
+        totals.protein += dayMacros.protein;
+        totals.carbs += dayMacros.carbs;
+        totals.fat += dayMacros.fat;
+        validDaysCount++;
+      }
+    });
+    
+    // Prevent division by zero
+    const count = Math.max(validDaysCount, 1);
+    
+    return {
+      calories: Math.round(totals.calories / count),
+      protein: Math.round(totals.protein / count),
+      carbs: Math.round(totals.carbs / count),
+      fat: Math.round(totals.fat / count)
+    };
   };
+  
+  const averageMacros = calculateAverageMacros();
   
   const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   
@@ -114,7 +171,7 @@ const MealPlanDetailView: React.FC<MealPlanDetailViewProps> = ({ plan, isOpen, o
                 <div className="space-y-1">
                   <div className="flex justify-between items-center text-sm">
                     <span>Calories</span>
-                    <span className="font-medium">{averageCalories}</span>
+                    <span className="font-medium">{averageMacros.calories}</span>
                   </div>
                   <Progress value={65} className="h-2" />
                 </div>
@@ -122,7 +179,7 @@ const MealPlanDetailView: React.FC<MealPlanDetailViewProps> = ({ plan, isOpen, o
                 <div className="space-y-1">
                   <div className="flex justify-between items-center text-sm">
                     <span>Protein</span>
-                    <span className="font-medium">{totalMacros.protein}g</span>
+                    <span className="font-medium">{averageMacros.protein}g</span>
                   </div>
                   <Progress value={75} indicatorClassName="bg-amber-400" className="h-2" />
                 </div>
@@ -130,7 +187,7 @@ const MealPlanDetailView: React.FC<MealPlanDetailViewProps> = ({ plan, isOpen, o
                 <div className="space-y-1">
                   <div className="flex justify-between items-center text-sm">
                     <span>Carbs</span>
-                    <span className="font-medium">{totalMacros.carbs}g</span>
+                    <span className="font-medium">{averageMacros.carbs}g</span>
                   </div>
                   <Progress value={60} indicatorClassName="bg-blue-400" className="h-2" />
                 </div>
@@ -138,7 +195,7 @@ const MealPlanDetailView: React.FC<MealPlanDetailViewProps> = ({ plan, isOpen, o
                 <div className="space-y-1">
                   <div className="flex justify-between items-center text-sm">
                     <span>Fat</span>
-                    <span className="font-medium">{totalMacros.fat}g</span>
+                    <span className="font-medium">{averageMacros.fat}g</span>
                   </div>
                   <Progress value={50} indicatorClassName="bg-green-400" className="h-2" />
                 </div>
@@ -166,24 +223,24 @@ const MealPlanDetailView: React.FC<MealPlanDetailViewProps> = ({ plan, isOpen, o
                 <div className="space-y-4">
                   <div>
                     <h4 className="text-sm font-medium mb-2">Breakfast</h4>
-                    {renderMealItem(currentDay.meals?.breakfast, "breakfast")}
+                    {renderMealItem(currentMeals.breakfast, "breakfast")}
                   </div>
                   
                   <div>
                     <h4 className="text-sm font-medium mb-2">Lunch</h4>
-                    {renderMealItem(currentDay.meals?.lunch, "lunch")}
+                    {renderMealItem(currentMeals.lunch, "lunch")}
                   </div>
                   
                   <div>
                     <h4 className="text-sm font-medium mb-2">Dinner</h4>
-                    {renderMealItem(currentDay.meals?.dinner, "dinner")}
+                    {renderMealItem(currentMeals.dinner, "dinner")}
                   </div>
                   
                   <div>
                     <h4 className="text-sm font-medium mb-2">Snacks</h4>
-                    {currentDay.meals?.snacks && Array.isArray(currentDay.meals.snacks) && currentDay.meals.snacks.length > 0 ? (
+                    {currentMeals.snacks && Array.isArray(currentMeals.snacks) && currentMeals.snacks.length > 0 ? (
                       <div className="space-y-2">
-                        {currentDay.meals.snacks.map((snack: any, index: number) => (
+                        {currentMeals.snacks.map((snack: any, index: number) => (
                           snack && (
                             <div 
                               key={index}
