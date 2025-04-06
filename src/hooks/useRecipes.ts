@@ -7,71 +7,98 @@ import { getRecipeImage } from '@/utils/recipeUtils';
 // Define the types for recipes from the database
 export interface DbRecipe {
   id: string;
-  name: string;
-  description: string | null;
+  title: string;
+  short_description: string | null;
   type: string | null;
+  meal_prep: boolean | null;
+  prep_duration_days: string | null;
+  servings: number | null;
+  prep_time: string | null;
+  cook_time: string | null;
+  total_time: string | null;
+  price_range: string | null;
+  calorie_bracket: string | null;
+  nutrition_calories: number | null;
+  nutrition_protein: number | null;
+  nutrition_carbs: number | null;
+  nutrition_fat: number | null;
+  ingredients_json: any | null;
+  instructions_json: any | null;
+  tags: string | null;
+  meal_moods: string | null;
+  protein_focus: string | null;
+  cuisine: string | null;
+  equipment_needed: string | null;
+  dietary_tags: string | null;
+  upc_ingredients: any | null;
   image_url: string | null;
-  requires_blender: boolean | null;
-  requires_cooking: boolean | null;
-  calories: number | null;
-  protein: number | null;
-  carbs: number | null;
-  fat: number | null;
-  cook_time?: number | null;
-  prep_time?: number | null;
-  servings?: number | null;
-  cuisine_type?: string | null;
-  price_range?: string | null;
-  meal_type?: string | null;
-  is_high_protein?: boolean | null;
-  is_public?: boolean | null;  
-  created_at?: string | null;
-  updated_at?: string | null;
-  user_id?: string | null;
+  created_by: string | null;
+  inserted_at: string | null;
+  updated_at: string | null;
 }
 
 // Convert database recipe to frontend recipe format
 export const dbToFrontendRecipe = (dbRecipe: DbRecipe): Recipe => {
+  // Parse ingredients and instructions from JSON if available
+  const ingredients = dbRecipe.ingredients_json ? 
+    Array.isArray(dbRecipe.ingredients_json) ? 
+    dbRecipe.ingredients_json : [] : [];
+  
+  const instructions = dbRecipe.instructions_json ? 
+    Array.isArray(dbRecipe.instructions_json) ? 
+    dbRecipe.instructions_json : [] : [];
+
   return {
     id: dbRecipe.id,
-    name: dbRecipe.name,
-    description: dbRecipe.description || '',
+    name: dbRecipe.title || '',
+    description: dbRecipe.short_description || '',
     type: dbRecipe.type || 'meal',
     imageSrc: getRecipeImage(dbRecipe.image_url),
-    requiresBlender: dbRecipe.requires_blender || false,
-    requiresCooking: dbRecipe.requires_cooking || false,
-    cookTime: dbRecipe.cook_time || 0,
-    prepTime: dbRecipe.prep_time || 0,
+    requiresBlender: dbRecipe.equipment_needed?.includes('blender') || false,
+    requiresCooking: !dbRecipe.meal_prep,
+    cookTime: dbRecipe.cook_time ? parseInt(dbRecipe.cook_time) : 0,
+    prepTime: dbRecipe.prep_time ? parseInt(dbRecipe.prep_time) : 0,
     servings: dbRecipe.servings || 1,
     macros: {
-      calories: dbRecipe.calories || 0,
-      protein: dbRecipe.protein || 0,
-      carbs: dbRecipe.carbs || 0,
-      fat: dbRecipe.fat || 0
+      calories: dbRecipe.nutrition_calories || 0,
+      protein: dbRecipe.nutrition_protein || 0,
+      carbs: dbRecipe.nutrition_carbs || 0,
+      fat: dbRecipe.nutrition_fat || 0
     },
-    ingredients: [],
-    instructions: []
+    ingredients,
+    instructions
   };
 };
 
 // Convert frontend recipe to database format for insertion
-const frontendToDbRecipe = (recipe: Recipe): Omit<DbRecipe, 'id' | 'created_at' | 'updated_at'> => {
+const frontendToDbRecipe = (recipe: Recipe): Omit<DbRecipe, 'id' | 'inserted_at' | 'updated_at'> => {
   return {
-    name: recipe.name,
-    description: recipe.description || '',
+    title: recipe.name,
+    short_description: recipe.description || '',
     type: recipe.type || 'meal',
-    image_url: recipe.imageSrc || null,
-    requires_blender: recipe.requiresBlender || false,
-    requires_cooking: recipe.requiresCooking || false,
-    cook_time: recipe.cookTime || 0,
-    prep_time: recipe.prepTime || 0,
+    meal_prep: !recipe.requiresCooking,
+    prep_duration_days: null,
     servings: recipe.servings || 1,
-    calories: recipe.macros.calories || 0,
-    protein: recipe.macros.protein || 0,
-    carbs: recipe.macros.carbs || 0,
-    fat: recipe.macros.fat || 0,
-    is_public: true,
-    meal_type: 'main'
+    prep_time: recipe.prepTime?.toString() || '0',
+    cook_time: recipe.cookTime?.toString() || '0',
+    total_time: ((recipe.prepTime || 0) + (recipe.cookTime || 0)).toString(),
+    price_range: null,
+    calorie_bracket: null,
+    nutrition_calories: recipe.macros.calories || 0,
+    nutrition_protein: recipe.macros.protein || 0,
+    nutrition_carbs: recipe.macros.carbs || 0,
+    nutrition_fat: recipe.macros.fat || 0,
+    ingredients_json: recipe.ingredients || [],
+    instructions_json: recipe.instructions || [],
+    tags: null,
+    meal_moods: null,
+    protein_focus: null,
+    cuisine: null,
+    equipment_needed: recipe.requiresBlender ? 'blender' : null,
+    dietary_tags: null,
+    upc_ingredients: null,
+    image_url: recipe.imageSrc || null,
+    created_by: null
   };
 };
 
@@ -108,17 +135,17 @@ export const useRecipes = () => {
       // First, get all existing recipes from the database to check if we need to import
       const { data: existingRecipes, error: fetchError } = await supabase
         .from('recipes')
-        .select('id, name');
+        .select('id, title');
       
       if (fetchError) throw fetchError;
       
-      // Create a map of existing recipe names for quick lookup
-      const existingRecipeNames = new Set(existingRecipes?.map(r => r.name.toLowerCase()) || []);
-      console.log(`Found ${existingRecipeNames.size} existing recipes in database`);
+      // Create a map of existing recipe titles for quick lookup
+      const existingRecipeTitles = new Set(existingRecipes?.map(r => r.title?.toLowerCase()) || []);
+      console.log(`Found ${existingRecipeTitles.size} existing recipes in database`);
       
       // Filter out mock recipes that already exist in the database (by name)
       const recipesToImport = mockRecipes.filter(
-        recipe => !existingRecipeNames.has(recipe.name.toLowerCase())
+        recipe => !existingRecipeTitles.has(recipe.name.toLowerCase())
       );
       
       if (recipesToImport.length === 0) {
@@ -139,84 +166,8 @@ export const useRecipes = () => {
       if (insertError) throw insertError;
       
       console.log(`Successfully imported ${recipesToImport.length} mock recipes to the database`);
-
-      // After inserting recipes, add ingredients and instructions
-      for (const recipe of recipesToImport) {
-        // Add ingredients
-        if (recipe.ingredients && recipe.ingredients.length > 0) {
-          const ingredients = recipe.ingredients.map((ingredient, index) => {
-            // Parse the ingredient string (usually in format "quantity unit name")
-            const parts = ingredient.split(' ');
-            const quantity = parts[0] || '';
-            const unit = parts[1] || '';
-            const name = parts.slice(2).join(' ');
-            
-            return {
-              recipe_id: recipe.id,
-              name: name || ingredient, // Fallback to full string if parsing failed
-              quantity,
-              unit
-            };
-          });
-          
-          const { error: ingredientsError } = await supabase
-            .from('recipe_ingredients')
-            .insert(ingredients);
-            
-          if (ingredientsError) {
-            console.error('Error importing ingredients:', ingredientsError);
-          }
-        }
-        
-        // Add instructions
-        if (recipe.instructions && recipe.instructions.length > 0) {
-          const instructions = recipe.instructions.map((instruction, index) => ({
-            recipe_id: recipe.id,
-            instruction,
-            step_number: index + 1
-          }));
-          
-          const { error: instructionsError } = await supabase
-            .from('recipe_instructions')
-            .insert(instructions);
-            
-          if (instructionsError) {
-            console.error('Error importing instructions:', instructionsError);
-          }
-        }
-      }
     } catch (error) {
       console.error('Error importing mock recipes to database:', error);
-    }
-  };
-
-  // Fetch recipe ingredients and instructions
-  const fetchRecipeDetails = async (recipeId: string) => {
-    try {
-      // Fetch ingredients
-      const { data: ingredients, error: ingredientsError } = await supabase
-        .from('recipe_ingredients')
-        .select('*')
-        .eq('recipe_id', recipeId);
-      
-      if (ingredientsError) throw ingredientsError;
-      
-      // Fetch instructions
-      const { data: instructions, error: instructionsError } = await supabase
-        .from('recipe_instructions')
-        .select('*')
-        .eq('recipe_id', recipeId)
-        .order('step_number', { ascending: true });
-      
-      if (instructionsError) throw instructionsError;
-      
-      return {
-        ingredients: ingredients?.map(i => `${i.quantity || ''} ${i.unit || ''} ${i.name}`.trim()) || [],
-        instructions: instructions?.map(i => i.instruction) || []
-      };
-    } catch (error) {
-      console.error('Error fetching recipe details:', error);
-      return { ingredients: [], instructions: [] };
     }
   };
 
@@ -242,20 +193,7 @@ export const useRecipes = () => {
       } else {
         // Convert db recipes to frontend format
         const frontendRecipes = dbRecipes.map(dbToFrontendRecipe);
-        
-        // Fetch details for each recipe
-        const recipesWithDetails = await Promise.all(
-          frontendRecipes.map(async (recipe) => {
-            const details = await fetchRecipeDetails(recipe.id);
-            return {
-              ...recipe,
-              ingredients: details.ingredients,
-              instructions: details.instructions
-            };
-          })
-        );
-        
-        setRecipes(recipesWithDetails);
+        setRecipes(frontendRecipes);
       }
 
       // Fetch saved recipe IDs

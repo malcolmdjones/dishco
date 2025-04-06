@@ -11,10 +11,12 @@ export interface Recipe {
   id: string;
   name: string;
   description: string;
-  ingredients: string[];
-  instructions: string[];
-  prepTime: number;
+  type: string;
+  imageSrc: string;
+  requiresBlender: boolean;
+  requiresCooking: boolean;
   cookTime: number;
+  prepTime: number;
   servings: number;
   macros: {
     calories: number;
@@ -22,11 +24,8 @@ export interface Recipe {
     carbs: number;
     fat: number;
   };
-  imageSrc: string;
-  type?: string;
-  requiresBlender?: boolean;
-  requiresCooking?: boolean;
-  mealType?: string;
+  ingredients: string[];
+  instructions: string[];
 }
 
 export interface NutritionGoals {
@@ -98,6 +97,19 @@ export const recipes: Recipe[] = [
     id: '1',
     name: 'Overnight Oats with Berries',
     description: 'A simple, nutritious breakfast that you can prepare the night before.',
+    type: 'breakfast',
+    imageSrc: getStockImage('breakfast'),
+    requiresBlender: false,
+    requiresCooking: false,
+    cookTime: 0,
+    prepTime: 5,
+    servings: 1,
+    macros: {
+      calories: 350,
+      protein: 12,
+      carbs: 55,
+      fat: 8
+    },
     ingredients: [
       '1/2 cup rolled oats', 
       '1/2 cup almond milk', 
@@ -109,26 +121,25 @@ export const recipes: Recipe[] = [
       'Mix oats, almond milk, chia seeds, and honey in a jar',
       'Seal and refrigerate overnight',
       'Top with fresh berries before serving'
-    ],
-    prepTime: 5,
-    cookTime: 0,
-    servings: 1,
-    macros: {
-      calories: 350,
-      protein: 12,
-      carbs: 55,
-      fat: 8
-    },
-    imageSrc: getStockImage('breakfast'),
-    type: 'breakfast',
-    requiresBlender: false,
-    requiresCooking: false,
-    mealType: 'homemade'
+    ]
   },
   {
     id: '2',
     name: 'Avocado Toast with Egg',
     description: 'Creamy avocado spread on whole grain toast topped with a perfectly fried egg.',
+    type: 'breakfast',
+    imageSrc: getStockImage('breakfast'),
+    requiresBlender: false,
+    requiresCooking: true,
+    cookTime: 5,
+    prepTime: 5,
+    servings: 1,
+    macros: {
+      calories: 280,
+      protein: 15,
+      carbs: 20,
+      fat: 18
+    },
     ingredients: [
       '1 slice whole grain bread', 
       '1/2 ripe avocado', 
@@ -142,26 +153,25 @@ export const recipes: Recipe[] = [
       'Fry egg in a non-stick pan',
       'Place egg on top of avocado',
       'Season with salt, pepper, and red pepper flakes'
-    ],
-    prepTime: 5,
-    cookTime: 5,
-    servings: 1,
-    macros: {
-      calories: 280,
-      protein: 15,
-      carbs: 20,
-      fat: 18
-    },
-    imageSrc: getStockImage('breakfast'),
-    type: 'breakfast',
-    requiresBlender: false,
-    requiresCooking: true,
-    mealType: 'homemade'
+    ]
   },
   {
     id: '3',
     name: 'Greek Yogurt Bowl',
     description: 'High-protein yogurt bowl with honey, nuts, and fresh fruit.',
+    type: 'breakfast',
+    imageSrc: getStockImage('breakfast'),
+    requiresBlender: false,
+    requiresCooking: false,
+    cookTime: 0,
+    prepTime: 5,
+    servings: 1,
+    macros: {
+      calories: 240,
+      protein: 22,
+      carbs: 25,
+      fat: 8
+    },
     ingredients: [
       '1 cup Greek yogurt', 
       '1 tbsp honey', 
@@ -173,26 +183,25 @@ export const recipes: Recipe[] = [
       'Add Greek yogurt to a bowl',
       'Drizzle with honey',
       'Top with berries, almonds, and chia seeds'
-    ],
-    prepTime: 5,
-    cookTime: 0,
-    servings: 1,
-    macros: {
-      calories: 240,
-      protein: 22,
-      carbs: 25,
-      fat: 8
-    },
-    imageSrc: getStockImage('breakfast'),
-    type: 'breakfast',
-    requiresBlender: false,
-    requiresCooking: false,
-    mealType: 'store-bought'
+    ]
   },
   {
     id: '4',
     name: 'Grilled Chicken Salad',
     description: 'Fresh mixed greens topped with grilled chicken, veggies, and balsamic vinaigrette.',
+    type: 'lunch',
+    imageSrc: getStockImage('lunch'),
+    requiresBlender: false,
+    requiresCooking: true,
+    cookTime: 10,
+    prepTime: 10,
+    servings: 1,
+    macros: {
+      calories: 320,
+      protein: 35,
+      carbs: 15,
+      fat: 12
+    },
     ingredients: [
       '4 oz grilled chicken breast', 
       '2 cups mixed greens', 
@@ -205,26 +214,25 @@ export const recipes: Recipe[] = [
       'Slice grilled chicken and place on top',
       'Drizzle with balsamic vinaigrette',
       'Toss gently before serving'
-    ],
-    prepTime: 10,
-    cookTime: 10,
-    servings: 1,
-    macros: {
-      calories: 320,
-      protein: 35,
-      carbs: 15,
-      fat: 12
-    },
-    imageSrc: getStockImage('lunch'),
-    type: 'lunch',
-    requiresBlender: false,
-    requiresCooking: true,
-    mealType: 'homemade'
+    ]
   },
   {
     id: '5',
     name: 'Quinoa & Black Bean Bowl',
     description: 'Protein-packed bowl with quinoa, black beans, avocado, and salsa.',
+    type: 'lunch',
+    imageSrc: getStockImage('lunch'),
+    requiresBlender: false,
+    requiresCooking: true,
+    cookTime: 15,
+    prepTime: 5,
+    servings: 1,
+    macros: {
+      calories: 350,
+      protein: 15,
+      carbs: 45,
+      fat: 12
+    },
     ingredients: [
       '1/2 cup cooked quinoa', 
       '1/2 cup black beans', 
@@ -237,26 +245,25 @@ export const recipes: Recipe[] = [
       'Top with black beans',
       'Add sliced avocado',
       'Finish with salsa and a dollop of Greek yogurt'
-    ],
-    prepTime: 5,
-    cookTime: 15,
-    servings: 1,
-    macros: {
-      calories: 350,
-      protein: 15,
-      carbs: 45,
-      fat: 12
-    },
-    imageSrc: getStockImage('lunch'),
-    type: 'lunch',
-    requiresBlender: false,
-    requiresCooking: true,
-    mealType: 'takeout'
+    ]
   },
   {
     id: '6',
     name: 'Turkey & Hummus Wrap',
     description: 'Whole grain wrap filled with lean turkey, hummus, and fresh vegetables.',
+    type: 'lunch',
+    imageSrc: getStockImage('lunch'),
+    requiresBlender: false,
+    requiresCooking: false,
+    cookTime: 0,
+    prepTime: 5,
+    servings: 1,
+    macros: {
+      calories: 280,
+      protein: 25,
+      carbs: 30,
+      fat: 8
+    },
     ingredients: [
       '1 whole grain wrap', 
       '3 oz sliced turkey breast', 
@@ -269,26 +276,25 @@ export const recipes: Recipe[] = [
       'Layer with turkey, spinach, and cucumber',
       'Roll up tightly',
       'Cut in half diagonally'
-    ],
-    prepTime: 5,
-    cookTime: 0,
-    servings: 1,
-    macros: {
-      calories: 280,
-      protein: 25,
-      carbs: 30,
-      fat: 8
-    },
-    imageSrc: getStockImage('lunch'),
-    type: 'lunch',
-    requiresBlender: false,
-    requiresCooking: false,
-    mealType: 'store-bought'
+    ]
   },
   {
     id: '7',
     name: 'Baked Salmon with Asparagus',
     description: 'Perfectly baked salmon fillet with roasted asparagus and lemon.',
+    type: 'dinner',
+    imageSrc: getStockImage('dinner'),
+    requiresBlender: false,
+    requiresCooking: true,
+    cookTime: 15,
+    prepTime: 5,
+    servings: 1,
+    macros: {
+      calories: 320,
+      protein: 35,
+      carbs: 5,
+      fat: 18
+    },
     ingredients: [
       '5 oz salmon fillet', 
       '8 asparagus spears', 
@@ -302,26 +308,25 @@ export const recipes: Recipe[] = [
       'Drizzle with olive oil and season',
       'Bake for 12-15 minutes',
       'Serve with lemon wedge'
-    ],
-    prepTime: 5,
-    cookTime: 15,
-    servings: 1,
-    macros: {
-      calories: 320,
-      protein: 35,
-      carbs: 5,
-      fat: 18
-    },
-    imageSrc: getStockImage('dinner'),
-    type: 'dinner',
-    requiresBlender: false,
-    requiresCooking: true,
-    mealType: 'homemade'
+    ]
   },
   {
     id: '8',
     name: 'Stir-Fry Tofu with Vegetables',
     description: 'Plant-based protein stir-fried with colorful vegetables and served over brown rice.',
+    type: 'dinner',
+    imageSrc: getStockImage('dinner'),
+    requiresBlender: false,
+    requiresCooking: true,
+    cookTime: 15,
+    prepTime: 10,
+    servings: 1,
+    macros: {
+      calories: 350,
+      protein: 20,
+      carbs: 35,
+      fat: 15
+    },
     ingredients: [
       '4 oz firm tofu, cubed', 
       '1 cup mixed vegetables', 
@@ -335,26 +340,25 @@ export const recipes: Recipe[] = [
       'Add vegetables and cook until tender-crisp',
       'Season with soy sauce and sesame oil',
       'Serve over brown rice'
-    ],
-    prepTime: 10,
-    cookTime: 15,
-    servings: 1,
-    macros: {
-      calories: 350,
-      protein: 20,
-      carbs: 35,
-      fat: 15
-    },
-    imageSrc: getStockImage('dinner'),
-    type: 'dinner',
-    requiresBlender: false,
-    requiresCooking: true,
-    mealType: 'homemade'
+    ]
   },
   {
     id: '9',
     name: 'Turkey Chili',
     description: 'Hearty turkey chili with beans, vegetables, and warm spices.',
+    type: 'dinner',
+    imageSrc: getStockImage('dinner'),
+    requiresBlender: false,
+    requiresCooking: true,
+    cookTime: 20,
+    prepTime: 10,
+    servings: 1,
+    macros: {
+      calories: 330,
+      protein: 30,
+      carbs: 25,
+      fat: 12
+    },
     ingredients: [
       '4 oz ground turkey', 
       '1/2 cup kidney beans', 
@@ -368,36 +372,18 @@ export const recipes: Recipe[] = [
       'Add beans, tomatoes, and spices',
       'Simmer for 15 minutes',
       'Serve hot with optional toppings'
-    ],
-    prepTime: 10,
-    cookTime: 20,
-    servings: 1,
-    macros: {
-      calories: 330,
-      protein: 30,
-      carbs: 25,
-      fat: 12
-    },
-    imageSrc: getStockImage('dinner'),
-    type: 'dinner',
-    requiresBlender: false,
-    requiresCooking: true,
-    mealType: 'homemade'
+    ]
   },
   {
     id: '10',
     name: 'Apple with Almond Butter',
     description: 'Simple, satisfying snack pairing crisp apple with creamy almond butter.',
-    ingredients: [
-      '1 medium apple', 
-      '1 tbsp almond butter'
-    ],
-    instructions: [
-      'Slice apple into wedges',
-      'Serve with almond butter for dipping'
-    ],
-    prepTime: 2,
+    type: 'snack',
+    imageSrc: getStockImage('snack'),
+    requiresBlender: false,
+    requiresCooking: false,
     cookTime: 0,
+    prepTime: 2,
     servings: 1,
     macros: {
       calories: 160,
@@ -405,26 +391,25 @@ export const recipes: Recipe[] = [
       carbs: 20,
       fat: 8
     },
-    imageSrc: getStockImage('snack'),
-    type: 'snack',
-    requiresBlender: false,
-    requiresCooking: false,
-    mealType: 'store-bought'
+    ingredients: [
+      '1 medium apple', 
+      '1 tbsp almond butter'
+    ],
+    instructions: [
+      'Slice apple into wedges',
+      'Serve with almond butter for dipping'
+    ]
   },
   {
     id: '11',
     name: 'Greek Yogurt with Honey',
     description: 'Protein-rich Greek yogurt sweetened with a touch of honey.',
-    ingredients: [
-      '1/2 cup Greek yogurt', 
-      '1 tsp honey'
-    ],
-    instructions: [
-      'Add honey to Greek yogurt',
-      'Stir well before eating'
-    ],
-    prepTime: 1,
+    type: 'snack',
+    imageSrc: getStockImage('snack'),
+    requiresBlender: false,
+    requiresCooking: false,
     cookTime: 0,
+    prepTime: 1,
     servings: 1,
     macros: {
       calories: 90,
@@ -432,16 +417,32 @@ export const recipes: Recipe[] = [
       carbs: 10,
       fat: 0
     },
-    imageSrc: getStockImage('snack'),
-    type: 'snack',
-    requiresBlender: false,
-    requiresCooking: false,
-    mealType: 'store-bought'
+    ingredients: [
+      '1/2 cup Greek yogurt', 
+      '1 tsp honey'
+    ],
+    instructions: [
+      'Add honey to Greek yogurt',
+      'Stir well before eating'
+    ]
   },
   {
     id: '12',
     name: 'Protein Smoothie',
     description: 'Quick, refreshing protein shake with fruit and almond milk.',
+    type: 'snack',
+    imageSrc: getStockImage('snack'),
+    requiresBlender: true,
+    requiresCooking: false,
+    cookTime: 0,
+    prepTime: 3,
+    servings: 1,
+    macros: {
+      calories: 180,
+      protein: 20,
+      carbs: 15,
+      fat: 3
+    },
     ingredients: [
       '1 scoop protein powder', 
       '1 cup almond milk', 
@@ -452,26 +453,25 @@ export const recipes: Recipe[] = [
       'Add all ingredients to a blender',
       'Blend until smooth',
       'Pour into a glass and enjoy'
-    ],
-    prepTime: 3,
-    cookTime: 0,
-    servings: 1,
-    macros: {
-      calories: 180,
-      protein: 20,
-      carbs: 15,
-      fat: 3
-    },
-    imageSrc: getStockImage('snack'),
-    type: 'snack',
-    requiresBlender: true,
-    requiresCooking: false,
-    mealType: 'homemade'
+    ]
   },
   {
     id: '13',
     name: 'Trail Mix',
     description: 'Energy-boosting mix of nuts, seeds, and dried fruit.',
+    type: 'snack',
+    imageSrc: getStockImage('snack'),
+    requiresBlender: false,
+    requiresCooking: false,
+    cookTime: 0,
+    prepTime: 1,
+    servings: 1,
+    macros: {
+      calories: 120,
+      protein: 5,
+      carbs: 8,
+      fat: 9
+    },
     ingredients: [
       '1 tbsp almonds', 
       '1 tbsp walnuts', 
@@ -481,26 +481,25 @@ export const recipes: Recipe[] = [
     instructions: [
       'Mix all ingredients in a small container',
       'Store in an airtight container if not consuming immediately'
-    ],
-    prepTime: 1,
-    cookTime: 0,
-    servings: 1,
-    macros: {
-      calories: 120,
-      protein: 5,
-      carbs: 8,
-      fat: 9
-    },
-    imageSrc: getStockImage('snack'),
-    type: 'snack',
-    requiresBlender: false,
-    requiresCooking: false,
-    mealType: 'store-bought'
+    ]
   },
   {
     id: '14',
     name: 'Vegetable Soup',
     description: 'Light, nutritious soup packed with seasonal vegetables.',
+    type: 'snack',
+    imageSrc: getStockImage('snack'),
+    requiresBlender: false,
+    requiresCooking: true,
+    cookTime: 15,
+    prepTime: 5,
+    servings: 1,
+    macros: {
+      calories: 80,
+      protein: 2,
+      carbs: 15,
+      fat: 0
+    },
     ingredients: [
       '1 cup vegetable broth', 
       '1/2 cup mixed vegetables', 
@@ -512,26 +511,25 @@ export const recipes: Recipe[] = [
       'Add vegetables and herbs',
       'Cook until vegetables are tender',
       'Serve hot'
-    ],
-    prepTime: 5,
-    cookTime: 15,
-    servings: 1,
-    macros: {
-      calories: 80,
-      protein: 2,
-      carbs: 15,
-      fat: 0
-    },
-    imageSrc: getStockImage('snack'),
-    type: 'snack',
-    requiresBlender: false,
-    requiresCooking: true,
-    mealType: 'homemade'
+    ]
   },
   {
     id: '15',
     name: 'Protein Pancakes',
     description: 'Fluffy pancakes enriched with protein powder for a satisfying breakfast.',
+    type: 'breakfast',
+    imageSrc: getStockImage('breakfast'),
+    requiresBlender: true,
+    requiresCooking: true,
+    cookTime: 10,
+    prepTime: 5,
+    servings: 1,
+    macros: {
+      calories: 340,
+      protein: 30,
+      carbs: 32,
+      fat: 10
+    },
     ingredients: [
       '1 scoop protein powder', 
       '1 banana', 
@@ -545,21 +543,7 @@ export const recipes: Recipe[] = [
       'Pour batter to form pancakes',
       'Cook until bubbles form, then flip',
       'Serve with optional toppings'
-    ],
-    prepTime: 5,
-    cookTime: 10,
-    servings: 1,
-    macros: {
-      calories: 340,
-      protein: 30,
-      carbs: 32,
-      fat: 10
-    },
-    imageSrc: getStockImage('breakfast'),
-    type: 'breakfast',
-    requiresBlender: true,
-    requiresCooking: true,
-    mealType: 'homemade'
+    ]
   }
 ];
 

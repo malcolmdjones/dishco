@@ -1,70 +1,67 @@
 
-import React, { forwardRef } from 'react';
-import { motion } from 'framer-motion';
+import React from 'react';
 import { Recipe } from '@/data/mockData';
-import { Clock, Flame } from 'lucide-react';
+import { CookingPot, Heart, Clock, Users } from 'lucide-react';
 
 interface RecipeCardProps {
   recipe: Recipe;
 }
 
-const RecipeCard = forwardRef<HTMLDivElement, RecipeCardProps>(({ recipe }, ref) => {
+const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
   return (
-    <motion.div 
-      ref={ref}
-      className="w-full bg-white rounded-3xl shadow-xl overflow-hidden"
-      whileHover={{ scale: 1.02 }}
-      transition={{ type: "spring", stiffness: 300 }}
-    >
-      <div className="relative h-[600px]">
+    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div className="relative h-80">
         <img 
-          src={recipe.imageSrc || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxleHBsb3JlLWZlZWR8MXx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"} 
+          src={recipe.imageSrc || "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"} 
           alt={recipe.name} 
           className="w-full h-full object-cover"
         />
-        
-        {/* Full gradient overlay - lighter to see more of the image */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-black/10" />
-        
-        {/* Recipe info overlaid on image */}
-        <div className="absolute inset-0 flex flex-col justify-between p-6">
-          <div className="flex items-center justify-between">
-            <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-white text-sm">
-              {recipe.type}
-            </span>
-            <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-white text-sm flex items-center gap-1">
-              <Clock size={14} className="text-white" />
-              {recipe.cookTime + recipe.prepTime} min
-            </span>
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent text-white">
+          <h3 className="text-2xl font-bold">{recipe.name}</h3>
+          <p className="line-clamp-2 text-white/80">{recipe.description}</p>
+        </div>
+      </div>
+      
+      <div className="p-4">
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex items-center">
+            {recipe.requiresCooking && (
+              <div className="flex items-center mr-3 text-sm text-gray-500">
+                <CookingPot size={18} className="mr-1" />
+                <span>Cooking Required</span>
+              </div>
+            )}
           </div>
-          
-          <div>
-            <h2 className="text-3xl font-bold text-white mb-3">{recipe.name}</h2>
-            <p className="text-white/90 text-sm mb-4 line-clamp-2">{recipe.description}</p>
-            
-            {/* Macros as overlapping pills */}
-            <div className="flex flex-wrap gap-2 mb-2">
-              <span className="px-3 py-1 bg-blue-500/90 backdrop-blur-sm rounded-full text-white text-sm font-medium">
-                Protein: {recipe.macros.protein}g
-              </span>
-              <span className="px-3 py-1 bg-amber-500/90 backdrop-blur-sm rounded-full text-white text-sm font-medium">
-                Carbs: {recipe.macros.carbs}g
-              </span>
-              <span className="px-3 py-1 bg-purple-500/90 backdrop-blur-sm rounded-full text-white text-sm font-medium">
-                Fat: {recipe.macros.fat}g
-              </span>
-              <span className="px-3 py-1 bg-green-500/90 backdrop-blur-sm rounded-full text-white text-sm font-medium flex items-center gap-1">
-                <Flame size={14} className="text-white" />
-                {recipe.macros.calories} kcal
-              </span>
+        </div>
+        
+        <div className="flex items-center gap-3 text-sm text-gray-500 mb-4">
+          {recipe.cookTime > 0 && (
+            <div className="flex items-center">
+              <Clock size={16} className="mr-1" />
+              <span>{recipe.cookTime} min</span>
             </div>
+          )}
+          {recipe.servings > 0 && (
+            <div className="flex items-center">
+              <Users size={16} className="mr-1" />
+              <span>{recipe.servings} servings</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-between items-center">
+          <div className="flex gap-2">
+            <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
+              {recipe.macros.calories} kcal
+            </span>
+            <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+              {recipe.macros.protein}g protein
+            </span>
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
-});
-
-RecipeCard.displayName = "RecipeCard";
+};
 
 export default RecipeCard;

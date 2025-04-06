@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Heart, X, Filter } from 'lucide-react';
 import { motion, useMotionValue, useTransform, PanInfo, useAnimation } from 'framer-motion';
@@ -49,7 +49,7 @@ const RecipeDiscoveryPage = () => {
   const currentRecipe = shuffledRecipes[currentIndex];
   const isFinished = currentIndex >= shuffledRecipes.length;
 
-  const handleLike = () => {
+  const handleLike = useCallback(() => {
     if (!currentRecipe) return;
     
     controls.start({ x: 500, opacity: 0, transition: { duration: 0.5 } })
@@ -64,9 +64,9 @@ const RecipeDiscoveryPage = () => {
         setCurrentIndex(prevIndex => prevIndex + 1);
         x.set(0);
       });
-  };
+  }, [controls, currentRecipe, setRecipePreference, toast, x]);
 
-  const handleDislike = () => {
+  const handleDislike = useCallback(() => {
     if (!currentRecipe) return;
     
     controls.start({ x: -500, opacity: 0, transition: { duration: 0.5 } })
@@ -75,9 +75,9 @@ const RecipeDiscoveryPage = () => {
         setCurrentIndex(prevIndex => prevIndex + 1);
         x.set(0);
       });
-  };
+  }, [controls, currentRecipe, setRecipePreference, x]);
 
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+  const handleDragEnd = useCallback((event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const threshold = 150;
     if (info.offset.x > threshold) {
       handleLike();
@@ -86,9 +86,9 @@ const RecipeDiscoveryPage = () => {
     } else {
       controls.start({ x: 0, opacity: 1, transition: { type: 'spring', stiffness: 300, damping: 20 } });
     }
-  };
+  }, [controls, handleDislike, handleLike]);
 
-  const handleSaveRecipe = async (recipe: Recipe) => {
+  const handleSaveRecipe = useCallback(async (recipe: Recipe) => {
     await toggleSaveRecipe(recipe.id);
     toast({
       title: isRecipeSaved(recipe.id) ? "Recipe removed" : "Recipe saved!",
@@ -96,30 +96,29 @@ const RecipeDiscoveryPage = () => {
         ? "Recipe removed from your saved recipes"
         : "Recipe added to your saved recipes",
     });
-  };
+  }, [isRecipeSaved, toggleSaveRecipe, toast]);
 
-  const handleRemoveFromLiked = (recipeId: string) => {
+  const handleRemoveFromLiked = useCallback((recipeId: string) => {
     setRecipePreference(recipeId, false);
     toast({
       title: "Recipe removed",
       description: "Recipe removed from your liked recipes",
     });
-  };
+  }, [setRecipePreference, toast]);
 
-  if (loading || recipesLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="w-16 h-16 bg-gray-200 rounded-full mb-4"></div>
-          <div className="h-4 w-32 bg-gray-200 rounded mb-2"></div>
-          <div className="h-3 w-24 bg-gray-200 rounded"></div>
-        </div>
+  // Loading state component
+  const LoadingState = () => (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-pulse flex flex-col items-center">
+        <div className="w-16 h-16 bg-gray-200 rounded-full mb-4"></div>
+        <div className="h-4 w-32 bg-gray-200 rounded mb-2"></div>
+        <div className="h-3 w-24 bg-gray-200 rounded"></div>
       </div>
-    );
-  }
+    </div>
+  );
 
-  // Render liked recipes section - split into its own component method
-  const renderLikedRecipes = () => {
+  // Render liked recipes section
+  const LikedRecipesSection = () => {
     return (
       <div className="animate-fade-in">
         <h2 className="text-xl font-semibold mb-4">Liked Recipes</h2>
@@ -207,8 +206,8 @@ const RecipeDiscoveryPage = () => {
     );
   };
 
-  // Render recipe swiper content
-  const renderFinishedState = () => (
+  // Render finished state component
+  const FinishedState = () => (
     <div className="text-center">
       <h2 className="text-2xl font-bold mb-4">No more recipes!</h2>
       <p className="text-gray-500 mb-6">Check out your liked recipes or refresh to start over</p>
@@ -233,8 +232,8 @@ const RecipeDiscoveryPage = () => {
     </div>
   );
 
-  // Render active swiping card
-  const renderSwipeCard = () => (
+  // Render active swiping card component
+  const SwipeCard = () => (
     <>
       <div className="relative w-full max-w-md mx-auto mb-6">
         <div
@@ -301,13 +300,17 @@ const RecipeDiscoveryPage = () => {
     </>
   );
 
-  // Main content renderer - these need to be components not functions
+  // Recipe swiper content component
   const RecipeSwiperContent = () => {
     if (isFinished) {
-      return renderFinishedState();
+      return <FinishedState />;
     }
-    return renderSwipeCard();
+    return <SwipeCard />;
   };
+
+  if (loading || recipesLoading) {
+    return <LoadingState />;
+  }
 
   // Main render function
   return (
@@ -347,7 +350,7 @@ const RecipeDiscoveryPage = () => {
 
       <div className="pt-20 px-4">
         <div className="flex flex-col items-center justify-center h-[calc(100vh-150px)]">
-          {showLiked ? renderLikedRecipes() : <RecipeSwiperContent />}
+          {showLiked ? <LikedRecipesSection /> : <RecipeSwiperContent />}
         </div>
       </div>
     </div>
