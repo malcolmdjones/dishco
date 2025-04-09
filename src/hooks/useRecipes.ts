@@ -2,7 +2,9 @@
 import { useFetchRecipes } from './useFetchRecipes';
 import { useSavedRecipes } from './useSavedRecipes';
 
-export { DbRecipe, dbToFrontendRecipe } from '@/utils/recipeDbUtils';
+// Change the re-export to use 'export type' since we're re-exporting types
+export type { DbRecipe } from '@/utils/recipeDbUtils';
+export { dbToFrontendRecipe } from '@/utils/recipeDbUtils';
 
 export const useRecipes = () => {
   const { 
