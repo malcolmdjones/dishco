@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { recipes as mockRecipes, Recipe } from '@/data/mockData';
 import { getRecipeImage } from '@/utils/recipeUtils';
 
-// Update the DbRecipe interface to match the actual database schema
+// Update the DbRecipe interface to match the actual database schema for the 'recipes' table
 export interface DbRecipe {
   id: string;
   title: string | null;
