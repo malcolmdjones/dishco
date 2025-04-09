@@ -5,9 +5,11 @@ import { CookingPot, Heart, Clock, Users } from 'lucide-react';
 
 interface RecipeCardProps {
   recipe: Recipe;
+  onToggleSave?: (id: string, saved: boolean) => void;
+  isSaved?: boolean;
 }
 
-const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
+const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onToggleSave, isSaved = false }) => {
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
       <div className="relative h-80">
@@ -20,6 +22,18 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
           <h3 className="text-2xl font-bold">{recipe.name}</h3>
           <p className="line-clamp-2 text-white/80">{recipe.description}</p>
         </div>
+        
+        {onToggleSave && (
+          <button 
+            className={`absolute top-4 right-4 p-2 rounded-full ${isSaved ? 'bg-red-500 text-white' : 'bg-white text-gray-600'}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleSave(recipe.id, !isSaved);
+            }}
+          >
+            <Heart size={20} className={isSaved ? 'fill-current' : ''} />
+          </button>
+        )}
       </div>
       
       <div className="p-4">

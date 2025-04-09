@@ -48,7 +48,7 @@ const RecipeManagement: React.FC = () => {
 
       if (error) throw error;
 
-      setRecipes(data || []);
+      setRecipes(data as DbRecipe[] || []);
     } catch (error) {
       console.error('Error fetching recipes:', error);
       toast({
@@ -125,8 +125,8 @@ const RecipeManagement: React.FC = () => {
   };
 
   const filteredRecipes = recipes.filter(recipe => 
-    recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (recipe.description && recipe.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    (recipe.title?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+    (recipe.short_description?.toLowerCase().includes(searchTerm.toLowerCase()) || false)
   );
 
   return (
@@ -167,13 +167,13 @@ const RecipeManagement: React.FC = () => {
               ) : (
                 filteredRecipes.map((recipe) => (
                   <TableRow key={recipe.id}>
-                    <TableCell className="font-medium">{recipe.name}</TableCell>
+                    <TableCell className="font-medium">{recipe.title}</TableCell>
                     <TableCell>
                       <Badge variant="outline">
                         {recipe.type || 'Meal'}
                       </Badge>
                     </TableCell>
-                    <TableCell>{recipe.calories || 'N/A'}</TableCell>
+                    <TableCell>{recipe.nutrition_calories || 'N/A'}</TableCell>
                     <TableCell>
                       {recipe.is_public ? (
                         <Badge variant="outline" className="bg-green-50 text-green-700">Public</Badge>
@@ -231,7 +231,7 @@ const RecipeManagement: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Delete Recipe</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{recipeToDelete?.name}"? This action cannot be undone.
+              Are you sure you want to delete "{recipeToDelete?.title}"? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
