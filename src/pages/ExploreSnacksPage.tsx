@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, Filter, X } from 'lucide-react';
@@ -71,7 +72,7 @@ const ExploreSnacksPage = () => {
     recipe.type === 'snack' || 
     recipe.macros.calories < 400 ||
     recipe.name.toLowerCase().includes('snack') ||
-    recipe.description.toLowerCase().includes('snack')
+    (recipe.description && recipe.description.toLowerCase().includes('snack'))
   );
   
   // Effect to load initial snacks
@@ -107,7 +108,7 @@ const ExploreSnacksPage = () => {
       const filteredSnacks = snackRecipes.filter(snack => {
         // Search query filter
         if (searchQuery && !snack.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-            !snack.description.toLowerCase().includes(searchQuery.toLowerCase())) {
+            !snack.description?.toLowerCase().includes(searchQuery.toLowerCase())) {
           return false;
         }
         

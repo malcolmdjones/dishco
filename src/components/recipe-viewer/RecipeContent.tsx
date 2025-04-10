@@ -28,7 +28,7 @@ const RecipeContent: React.FC<RecipeContentProps> = ({ recipe }) => {
                   const { quantity, unit, name } = ingredient as { quantity: string, unit?: string, name: string };
                   return <li key={index}>{quantity} {unit || ''} {name}</li>;
                 } else if ('quantity' in ingredient && 'ingredient' in ingredient) {
-                  const { quantity, ingredientName } = ingredient as { quantity: string, ingredient: string };
+                  const { quantity, ingredient: ingredientName } = ingredient as { quantity: string, ingredient: string };
                   return <li key={index}>{quantity} {ingredientName}</li>;
                 }
               }
