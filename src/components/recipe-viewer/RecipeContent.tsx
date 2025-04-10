@@ -18,9 +18,23 @@ const RecipeContent: React.FC<RecipeContentProps> = ({ recipe }) => {
         <h3 className="text-lg font-semibold mb-3">Ingredients</h3>
         {recipe.ingredients && recipe.ingredients.length > 0 ? (
           <ul className="list-disc pl-5 space-y-2">
-            {recipe.ingredients.map((ingredient: string, index: number) => (
-              <li key={index}>{ingredient}</li>
-            ))}
+            {recipe.ingredients.map((ingredient, index) => {
+              // Handle both string ingredients and object ingredients
+              if (typeof ingredient === 'string') {
+                return <li key={index}>{ingredient}</li>;
+              } else if (typeof ingredient === 'object' && ingredient !== null) {
+                // Handle structured ingredient objects
+                if ('quantity' in ingredient && 'name' in ingredient) {
+                  const { quantity, unit, name } = ingredient as { quantity: string, unit?: string, name: string };
+                  return <li key={index}>{quantity} {unit || ''} {name}</li>;
+                } else if ('quantity' in ingredient && 'ingredient' in ingredient) {
+                  const { quantity, ingredient } = ingredient as { quantity: string, ingredient: string };
+                  return <li key={index}>{quantity} {ingredient}</li>;
+                }
+              }
+              // Fallback for any other format
+              return <li key={index}>{String(ingredient)}</li>;
+            })}
           </ul>
         ) : (
           <p className="text-gray-500">No ingredients listed for this recipe.</p>

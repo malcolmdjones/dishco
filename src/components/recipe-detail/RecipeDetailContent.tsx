@@ -30,9 +30,23 @@ const RecipeDetailContent: React.FC<RecipeDetailContentProps> = ({ recipe }) => 
       <div className="mb-4">
         <h3 className="font-semibold mb-2">Ingredients</h3>
         <ul className="list-disc pl-5 space-y-1">
-          {recipe.ingredients && recipe.ingredients.map((ingredient, idx) => (
-            <li key={idx} className="text-sm">{ingredient}</li>
-          ))}
+          {recipe.ingredients && recipe.ingredients.map((ingredient, idx) => {
+            // Handle both string ingredients and object ingredients
+            if (typeof ingredient === 'string') {
+              return <li key={idx} className="text-sm">{ingredient}</li>;
+            } else if (typeof ingredient === 'object' && ingredient !== null) {
+              // Handle structured ingredient objects
+              if ('quantity' in ingredient && 'name' in ingredient) {
+                const { quantity, unit, name } = ingredient as { quantity: string, unit?: string, name: string };
+                return <li key={idx} className="text-sm">{quantity} {unit || ''} {name}</li>;
+              } else if ('quantity' in ingredient && 'ingredient' in ingredient) {
+                const { quantity, ingredient: ingredientName } = ingredient as { quantity: string, ingredient: string };
+                return <li key={idx} className="text-sm">{quantity} {ingredientName}</li>;
+              }
+            }
+            // Fallback for any other format
+            return <li key={idx} className="text-sm">{String(ingredient)}</li>;
+          })}
         </ul>
       </div>
       
