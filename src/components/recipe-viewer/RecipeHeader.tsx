@@ -29,7 +29,7 @@ const RecipeHeader: React.FC<RecipeHeaderProps> = ({
       <Button
         variant="outline"
         size="icon"
-        className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm hover:bg-white"
+        className="absolute top-4 right-4 bg-white hover:bg-white"
         onClick={onClose}
       >
         <X size={18} />
@@ -37,7 +37,7 @@ const RecipeHeader: React.FC<RecipeHeaderProps> = ({
       
       {recipeType && (
         <div className="absolute top-4 left-4">
-          <span className="bg-white/80 backdrop-blur-sm text-black px-3 py-1 rounded-full text-sm font-medium">
+          <span className="bg-white text-black px-3 py-1 rounded-full text-sm font-medium">
             {recipeType.charAt(0).toUpperCase() + recipeType.slice(1)}
           </span>
         </div>
