@@ -214,7 +214,7 @@ const RecipeDiscoveryPage = () => {
       <div className="animate-fade-in">
         <h2 className="text-xl font-semibold mb-4">Liked Recipes</h2>
         {likedRecipes.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             {likedRecipes.map(recipe => (
               <motion.div 
                 key={recipe.id}
