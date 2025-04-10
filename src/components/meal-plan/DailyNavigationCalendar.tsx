@@ -48,34 +48,36 @@ const DailyNavigationCalendar: React.FC<DailyNavigationCalendarProps> = ({
         <ArrowLeft size={24} />
       </Button>
       
-      <div className={`grid grid-cols-${mealPlan.length} gap-1 flex-1 justify-center`}>
-        {mealPlan.map((day, idx) => {
-          const isCurrentDay = idx === currentDay;
-          const dayNumber = getDayNumber(day.date);
-          const dayOfWeek = getDayOfWeek(day.date);
-          const isWeekend = new Date(day.date).getDay() === 0 || new Date(day.date).getDay() === 6;
-          
-          return (
-            <button 
-              key={idx} 
-              className={`flex flex-col items-center justify-center ${isWeekend ? 'text-gray-400' : ''}`}
-              onClick={() => setCurrentDay(idx)}
-            >
-              <span className="text-xs uppercase mb-1">
-                {dayOfWeek}
-              </span>
-              <div 
-                className={`flex items-center justify-center w-10 h-10 rounded-full ${
-                  isCurrentDay 
-                    ? 'bg-primary text-white' 
-                    : 'text-gray-700'
-                }`}
+      <div className="flex-1 overflow-x-auto">
+        <div className="flex justify-center space-x-1 min-w-fit">
+          {mealPlan.map((day, idx) => {
+            const isCurrentDay = idx === currentDay;
+            const dayNumber = getDayNumber(day.date);
+            const dayOfWeek = getDayOfWeek(day.date);
+            const isWeekend = new Date(day.date).getDay() === 0 || new Date(day.date).getDay() === 6;
+            
+            return (
+              <button 
+                key={idx} 
+                className={`flex flex-col items-center justify-center ${isWeekend ? 'text-gray-400' : ''}`}
+                onClick={() => setCurrentDay(idx)}
               >
-                <span className={`text-lg ${isCurrentDay ? 'font-medium' : ''}`}>{dayNumber}</span>
-              </div>
-            </button>
-          );
-        })}
+                <span className="text-xs uppercase mb-1">
+                  {dayOfWeek}
+                </span>
+                <div 
+                  className={`flex items-center justify-center w-10 h-10 rounded-full ${
+                    isCurrentDay 
+                      ? 'bg-primary text-white' 
+                      : 'text-gray-700'
+                  }`}
+                >
+                  <span className={`text-lg ${isCurrentDay ? 'font-medium' : ''}`}>{dayNumber}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
       
       <Button 
