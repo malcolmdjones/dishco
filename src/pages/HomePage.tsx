@@ -11,6 +11,8 @@ import RecipeViewer from '@/components/RecipeViewer';
 import { CircularProgressbar } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import { cn } from '@/lib/utils';
+import { useSavedMealPlans } from '@/hooks/useSavedMealPlans';
+import WeeklyOverview from '@/components/home/WeeklyOverview';
 
 interface Meal {
   id: string;
@@ -28,6 +30,7 @@ const HomePage = () => {
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const { activePlan, getMealsForDate } = useSavedMealPlans();
   
   // State for daily nutrition
   const [dailyNutrition, setDailyNutrition] = useState({
@@ -57,10 +60,72 @@ const HomePage = () => {
       return isEqual(mealDate, selectedDateStart);
     });
     
+    // Check if there's an active meal plan with meals for this date
+    const planMeals = getMealsForDate(format(selectedDate, 'yyyy-MM-dd'));
+    const plannedMealArray: Meal[] = [];
+    
+    if (planMeals) {
+      // Add breakfast if available
+      if (planMeals.breakfast) {
+        plannedMealArray.push({
+          id: `breakfast-planned-${Date.now()}`,
+          name: planMeals.breakfast.name,
+          type: 'breakfast',
+          recipe: planMeals.breakfast,
+          consumed: false,
+          loggedAt: format(selectedDate, 'yyyy-MM-dd')
+        });
+      }
+      
+      // Add lunch if available
+      if (planMeals.lunch) {
+        plannedMealArray.push({
+          id: `lunch-planned-${Date.now()}`,
+          name: planMeals.lunch.name,
+          type: 'lunch',
+          recipe: planMeals.lunch,
+          consumed: false,
+          loggedAt: format(selectedDate, 'yyyy-MM-dd')
+        });
+      }
+      
+      // Add dinner if available
+      if (planMeals.dinner) {
+        plannedMealArray.push({
+          id: `dinner-planned-${Date.now()}`,
+          name: planMeals.dinner.name,
+          type: 'dinner',
+          recipe: planMeals.dinner,
+          consumed: false,
+          loggedAt: format(selectedDate, 'yyyy-MM-dd')
+        });
+      }
+      
+      // Add snacks if available
+      if (planMeals.snacks && planMeals.snacks.length > 0) {
+        planMeals.snacks.forEach((snack, index) => {
+          plannedMealArray.push({
+            id: `snack-planned-${index}-${Date.now()}`,
+            name: snack.name,
+            type: 'snack',
+            recipe: snack,
+            consumed: false,
+            loggedAt: format(selectedDate, 'yyyy-MM-dd')
+          });
+        });
+      }
+    }
+    
+    // Combine logged meals with planned meals from the active meal plan
+    // Prioritize logged meals (they might be marked as consumed)
     if (filteredMeals.length > 0) {
+      // We have logged meals for this date
       setTodaysMeals(filteredMeals);
+    } else if (plannedMealArray.length > 0) {
+      // We have planned meals from an active meal plan
+      setTodaysMeals(plannedMealArray);
     } else if (isToday(selectedDate)) {
-      // Fallback to default meals only if it's today and no meals are logged
+      // Default meals for today if nothing else is available
       setTodaysMeals([
         {
           id: '1',
@@ -85,13 +150,13 @@ const HomePage = () => {
         }
       ]);
     } else {
-      // Empty array for past dates with no logged meals
+      // Empty array for past dates with no logged/planned meals
       setTodaysMeals([]);
     }
     
     // Calculate nutrition for the selected date
     calculateNutritionForDate(filteredMeals);
-  }, [selectedDate]);
+  }, [selectedDate, getMealsForDate]);
 
   // Calculate nutrition values based on consumed meals for the selected date
   const calculateNutritionForDate = (meals: Meal[]) => {
@@ -312,6 +377,11 @@ const HomePage = () => {
             <ChevronRight size={18} />
           </button>
         </div>
+      </div>
+      
+      {/* Weekly Overview */}
+      <div className="mb-6">
+        <WeeklyOverview activePlan={activePlan} />
       </div>
       
       {/* Today's Nutrition with Circular Progress Bars */}

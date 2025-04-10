@@ -1,11 +1,13 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar, ArrowRight, Search } from 'lucide-react';
+import { ArrowRight, Search } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useRecipes } from '@/hooks/useRecipes';
 import MealPlanOnboarding from '@/components/meal-plan/MealPlanOnboarding';
+import { useSavedMealPlans } from '@/hooks/useSavedMealPlans';
+import WeeklyOverview from '@/components/home/WeeklyOverview';
 
 const PlanningPage = () => {
   const { toast } = useToast();
@@ -13,6 +15,7 @@ const PlanningPage = () => {
   const [loading, setLoading] = useState(false);
   const { recipes, loading: recipesLoading } = useRecipes();
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const { activePlan } = useSavedMealPlans();
   
   // Fixed image URL to avoid 404s
   const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
@@ -40,22 +43,7 @@ const PlanningPage = () => {
       ) : (
         <div className="space-y-6">
           {/* Weekly Overview */}
-          <div className="bg-white rounded-xl p-4 shadow-sm animate-slide-up">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Weekly Overview</h2>
-              <Link to="/saved-plans">
-                <Button variant="ghost" size="sm" className="text-xs">View Saved Plans</Button>
-              </Link>
-            </div>
-            <p className="text-sm text-dishco-text-light">
-              Here's a summary of your planned meals for the week.
-            </p>
-            {/* Placeholder for weekly calendar/summary */}
-            <div className="mt-4 text-center">
-              <Calendar size={48} className="mx-auto text-gray-300" />
-              <p className="text-gray-400">Coming soon: Weekly meal plan view</p>
-            </div>
-          </div>
+          <WeeklyOverview activePlan={activePlan} />
 
           {/* Generate Meal Plan Button */}
           <Button 

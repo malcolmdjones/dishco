@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,7 +27,41 @@ export const useSavedMealPlans = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<MealPlan | null>(null);
   const [isPlanDetailOpen, setIsPlanDetailOpen] = useState(false);
+  const [activePlan, setActivePlan] = useState<{plan: MealPlan, startDay: number} | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const storedActivePlan = sessionStorage.getItem('activePlan');
+    if (storedActivePlan) {
+      try {
+        const parsedPlan = JSON.parse(storedActivePlan);
+        const matchingPlan = plans.find(p => 
+          p.plan_data.days?.length === parsedPlan.days?.length && 
+          JSON.stringify(p.plan_data.days) === JSON.stringify(parsedPlan.days)
+        );
+        
+        if (matchingPlan) {
+          setActivePlan({ 
+            plan: matchingPlan, 
+            startDay: parsedPlan.startDay || 0 
+          });
+        } else {
+          setActivePlan({ 
+            plan: { 
+              id: 'active', 
+              name: 'Active Plan', 
+              created_at: new Date().toISOString(),
+              plan_data: parsedPlan
+            },
+            startDay: parsedPlan.startDay || 0
+          });
+        }
+      } catch (error) {
+        console.error('Error parsing active meal plan:', error);
+        sessionStorage.removeItem('activePlan');
+      }
+    }
+  }, [plans]);
 
   const fetchPlans = async () => {
     setIsLoading(true);
@@ -68,10 +101,18 @@ export const useSavedMealPlans = () => {
         throw error;
       }
       
-      // Update the local state to remove the deleted plan
       setPlans(prevPlans => prevPlans.filter(plan => plan.id !== id));
       
-      return true; // Return success indicator
+      if (activePlan?.plan.id === id) {
+        sessionStorage.removeItem('activePlan');
+        setActivePlan(null);
+        toast({
+          title: "Active Plan Removed",
+          description: "The deleted plan was your active plan and has been deactivated.",
+        });
+      }
+      
+      return true;
     } catch (error) {
       console.error('Error deleting meal plan:', error);
       toast({
@@ -79,7 +120,7 @@ export const useSavedMealPlans = () => {
         description: "Failed to delete the meal plan.",
         variant: "destructive"
       });
-      throw error; // Rethrow for handling in the component
+      throw error;
     }
   };
 
@@ -143,9 +184,21 @@ export const useSavedMealPlans = () => {
       startDay
     }));
     
+    setActivePlan({ plan, startDay });
+    
     toast({
       title: "Plan Activated",
       description: "This meal plan is now your active plan.",
+    });
+  };
+
+  const deactivatePlan = () => {
+    sessionStorage.removeItem('activePlan');
+    setActivePlan(null);
+    
+    toast({
+      title: "Plan Deactivated",
+      description: "You no longer have an active meal plan.",
     });
   };
 
@@ -187,6 +240,24 @@ export const useSavedMealPlans = () => {
     });
   };
 
+  const getMealsForDate = (dateString: string) => {
+    if (!activePlan || !activePlan.plan.plan_data.days) {
+      return null;
+    }
+    
+    const targetDate = new Date(dateString);
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - activePlan.startDay);
+    
+    const dayDiff = Math.floor((targetDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (dayDiff >= 0 && dayDiff < activePlan.plan.plan_data.days.length) {
+      return activePlan.plan.plan_data.days[dayDiff].meals;
+    }
+    
+    return null;
+  };
+
   useEffect(() => {
     fetchPlans();
   }, []);
@@ -201,7 +272,10 @@ export const useSavedMealPlans = () => {
     deletePlan,
     updatePlan,
     viewPlanDetails,
+    activePlan,
     activatePlan,
-    copyAndEditPlan
+    deactivatePlan,
+    copyAndEditPlan,
+    getMealsForDate
   };
 };
