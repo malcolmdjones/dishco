@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Trash2, ChevronRight, Plus, Pencil, Info } from 'lucide-react';
@@ -27,7 +28,8 @@ const SavedMealPlansPage = () => {
     updatePlan,
     viewPlanDetails,
     activatePlan,
-    copyAndEditPlan
+    copyAndEditPlan,
+    fetchPlans // Make sure to use this after delete operations
   } = useSavedMealPlans();
 
   // State for editing plan details
@@ -115,7 +117,23 @@ const SavedMealPlansPage = () => {
   const handleDeletePlan = async () => {
     if (!planToDeleteId) return;
     
-    await deletePlan(planToDeleteId);
+    try {
+      await deletePlan(planToDeleteId);
+      // After successful deletion, fetch the updated list of plans
+      await fetchPlans();
+      toast({
+        title: "Plan Deleted",
+        description: "Your meal plan has been permanently deleted.",
+      });
+    } catch (error) {
+      console.error("Error deleting plan:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete the meal plan.",
+        variant: "destructive"
+      });
+    }
+    
     setIsConfirmingDelete(false);
     setPlanToDeleteId(null);
   };

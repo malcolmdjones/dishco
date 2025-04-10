@@ -68,12 +68,10 @@ export const useSavedMealPlans = () => {
         throw error;
       }
       
+      // Update the local state to remove the deleted plan
       setPlans(prevPlans => prevPlans.filter(plan => plan.id !== id));
       
-      toast({
-        title: "Success",
-        description: "Meal plan deleted successfully.",
-      });
+      return true; // Return success indicator
     } catch (error) {
       console.error('Error deleting meal plan:', error);
       toast({
@@ -81,6 +79,7 @@ export const useSavedMealPlans = () => {
         description: "Failed to delete the meal plan.",
         variant: "destructive"
       });
+      throw error; // Rethrow for handling in the component
     }
   };
 
