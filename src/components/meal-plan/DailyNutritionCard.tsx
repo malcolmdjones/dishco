@@ -73,7 +73,7 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
           {/* Calories */}
           <div className="flex-1 flex flex-col items-center">
             <div className={cn(
-              "w-20 h-20 relative",
+              "w-16 h-16 relative",
               caloriesStatus === 'too-high' && "animate-pulse-light"
             )}>
               <CircularProgressbar 
@@ -100,7 +100,7 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
           {/* Protein */}
           <div className="flex-1 flex flex-col items-center">
             <div className={cn(
-              "w-20 h-20 relative",
+              "w-16 h-16 relative",
               proteinStatus === 'too-high' && "animate-pulse-light"
             )}>
               <CircularProgressbar 
@@ -127,7 +127,7 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
           {/* Carbs */}
           <div className="flex-1 flex flex-col items-center">
             <div className={cn(
-              "w-20 h-20 relative",
+              "w-16 h-16 relative",
               carbsStatus === 'too-high' && "animate-pulse-light"
             )}>
               <CircularProgressbar 
@@ -154,7 +154,7 @@ const DailyNutritionCard: React.FC<DailyNutritionCardProps> = ({
           {/* Fat */}
           <div className="flex-1 flex flex-col items-center">
             <div className={cn(
-              "w-20 h-20 relative",
+              "w-16 h-16 relative",
               fatStatus === 'too-high' && "animate-pulse-light"
             )}>
               <CircularProgressbar 
