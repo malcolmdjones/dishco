@@ -11,7 +11,6 @@ interface MealSectionProps {
   toggleLock: (mealType: string, index?: number) => void;
   onAddFromVault: (mealType: string, index?: number) => void;
   onMealClick: (recipe: Recipe) => void;
-  updateMeal: (mealType: string, recipe: Recipe | null, index?: number) => void;
   currentDay: number;
 }
 
@@ -22,7 +21,6 @@ const MealSection: React.FC<MealSectionProps> = ({
   toggleLock,
   onAddFromVault,
   onMealClick,
-  updateMeal,
   currentDay
 }) => {
   // Convert meals to array format for consistent handling
@@ -60,7 +58,6 @@ const MealSection: React.FC<MealSectionProps> = ({
                       toggleLock={() => toggleLock(lowerMealType, index)}
                       onAddFromVault={() => onAddFromVault(lowerMealType, index)}
                       onMealClick={onMealClick}
-                      onRemove={() => updateMeal(lowerMealType, null, index)}
                       isDraggable={true}
                     />
                   </div>
