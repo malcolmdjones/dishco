@@ -75,16 +75,18 @@ const RecipeDetail: React.FC<RecipeDetailProps> = ({
 
   return (
     <div className={`fixed inset-0 bg-black/50 z-50 flex items-center justify-center ${className}`}>
-      <div className="bg-white rounded-xl p-0 max-w-md w-full max-h-[85vh] overflow-hidden">
+      <div className="bg-white rounded-xl p-0 max-w-md w-full max-h-[85vh] overflow-hidden flex flex-col">
         <RecipeDetailHeader 
           imageUrl={imageUrl}
           recipeType={recipeType}
           onClose={onClose}
         />
         
-        <RecipeDetailContent recipe={recipe} />
+        <div className="flex-1 overflow-y-auto">
+          <RecipeDetailContent recipe={recipe} />
+        </div>
         
-        <div className="p-4">
+        <div className="p-4 border-t">
           <RecipeDetailFooter 
             isSaved={isSaved}
             loading={loading}

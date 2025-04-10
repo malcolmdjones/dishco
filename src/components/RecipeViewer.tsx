@@ -72,7 +72,7 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
 
   return (
     <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DrawerContent className="max-h-[90vh] overflow-y-auto">
+      <DrawerContent className="max-h-[85vh] overflow-hidden">
         <RecipeHeader 
           imageUrl={imageUrl}
           recipeName={recipe.name}
@@ -97,7 +97,9 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
           <DrawerDescription>{recipe.description}</DrawerDescription>
         </DrawerHeader>
 
-        <RecipeContent recipe={recipe} />
+        <div className="flex-1 overflow-y-auto px-4 pb-6">
+          <RecipeContent recipe={recipe} />
+        </div>
 
         <DrawerFooter>
           <RecipeFooter 

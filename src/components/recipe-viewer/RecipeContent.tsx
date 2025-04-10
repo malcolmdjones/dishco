@@ -9,7 +9,7 @@ interface RecipeContentProps {
 
 const RecipeContent: React.FC<RecipeContentProps> = ({ recipe }) => {
   return (
-    <div className="px-4">
+    <div>
       {/* Nutrition Information */}
       <NutritionInfo macros={recipe.macros} />
 

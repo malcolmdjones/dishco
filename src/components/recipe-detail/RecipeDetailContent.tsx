@@ -8,11 +8,11 @@ interface RecipeDetailContentProps {
 
 const RecipeDetailContent: React.FC<RecipeDetailContentProps> = ({ recipe }) => {
   return (
-    <div className="p-4">
+    <div className="p-4 pb-6">
       <h2 className="text-xl font-bold mb-2">{recipe.name}</h2>
       <p className="text-dishco-text-light mb-4">{recipe.description}</p>
       
-      <div className="flex space-x-2 mb-4">
+      <div className="flex space-x-2 mb-4 flex-wrap gap-2">
         <span className="px-2 py-1 bg-dishco-primary bg-opacity-10 rounded-md text-xs font-medium text-dishco-primary">
           {recipe.macros.calories} kcal
         </span>
