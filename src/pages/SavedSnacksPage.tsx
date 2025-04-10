@@ -7,12 +7,19 @@ import { useToast } from '@/hooks/use-toast';
 import { useRecipes } from '@/hooks/useRecipes';
 import SnackCard from '@/components/saved-snacks/SnackCard';
 import EmptySnacksState from '@/components/saved-snacks/EmptySnacksState';
+import RecipeViewer from '@/components/RecipeViewer';
+import { Recipe } from '@/data/mockData';
+import { getRecipeImage } from '@/utils/recipeUtils';
 
 const SavedSnacksPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const { recipes, loading, savedRecipeIds, toggleSaveRecipe } = useRecipes();
+  const { recipes, loading, savedRecipeIds, toggleSaveRecipe, isRecipeSaved } = useRecipes();
+  
+  // For viewing recipe details
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
   
   // Filter recipes that are snacks and saved
   const savedSnacks = recipes
@@ -30,8 +37,10 @@ const SavedSnacksPage = () => {
     });
   };
 
-  // Use consistent image
-  const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
+  const handleSnackClick = (recipe: Recipe) => {
+    setSelectedRecipe(recipe);
+    setIsRecipeViewerOpen(true);
+  };
 
   return (
     <div className="animate-fade-in">
@@ -72,20 +81,37 @@ const SavedSnacksPage = () => {
           {filteredSnacks.length > 0 ? (
             <div className="grid grid-cols-2 gap-4">
               {filteredSnacks.map((snack) => (
-                <SnackCard 
-                  key={snack.id}
-                  id={snack.id}
-                  name={snack.name}
-                  imageSrc={snack.imageSrc || imageUrl}
-                  calories={snack.macros.calories}
-                  onRemove={handleRemoveFavorite}
-                />
+                <div key={snack.id} onClick={() => handleSnackClick(snack)}>
+                  <SnackCard 
+                    id={snack.id}
+                    name={snack.name}
+                    imageSrc={getRecipeImage(snack.imageSrc)}
+                    calories={snack.macros.calories}
+                    onRemove={(id) => {
+                      // Don't propagate the click to the parent when removing
+                      handleRemoveFavorite(id);
+                    }}
+                  />
+                </div>
               ))}
             </div>
           ) : (
             <EmptySnacksState />
           )}
         </>
+      )}
+      
+      {/* Recipe Viewer */}
+      {selectedRecipe && (
+        <RecipeViewer
+          recipe={selectedRecipe}
+          isOpen={isRecipeViewerOpen}
+          onClose={() => setIsRecipeViewerOpen(false)}
+          onToggleSave={async (recipeId, isSaved) => {
+            await toggleSaveRecipe(recipeId);
+          }}
+          isSaved={selectedRecipe ? isRecipeSaved(selectedRecipe.id) : false}
+        />
       )}
     </div>
   );

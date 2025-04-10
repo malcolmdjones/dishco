@@ -5,6 +5,7 @@ import { Heart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Recipe } from '@/data/mockData';
 import { useRecipes } from '@/hooks/useRecipes';
+import { getRecipeImage } from '@/utils/recipeUtils';
 
 // Import the new components
 import RecipeHeader from './recipe-viewer/RecipeHeader';
@@ -66,8 +67,8 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
     }
   };
 
-  // Use a consistent image
-  const imageUrl = recipe.imageSrc || "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
+  // Use consistent image handling
+  const imageUrl = getRecipeImage(recipe.imageSrc);
 
   return (
     <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>

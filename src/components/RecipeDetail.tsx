@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRecipes } from '@/hooks/useRecipes';
+import { getRecipeImage } from '@/utils/recipeUtils';
 
 import RecipeDetailHeader from './recipe-detail/RecipeDetailHeader';
 import RecipeDetailContent from './recipe-detail/RecipeDetailContent';
@@ -70,7 +71,7 @@ const RecipeDetail: React.FC<RecipeDetailProps> = ({
   }
 
   const recipeType = recipe.type || 'homemade';
-  const imageUrl = recipe.imageSrc || "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
+  const imageUrl = getRecipeImage(recipe.imageSrc);
 
   return (
     <div className={`fixed inset-0 bg-black/50 z-50 flex items-center justify-center ${className}`}>

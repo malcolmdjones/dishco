@@ -20,7 +20,10 @@ const SnackCard = ({ id, name, imageSrc, calories, onRemove }: SnackCardProps) =
         />
         <button 
           className="absolute top-2 right-2 bg-white rounded-full p-1.5 shadow-md"
-          onClick={() => onRemove(id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove(id);
+          }}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 5L5 19M5 5l14 14"/>

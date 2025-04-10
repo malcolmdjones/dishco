@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, Filter, X } from 'lucide-react';
@@ -25,6 +24,7 @@ import { Label } from '@/components/ui/label';
 import RecipeViewer from '@/components/RecipeViewer';
 import { useRecipes } from '@/hooks/useRecipes';
 import { Recipe } from '@/data/mockData';
+import { getRecipeImage } from '@/utils/recipeUtils';
 
 // Define filter types
 type PriceRange = '$' | '$$' | '$$$';
@@ -44,7 +44,7 @@ interface Filters {
 
 const ExploreSnacksPage = () => {
   const navigate = useNavigate();
-  const { recipes, loading } = useRecipes();
+  const { recipes, loading, isRecipeSaved, toggleSaveRecipe } = useRecipes();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
@@ -111,8 +111,24 @@ const ExploreSnacksPage = () => {
           return false;
         }
         
-        // Other filters would be implemented here in a real app
-        // This is a placeholder for future implementation
+        // Apply other filters if they are selected
+        if (filters.calories.length > 0) {
+          // Simple calorie filtering example
+          const calories = snack.macros.calories;
+          const inRange = filters.calories.some(range => {
+            if (range === '0-100') return calories >= 0 && calories <= 100;
+            if (range === '100-200') return calories > 100 && calories <= 200;
+            if (range === '200-300') return calories > 200 && calories <= 300;
+            if (range === '300-400') return calories > 300 && calories <= 400;
+            if (range === '400+') return calories > 400;
+            return false;
+          });
+          
+          if (!inRange) return false;
+        }
+        
+        // Other filters would be implemented similarly
+        // This is a simplified implementation
         
         return true;
       });
@@ -183,9 +199,6 @@ const ExploreSnacksPage = () => {
     });
   };
 
-  // Fixed image URL to avoid 404s
-  const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
-  
   return (
     <div className="pb-20 animate-fade-in">
       {/* Header */}
@@ -380,8 +393,6 @@ const ExploreSnacksPage = () => {
             </Button>
           ))}
           
-          {/* Add more active filter displays as needed */}
-          
           {activeFilterCount > 3 && (
             <Popover>
               <PopoverTrigger asChild>
@@ -425,7 +436,7 @@ const ExploreSnacksPage = () => {
           >
             <div className="aspect-square bg-gray-100 overflow-hidden">
               <img 
-                src={snack.imageSrc || imageUrl} 
+                src={getRecipeImage(snack.imageSrc)} 
                 alt={snack.name} 
                 className="w-full h-full object-cover"
               />
@@ -444,7 +455,6 @@ const ExploreSnacksPage = () => {
                 <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-800 rounded">
                   {snack.type === 'snack' ? 'Healthy Snack' : snack.type}
                 </span>
-                {/* Additional tags would go here */}
               </div>
             </div>
           </div>
@@ -485,6 +495,10 @@ const ExploreSnacksPage = () => {
           recipe={selectedRecipe}
           isOpen={isRecipeViewerOpen}
           onClose={() => setIsRecipeViewerOpen(false)}
+          onToggleSave={async (recipeId, isSaved) => {
+            await toggleSaveRecipe(recipeId);
+          }}
+          isSaved={selectedRecipe ? isRecipeSaved(selectedRecipe.id) : false}
         />
       )}
     </div>

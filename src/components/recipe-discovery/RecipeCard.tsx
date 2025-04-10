@@ -2,6 +2,7 @@
 import React from 'react';
 import { Recipe } from '@/data/mockData';
 import { CookingPot, Heart, Clock, Users } from 'lucide-react';
+import { getRecipeImage } from '@/utils/recipeUtils';
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -14,7 +15,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onToggleSave, isSaved =
     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
       <div className="relative h-80">
         <img 
-          src={recipe.imageSrc || "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"} 
+          src={getRecipeImage(recipe.imageSrc)} 
           alt={recipe.name} 
           className="w-full h-full object-cover"
         />

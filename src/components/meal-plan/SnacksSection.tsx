@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Lock, Unlock, Info } from 'lucide-react';
 import { Recipe } from '@/data/mockData';
 import { Draggable } from '@hello-pangea/dnd';
+import { getRecipeImage } from '@/utils/recipeUtils';
 
 interface SnacksSectionProps {
   snacks: (Recipe | null)[];
@@ -25,8 +26,6 @@ const SnacksSection: React.FC<SnacksSectionProps> = ({
   isDraggable = false,
   currentDay = 0
 }) => {
-  const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
-
   return (
     <div className="mb-6">
       <h3 className="font-medium text-lg mb-2">Snacks</h3>
@@ -57,7 +56,7 @@ const SnacksSection: React.FC<SnacksSectionProps> = ({
                       >
                         <div className="relative h-32 bg-gray-100">
                           <img 
-                            src={imageUrl} 
+                            src={getRecipeImage(snack.imageSrc)} 
                             alt={snack.name} 
                             className="w-full h-full object-cover"
                           />
@@ -132,7 +131,7 @@ const SnacksSection: React.FC<SnacksSectionProps> = ({
                   >
                     <div className="relative h-32 bg-gray-100">
                       <img 
-                        src={imageUrl} 
+                        src={getRecipeImage(snack.imageSrc)} 
                         alt={snack.name} 
                         className="w-full h-full object-cover"
                       />

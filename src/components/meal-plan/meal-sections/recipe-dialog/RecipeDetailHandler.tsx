@@ -3,6 +3,7 @@ import React from 'react';
 import { Recipe } from '@/data/mockData';
 import RecipeDetail from '@/components/RecipeDetail';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { useRecipes } from '@/hooks/useRecipes';
 
 interface RecipeDetailHandlerProps {
   selectedRecipe: Recipe | null;
@@ -17,6 +18,8 @@ const RecipeDetailHandler: React.FC<RecipeDetailHandlerProps> = ({
   handleCloseRecipeDetail,
   handleToggleSave
 }) => {
+  const { isRecipeSaved } = useRecipes();
+  
   if (!selectedRecipe || !isRecipeDetailOpen) return null;
   
   return (
@@ -28,6 +31,7 @@ const RecipeDetailHandler: React.FC<RecipeDetailHandlerProps> = ({
           recipeId={selectedRecipe.id}
           onClose={handleCloseRecipeDetail}
           onToggleSave={handleToggleSave}
+          isSaved={isRecipeSaved(selectedRecipe.id)}
         />
       </DialogContent>
     </Dialog>

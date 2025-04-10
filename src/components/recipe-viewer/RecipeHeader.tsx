@@ -1,12 +1,12 @@
 
 import React from 'react';
 import { X } from 'lucide-react';
-import Badge from '@/components/Badge';
+import { Button } from '@/components/ui/button';
 
 interface RecipeHeaderProps {
   imageUrl: string;
-  recipeName: string | undefined;
-  recipeType: string | undefined;
+  recipeName: string;
+  recipeType?: string;
   onClose: () => void;
 }
 
@@ -17,24 +17,29 @@ const RecipeHeader: React.FC<RecipeHeaderProps> = ({
   onClose
 }) => {
   return (
-    <div className="h-48 w-full overflow-hidden relative">
-      <img 
-        src={imageUrl} 
-        alt={recipeName} 
-        className="w-full h-full object-cover"
-      />
-      <button 
-        className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md"
+    <div className="relative">
+      <div className="w-full h-64 overflow-hidden">
+        <img 
+          src={imageUrl}
+          alt={recipeName}
+          className="w-full h-full object-cover"
+        />
+      </div>
+      
+      <Button
+        variant="outline"
+        size="icon"
+        className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm hover:bg-white"
         onClick={onClose}
       >
         <X size={18} />
-      </button>
+      </Button>
+      
       {recipeType && (
-        <div className="absolute top-3 left-3">
-          <Badge 
-            text={recipeType.charAt(0).toUpperCase() + recipeType.slice(1)} 
-            variant={recipeType as any}
-          />
+        <div className="absolute top-4 left-4">
+          <span className="bg-white/80 backdrop-blur-sm text-black px-3 py-1 rounded-full text-sm font-medium">
+            {recipeType.charAt(0).toUpperCase() + recipeType.slice(1)}
+          </span>
         </div>
       )}
     </div>

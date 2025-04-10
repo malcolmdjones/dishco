@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Heart, X, Filter } from 'lucide-react';
@@ -9,6 +8,21 @@ import { useRecipePreferences } from '@/hooks/useRecipePreferences';
 import { Button } from '@/components/ui/button';
 import RecipeCard from '@/components/recipe-discovery/RecipeCard';
 import { Recipe } from '@/data/mockData';
+import RecipeViewer from '@/components/RecipeViewer';
+import { getRecipeImage } from '@/utils/recipeUtils';
+import { 
+  Sheet, 
+  SheetClose, 
+  SheetContent, 
+  SheetDescription, 
+  SheetFooter, 
+  SheetHeader, 
+  SheetTitle, 
+  SheetTrigger 
+} from "@/components/ui/sheet";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 
 const RecipeDiscoveryPage = () => {
   const navigate = useNavigate();
@@ -21,7 +35,15 @@ const RecipeDiscoveryPage = () => {
   const [likedRecipes, setLikedRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Motion values for dragging - declare ALL motion hooks unconditionally at the top level
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
+  
+  const [activeFilters, setActiveFilters] = useState({
+    mealType: [] as string[],
+    cookTime: [] as string[],
+    calories: [] as string[],
+  });
+  
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-30, 30]);
   const cardOpacity = useTransform(x, [-200, 0, 200], [0.5, 1, 0.5]);
@@ -29,22 +51,62 @@ const RecipeDiscoveryPage = () => {
   const nopeScale = useTransform(x, [-150, 0], [1.5, 0.5]);
   const controls = useAnimation();
 
-  // Refs for indicators
   const likeIndicatorRef = useRef<HTMLDivElement>(null);
   const nopeIndicatorRef = useRef<HTMLDivElement>(null);
 
+  const applyFilters = useCallback((recipesList: Recipe[]) => {
+    return recipesList.filter(recipe => {
+      if (activeFilters.mealType.length > 0 && 
+          !activeFilters.mealType.includes(recipe.type)) {
+        return false;
+      }
+      
+      if (activeFilters.cookTime.length > 0) {
+        const cookTime = recipe.cookTime;
+        let timeMatch = false;
+        
+        for (const timeRange of activeFilters.cookTime) {
+          if (timeRange === 'under15' && cookTime <= 15) timeMatch = true;
+          if (timeRange === '15to30' && cookTime > 15 && cookTime <= 30) timeMatch = true;
+          if (timeRange === '30to60' && cookTime > 30 && cookTime <= 60) timeMatch = true;
+          if (timeRange === 'over60' && cookTime > 60) timeMatch = true;
+        }
+        
+        if (!timeMatch) return false;
+      }
+      
+      if (activeFilters.calories.length > 0) {
+        const calories = recipe.macros.calories;
+        let calorieMatch = false;
+        
+        for (const calorieRange of activeFilters.calories) {
+          if (calorieRange === 'under300' && calories <= 300) calorieMatch = true;
+          if (calorieRange === '300to500' && calories > 300 && calories <= 500) calorieMatch = true;
+          if (calorieRange === '500to800' && calories > 500 && calories <= 800) calorieMatch = true;
+          if (calorieRange === 'over800' && calories > 800) calorieMatch = true;
+        }
+        
+        if (!calorieMatch) return false;
+      }
+      
+      return true;
+    });
+  }, [activeFilters]);
+
   useEffect(() => {
     if (recipes.length > 0) {
-      const shuffled = [...recipes].sort(() => Math.random() - 0.5);
+      const filteredRecipes = applyFilters(recipes);
+      const shuffled = [...filteredRecipes].sort(() => Math.random() - 0.5);
       setShuffledRecipes(shuffled);
       setLoading(false);
     }
-  }, [recipes]);
+  }, [recipes, applyFilters]);
 
   useEffect(() => {
     const liked = recipes.filter(recipe => likedRecipeIds.includes(recipe.id));
-    setLikedRecipes(liked);
-  }, [recipes, likedRecipeIds]);
+    const filteredLiked = applyFilters(liked);
+    setLikedRecipes(filteredLiked);
+  }, [recipes, likedRecipeIds, applyFilters]);
 
   const currentRecipe = shuffledRecipes[currentIndex];
   const isFinished = currentIndex >= shuffledRecipes.length;
@@ -106,7 +168,37 @@ const RecipeDiscoveryPage = () => {
     });
   }, [setRecipePreference, toast]);
 
-  // Loading state component
+  const handleViewRecipe = (recipe: Recipe) => {
+    setSelectedRecipe(recipe);
+    setIsRecipeViewerOpen(true);
+  };
+
+  const toggleFilter = (category: keyof typeof activeFilters, value: string) => {
+    setActiveFilters(prev => {
+      const values = prev[category];
+      return {
+        ...prev,
+        [category]: values.includes(value)
+          ? values.filter(v => v !== value)
+          : [...values, value]
+      };
+    });
+  };
+
+  const resetFilters = () => {
+    setActiveFilters({
+      mealType: [],
+      cookTime: [],
+      calories: [],
+    });
+    
+    if (recipes.length > 0) {
+      const shuffled = [...recipes].sort(() => Math.random() - 0.5);
+      setShuffledRecipes(shuffled);
+      setCurrentIndex(0);
+    }
+  };
+
   const LoadingState = () => (
     <div className="min-h-screen flex items-center justify-center">
       <div className="animate-pulse flex flex-col items-center">
@@ -117,7 +209,6 @@ const RecipeDiscoveryPage = () => {
     </div>
   );
 
-  // Render liked recipes section
   const LikedRecipesSection = () => {
     return (
       <div className="animate-fade-in">
@@ -135,11 +226,11 @@ const RecipeDiscoveryPage = () => {
               >
                 <div 
                   className="bg-white rounded-xl shadow-md overflow-hidden cursor-pointer"
-                  onClick={() => {}} // We'll implement recipe detail view later
+                  onClick={() => handleViewRecipe(recipe)}
                 >
                   <div className="relative h-48">
                     <img 
-                      src={recipe.imageSrc} 
+                      src={getRecipeImage(recipe.imageSrc)} 
                       alt={recipe.name} 
                       className="w-full h-full object-cover"
                     />
@@ -206,7 +297,6 @@ const RecipeDiscoveryPage = () => {
     );
   };
 
-  // Render finished state component
   const FinishedState = () => (
     <div className="text-center">
       <h2 className="text-2xl font-bold mb-4">No more recipes!</h2>
@@ -232,7 +322,6 @@ const RecipeDiscoveryPage = () => {
     </div>
   );
 
-  // Render active swiping card component
   const SwipeCard = () => (
     <>
       <div className="relative w-full max-w-md mx-auto mb-6">
@@ -300,7 +389,6 @@ const RecipeDiscoveryPage = () => {
     </>
   );
 
-  // Recipe swiper content component
   const RecipeSwiperContent = () => {
     if (isFinished) {
       return <FinishedState />;
@@ -309,10 +397,17 @@ const RecipeDiscoveryPage = () => {
   };
 
   if (loading || recipesLoading) {
-    return <LoadingState />;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse flex flex-col items-center">
+          <div className="w-16 h-16 bg-gray-200 rounded-full mb-4"></div>
+          <div className="h-4 w-32 bg-gray-200 rounded mb-2"></div>
+          <div className="h-3 w-24 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
   }
 
-  // Main render function
   return (
     <div className="min-h-screen pb-16 animate-fade-in">
       <div className="fixed top-0 left-0 right-0 z-10 bg-white bg-opacity-90 backdrop-blur-sm p-4 flex items-center justify-between">
@@ -337,14 +432,115 @@ const RecipeDiscoveryPage = () => {
             <Heart size={16} fill={showLiked ? "white" : "transparent"} />
             {likedRecipes.length}
           </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1"
-          >
-            <Filter size={16} />
-            Filters
-          </Button>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-1"
+              >
+                <Filter size={16} />
+                Filters
+                {Object.values(activeFilters).some(arr => arr.length > 0) && (
+                  <span className="ml-1 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                    {Object.values(activeFilters).reduce((sum, arr) => sum + arr.length, 0)}
+                  </span>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>Filter Recipes</SheetTitle>
+                <SheetDescription>
+                  Customize your recipe discovery experience
+                </SheetDescription>
+              </SheetHeader>
+              
+              <div className="py-4 space-y-6">
+                <div>
+                  <h3 className="font-medium mb-2">Meal Type</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['breakfast', 'lunch', 'dinner', 'snack', 'dessert'].map(type => (
+                      <div key={type} className="flex items-center gap-2">
+                        <Checkbox 
+                          id={`type-${type}`}
+                          checked={activeFilters.mealType.includes(type)}
+                          onCheckedChange={() => toggleFilter('mealType', type)}
+                        />
+                        <Label htmlFor={`type-${type}`}>
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div>
+                  <h3 className="font-medium mb-2">Cook Time</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: 'under15', label: 'Under 15 mins' },
+                      { id: '15to30', label: '15-30 mins' },
+                      { id: '30to60', label: '30-60 mins' },
+                      { id: 'over60', label: 'Over 60 mins' }
+                    ].map(time => (
+                      <div key={time.id} className="flex items-center gap-2">
+                        <Checkbox 
+                          id={`time-${time.id}`}
+                          checked={activeFilters.cookTime.includes(time.id)}
+                          onCheckedChange={() => toggleFilter('cookTime', time.id)}
+                        />
+                        <Label htmlFor={`time-${time.id}`}>{time.label}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div>
+                  <h3 className="font-medium mb-2">Calories</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: 'under300', label: 'Under 300' },
+                      { id: '300to500', label: '300-500' },
+                      { id: '500to800', label: '500-800' },
+                      { id: 'over800', label: 'Over 800' }
+                    ].map(cal => (
+                      <div key={cal.id} className="flex items-center gap-2">
+                        <Checkbox 
+                          id={`cal-${cal.id}`}
+                          checked={activeFilters.calories.includes(cal.id)}
+                          onCheckedChange={() => toggleFilter('calories', cal.id)}
+                        />
+                        <Label htmlFor={`cal-${cal.id}`}>{cal.label}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              <SheetFooter className="mt-4">
+                <Button variant="outline" onClick={resetFilters}>
+                  Reset Filters
+                </Button>
+                <SheetClose asChild>
+                  <Button onClick={() => {
+                    if (recipes.length > 0) {
+                      const filteredRecipes = applyFilters(recipes);
+                      const shuffled = [...filteredRecipes].sort(() => Math.random() - 0.5);
+                      setShuffledRecipes(shuffled);
+                      setCurrentIndex(0);
+                    }
+                  }}>
+                    Apply Filters
+                  </Button>
+                </SheetClose>
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
 
@@ -353,6 +549,18 @@ const RecipeDiscoveryPage = () => {
           {showLiked ? <LikedRecipesSection /> : <RecipeSwiperContent />}
         </div>
       </div>
+      
+      {selectedRecipe && (
+        <RecipeViewer
+          recipe={selectedRecipe}
+          isOpen={isRecipeViewerOpen}
+          onClose={() => setIsRecipeViewerOpen(false)}
+          onToggleSave={async (recipeId, isSaved) => {
+            await toggleSaveRecipe(recipeId);
+          }}
+          isSaved={selectedRecipe ? isRecipeSaved(selectedRecipe.id) : false}
+        />
+      )}
     </div>
   );
 };
