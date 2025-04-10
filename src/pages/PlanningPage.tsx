@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Search } from 'lucide-react';
@@ -42,7 +41,7 @@ const PlanningPage = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Weekly Overview */}
+          {/* Weekly Overview - keeping this on the planning page */}
           <WeeklyOverview activePlan={activePlan} />
 
           {/* Generate Meal Plan Button */}

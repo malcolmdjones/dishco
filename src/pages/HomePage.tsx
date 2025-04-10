@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -12,7 +11,6 @@ import { CircularProgressbar } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import { cn } from '@/lib/utils';
 import { useSavedMealPlans } from '@/hooks/useSavedMealPlans';
-import WeeklyOverview from '@/components/home/WeeklyOverview';
 
 interface Meal {
   id: string;
@@ -32,7 +30,6 @@ const HomePage = () => {
   const [isSaved, setIsSaved] = useState(false);
   const { activePlan, getMealsForDate } = useSavedMealPlans();
   
-  // State for daily nutrition
   const [dailyNutrition, setDailyNutrition] = useState({
     calories: 0,
     totalCalories: defaultGoals.calories,
@@ -44,15 +41,11 @@ const HomePage = () => {
     totalFat: defaultGoals.fat
   });
   
-  // State for today's meals
   const [todaysMeals, setTodaysMeals] = useState<Meal[]>([]);
 
-  // Load and filter meals based on selected date
   useEffect(() => {
-    // Get logged meals from localStorage
     const storedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
     
-    // Filter meals for the selected date
     const selectedDateStart = startOfDay(selectedDate);
     const filteredMeals = storedMeals.filter((meal: Meal) => {
       if (!meal.loggedAt) return false;
@@ -60,12 +53,10 @@ const HomePage = () => {
       return isEqual(mealDate, selectedDateStart);
     });
     
-    // Check if there's an active meal plan with meals for this date
     const planMeals = getMealsForDate(format(selectedDate, 'yyyy-MM-dd'));
     const plannedMealArray: Meal[] = [];
     
     if (planMeals) {
-      // Add breakfast if available
       if (planMeals.breakfast) {
         plannedMealArray.push({
           id: `breakfast-planned-${Date.now()}`,
@@ -77,7 +68,6 @@ const HomePage = () => {
         });
       }
       
-      // Add lunch if available
       if (planMeals.lunch) {
         plannedMealArray.push({
           id: `lunch-planned-${Date.now()}`,
@@ -89,7 +79,6 @@ const HomePage = () => {
         });
       }
       
-      // Add dinner if available
       if (planMeals.dinner) {
         plannedMealArray.push({
           id: `dinner-planned-${Date.now()}`,
@@ -101,7 +90,6 @@ const HomePage = () => {
         });
       }
       
-      // Add snacks if available
       if (planMeals.snacks && planMeals.snacks.length > 0) {
         planMeals.snacks.forEach((snack, index) => {
           plannedMealArray.push({
@@ -116,16 +104,11 @@ const HomePage = () => {
       }
     }
     
-    // Combine logged meals with planned meals from the active meal plan
-    // Prioritize logged meals (they might be marked as consumed)
     if (filteredMeals.length > 0) {
-      // We have logged meals for this date
       setTodaysMeals(filteredMeals);
     } else if (plannedMealArray.length > 0) {
-      // We have planned meals from an active meal plan
       setTodaysMeals(plannedMealArray);
     } else if (isToday(selectedDate)) {
-      // Default meals for today if nothing else is available
       setTodaysMeals([
         {
           id: '1',
@@ -150,15 +133,12 @@ const HomePage = () => {
         }
       ]);
     } else {
-      // Empty array for past dates with no logged/planned meals
       setTodaysMeals([]);
     }
     
-    // Calculate nutrition for the selected date
     calculateNutritionForDate(filteredMeals);
   }, [selectedDate, getMealsForDate]);
 
-  // Calculate nutrition values based on consumed meals for the selected date
   const calculateNutritionForDate = (meals: Meal[]) => {
     const consumedMeals = meals.filter(meal => meal.consumed);
     
@@ -185,81 +165,64 @@ const HomePage = () => {
     }));
   };
 
-  // Reset nutrition at midnight
   useEffect(() => {
-    // First, check if we should reset based on stored date
     const lastResetDate = localStorage.getItem('lastNutritionResetDate');
     const today = new Date().toDateString();
     
     if (lastResetDate !== today) {
-      // No need to reset the display values as they're now calculated per selected date
-      // We just need to update the reset date
       localStorage.setItem('lastNutritionResetDate', today);
     }
     
-    // Set up the next day reset
     const checkForNewDay = () => {
       const now = new Date();
       const hours = now.getHours();
       const minutes = now.getMinutes();
       
       if (hours === 0 && minutes === 0) {
-        // Store current date as reset date
         localStorage.setItem('lastNutritionResetDate', now.toDateString());
       }
     };
     
-    // Check every minute
     const interval = setInterval(checkForNewDay, 60000);
     
     return () => clearInterval(interval);
   }, []);
-  
-  // Function to go to previous day
+
   const goToPreviousDay = () => {
     setSelectedDate(prevDate => subDays(prevDate, 1));
   };
-  
-  // Function to go to next day
+
   const goToNextDay = () => {
     setSelectedDate(prevDate => addDays(prevDate, 1));
   };
-  
-  // Function to reset to today
+
   const goToToday = () => {
     setSelectedDate(new Date());
   };
-  
-  // Open recipe viewer
+
   const handleOpenRecipe = (recipe: Recipe) => {
     setSelectedRecipe(recipe);
     setIsRecipeViewerOpen(true);
   };
-  
-  // Handle toggle save recipe (placeholder)
+
   const handleToggleSave = async (recipeId: string, currentlySaved: boolean) => {
     setIsSaved(!currentlySaved);
     return Promise.resolve();
   };
-  
-  // Function to toggle meal consumption
+
   const handleToggleConsumed = (meal: Meal) => {
-    // Update the meal in the current view
     const updatedTodaysMeals = todaysMeals.map(m => 
       m.id === meal.id ? { ...m, consumed: !m.consumed } : m
     );
     setTodaysMeals(updatedTodaysMeals);
     
-    // Update the meal in localStorage
     const storedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
     const updatedStoredMeals = storedMeals.map((m: Meal) => 
       m.id === meal.id ? { ...m, consumed: !m.consumed } : m
     );
     localStorage.setItem('loggedMeals', JSON.stringify(updatedStoredMeals));
     
-    // Update nutrition based on whether meal was consumed or unconsumed
     if (!meal.consumed) {
-      // Add nutrition values
       const updatedNutrition = {
         calories: dailyNutrition.calories + meal.recipe.macros.calories,
         protein: dailyNutrition.protein + meal.recipe.macros.protein,
@@ -277,7 +240,6 @@ const HomePage = () => {
         description: `${meal.name} has been marked as consumed.`
       });
     } else {
-      // Subtract nutrition values
       const updatedNutrition = {
         calories: Math.max(0, dailyNutrition.calories - meal.recipe.macros.calories),
         protein: Math.max(0, dailyNutrition.protein - meal.recipe.macros.protein),
@@ -296,13 +258,11 @@ const HomePage = () => {
       });
     }
   };
-  
-  // Helper function to determine if a macro target is met (within thresholds)
+
   const getMacroStatus = (type: 'calories' | 'protein' | 'carbs' | 'fat') => {
     const value = dailyNutrition[type];
     const target = dailyNutrition[`total${type.charAt(0).toUpperCase() + type.slice(1)}`];
     
-    // Define thresholds based on macro type
     const thresholds = {
       calories: { lower: 10, upper: 60 },
       protein: { lower: 5, upper: 5 },
@@ -310,7 +270,6 @@ const HomePage = () => {
       fat: { lower: 5, upper: 5 }
     };
     
-    // Check if value is within target range (inclusive of thresholds)
     if (value >= target - thresholds[type].lower && value <= target + thresholds[type].upper) {
       return 'target-met';
     } else if (value > target + thresholds[type].upper) {
@@ -320,15 +279,12 @@ const HomePage = () => {
     }
   };
 
-  // Check if selected date is today
   const isSelectedDateToday = isToday(selectedDate);
 
-  // Format meal type
   const formatMealType = (type: string) => {
     return type.charAt(0).toUpperCase() + type.slice(1);
   };
 
-  // Macro colors for circular progressbars
   const macroColors = {
     calories: "#FFF4D7",
     protein: "#DBE9FE",
@@ -336,7 +292,6 @@ const HomePage = () => {
     fat: "#F3E8FF"
   };
 
-  // Always use the provided Unsplash image instead of possibly broken imageUrl
   const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
   return (
@@ -346,7 +301,6 @@ const HomePage = () => {
         <p className="text-dishco-text-light">Track your meals and plan for the week</p>
       </header>
       
-      {/* Date selector */}
       <div className="bg-white rounded-xl p-4 mb-6 shadow-sm">
         <div className="flex items-center justify-between">
           <button onClick={goToPreviousDay} className="p-2 hover:bg-gray-100 rounded-full">
@@ -379,12 +333,6 @@ const HomePage = () => {
         </div>
       </div>
       
-      {/* Weekly Overview */}
-      <div className="mb-6">
-        <WeeklyOverview activePlan={activePlan} />
-      </div>
-      
-      {/* Today's Nutrition with Circular Progress Bars */}
       <div className="bg-white rounded-xl p-4 mb-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Today's Nutrition</h2>
@@ -394,7 +342,6 @@ const HomePage = () => {
         </div>
         
         <div className="flex justify-between items-center">
-          {/* Calories */}
           <div className="flex-1 flex flex-col items-center">
             <div className={cn(
               "w-16 h-16 relative",
@@ -421,7 +368,6 @@ const HomePage = () => {
             </span>
           </div>
           
-          {/* Protein */}
           <div className="flex-1 flex flex-col items-center">
             <div className={cn(
               "w-16 h-16 relative",
@@ -448,7 +394,6 @@ const HomePage = () => {
             </span>
           </div>
           
-          {/* Carbs */}
           <div className="flex-1 flex flex-col items-center">
             <div className={cn(
               "w-16 h-16 relative",
@@ -475,7 +420,6 @@ const HomePage = () => {
             </span>
           </div>
           
-          {/* Fat */}
           <div className="flex-1 flex flex-col items-center">
             <div className={cn(
               "w-16 h-16 relative",
@@ -504,7 +448,6 @@ const HomePage = () => {
         </div>
       </div>
       
-      {/* Today's Meals */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Today's Meals</h2>
@@ -585,7 +528,6 @@ const HomePage = () => {
         </div>
       </div>
       
-      {/* Recipe Viewer */}
       {selectedRecipe && (
         <RecipeViewer
           recipe={selectedRecipe}
