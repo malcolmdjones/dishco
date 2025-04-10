@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Recipe } from '@/data/mockData';
 import MealCard from '@/components/meal-plan/MealCard';
@@ -22,16 +23,8 @@ const MealSection: React.FC<MealSectionProps> = ({
   onMealClick,
   currentDay
 }) => {
-  // For "snacks" type, we'll only use the first item in the array
-  let mealArray;
-  if (mealType.toLowerCase() === 'snacks') {
-    // If meals is an array, take only the first item
-    mealArray = Array.isArray(meals) ? [meals[0]] : (meals ? [meals] : [null]);
-  } else {
-    // For other meal types, keep existing behavior
-    mealArray = Array.isArray(meals) ? meals : (meals ? [meals] : [null]);
-  }
-  
+  // Convert meals to array format for consistent handling
+  const mealArray = Array.isArray(meals) ? meals : (meals ? [meals] : [null]);
   const lowerMealType = mealType.toLowerCase();
   
   return (

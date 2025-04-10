@@ -117,25 +117,24 @@ export const useMealGeneration = ({
           newMeals.dinner = updatedDinner;
         }
         
-        // Handle snacks
-        const newSnacks = [...(newMeals.snacks || [null, null])];
-        
-        // Only replace snack 0 if not locked
-        if (!lockedMeals[`${currentDay}-snack-0`]) {
-          newSnacks[0] = snackRecipes[Math.floor(Math.random() * snackRecipes.length)];
+        // Handle snacks - Fixed to properly handle snacks array
+        if (Array.isArray(newMeals.snacks)) {
+          let updatedSnacks = [...newMeals.snacks];
+          
+          // Keep only locked snack items
+          updatedSnacks = updatedSnacks.filter((meal, index) => 
+            lockedMeals[`${currentDay}-snack-${index}`]
+          );
+          
+          // Add a random snack if empty (all were unlocked)
+          if (updatedSnacks.length === 0) {
+            const randomSnack = snackRecipes[Math.floor(Math.random() * snackRecipes.length)];
+            updatedSnacks.push(randomSnack);
+          }
+          
+          newMeals.snacks = updatedSnacks;
         }
         
-        // Only replace snack 1 if not locked
-        if (!lockedMeals[`${currentDay}-snack-1`]) {
-          newSnacks[1] = snackRecipes[Math.floor(Math.random() * snackRecipes.length)];
-        }
-        
-        // Ensure we have at least 2 snack slots
-        while (newSnacks.length < 2) {
-          newSnacks.push(null);
-        }
-        
-        newMeals.snacks = newSnacks;
         currentPlanDay.meals = newMeals;
         newPlan[currentDay] = currentPlanDay;
         

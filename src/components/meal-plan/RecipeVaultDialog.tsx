@@ -9,9 +9,10 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { CookingPot, Zap, Blend, Search, Filter, Plus } from 'lucide-react';
+import { CookingPot, Zap, Blend, Search, Plus } from 'lucide-react';
 import { Recipe } from '@/data/mockData';
 import { useRecipes } from '@/hooks/useRecipes';
+import { getRecipeImage } from '@/utils/recipeUtils';
 
 interface RecipeVaultDialogProps {
   isOpen: boolean;
@@ -33,16 +34,14 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
   const [selectedType, setSelectedType] = useState<string | null>(null);
   
   const { recipes, loading } = useRecipes();
-  
-  // Fixed image URL to avoid 404s
-  const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
   // Set initial filter based on target meal type
   useEffect(() => {
     if (mealType && isOpen) {
       // Convert mealType to recipe type format
       let type = mealType.toLowerCase();
-      if (type === 'snack') type = 'snack';
+      // Handle plural form of 'snacks' to singular 'snack' for filtering
+      if (type === 'snacks') type = 'snack';
       setSelectedType(type);
     }
   }, [mealType, isOpen]);
@@ -71,9 +70,8 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
   // Get unique recipe types
   const recipeTypes = [...new Set(recipes.map(recipe => recipe.type))];
 
-  // Handle recipe selection, always add as new recipe
+  // Handle recipe selection
   const handleSelectRecipe = (recipe: Recipe) => {
-    // Pass undefined for index to add as new recipe rather than replacing existing one
     onSelectRecipe(recipe);
     onClose();
   };
@@ -153,7 +151,14 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
                         )}
                       </div>
                     </div>
-                    <p className="text-sm text-gray-500 line-clamp-2 mb-2">{recipe.description}</p>
+                    <div className="mt-2 h-20 bg-gray-100 rounded overflow-hidden">
+                      <img 
+                        src={getRecipeImage(recipe.imageSrc)} 
+                        alt={recipe.name} 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <p className="text-sm text-gray-500 line-clamp-2 mt-2 mb-2">{recipe.description}</p>
                     <div className="flex items-center justify-between">
                       <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded">
                         {recipe.type.charAt(0).toUpperCase() + recipe.type.slice(1)}

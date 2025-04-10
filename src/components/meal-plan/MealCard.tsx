@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Lock, Unlock, Info } from 'lucide-react';
 import { Recipe } from '@/data/mockData';
+import { getRecipeImage } from '@/utils/recipeUtils';
 
 interface MealCardProps {
   title: string;
@@ -23,19 +24,16 @@ const MealCard: React.FC<MealCardProps> = ({
   onMealClick,
   isDraggable = false
 }) => {
-  // Always use the provided Unsplash image
-  const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
-
   return (
     <div className="mb-6">
       <h3 className="font-medium text-lg mb-2">{title}</h3>
       <div className={`bg-white rounded-xl shadow-sm overflow-hidden ${isLocked ? 'border-2 border-green-500' : ''}`}>
         {meal ? (
           <div className={`cursor-pointer ${isDraggable ? 'cursor-grab active:cursor-grabbing' : ''}`} onClick={() => onMealClick(meal)}>
-            {/* Image Section - Using the fixed image URL */}
+            {/* Image Section - Using dynamic image from recipe */}
             <div className="relative h-48 bg-gray-100">
               <img 
-                src={imageUrl} 
+                src={getRecipeImage(meal.imageSrc)} 
                 alt={meal.name} 
                 className="w-full h-full object-cover"
               />

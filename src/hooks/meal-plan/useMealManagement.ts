@@ -1,3 +1,4 @@
+
 import { MealPlanDay, Recipe } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
 
@@ -66,8 +67,8 @@ export const useMealManagement = ({
           newPlan[currentDay] = currentPlanDay;
           return newPlan;
         }
-        if (mealType === 'snack') {
-          currentMeals.snacks = [null]; // Changed to only have one null item
+        if (mealType === 'snacks') {
+          currentMeals.snacks = [];
           currentPlanDay.meals = currentMeals;
           newPlan[currentDay] = currentPlanDay;
           return newPlan;
@@ -174,12 +175,36 @@ export const useMealManagement = ({
         }
         currentMeals.dinner = dinnerArray;
       } 
-      else if (mealType === 'snack') {
-        // Modified to only handle a single snack
-        currentMeals.snacks = recipe ? [recipe] : [null];
+      else if (mealType === 'snacks') {
+        // Initialize snacks array if it doesn't exist
+        if (!currentMeals.snacks) {
+          currentMeals.snacks = [];
+        } else if (!Array.isArray(currentMeals.snacks)) {
+          currentMeals.snacks = [currentMeals.snacks];
+        }
         
-        currentPlanDay.meals = currentMeals;
-        newPlan[currentDay] = currentPlanDay;
+        // If index is provided, insert at that position, otherwise add to the beginning
+        const snacksArray = [...currentMeals.snacks];
+        if (typeof index === 'number' && snacksArray.length > index) {
+          // Replace specific snack
+          if (recipe) {
+            snacksArray[index] = recipe;
+          } else {
+            snacksArray.splice(index, 1);
+          }
+        } else if (recipe) {
+          // Add to the beginning of the array, limit to MAX_MEALS_PER_TYPE meals
+          if (snacksArray.length < MAX_MEALS_PER_TYPE) {
+            snacksArray.push(recipe);
+          } else {
+            toast({
+              title: "Maximum Reached",
+              description: `You can have up to ${MAX_MEALS_PER_TYPE} snack items.`,
+              variant: "destructive"
+            });
+          }
+        }
+        currentMeals.snacks = snacksArray;
       }
 
       currentPlanDay.meals = currentMeals;
