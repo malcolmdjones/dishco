@@ -48,7 +48,7 @@ const DailyNavigationCalendar: React.FC<DailyNavigationCalendarProps> = ({
         <ArrowLeft size={24} />
       </Button>
       
-      <div className={`grid grid-cols-${mealPlan.length} gap-1 flex-1 justify-center`}>
+      <div className="flex flex-1 justify-center space-x-4">
         {mealPlan.map((day, idx) => {
           const isCurrentDay = idx === currentDay;
           const dayNumber = getDayNumber(day.date);

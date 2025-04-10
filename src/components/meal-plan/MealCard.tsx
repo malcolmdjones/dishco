@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Lock, Unlock, Info } from 'lucide-react';
+import { Plus, Lock, Unlock, Info, Trash2 } from 'lucide-react';
 import { Recipe } from '@/data/mockData';
 import { getRecipeImage } from '@/utils/recipeUtils';
 
@@ -12,6 +12,7 @@ interface MealCardProps {
   toggleLock: () => void;
   onAddFromVault: () => void;
   onMealClick: (recipe: Recipe) => void;
+  onRemove?: () => void;
   isDraggable?: boolean;
 }
 
@@ -22,6 +23,7 @@ const MealCard: React.FC<MealCardProps> = ({
   toggleLock,
   onAddFromVault,
   onMealClick,
+  onRemove,
   isDraggable = false
 }) => {
   return (
@@ -43,7 +45,7 @@ const MealCard: React.FC<MealCardProps> = ({
                 {meal.macros.calories} kcal
               </div>
               
-              {/* Lock/Unlock and Add Buttons */}
+              {/* Lock/Unlock, Info and Remove Buttons */}
               <div className="absolute top-3 right-3 flex gap-2">
                 <Button 
                   variant="secondary" 
@@ -67,6 +69,19 @@ const MealCard: React.FC<MealCardProps> = ({
                 >
                   <Info size={14} />
                 </Button>
+                {onRemove && (
+                  <Button 
+                    variant="secondary" 
+                    size="icon" 
+                    className="h-8 w-8 rounded-full bg-white shadow-md text-red-500"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemove();
+                    }}
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                )}
               </div>
             </div>
             
