@@ -1,3 +1,4 @@
+
 import { MealPlanDay, recipes, Recipe } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
 
@@ -25,6 +26,15 @@ export const useMealGeneration = ({
 
   // Function to regenerate meals for the current day
   const regenerateMeals = async () => {
+    if (!mealPlan || mealPlan.length === 0 || !mealPlan[currentDay]) {
+      toast({
+        title: "Error",
+        description: "Cannot regenerate: Invalid meal plan data",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsGenerating(true);
     setAiReasoning("");
     
@@ -38,6 +48,7 @@ export const useMealGeneration = ({
         description: "Failed to generate meal plan. Please try again.",
         variant: "destructive"
       });
+      setIsGenerating(false);
     }
   };
   
@@ -45,6 +56,12 @@ export const useMealGeneration = ({
   const fallbackMealGeneration = () => {
     setTimeout(() => {
       setMealPlan(prevPlan => {
+        // Safety check for valid plan
+        if (!prevPlan || prevPlan.length === 0 || currentDay >= prevPlan.length) {
+          console.error("Invalid meal plan state during regeneration");
+          return prevPlan;
+        }
+        
         const newPlan = [...prevPlan];
         const currentPlanDay = { ...newPlan[currentDay] };
         
@@ -123,7 +140,7 @@ export const useMealGeneration = ({
           
           // Keep only locked snack items
           updatedSnacks = updatedSnacks.filter((meal, index) => 
-            lockedMeals[`${currentDay}-snack-${index}`]
+            lockedMeals[`${currentDay}-snacks-${index}`]
           );
           
           // Add a random snack if empty (all were unlocked)

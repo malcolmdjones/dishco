@@ -42,8 +42,21 @@ const CreateMealPlanPage = () => {
   };
 
   const handleSelectedRecipe = (recipe: any | null) => {
-    updateMeal(currentVaultMealType, recipe, currentVaultIndex);
+    if (mealPlan && mealPlan.length > 0) {
+      updateMeal(currentVaultMealType, recipe, currentVaultIndex);
+    }
     setIsVaultOpen(false);
+  };
+
+  const handleRegenerate = () => {
+    if (mealPlan && mealPlan.length > 0) {
+      regenerateMeals();
+    }
+  };
+
+  const handleSavePlan = () => {
+    // No validation needed here - handled in the dialog
+    setIsWeekOverviewOpen(false); // Close any open dialog to show save dialog
   };
 
   return (
@@ -63,7 +76,7 @@ const CreateMealPlanPage = () => {
         isGenerating={isGenerating}
         lockedMeals={lockedMeals}
         toggleLockMeal={toggleLockMeal}
-        regenerateMeals={regenerateMeals}
+        regenerateMeals={handleRegenerate}
         calculateDayTotals={calculateDayTotals}
         checkExceedsGoals={checkExceedsGoals}
         onOpenVault={handleOpenVault}
@@ -94,6 +107,9 @@ const CreateMealPlanPage = () => {
         <SheetContent side="bottom" className="h-[50vh]">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold">AI's Meal Plan Reasoning</h3>
+            <Button variant="ghost" size="icon" onClick={() => {}} aria-label="Close">
+              <X className="h-4 w-4" />
+            </Button>
           </div>
           <div className="prose max-w-none">
             <p>{aiReasoning}</p>

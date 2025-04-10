@@ -83,7 +83,7 @@ const MealSection: React.FC<MealSectionProps> = ({
               onClick={() => onAddFromVault(lowerMealType)}
               className="text-sm text-blue-600 hover:text-blue-800"
             >
-              + Add {lowerMealType} item
+              + Add {mealType === "Snacks" ? "snack" : lowerMealType} item
             </button>
           </div>
         </div>
