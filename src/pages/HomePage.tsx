@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { Link, useNavigate } from 'react-router-dom';
 import { format, addDays, subDays, isToday, isEqual, parseISO, startOfDay } from 'date-fns';
-import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
-import 'react-circular-progressbar/dist/styles.css';
-import { ChevronLeft, ChevronRight, Home } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { calculateDailyMacros, recipes, defaultGoals, Recipe } from '@/data/mockData';
 import RecipeViewer from '@/components/RecipeViewer';
@@ -245,17 +244,27 @@ const HomePage = () => {
     return type.charAt(0).toUpperCase() + type.slice(1);
   };
 
-  // Check if nutrition value is within target range
-  const isWithinTarget = (value: number, target: number, lowerThreshold: number, upperThreshold: number) => {
-    return value >= target - lowerThreshold && value <= target + upperThreshold;
-  };
-
-  // Get the appropriate text color based on whether the target is met
-  const getTextColorClass = (value: number, target: number, lowerThreshold: number, upperThreshold: number) => {
-    if (isWithinTarget(value, target, lowerThreshold, upperThreshold)) {
-      return "text-green-600";
+  // Helper function to determine if a macro target is met (within thresholds)
+  const getMacroStatus = (type: 'calories' | 'protein' | 'carbs' | 'fat') => {
+    const value = dailyNutrition[type];
+    const target = dailyNutrition[`total${type.charAt(0).toUpperCase() + type.slice(1)}`];
+    
+    // Define thresholds based on macro type
+    const thresholds = {
+      calories: { lower: 10, upper: 60 },
+      protein: { lower: 5, upper: 5 },
+      carbs: { lower: 10, upper: 10 },
+      fat: { lower: 5, upper: 5 }
+    };
+    
+    // Check if value is within target range (inclusive of thresholds)
+    if (value >= target - thresholds[type].lower && value <= target + thresholds[type].upper) {
+      return 'target-met';
+    } else if (value > target + thresholds[type].upper) {
+      return 'too-high';
+    } else {
+      return 'too-low';
     }
-    return "";
   };
 
   // Always use the provided Unsplash image instead of possibly broken imageUrl
@@ -310,113 +319,85 @@ const HomePage = () => {
           </Link>
         </div>
         
-        <div className="grid grid-cols-4 gap-3">
-          <div className="flex flex-col items-center">
-            <div className="w-16 h-16 mb-2">
-              <CircularProgressbar
-                value={(dailyNutrition.calories / dailyNutrition.totalCalories) * 100}
-                text={`${dailyNutrition.calories}`}
-                styles={buildStyles({
-                  textSize: '28px',
-                  pathColor: isWithinTarget(dailyNutrition.calories, dailyNutrition.totalCalories, 10, 60) 
-                    ? macroColors.calories 
-                    : 'rgba(239, 68, 68, 0.8)', // red for out of range
-                  textColor: '#3C3C3C',
-                  trailColor: '#F9F9F9',
-                  strokeLinecap: 'round',
-                  pathTransition: isWithinTarget(dailyNutrition.calories, dailyNutrition.totalCalories, 10, 60)
-                    ? 'stroke-dashoffset 0.5s ease 0s'
-                    : 'stroke-dashoffset 0.5s ease 0s, stroke 0.5s ease'
-                })}
-                className={isWithinTarget(dailyNutrition.calories, dailyNutrition.totalCalories, 10, 60) 
-                  ? '' 
-                  : 'animate-pulse'}
-              />
+        <div className="grid grid-cols-1 gap-4">
+          {/* Calories */}
+          <div>
+            <div className="flex justify-between mb-1">
+              <span className="text-sm font-medium">Calories</span>
+              <span className={`text-sm ${getMacroStatus('calories') === 'target-met' ? 'text-green-600' : 'text-gray-600'}`}>
+                {dailyNutrition.calories} / {dailyNutrition.totalCalories} kcal
+              </span>
             </div>
-            <span className={`text-xs text-center mt-1 ${getTextColorClass(dailyNutrition.calories, dailyNutrition.totalCalories, 10, 60)}`}>
-              Calories
-            </span>
+            <Progress 
+              value={Math.min(100, (dailyNutrition.calories / dailyNutrition.totalCalories) * 100)} 
+              max={100}
+              indicatorClassName={getMacroStatus('calories') === 'too-high' ? "bg-red-500" : ""}
+              className="h-2"
+              style={{ 
+                backgroundColor: "#F9F9F9", 
+                "--progress-background": macroColors.calories
+              } as React.CSSProperties}
+            />
           </div>
           
-          <div className="flex flex-col items-center">
-            <div className="w-16 h-16 mb-2">
-              <CircularProgressbar
-                value={(dailyNutrition.protein / dailyNutrition.totalProtein) * 100}
-                text={`${dailyNutrition.protein}g`}
-                styles={buildStyles({
-                  textSize: '28px',
-                  pathColor: isWithinTarget(dailyNutrition.protein, dailyNutrition.totalProtein, 5, 5) 
-                    ? macroColors.protein 
-                    : 'rgba(239, 68, 68, 0.8)', // red for out of range
-                  textColor: '#3C3C3C',
-                  trailColor: '#F9F9F9',
-                  strokeLinecap: 'round',
-                  pathTransition: isWithinTarget(dailyNutrition.protein, dailyNutrition.totalProtein, 5, 5)
-                    ? 'stroke-dashoffset 0.5s ease 0s'
-                    : 'stroke-dashoffset 0.5s ease 0s, stroke 0.5s ease'
-                })}
-                className={isWithinTarget(dailyNutrition.protein, dailyNutrition.totalProtein, 5, 5) 
-                  ? '' 
-                  : 'animate-pulse'}
-              />
+          {/* Protein */}
+          <div>
+            <div className="flex justify-between mb-1">
+              <span className="text-sm font-medium">Protein</span>
+              <span className={`text-sm ${getMacroStatus('protein') === 'target-met' ? 'text-green-600' : 'text-gray-600'}`}>
+                {dailyNutrition.protein} / {dailyNutrition.totalProtein} g
+              </span>
             </div>
-            <span className={`text-xs text-center mt-1 ${getTextColorClass(dailyNutrition.protein, dailyNutrition.totalProtein, 5, 5)}`}>
-              Protein
-            </span>
+            <Progress 
+              value={Math.min(100, (dailyNutrition.protein / dailyNutrition.totalProtein) * 100)} 
+              max={100}
+              indicatorClassName={getMacroStatus('protein') === 'too-high' ? "bg-red-500" : ""}
+              className="h-2"
+              style={{ 
+                backgroundColor: "#F9F9F9", 
+                "--progress-background": macroColors.protein
+              } as React.CSSProperties}
+            />
           </div>
           
-          <div className="flex flex-col items-center">
-            <div className="w-16 h-16 mb-2">
-              <CircularProgressbar
-                value={(dailyNutrition.carbs / dailyNutrition.totalCarbs) * 100}
-                text={`${dailyNutrition.carbs}g`}
-                styles={buildStyles({
-                  textSize: '28px',
-                  pathColor: isWithinTarget(dailyNutrition.carbs, dailyNutrition.totalCarbs, 10, 10) 
-                    ? macroColors.carbs 
-                    : 'rgba(239, 68, 68, 0.8)', // red for out of range
-                  textColor: '#3C3C3C',
-                  trailColor: '#F9F9F9',
-                  strokeLinecap: 'round',
-                  pathTransition: isWithinTarget(dailyNutrition.carbs, dailyNutrition.totalCarbs, 10, 10)
-                    ? 'stroke-dashoffset 0.5s ease 0s'
-                    : 'stroke-dashoffset 0.5s ease 0s, stroke 0.5s ease'
-                })}
-                className={isWithinTarget(dailyNutrition.carbs, dailyNutrition.totalCarbs, 10, 10) 
-                  ? '' 
-                  : 'animate-pulse'}
-              />
+          {/* Carbs */}
+          <div>
+            <div className="flex justify-between mb-1">
+              <span className="text-sm font-medium">Carbs</span>
+              <span className={`text-sm ${getMacroStatus('carbs') === 'target-met' ? 'text-green-600' : 'text-gray-600'}`}>
+                {dailyNutrition.carbs} / {dailyNutrition.totalCarbs} g
+              </span>
             </div>
-            <span className={`text-xs text-center mt-1 ${getTextColorClass(dailyNutrition.carbs, dailyNutrition.totalCarbs, 10, 10)}`}>
-              Carbs
-            </span>
+            <Progress 
+              value={Math.min(100, (dailyNutrition.carbs / dailyNutrition.totalCarbs) * 100)} 
+              max={100}
+              indicatorClassName={getMacroStatus('carbs') === 'too-high' ? "bg-red-500" : ""}
+              className="h-2"
+              style={{ 
+                backgroundColor: "#F9F9F9", 
+                "--progress-background": macroColors.carbs
+              } as React.CSSProperties}
+            />
           </div>
           
-          <div className="flex flex-col items-center">
-            <div className="w-16 h-16 mb-2">
-              <CircularProgressbar
-                value={(dailyNutrition.fat / dailyNutrition.totalFat) * 100}
-                text={`${dailyNutrition.fat}g`}
-                styles={buildStyles({
-                  textSize: '28px',
-                  pathColor: isWithinTarget(dailyNutrition.fat, dailyNutrition.totalFat, 5, 5) 
-                    ? macroColors.fat 
-                    : 'rgba(239, 68, 68, 0.8)', // red for out of range
-                  textColor: '#3C3C3C',
-                  trailColor: '#F9F9F9',
-                  strokeLinecap: 'round',
-                  pathTransition: isWithinTarget(dailyNutrition.fat, dailyNutrition.totalFat, 5, 5)
-                    ? 'stroke-dashoffset 0.5s ease 0s'
-                    : 'stroke-dashoffset 0.5s ease 0s, stroke 0.5s ease'
-                })}
-                className={isWithinTarget(dailyNutrition.fat, dailyNutrition.totalFat, 5, 5) 
-                  ? '' 
-                  : 'animate-pulse'}
-              />
+          {/* Fat */}
+          <div>
+            <div className="flex justify-between mb-1">
+              <span className="text-sm font-medium">Fat</span>
+              <span className={`text-sm ${getMacroStatus('fat') === 'target-met' ? 'text-green-600' : 'text-gray-600'}`}>
+                {dailyNutrition.fat} / {dailyNutrition.totalFat} g
+              </span>
             </div>
-            <span className={`text-xs text-center mt-1 ${getTextColorClass(dailyNutrition.fat, dailyNutrition.totalFat, 5, 5)}`}>
-              Fat
-            </span>
+            <Progress 
+              value={Math.min(100, (dailyNutrition.fat / dailyNutrition.totalFat) * 100)} 
+              max={100} 
+              indicatorClassName={getMacroStatus('fat') === 'too-high' ? "bg-red-500" : ""}
+              className="h-2"
+              style={{ 
+                backgroundColor: "#F9F9F9", 
+                "--progress-background": macroColors.fat
+              } as React.CSSProperties}
+            />
           </div>
         </div>
       </div>
