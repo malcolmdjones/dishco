@@ -6,7 +6,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useRecipes } from '@/hooks/useRecipes';
 import MealPlanOnboarding from '@/components/meal-plan/MealPlanOnboarding';
-import SnackCategoriesSection from '@/components/snack-categories/SnackCategoriesSection';
 
 const PlanningPage = () => {
   const { toast } = useToast();
@@ -148,9 +147,6 @@ const PlanningPage = () => {
               )}
             </div>
           </div>
-          
-          {/* Snack Categories Section */}
-          <SnackCategoriesSection />
         </div>
       )}
 
