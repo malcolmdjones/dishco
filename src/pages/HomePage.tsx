@@ -53,7 +53,9 @@ const HomePage = () => {
       return isEqual(mealDate, selectedDateStart);
     });
     
-    const planMeals = getMealsForDate(format(selectedDate, 'yyyy-MM-dd'));
+    const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+    const planMeals = getMealsForDate(formattedDate);
+    
     const plannedMealArray: Meal[] = [];
     
     if (planMeals) {
@@ -64,7 +66,7 @@ const HomePage = () => {
           type: 'breakfast',
           recipe: planMeals.breakfast,
           consumed: false,
-          loggedAt: format(selectedDate, 'yyyy-MM-dd')
+          loggedAt: formattedDate
         });
       }
       
@@ -75,7 +77,7 @@ const HomePage = () => {
           type: 'lunch',
           recipe: planMeals.lunch,
           consumed: false,
-          loggedAt: format(selectedDate, 'yyyy-MM-dd')
+          loggedAt: formattedDate
         });
       }
       
@@ -86,7 +88,7 @@ const HomePage = () => {
           type: 'dinner',
           recipe: planMeals.dinner,
           consumed: false,
-          loggedAt: format(selectedDate, 'yyyy-MM-dd')
+          loggedAt: formattedDate
         });
       }
       
@@ -98,7 +100,7 @@ const HomePage = () => {
             type: 'snack',
             recipe: snack,
             consumed: false,
-            loggedAt: format(selectedDate, 'yyyy-MM-dd')
+            loggedAt: formattedDate
           });
         });
       }
@@ -137,7 +139,7 @@ const HomePage = () => {
     }
     
     calculateNutritionForDate(filteredMeals);
-  }, [selectedDate, getMealsForDate]);
+  }, [selectedDate, getMealsForDate, activePlan]);
 
   const calculateNutritionForDate = (meals: Meal[]) => {
     const consumedMeals = meals.filter(meal => meal.consumed);
@@ -476,7 +478,7 @@ const HomePage = () => {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-gray-500">{formatMealType(meal.type)}</span>
                   <span className="text-sm bg-amber-50 text-amber-800 px-2 py-1 rounded-full">
-                    {meal.recipe.macros.calories} kcal
+                    {meal.recipe.macros?.calories || 0} kcal
                   </span>
                 </div>
                 
@@ -486,7 +488,7 @@ const HomePage = () => {
                     onClick={() => handleOpenRecipe(meal.recipe)}
                   >
                     <img 
-                      src={imageUrl} 
+                      src={meal.recipe.imageSrc || imageUrl} 
                       alt={meal.name}
                       className="w-full h-full object-cover"
                     />
@@ -513,13 +515,13 @@ const HomePage = () => {
                 
                 <div className="flex gap-2 mt-3">
                   <span className="px-3 py-1 bg-blue-100 rounded-full text-xs">
-                    P: {meal.recipe.macros.protein}g
+                    P: {meal.recipe.macros?.protein || 0}g
                   </span>
                   <span className="px-3 py-1 bg-yellow-100 rounded-full text-xs">
-                    C: {meal.recipe.macros.carbs}g
+                    C: {meal.recipe.macros?.carbs || 0}g
                   </span>
                   <span className="px-3 py-1 bg-purple-100 rounded-full text-xs">
-                    F: {meal.recipe.macros.fat}g
+                    F: {meal.recipe.macros?.fat || 0}g
                   </span>
                 </div>
               </div>
