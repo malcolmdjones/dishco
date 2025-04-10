@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -7,6 +8,9 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { calculateDailyMacros, recipes, defaultGoals, Recipe } from '@/data/mockData';
 import RecipeViewer from '@/components/RecipeViewer';
+import { CircularProgressbar } from 'react-circular-progressbar';
+import 'react-circular-progressbar/dist/styles.css';
+import { cn } from '@/lib/utils';
 
 interface Meal {
   id: string;
@@ -228,22 +232,6 @@ const HomePage = () => {
     }
   };
   
-  // Color definitions for macros
-  const macroColors = {
-    calories: '#FFF4D7',
-    protein: '#DBE9FE',
-    carbs: '#FEF9C3',
-    fat: '#F3E8FF'
-  };
-
-  // Check if selected date is today
-  const isSelectedDateToday = isToday(selectedDate);
-
-  // Format meal type
-  const formatMealType = (type: string) => {
-    return type.charAt(0).toUpperCase() + type.slice(1);
-  };
-
   // Helper function to determine if a macro target is met (within thresholds)
   const getMacroStatus = (type: 'calories' | 'protein' | 'carbs' | 'fat') => {
     const value = dailyNutrition[type];
@@ -265,6 +253,22 @@ const HomePage = () => {
     } else {
       return 'too-low';
     }
+  };
+
+  // Check if selected date is today
+  const isSelectedDateToday = isToday(selectedDate);
+
+  // Format meal type
+  const formatMealType = (type: string) => {
+    return type.charAt(0).toUpperCase() + type.slice(1);
+  };
+
+  // Macro colors for circular progressbars
+  const macroColors = {
+    calories: "#FFF4D7",
+    protein: "#DBE9FE",
+    carbs: "#FEF9C3",
+    fat: "#F3E8FF"
   };
 
   // Always use the provided Unsplash image instead of possibly broken imageUrl
@@ -310,7 +314,7 @@ const HomePage = () => {
         </div>
       </div>
       
-      {/* Today's Nutrition */}
+      {/* Today's Nutrition with Circular Progress Bars */}
       <div className="bg-white rounded-xl p-4 mb-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Today's Nutrition</h2>
@@ -319,85 +323,113 @@ const HomePage = () => {
           </Link>
         </div>
         
-        <div className="grid grid-cols-1 gap-4">
+        <div className="flex justify-between items-center">
           {/* Calories */}
-          <div>
-            <div className="flex justify-between mb-1">
-              <span className="text-sm font-medium">Calories</span>
-              <span className={`text-sm ${getMacroStatus('calories') === 'target-met' ? 'text-green-600' : 'text-gray-600'}`}>
-                {dailyNutrition.calories} / {dailyNutrition.totalCalories} kcal
-              </span>
+          <div className="flex-1 flex flex-col items-center">
+            <div className={cn(
+              "w-16 h-16 relative",
+              getMacroStatus('calories') === 'too-high' && "animate-pulse-light"
+            )}>
+              <CircularProgressbar 
+                value={dailyNutrition.calories} 
+                maxValue={dailyNutrition.totalCalories} 
+                text={`${dailyNutrition.calories}`}
+                styles={{
+                  path: { 
+                    stroke: getMacroStatus('calories') === 'too-high' ? "#FF4B4B" : macroColors.calories
+                  },
+                  text: { fill: '#3c3c3c', fontSize: '30px' },
+                  trail: { stroke: '#f9f9f9' }
+                }}
+              />
             </div>
-            <Progress 
-              value={Math.min(100, (dailyNutrition.calories / dailyNutrition.totalCalories) * 100)} 
-              max={100}
-              indicatorClassName={getMacroStatus('calories') === 'too-high' ? "bg-red-500" : ""}
-              className="h-2"
-              style={{ 
-                backgroundColor: "#F9F9F9", 
-                "--progress-background": macroColors.calories
-              } as React.CSSProperties}
-            />
+            <span className={cn(
+              "text-xs text-center mt-1",
+              getMacroStatus('calories') === 'target-met' ? "text-green-600" : "text-gray-700"
+            )}>
+              {dailyNutrition.calories} / {dailyNutrition.totalCalories} Cal
+            </span>
           </div>
           
           {/* Protein */}
-          <div>
-            <div className="flex justify-between mb-1">
-              <span className="text-sm font-medium">Protein</span>
-              <span className={`text-sm ${getMacroStatus('protein') === 'target-met' ? 'text-green-600' : 'text-gray-600'}`}>
-                {dailyNutrition.protein} / {dailyNutrition.totalProtein} g
-              </span>
+          <div className="flex-1 flex flex-col items-center">
+            <div className={cn(
+              "w-16 h-16 relative",
+              getMacroStatus('protein') === 'too-high' && "animate-pulse-light"
+            )}>
+              <CircularProgressbar 
+                value={dailyNutrition.protein} 
+                maxValue={dailyNutrition.totalProtein} 
+                text={`${dailyNutrition.protein}g`}
+                styles={{
+                  path: { 
+                    stroke: getMacroStatus('protein') === 'too-high' ? "#FF4B4B" : macroColors.protein
+                  },
+                  text: { fill: '#3c3c3c', fontSize: '30px' },
+                  trail: { stroke: '#f9f9f9' }
+                }}
+              />
             </div>
-            <Progress 
-              value={Math.min(100, (dailyNutrition.protein / dailyNutrition.totalProtein) * 100)} 
-              max={100}
-              indicatorClassName={getMacroStatus('protein') === 'too-high' ? "bg-red-500" : ""}
-              className="h-2"
-              style={{ 
-                backgroundColor: "#F9F9F9", 
-                "--progress-background": macroColors.protein
-              } as React.CSSProperties}
-            />
+            <span className={cn(
+              "text-xs text-center mt-1",
+              getMacroStatus('protein') === 'target-met' ? "text-green-600" : "text-gray-700"
+            )}>
+              {dailyNutrition.protein}g / {dailyNutrition.totalProtein}g
+            </span>
           </div>
           
           {/* Carbs */}
-          <div>
-            <div className="flex justify-between mb-1">
-              <span className="text-sm font-medium">Carbs</span>
-              <span className={`text-sm ${getMacroStatus('carbs') === 'target-met' ? 'text-green-600' : 'text-gray-600'}`}>
-                {dailyNutrition.carbs} / {dailyNutrition.totalCarbs} g
-              </span>
+          <div className="flex-1 flex flex-col items-center">
+            <div className={cn(
+              "w-16 h-16 relative",
+              getMacroStatus('carbs') === 'too-high' && "animate-pulse-light"
+            )}>
+              <CircularProgressbar 
+                value={dailyNutrition.carbs} 
+                maxValue={dailyNutrition.totalCarbs} 
+                text={`${dailyNutrition.carbs}g`}
+                styles={{
+                  path: { 
+                    stroke: getMacroStatus('carbs') === 'too-high' ? "#FF4B4B" : macroColors.carbs
+                  },
+                  text: { fill: '#3c3c3c', fontSize: '30px' },
+                  trail: { stroke: '#f9f9f9' }
+                }}
+              />
             </div>
-            <Progress 
-              value={Math.min(100, (dailyNutrition.carbs / dailyNutrition.totalCarbs) * 100)} 
-              max={100}
-              indicatorClassName={getMacroStatus('carbs') === 'too-high' ? "bg-red-500" : ""}
-              className="h-2"
-              style={{ 
-                backgroundColor: "#F9F9F9", 
-                "--progress-background": macroColors.carbs
-              } as React.CSSProperties}
-            />
+            <span className={cn(
+              "text-xs text-center mt-1",
+              getMacroStatus('carbs') === 'target-met' ? "text-green-600" : "text-gray-700"
+            )}>
+              {dailyNutrition.carbs}g / {dailyNutrition.totalCarbs}g
+            </span>
           </div>
           
           {/* Fat */}
-          <div>
-            <div className="flex justify-between mb-1">
-              <span className="text-sm font-medium">Fat</span>
-              <span className={`text-sm ${getMacroStatus('fat') === 'target-met' ? 'text-green-600' : 'text-gray-600'}`}>
-                {dailyNutrition.fat} / {dailyNutrition.totalFat} g
-              </span>
+          <div className="flex-1 flex flex-col items-center">
+            <div className={cn(
+              "w-16 h-16 relative",
+              getMacroStatus('fat') === 'too-high' && "animate-pulse-light"
+            )}>
+              <CircularProgressbar 
+                value={dailyNutrition.fat} 
+                maxValue={dailyNutrition.totalFat} 
+                text={`${dailyNutrition.fat}g`}
+                styles={{
+                  path: { 
+                    stroke: getMacroStatus('fat') === 'too-high' ? "#FF4B4B" : macroColors.fat
+                  },
+                  text: { fill: '#3c3c3c', fontSize: '30px' },
+                  trail: { stroke: '#f9f9f9' }
+                }}
+              />
             </div>
-            <Progress 
-              value={Math.min(100, (dailyNutrition.fat / dailyNutrition.totalFat) * 100)} 
-              max={100} 
-              indicatorClassName={getMacroStatus('fat') === 'too-high' ? "bg-red-500" : ""}
-              className="h-2"
-              style={{ 
-                backgroundColor: "#F9F9F9", 
-                "--progress-background": macroColors.fat
-              } as React.CSSProperties}
-            />
+            <span className={cn(
+              "text-xs text-center mt-1",
+              getMacroStatus('fat') === 'target-met' ? "text-green-600" : "text-gray-700"
+            )}>
+              {dailyNutrition.fat}g / {dailyNutrition.totalFat}g
+            </span>
           </div>
         </div>
       </div>
