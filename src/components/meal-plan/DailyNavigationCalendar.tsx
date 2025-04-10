@@ -21,7 +21,7 @@ const DailyNavigationCalendar: React.FC<DailyNavigationCalendarProps> = ({
     
     // Ensure we stay within the bounds of our week
     if (newDay < 0) newDay = 0;
-    if (newDay > 6) newDay = 6;
+    if (newDay > (mealPlan.length - 1)) newDay = mealPlan.length - 1;
     
     setCurrentDay(newDay);
   };
@@ -48,12 +48,12 @@ const DailyNavigationCalendar: React.FC<DailyNavigationCalendarProps> = ({
         <ArrowLeft size={24} />
       </Button>
       
-      <div className="grid grid-cols-7 gap-1">
+      <div className={`grid grid-cols-${mealPlan.length} gap-1 flex-1 justify-center`}>
         {mealPlan.map((day, idx) => {
           const isCurrentDay = idx === currentDay;
           const dayNumber = getDayNumber(day.date);
           const dayOfWeek = getDayOfWeek(day.date);
-          const isWeekend = idx === 0 || idx === 6;
+          const isWeekend = new Date(day.date).getDay() === 0 || new Date(day.date).getDay() === 6;
           
           return (
             <button 
@@ -82,7 +82,7 @@ const DailyNavigationCalendar: React.FC<DailyNavigationCalendarProps> = ({
         variant="ghost" 
         size="icon"
         onClick={() => navigateDay('next')}
-        disabled={currentDay === 6}
+        disabled={currentDay === mealPlan.length - 1}
         className="text-gray-400"
       >
         <ArrowRight size={24} />

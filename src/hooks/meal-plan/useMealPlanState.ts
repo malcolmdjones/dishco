@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { MealPlanDay, NutritionGoals, defaultGoals, fetchNutritionGoals } from '@/data/mockData';
+import { MealPlanDay, NutritionGoals, defaultGoals, fetchNutritionGoals, recipes } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -77,6 +77,15 @@ export const useMealPlanState = () => {
     }
   }, [userGoals]);
 
+  // Filter recipes by meal type
+  const getRandomRecipeByType = (type: string) => {
+    const filteredRecipes = recipes.filter(r => r.type === type);
+    if (filteredRecipes.length > 0) {
+      return filteredRecipes[Math.floor(Math.random() * filteredRecipes.length)];
+    }
+    return null;
+  };
+
   // Function to generate a meal plan for the entire week
   const generateFullMealPlan = () => {
     setIsGenerating(true);
@@ -87,18 +96,25 @@ export const useMealPlanState = () => {
       const date = new Date(currentDate);
       date.setDate(currentDate.getDate() + i - currentDay); // Adjust to keep current day in sync
       
+      // Generate initial recipes for each meal type
+      const breakfastRecipe = getRandomRecipeByType('breakfast');
+      const lunchRecipe = getRandomRecipeByType('lunch');
+      const dinnerRecipe = getRandomRecipeByType('dinner');
+      const snackRecipe = getRandomRecipeByType('snack');
+
       return {
         date: date.toISOString(),
         meals: {
-          breakfast: [],
-          lunch: [],
-          dinner: [],
-          snacks: [null] // Changed to only have one null item
+          breakfast: breakfastRecipe ? [breakfastRecipe] : [],
+          lunch: lunchRecipe ? [lunchRecipe] : [],
+          dinner: dinnerRecipe ? [dinnerRecipe] : [],
+          snacks: snackRecipe ? [snackRecipe] : []
         }
       };
     });
     
     setMealPlan(newPlan);
+    setIsGenerating(false);
     
     // Apply preferences here when you integrate with an actual meal generation algorithm
     console.log('Generating meal plan with preferences:', preferences);
@@ -106,7 +122,7 @@ export const useMealPlanState = () => {
     // For development, you might want to see the preferences in a toast
     if (Object.keys(preferences).length > 1) {
       toast({
-        title: `Creating a ${days}-day meal plan`,
+        title: `Created a ${days}-day meal plan`,
         description: `Based on your selected preferences`
       });
     }
