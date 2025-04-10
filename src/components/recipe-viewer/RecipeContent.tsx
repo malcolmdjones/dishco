@@ -46,9 +46,19 @@ const RecipeContent: React.FC<RecipeContentProps> = ({ recipe }) => {
         <h3 className="text-lg font-semibold mb-3">Instructions</h3>
         {recipe.instructions && recipe.instructions.length > 0 ? (
           <ol className="list-decimal pl-5 space-y-2">
-            {recipe.instructions.map((instruction: string, index: number) => (
-              <li key={index} className="pl-1">{instruction}</li>
-            ))}
+            {recipe.instructions.map((instruction, index) => {
+              // Handle both string instructions and potential object instructions
+              if (typeof instruction === 'string') {
+                return <li key={index} className="pl-1">{instruction}</li>;
+              } else if (typeof instruction === 'object' && instruction !== null) {
+                // Handle structured instruction objects
+                if ('step' in instruction) {
+                  return <li key={index} className="pl-1">{(instruction as {step: string}).step}</li>;
+                }
+              }
+              // Fallback for any other format
+              return <li key={index} className="pl-1">{String(instruction)}</li>;
+            })}
           </ol>
         ) : (
           <p className="text-gray-500">No instructions provided for this recipe.</p>
