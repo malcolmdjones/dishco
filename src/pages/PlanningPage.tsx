@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Search } from 'lucide-react';
@@ -23,8 +24,8 @@ const PlanningPage = () => {
     setIsOnboardingOpen(true);
   };
 
-  // Get a selection of 4 recipes for display
-  const recipeSelection = recipes.slice(0, 4);
+  // Get a selection of 2 recipes for display (changed from 4)
+  const recipeSelection = recipes.slice(0, 2);
   // Get 4 snack recipes for the Snack Savvy section
   const snackSelection = recipes.filter(recipe => recipe.type === 'snack').slice(0, 4);
 
@@ -53,12 +54,13 @@ const PlanningPage = () => {
             <ArrowRight className="ml-2" />
           </Button>
 
-          {/* Discover Recipes */}
+          {/* Discover Recipes with styled title */}
           <div className="bg-white rounded-xl p-4 shadow-sm animate-slide-up">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">
-                <span className="text-[#FF6B6B]">Dish</span>
-                <span className="text-[#6B66FF]">cover</span> Recipes
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 animate-pulse-light">Dish</span>
+                <span className="text-black">ver</span>
+                <span className="text-[#6B66FF]"> Recipes</span>
               </h2>
               <Link to="/explore-recipes">
                 <Button variant="ghost" size="sm">Explore Recipes</Button>
