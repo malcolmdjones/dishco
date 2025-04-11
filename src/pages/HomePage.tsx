@@ -201,7 +201,8 @@ const HomePage = () => {
   const handleOpenRecipe = (recipe: Recipe | Recipe[]) => {
     const recipeData = getMealData(recipe);
     if (recipeData) {
-      setSelectedRecipe(recipeData);
+      const convertedRecipe = convertToMockDataRecipe(recipeData);
+      setSelectedRecipe(convertedRecipe);
       setIsRecipeViewerOpen(true);
     }
   };

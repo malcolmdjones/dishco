@@ -4,11 +4,11 @@ import { format } from 'date-fns';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import RecipeDetail from './RecipeDetail';
-import { calculateDailyMacros } from '@/data/mockData';
 import { Progress } from '@/components/ui/progress';
 import { MealPlan } from '@/types/MealPlan';
 import { getMealData } from '@/hooks/utils';
-import { convertToMockDataRecipe } from '@/utils/typeUtils';
+import { convertToMockDataRecipe, convertMealsForMacroCalculation } from '@/utils/typeUtils';
+import { calculateDailyMacros } from '@/data/mockData';
 
 interface PlanDetailViewProps {
   plan: MealPlan | null;
@@ -27,34 +27,33 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
 
   // Convert meal data for calculateDailyMacros which expects MockData.Recipe
   const convertedMeals = plan.plan_data.days[activeDay]?.meals 
-    ? {
-        breakfast: plan.plan_data.days[activeDay].meals.breakfast,
-        lunch: plan.plan_data.days[activeDay].meals.lunch,
-        dinner: plan.plan_data.days[activeDay].meals.dinner,
-        snacks: plan.plan_data.days[activeDay].meals.snacks || []
-      }
+    ? convertMealsForMacroCalculation(plan.plan_data.days[activeDay].meals)
     : { breakfast: null, lunch: null, dinner: null, snacks: [] };
 
   const dailyMacros = calculateDailyMacros(convertedMeals);
   
   const averageCalories = Math.round(
     plan.plan_data.days.reduce((sum: number, day: any) => {
-      const dayMacros = calculateDailyMacros(day?.meals || {});
+      const convertedDayMeals = day?.meals ? convertMealsForMacroCalculation(day.meals) : {};
+      const dayMacros = calculateDailyMacros(convertedDayMeals);
       return sum + dayMacros.calories;
     }, 0) / plan.plan_data.days.length
   );
   
   const totalMacros = {
     protein: Math.round(plan.plan_data.days.reduce((sum: number, day: any) => {
-      const dayMacros = calculateDailyMacros(day?.meals || {});
+      const convertedDayMeals = day?.meals ? convertMealsForMacroCalculation(day.meals) : {};
+      const dayMacros = calculateDailyMacros(convertedDayMeals);
       return sum + dayMacros.protein;
     }, 0) / plan.plan_data.days.length),
     carbs: Math.round(plan.plan_data.days.reduce((sum: number, day: any) => {
-      const dayMacros = calculateDailyMacros(day?.meals || {});
+      const convertedDayMeals = day?.meals ? convertMealsForMacroCalculation(day.meals) : {};
+      const dayMacros = calculateDailyMacros(convertedDayMeals);
       return sum + dayMacros.carbs;
     }, 0) / plan.plan_data.days.length),
     fat: Math.round(plan.plan_data.days.reduce((sum: number, day: any) => {
-      const dayMacros = calculateDailyMacros(day?.meals || {});
+      const convertedDayMeals = day?.meals ? convertMealsForMacroCalculation(day.meals) : {};
+      const dayMacros = calculateDailyMacros(convertedDayMeals);
       return sum + dayMacros.fat;
     }, 0) / plan.plan_data.days.length),
   };
@@ -63,7 +62,9 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
   
   const handleOpenRecipe = (recipe: any) => {
     if (recipe) {
-      setSelectedRecipe(recipe);
+      // Convert to MockDataRecipe for compatibility
+      const convertedRecipe = convertToMockDataRecipe(recipe);
+      setSelectedRecipe(convertedRecipe);
       setIsRecipeDetailOpen(true);
     }
   };
