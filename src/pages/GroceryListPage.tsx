@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Check, ChevronDown, ChevronUp, Plus, RotateCcw, Search, ShoppingBag, Trash2 } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Plus, RotateCcw, Search, ShoppingBag, Trash2, ArrowLeft } from 'lucide-react';
 import { generateGroceryList } from '../data/mockData';
 import type { GroceryItem } from '../data/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Link } from 'react-router-dom';
 
 // Generate initial grocery list
 const initialGroceryItems = generateGroceryList();
@@ -110,7 +111,14 @@ const GroceryListPage = () => {
   return (
     <div className="animate-fade-in">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold">Grocery List</h1>
+        <div className="flex items-center gap-2 mb-2">
+          <Link to="/">
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <ArrowLeft size={18} />
+            </Button>
+          </Link>
+          <h1 className="text-2xl font-bold">Grocery List</h1>
+        </div>
         <p className="text-dishco-text-light">Items needed for your meal plan</p>
       </header>
 

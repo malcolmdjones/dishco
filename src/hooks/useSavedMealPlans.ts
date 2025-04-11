@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './useAuth';
 
 export type MealPlan = {
   id: string;
@@ -30,6 +30,7 @@ export const useSavedMealPlans = () => {
   const [isPlanDetailOpen, setIsPlanDetailOpen] = useState(false);
   const [activePlan, setActivePlan] = useState<{plan: MealPlan, startDay: number} | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     const storedActivePlan = sessionStorage.getItem('activePlan');
@@ -67,9 +68,17 @@ export const useSavedMealPlans = () => {
   const fetchPlans = async () => {
     setIsLoading(true);
     try {
+      // Only fetch plans if user is authenticated
+      if (!user) {
+        setPlans([]);
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('saved_meal_plans')
         .select('*')
+        .eq('user_id', user.id)  // Filter by current user's ID
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -93,12 +102,24 @@ export const useSavedMealPlans = () => {
 
   const deletePlan = async (id: string) => {
     try {
+      // Make sure we have a user
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "You need to be logged in to delete meal plans.",
+          variant: "destructive"
+        });
+        return false;
+      }
+
       const { error } = await supabase
         .from('saved_meal_plans')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user.id);  // Ensure we only delete the user's own plans
       
       if (error) {
+        console.error('Deletion error:', error);
         throw error;
       }
       
@@ -274,7 +295,7 @@ export const useSavedMealPlans = () => {
 
   useEffect(() => {
     fetchPlans();
-  }, []);
+  }, [user]);
 
   return {
     plans,

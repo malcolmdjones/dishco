@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Cookie, Plus } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Cookie, Plus, ArrowLeft } from 'lucide-react';
 import { useRecipes } from '@/hooks/useRecipes';
 import { Button } from '@/components/ui/button';
 import RecipeCard from '@/components/recipe/RecipeCard';
@@ -45,7 +45,14 @@ const SavedDessertsPage = () => {
   return (
     <div className="animate-fade-in">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold">Saved Desserts</h1>
+        <div className="flex items-center gap-2 mb-2">
+          <Link to="/saved-recipes">
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <ArrowLeft size={18} />
+            </Button>
+          </Link>
+          <h1 className="text-2xl font-bold">Saved Desserts</h1>
+        </div>
         <p className="text-dishco-text-light">Your sweet treats collection</p>
       </header>
 

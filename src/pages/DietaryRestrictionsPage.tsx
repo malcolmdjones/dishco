@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { Check, Info } from 'lucide-react';
+import { Check, Info, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 
 interface DietaryRestriction {
   id: string;
@@ -119,7 +120,14 @@ const DietaryRestrictionsPage = () => {
   return (
     <div className="animate-fade-in">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold">Dietary Restrictions</h1>
+        <div className="flex items-center gap-2 mb-2">
+          <Link to="/more">
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <ArrowLeft size={18} />
+            </Button>
+          </Link>
+          <h1 className="text-2xl font-bold">Dietary Restrictions</h1>
+        </div>
         <p className="text-dishco-text-light">Customize your meal recommendations</p>
       </header>
 
