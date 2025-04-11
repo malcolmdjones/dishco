@@ -193,9 +193,12 @@ const HomePage = () => {
     setSelectedDate(new Date());
   };
 
-  const handleOpenRecipe = (recipe: Recipe) => {
-    setSelectedRecipe(recipe);
-    setIsRecipeViewerOpen(true);
+  const handleOpenRecipe = (recipe: Recipe | Recipe[]) => {
+    const recipeData = getMealData(recipe);
+    if (recipeData) {
+      setSelectedRecipe(recipeData);
+      setIsRecipeViewerOpen(true);
+    }
   };
 
   const handleToggleSave = async (recipeId: string, currentlySaved: boolean) => {

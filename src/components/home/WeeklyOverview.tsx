@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format, addDays } from 'date-fns';
 import { MealPlan } from '@/types/MealPlan';
+import { getMealData } from '@/hooks/utils';
 
 interface WeeklyOverviewProps {
   activePlan: {plan: MealPlan, startDay: number} | null;
@@ -42,7 +43,7 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlan }) => {
   startDate.setDate(startDate.getDate() - activePlan.startDay);
   
   // Show max 5 days in the overview
-  const daysToShow = Math.min(5, activePlan.plan.plan_data.days.length);
+  const daysToShow = Math.min(5, activePlan.plan.plan_data.days?.length || 0);
 
   return (
     <div className="bg-white rounded-xl p-4 shadow-sm animate-slide-up">
@@ -58,7 +59,9 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlan }) => {
       
       <div className="space-y-2 mt-4">
         {Array.from({ length: daysToShow }).map((_, index) => {
-          const day = activePlan.plan.plan_data.days[index];
+          const day = activePlan.plan.plan_data.days?.[index];
+          if (!day) return null;
+          
           const dayDate = addDays(startDate, index);
           const formattedDate = format(dayDate, 'EEE, MMM d');
           const isToday = format(dayDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
@@ -71,7 +74,10 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlan }) => {
             ...(meals.snacks || [])
           ]
             .filter(Boolean)
-            .reduce((sum, meal) => sum + (meal.macros?.calories || 0), 0);
+            .reduce((sum, meal) => {
+              const mealData = getMealData(meal);
+              return sum + (mealData?.macros?.calories || 0);
+            }, 0);
 
           return (
             <Card key={index} className={`${isToday ? 'border-green-300 bg-green-50' : ''}`}>
@@ -96,19 +102,19 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlan }) => {
                   {meals.breakfast && (
                     <div className="flex items-center">
                       <span className="bg-blue-100 w-2 h-2 rounded-full mr-1"></span>
-                      <span className="truncate">{meals.breakfast.name}</span>
+                      <span className="truncate">{getMealData(meals.breakfast)?.name || 'Breakfast'}</span>
                     </div>
                   )}
                   {meals.lunch && (
                     <div className="flex items-center">
                       <span className="bg-green-100 w-2 h-2 rounded-full mr-1"></span>
-                      <span className="truncate">{meals.lunch.name}</span>
+                      <span className="truncate">{getMealData(meals.lunch)?.name || 'Lunch'}</span>
                     </div>
                   )}
                   {meals.dinner && (
                     <div className="flex items-center">
                       <span className="bg-purple-100 w-2 h-2 rounded-full mr-1"></span>
-                      <span className="truncate">{meals.dinner.name}</span>
+                      <span className="truncate">{getMealData(meals.dinner)?.name || 'Dinner'}</span>
                     </div>
                   )}
                   {meals.snacks && meals.snacks.length > 0 && (
