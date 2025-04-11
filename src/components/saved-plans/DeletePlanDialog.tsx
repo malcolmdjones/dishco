@@ -6,13 +6,15 @@ import { Button } from '@/components/ui/button';
 interface DeletePlanDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirmDelete: () => void;
+  onConfirmDelete: () => Promise<void>;
+  isDeleting: boolean;
 }
 
 const DeletePlanDialog: React.FC<DeletePlanDialogProps> = ({
   isOpen,
   onOpenChange,
-  onConfirmDelete
+  onConfirmDelete,
+  isDeleting
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -24,17 +26,21 @@ const DeletePlanDialog: React.FC<DeletePlanDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="flex flex-row justify-between sm:justify-between mt-4">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+            disabled={isDeleting}
+          >
             Cancel
           </Button>
           <Button 
             type="submit" 
             variant="destructive" 
-            onClick={() => {
-              onConfirmDelete();
-            }}
+            onClick={onConfirmDelete}
+            disabled={isDeleting}
           >
-            Delete Plan
+            {isDeleting ? 'Deleting...' : 'Delete Plan'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -23,6 +23,7 @@ const SavedPlansPage = () => {
   // Dialog states
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Form states
   const [editPlan, setEditPlan] = useState<MealPlan | null>(null);
@@ -72,6 +73,8 @@ const SavedPlansPage = () => {
         title: "Success",
         description: "Meal plan updated successfully."
       });
+      // Refresh the plans after update
+      await fetchPlans();
     } catch (error) {
       console.error('Error updating plan:', error);
     }
@@ -89,18 +92,19 @@ const SavedPlansPage = () => {
       return;
     }
 
-    console.log(`Confirming deletion for plan: ${deletePlanId}`);
     try {
+      setIsDeleting(true);
+      console.log(`Confirming deletion for plan: ${deletePlanId}`);
       const success = await hookDeletePlan(deletePlanId);
+      
       if (success) {
-        setIsDeleteDialogOpen(false);
-        setDeletePlanId(null);
         toast({
           title: "Success",
           description: "Meal plan deleted successfully."
         });
-        // Re-fetch plans after deletion
-        fetchPlans();
+        
+        // Force refresh of plans after successful deletion
+        await fetchPlans();
       } else {
         throw new Error("Failed to delete the meal plan.");
       }
@@ -111,6 +115,10 @@ const SavedPlansPage = () => {
         description: "Failed to delete the meal plan.",
         variant: "destructive"
       });
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+      setDeletePlanId(null);
     }
   };
 
@@ -198,6 +206,7 @@ const SavedPlansPage = () => {
         isOpen={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         onConfirmDelete={confirmDeletePlan}
+        isDeleting={isDeleting}
       />
       
       <MealPlanDetailView 

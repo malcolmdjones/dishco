@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -81,7 +80,7 @@ export const useSavedMealPlans = () => {
       const { data, error } = await supabase
         .from('saved_meal_plans')
         .select('*')
-        .eq('user_id', user.id)  // Filter by current user's ID
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -117,7 +116,7 @@ export const useSavedMealPlans = () => {
 
       console.log(`Attempting to delete plan with ID: ${id}`);
       
-      // First verify if the plan exists and belongs to the user
+      // First verify if the plan exists
       const { data: existingPlan, error: fetchError } = await supabase
         .from('saved_meal_plans')
         .select('id, user_id')
@@ -151,7 +150,7 @@ export const useSavedMealPlans = () => {
       const { error } = await supabase
         .from('saved_meal_plans')
         .delete()
-        .match({ id: id, user_id: user.id });
+        .eq('id', id);
       
       if (error) {
         console.error('Deletion error:', error);
@@ -345,7 +344,7 @@ export const useSavedMealPlans = () => {
     setIsPlanDetailOpen,
     fetchPlans,
     deletePlan,
-    updatePlan,
+    updatePlan: hookUpdatePlan,
     viewPlanDetails,
     activePlan,
     activatePlan,
