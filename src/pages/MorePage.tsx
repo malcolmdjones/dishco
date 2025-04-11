@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronRight, Heart, Settings, User, Utensils, LogOut, Calendar, AlertTriangle, Cookie, ShieldCheck, ShoppingCart } from 'lucide-react';
+import { ChevronRight, Heart, Settings, User, Utensils, LogOut, Calendar, AlertTriangle, Cookie, ShieldCheck, ShoppingCart, Cake } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -83,6 +83,12 @@ const MorePage = () => {
       icon: <Cookie size={20} className="text-amber-500" />,
       path: '/saved-snacks',
       description: 'Access your collection of favorite snacks'
+    },
+    {
+      name: 'Saved Desserts',
+      icon: <Cake size={20} className="text-purple-500" />,
+      path: '/saved-desserts',
+      description: 'Access your collection of favorite desserts'
     },
     {
       name: 'Saved Meal Plans',

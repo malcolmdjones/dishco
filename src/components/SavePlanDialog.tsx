@@ -1,13 +1,15 @@
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import GroceryListConfirmationDialog from './GroceryListConfirmationDialog';
+import { useGroceryListUtils } from '@/hooks/useGroceryListUtils';
 
 interface SavePlanDialogProps {
   isOpen: boolean;
@@ -16,77 +18,81 @@ interface SavePlanDialogProps {
 }
 
 const SavePlanDialog: React.FC<SavePlanDialogProps> = ({ isOpen, onClose, mealPlan }) => {
-  const [planName, setPlanName] = useState('');
-  const [description, setDescription] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [planName, setPlanName] = useState('');
+  const [planDescription, setPlanDescription] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  
+  const {
+    showConfirmation,
+    setShowConfirmation,
+    processMealPlanForGroceries,
+    handleConfirmGroceryAddition,
+    currentMealPlan
+  } = useGroceryListUtils();
 
   const handleSave = async () => {
     if (!planName.trim()) {
       toast({
-        title: "Name Required",
+        title: "Missing Information",
         description: "Please provide a name for your meal plan.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
-    setIsSaving(true);
-    
     try {
-      // Get current user session
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        toast({
-          title: "Authentication Required",
-          description: "You need to be logged in to save meal plans.",
-          variant: "destructive"
-        });
-        setIsSaving(false);
-        return;
-      }
-      
-      // Prepare data with additional metadata
+      setIsSaving(true);
+
       const planData = {
         days: mealPlan,
-        description: description.trim(),
-        tags: ['auto-generated'],
-        created_at: new Date().toISOString()
+        description: planDescription,
+        tags: [] // You could add tags feature in the future
       };
-      
-      // Insert with user_id from session
+
       const { data, error } = await supabase
         .from('saved_meal_plans')
-        .insert([{ 
-          name: planName.trim(),
+        .insert({
+          name: planName,
           plan_data: planData,
-          user_id: session.user.id
-        }]);
+          user_id: user?.id
+        })
+        .select('*')
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Success!",
+        description: "Your meal plan has been saved.",
+      });
+
+      // Set the plan as active
+      sessionStorage.setItem('activePlan', JSON.stringify({
+        ...planData,
+        startDay: 0
+      }));
+
+      // Close the dialog
+      onClose();
       
-      if (error) {
-        console.error('Error saving meal plan:', error);
-        throw error;
+      // Show grocery list confirmation
+      if (data) {
+        const savedPlan = {
+          name: planName,
+          plan_data: planData,
+          id: data.id
+        };
+        processMealPlanForGroceries(savedPlan);
       }
       
-      toast({
-        title: "Plan Saved",
-        description: "Your meal plan has been saved successfully.",
-      });
-      
-      // Reset form
-      setPlanName('');
-      setDescription('');
-      
-      onClose();
-      navigate('/saved-plans');
     } catch (error) {
-      console.error('Error saving meal plan:', error);
+      console.error('Error saving plan:', error);
       toast({
-        title: "Save Failed",
-        description: "There was an error saving your meal plan. Please try again.",
-        variant: "destructive"
+        title: "Error",
+        description: "Failed to save your meal plan. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsSaving(false);
@@ -94,49 +100,56 @@ const SavePlanDialog: React.FC<SavePlanDialogProps> = ({ isOpen, onClose, mealPl
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Save Meal Plan</DialogTitle>
-          <DialogDescription>
-            Give your meal plan a name and optional description to save it for later.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="plan-name">Plan Name</Label>
-            <Input
-              id="plan-name"
-              placeholder="e.g., My Weekly Plan, Keto Plan"
-              value={planName}
-              onChange={(e) => setPlanName(e.target.value)}
-            />
+    <>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Meal Plan</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="plan-name" className="text-sm font-medium">
+                Plan Name
+              </label>
+              <Input
+                id="plan-name"
+                placeholder="e.g. My Healthy Week, Keto Plan, etc."
+                value={planName}
+                onChange={(e) => setPlanName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="plan-description" className="text-sm font-medium">
+                Description (Optional)
+              </label>
+              <Textarea
+                id="plan-description"
+                placeholder="Add notes or details about this meal plan..."
+                value={planDescription}
+                onChange={(e) => setPlanDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
           </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="plan-description">Description (Optional)</Label>
-            <Textarea
-              id="plan-description"
-              placeholder="Add notes about this meal plan..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="resize-none"
-              rows={3}
-            />
-          </div>
-        </div>
-        
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={onClose} disabled={isSaving}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Saving..." : "Save Plan"}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter>
+            <Button variant="outline" onClick={onClose} disabled={isSaving}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save Plan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <GroceryListConfirmationDialog 
+        isOpen={showConfirmation}
+        onOpenChange={setShowConfirmation}
+        onConfirm={handleConfirmGroceryAddition}
+        onCancel={() => setShowConfirmation(false)}
+        mealPlanName={currentMealPlan?.name || 'your meal plan'}
+      />
+    </>
   );
 };
 
