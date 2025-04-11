@@ -1,7 +1,5 @@
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface DeletePlanDialogProps {
@@ -17,12 +15,6 @@ const DeletePlanDialog: React.FC<DeletePlanDialogProps> = ({
   onConfirmDelete,
   isDeleting
 }) => {
-  const handleConfirm = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    await onConfirmDelete();
-  };
-
   return (
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -39,7 +31,10 @@ const DeletePlanDialog: React.FC<DeletePlanDialogProps> = ({
             Cancel
           </AlertDialogCancel>
           <AlertDialogAction 
-            onClick={handleConfirm}
+            onClick={(e) => {
+              e.preventDefault();
+              onConfirmDelete();
+            }}
             disabled={isDeleting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
