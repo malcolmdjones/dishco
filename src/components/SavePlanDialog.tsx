@@ -63,9 +63,12 @@ const SavePlanDialog: React.FC<SavePlanDialogProps> = ({ isOpen, onClose, mealPl
         ...planData,
         startDay: 0
       }));
-
+      
       // Close the dialog
       onClose();
+      
+      // Redirect to saved plans page after successful save
+      navigate('/saved-plans');
       
     } catch (error) {
       console.error('Error saving plan:', error);

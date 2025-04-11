@@ -36,10 +36,9 @@ const SavedPlansPage = () => {
     isPlanDetailOpen, 
     setIsPlanDetailOpen,
     selectedPlan, 
-    setSelectedPlan,
+    viewPlanDetails,
     deletePlan: hookDeletePlan,
     updatePlan: hookUpdatePlan,
-    viewPlanDetails,
     fetchPlans
   } = useSavedMealPlans();
 
@@ -88,8 +87,7 @@ const SavedPlansPage = () => {
 
   const handleViewPlanDetails = (plan: any) => {
     console.log('Viewing plan details:', plan);
-    setSelectedPlan(plan);
-    setIsPlanDetailOpen(true);
+    viewPlanDetails(plan);
   };
 
   const handleCopyAndEdit = (plan: any) => {

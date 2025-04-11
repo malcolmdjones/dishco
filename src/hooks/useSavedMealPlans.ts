@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,6 +38,7 @@ export const useSavedMealPlans = () => {
     if (storedActivePlan) {
       try {
         const parsedPlan = JSON.parse(storedActivePlan);
+        // First check if this is one of our saved plans
         const matchingPlan = plans.find(p => 
           p.plan_data.days?.length === parsedPlan.days?.length && 
           JSON.stringify(p.plan_data.days) === JSON.stringify(parsedPlan.days)
@@ -48,6 +50,7 @@ export const useSavedMealPlans = () => {
             startDay: parsedPlan.startDay || 0 
           });
         } else {
+          // If not a saved plan, create a temporary plan object
           setActivePlan({ 
             plan: { 
               id: 'active', 
@@ -214,6 +217,7 @@ export const useSavedMealPlans = () => {
   };
 
   const activatePlan = (plan: MealPlan, startDay: number = 0) => {
+    // Ensure we're storing the complete plan data with all recipe details
     sessionStorage.setItem('activePlan', JSON.stringify({
       ...plan.plan_data,
       startDay
@@ -287,7 +291,9 @@ export const useSavedMealPlans = () => {
     const dayDiff = Math.floor((targetDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     
     if (dayDiff >= 0 && dayDiff < activePlan.plan.plan_data.days.length) {
-      return activePlan.plan.plan_data.days[dayDiff].meals;
+      const dayMeals = activePlan.plan.plan_data.days[dayDiff].meals;
+      console.log('Found meals for day', dayDiff, dayMeals);
+      return dayMeals;
     }
     
     return null;

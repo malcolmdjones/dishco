@@ -67,10 +67,12 @@ const HomePage = () => {
     
     // If there are planned meals for this date, add them to the array
     if (planMeals) {
+      console.log('Plan meals found for date:', formattedDate, planMeals);
+      
       if (planMeals.breakfast) {
         plannedMealArray.push({
           id: `breakfast-planned-${formattedDate}`,
-          name: planMeals.breakfast.name,
+          name: planMeals.breakfast.name || 'Breakfast',
           type: 'breakfast',
           recipe: planMeals.breakfast,
           consumed: false,
@@ -81,7 +83,7 @@ const HomePage = () => {
       if (planMeals.lunch) {
         plannedMealArray.push({
           id: `lunch-planned-${formattedDate}`,
-          name: planMeals.lunch.name,
+          name: planMeals.lunch.name || 'Lunch',
           type: 'lunch',
           recipe: planMeals.lunch,
           consumed: false,
@@ -92,7 +94,7 @@ const HomePage = () => {
       if (planMeals.dinner) {
         plannedMealArray.push({
           id: `dinner-planned-${formattedDate}`,
-          name: planMeals.dinner.name,
+          name: planMeals.dinner.name || 'Dinner',
           type: 'dinner',
           recipe: planMeals.dinner,
           consumed: false,
@@ -100,16 +102,18 @@ const HomePage = () => {
         });
       }
       
-      if (planMeals.snacks && planMeals.snacks.length > 0) {
+      if (planMeals.snacks && Array.isArray(planMeals.snacks) && planMeals.snacks.length > 0) {
         planMeals.snacks.forEach((snack, index) => {
-          plannedMealArray.push({
-            id: `snack-planned-${index}-${formattedDate}`,
-            name: snack.name,
-            type: 'snack',
-            recipe: snack,
-            consumed: false,
-            loggedAt: formattedDate
-          });
+          if (snack) {
+            plannedMealArray.push({
+              id: `snack-planned-${index}-${formattedDate}`,
+              name: snack.name || `Snack ${index + 1}`,
+              type: 'snack',
+              recipe: snack,
+              consumed: false,
+              loggedAt: formattedDate
+            });
+          }
         });
       }
     }
