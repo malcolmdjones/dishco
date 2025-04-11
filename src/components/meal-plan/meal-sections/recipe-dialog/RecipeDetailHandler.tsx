@@ -26,7 +26,7 @@ const RecipeDetailHandler: React.FC<RecipeDetailHandlerProps> = ({
     <Dialog open={isRecipeDetailOpen} onOpenChange={(open) => {
       if (!open) handleCloseRecipeDetail();
     }}>
-      <DialogContent className="max-w-4xl h-[90vh] overflow-auto z-[200]">
+      <DialogContent className="max-w-4xl h-[90vh] overflow-auto z-[9999]">
         <RecipeDetail
           recipeId={selectedRecipe.id}
           onClose={handleCloseRecipeDetail}

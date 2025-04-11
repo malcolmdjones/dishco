@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -20,11 +21,11 @@ const SavedPlansPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editPlan, setEditPlan] = useState(null);
+  const [editPlan, setEditPlan] = useState<any>(null);
   const [newPlanName, setNewPlanName] = useState('');
   const [newPlanDescription, setNewPlanDescription] = useState('');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [deletePlanId, setDeletePlanId] = useState(null);
+  const [deletePlanId, setDeletePlanId] = useState<string | null>(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const { showConfirmation, setShowConfirmation, processMealPlanForGroceries, handleConfirmGroceryAddition, currentMealPlan } = useGroceryListUtils();
@@ -35,13 +36,14 @@ const SavedPlansPage = () => {
     isPlanDetailOpen, 
     setIsPlanDetailOpen,
     selectedPlan, 
+    setSelectedPlan,
     deletePlan: hookDeletePlan,
     updatePlan: hookUpdatePlan,
     viewPlanDetails,
     fetchPlans
   } = useSavedMealPlans();
 
-  const handleEditPlan = (plan) => {
+  const handleEditPlan = (plan: any) => {
     setEditPlan(plan);
     setNewPlanName(plan.name);
     setNewPlanDescription(plan.plan_data?.description || '');
@@ -62,7 +64,7 @@ const SavedPlansPage = () => {
     }
   };
 
-  const handleDeletePlan = (id) => {
+  const handleDeletePlan = (id: string) => {
     setDeletePlanId(id);
     setIsDeleteDialogOpen(true);
   };
@@ -84,18 +86,18 @@ const SavedPlansPage = () => {
     }
   };
 
-  const handleViewPlanDetails = (plan) => {
+  const handleViewPlanDetails = (plan: any) => {
     console.log('Viewing plan details:', plan);
     setSelectedPlan(plan);
     setIsPlanDetailOpen(true);
   };
 
-  const handleCopyAndEdit = (plan) => {
+  const handleCopyAndEdit = (plan: any) => {
     sessionStorage.setItem('planToCopy', JSON.stringify(plan));
     navigate('/planning');
   };
   
-  const handleUsePlan = (plan) => {
+  const handleUsePlan = (plan: any) => {
     if (selectedDate) {
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
       sessionStorage.setItem('activatePlanDate', formattedDate);
@@ -123,7 +125,7 @@ const SavedPlansPage = () => {
     navigate('/planning');
   };
 
-  const calculateTotalCalories = (days) => {
+  const calculateTotalCalories = (days: any[] | undefined) => {
     if (!days || !Array.isArray(days)) return 0;
     
     let total = 0;
@@ -236,7 +238,7 @@ const SavedPlansPage = () => {
               </div>
               
               <div className="flex gap-2">
-                {planData.tags && planData.tags.map((tag, i) => (
+                {planData.tags && Array.isArray(planData.tags) && planData.tags.map((tag: string, i: number) => (
                   <span 
                     key={i}
                     className="px-2 py-1 bg-dishco-primary/10 rounded text-xs text-dishco-primary"
