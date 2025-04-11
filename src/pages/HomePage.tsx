@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -44,8 +45,10 @@ const HomePage = () => {
   const [todaysMeals, setTodaysMeals] = useState<Meal[]>([]);
 
   useEffect(() => {
+    // Get logged meals from local storage
     const storedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
     
+    // Filter stored meals for the selected date
     const selectedDateStart = startOfDay(selectedDate);
     const filteredMeals = storedMeals.filter((meal: Meal) => {
       if (!meal.loggedAt) return false;
@@ -53,15 +56,20 @@ const HomePage = () => {
       return isEqual(mealDate, selectedDateStart);
     });
     
+    // Format date for meal plan lookup
     const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+    
+    // Get meals from active meal plan for the selected date
     const planMeals = getMealsForDate(formattedDate);
     
+    // Create array for planned meals
     const plannedMealArray: Meal[] = [];
     
+    // If there are planned meals for this date, add them to the array
     if (planMeals) {
       if (planMeals.breakfast) {
         plannedMealArray.push({
-          id: `breakfast-planned-${Date.now()}`,
+          id: `breakfast-planned-${formattedDate}`,
           name: planMeals.breakfast.name,
           type: 'breakfast',
           recipe: planMeals.breakfast,
@@ -72,7 +80,7 @@ const HomePage = () => {
       
       if (planMeals.lunch) {
         plannedMealArray.push({
-          id: `lunch-planned-${Date.now()}`,
+          id: `lunch-planned-${formattedDate}`,
           name: planMeals.lunch.name,
           type: 'lunch',
           recipe: planMeals.lunch,
@@ -83,7 +91,7 @@ const HomePage = () => {
       
       if (planMeals.dinner) {
         plannedMealArray.push({
-          id: `dinner-planned-${Date.now()}`,
+          id: `dinner-planned-${formattedDate}`,
           name: planMeals.dinner.name,
           type: 'dinner',
           recipe: planMeals.dinner,
@@ -95,7 +103,7 @@ const HomePage = () => {
       if (planMeals.snacks && planMeals.snacks.length > 0) {
         planMeals.snacks.forEach((snack, index) => {
           plannedMealArray.push({
-            id: `snack-planned-${index}-${Date.now()}`,
+            id: `snack-planned-${index}-${formattedDate}`,
             name: snack.name,
             type: 'snack',
             recipe: snack,
@@ -106,35 +114,21 @@ const HomePage = () => {
       }
     }
     
+    // Decide which meals to show based on priority:
+    // 1. Logged meals for the day
+    // 2. Planned meals from the active meal plan
+    // 3. Empty state if neither exist
     if (filteredMeals.length > 0) {
-      setTodaysMeals(filteredMeals);
+      // Merge with any planned meals not already logged
+      const loggedMealIds = new Set(filteredMeals.map((meal: Meal) => meal.name));
+      const unloggedPlannedMeals = plannedMealArray.filter(meal => !loggedMealIds.has(meal.name));
+      
+      setTodaysMeals([...filteredMeals, ...unloggedPlannedMeals]);
     } else if (plannedMealArray.length > 0) {
+      // Show planned meals if no logged meals
       setTodaysMeals(plannedMealArray);
-    } else if (isToday(selectedDate)) {
-      setTodaysMeals([
-        {
-          id: '1',
-          name: 'Avocado Toast with Egg',
-          type: 'breakfast',
-          recipe: recipes.find(recipe => recipe.id === '2') || recipes[0],
-          consumed: false
-        },
-        {
-          id: '2',
-          name: 'Grilled Chicken Salad',
-          type: 'lunch',
-          recipe: recipes.find(recipe => recipe.id === '4') || recipes[0],
-          consumed: false
-        },
-        {
-          id: '3',
-          name: 'Baked Salmon with Asparagus',
-          type: 'dinner',
-          recipe: recipes.find(recipe => recipe.id === '7') || recipes[0],
-          consumed: false
-        }
-      ]);
     } else {
+      // Show empty state
       setTodaysMeals([]);
     }
     
@@ -219,9 +213,21 @@ const HomePage = () => {
     setTodaysMeals(updatedTodaysMeals);
     
     const storedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
-    const updatedStoredMeals = storedMeals.map((m: Meal) => 
-      m.id === meal.id ? { ...m, consumed: !m.consumed } : m
-    );
+    
+    // Check if the meal already exists in stored meals
+    const mealExists = storedMeals.some((m: Meal) => m.id === meal.id);
+    
+    let updatedStoredMeals;
+    if (mealExists) {
+      // Update existing meal
+      updatedStoredMeals = storedMeals.map((m: Meal) => 
+        m.id === meal.id ? { ...m, consumed: !m.consumed } : m
+      );
+    } else {
+      // Add new meal to stored meals
+      updatedStoredMeals = [...storedMeals, { ...meal, consumed: true }];
+    }
+    
     localStorage.setItem('loggedMeals', JSON.stringify(updatedStoredMeals));
     
     if (!meal.consumed) {
