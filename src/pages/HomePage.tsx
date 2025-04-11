@@ -14,12 +14,13 @@ import { useSavedMealPlans } from '@/hooks/useSavedMealPlans';
 import { Recipe } from '@/types/MealPlan';
 import { getMealData } from '@/hooks/utils';
 import { convertToMockDataRecipe } from '@/utils/typeUtils';
+import { Recipe as MockDataRecipe } from '@/data/mockData';
 
 interface Meal {
   id: string;
   name: string;
   type: string;
-  recipe: Recipe;
+  recipe: MockDataRecipe;
   consumed: boolean;
   loggedAt?: string;
 }
@@ -28,7 +29,7 @@ const HomePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [selectedRecipe, setSelectedRecipe] = useState<MockDataRecipe | null>(null);
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const { activePlan, getMealsForDate } = useSavedMealPlans();
@@ -66,7 +67,7 @@ const HomePage = () => {
       if (planMeals.breakfast) {
         const breakfastData = getMealData(planMeals.breakfast);
         if (breakfastData) {
-          const convertedRecipe = convertToMockDataRecipe(breakfastData);
+          const convertedRecipe = convertToMockDataRecipe(breakfastData as Recipe);
           plannedMealArray.push({
             id: `breakfast-planned-${formattedDate}`,
             name: convertedRecipe.name,
@@ -81,7 +82,7 @@ const HomePage = () => {
       if (planMeals.lunch) {
         const lunchData = getMealData(planMeals.lunch);
         if (lunchData) {
-          const convertedRecipe = convertToMockDataRecipe(lunchData);
+          const convertedRecipe = convertToMockDataRecipe(lunchData as Recipe);
           plannedMealArray.push({
             id: `lunch-planned-${formattedDate}`,
             name: convertedRecipe.name,
@@ -96,7 +97,7 @@ const HomePage = () => {
       if (planMeals.dinner) {
         const dinnerData = getMealData(planMeals.dinner);
         if (dinnerData) {
-          const convertedRecipe = convertToMockDataRecipe(dinnerData);
+          const convertedRecipe = convertToMockDataRecipe(dinnerData as Recipe);
           plannedMealArray.push({
             id: `dinner-planned-${formattedDate}`,
             name: convertedRecipe.name,
@@ -201,7 +202,7 @@ const HomePage = () => {
   const handleOpenRecipe = (recipe: any) => {
     const recipeData = getMealData(recipe);
     if (recipeData) {
-      const convertedRecipe = convertToMockDataRecipe(recipeData);
+      const convertedRecipe = convertToMockDataRecipe(recipeData as Recipe);
       setSelectedRecipe(convertedRecipe);
       setIsRecipeViewerOpen(true);
     }

@@ -27,7 +27,21 @@ export const convertToMockDataRecipe = (recipe: MealPlanRecipe): MockDataRecipe 
  * Convert a Recipe from MockData type to MealPlan type
  */
 export const convertToMealPlanRecipe = (recipe: MockDataRecipe): MealPlanRecipe => {
-  return recipe as unknown as MealPlanRecipe;
+  return {
+    id: recipe.id,
+    name: recipe.name,
+    description: recipe.description,
+    type: recipe.type,
+    imageSrc: recipe.imageSrc,
+    requiresBlender: recipe.requiresBlender,
+    requiresCooking: recipe.requiresCooking,
+    cookTime: recipe.cookTime,
+    prepTime: recipe.prepTime,
+    servings: recipe.servings,
+    macros: recipe.macros,
+    ingredients: recipe.ingredients,
+    instructions: recipe.instructions
+  };
 };
 
 /**
