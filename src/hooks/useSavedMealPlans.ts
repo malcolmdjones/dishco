@@ -74,6 +74,23 @@ export const useSavedMealPlans = () => {
     }
   }, [plans]);
 
+  // Helper function to safely get description from plan_data
+  const getDescription = (planData: Json): string => {
+    if (typeof planData === 'object' && planData !== null && !Array.isArray(planData)) {
+      return (planData as {description?: string}).description || '';
+    }
+    return '';
+  };
+  
+  // Helper function to safely get tags from plan_data
+  const getTags = (planData: Json): string[] => {
+    if (typeof planData === 'object' && planData !== null && !Array.isArray(planData)) {
+      const tags = (planData as {tags?: string[]}).tags;
+      return Array.isArray(tags) ? tags : [];
+    }
+    return [];
+  };
+
   // Fetch meal plans and their recipes
   const fetchPlans = async () => {
     setIsLoading(true);
@@ -116,7 +133,7 @@ export const useSavedMealPlans = () => {
               ...plan,
               plan_data: { 
                 days: [], 
-                description: typeof plan.plan_data === 'object' ? plan.plan_data.description || '' : ''
+                description: getDescription(plan.plan_data)
               }
             });
             continue;
@@ -137,18 +154,22 @@ export const useSavedMealPlans = () => {
             
             const day = dayMap.get(day_index);
             // Make sure recipe_data is an object before converting
-            if (recipe_data && typeof recipe_data === 'object') {
-              const recipe = dbToFrontendRecipe(recipe_data);
-              
-              // Add recipe to the appropriate meal slot
-              if (meal_type === 'breakfast') {
-                day.meals.breakfast = recipe;
-              } else if (meal_type === 'lunch') {
-                day.meals.lunch = recipe;
-              } else if (meal_type === 'dinner') {
-                day.meals.dinner = recipe;
-              } else if (meal_type === 'snacks') {
-                day.meals.snacks.push(recipe);
+            if (recipe_data && typeof recipe_data === 'object' && !Array.isArray(recipe_data)) {
+              try {
+                const recipe = dbToFrontendRecipe(recipe_data);
+                
+                // Add recipe to the appropriate meal slot
+                if (meal_type === 'breakfast') {
+                  day.meals.breakfast = recipe;
+                } else if (meal_type === 'lunch') {
+                  day.meals.lunch = recipe;
+                } else if (meal_type === 'dinner') {
+                  day.meals.dinner = recipe;
+                } else if (meal_type === 'snacks') {
+                  day.meals.snacks.push(recipe);
+                }
+              } catch (error) {
+                console.error('Error processing recipe data:', error);
               }
             }
           });
@@ -167,15 +188,33 @@ export const useSavedMealPlans = () => {
             user_id: plan.user_id,
             plan_data: {
               days: daysArray,
-              description: typeof plan.plan_data === 'object' ? plan.plan_data.description || '' : '',
-              tags: typeof plan.plan_data === 'object' && Array.isArray(plan.plan_data.tags) ? plan.plan_data.tags : []
+              description: getDescription(plan.plan_data),
+              tags: getTags(plan.plan_data)
             }
           });
         } else {
           // For legacy plans (schema_version < 2), ensure plan_data is properly typed
-          const planData = typeof plan.plan_data === 'string' 
-            ? JSON.parse(plan.plan_data) 
-            : plan.plan_data;
+          let planData: MealPlanData;
+          
+          if (typeof plan.plan_data === 'string') {
+            try {
+              planData = JSON.parse(plan.plan_data) as MealPlanData;
+            } catch (error) {
+              console.error('Error parsing plan_data string:', error);
+              planData = { days: [], description: '', tags: [] };
+            }
+          } else if (typeof plan.plan_data === 'object' && plan.plan_data !== null) {
+            // Handle case where plan_data is already an object
+            const rawPlanData = plan.plan_data as any;
+            planData = {
+              days: Array.isArray(rawPlanData.days) ? rawPlanData.days : [],
+              description: typeof rawPlanData.description === 'string' ? rawPlanData.description : '',
+              tags: Array.isArray(rawPlanData.tags) ? rawPlanData.tags : []
+            };
+          } else {
+            // Fallback for unexpected data type
+            planData = { days: [], description: '', tags: [] };
+          }
             
           processedPlans.push({
             id: plan.id,
@@ -183,11 +222,7 @@ export const useSavedMealPlans = () => {
             created_at: plan.created_at,
             schema_version: plan.schema_version,
             user_id: plan.user_id,
-            plan_data: {
-              days: planData.days || [],
-              description: planData.description || '',
-              tags: planData.tags || []
-            }
+            plan_data: planData
           });
         }
       }
