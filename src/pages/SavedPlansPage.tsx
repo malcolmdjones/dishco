@@ -1,12 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Calendar, Calendar as CalendarIcon, Pencil, Trash, ShoppingBag } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import MealPlanDetailView from '@/components/MealPlanDetailView';
 import { useNavigate } from 'react-router-dom';
@@ -16,19 +15,25 @@ import { Calendar as ReactCalendar } from '@/components/ui/calendar';
 import { useGroceryListUtils } from '@/hooks/useGroceryListUtils';
 import GroceryListConfirmationDialog from '@/components/GroceryListConfirmationDialog';
 import { useSavedMealPlans } from '@/hooks/useSavedMealPlans';
+import { MealPlan } from '@/types/MealPlan';
 
 const SavedPlansPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editPlan, setEditPlan] = useState<any>(null);
+  const [editPlan, setEditPlan] = useState<MealPlan | null>(null);
   const [newPlanName, setNewPlanName] = useState('');
   const [newPlanDescription, setNewPlanDescription] = useState('');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletePlanId, setDeletePlanId] = useState<string | null>(null);
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const { showConfirmation, setShowConfirmation, processMealPlanForGroceries, handleConfirmGroceryAddition, currentMealPlan } = useGroceryListUtils();
+  const { 
+    showConfirmation, 
+    setShowConfirmation, 
+    processMealPlanForGroceries, 
+    handleConfirmGroceryAddition, 
+    currentMealPlan 
+  } = useGroceryListUtils();
   
   const { 
     plans, 
@@ -38,12 +43,10 @@ const SavedPlansPage = () => {
     selectedPlan, 
     setSelectedPlan,
     deletePlan: hookDeletePlan,
-    updatePlan: hookUpdatePlan,
-    viewPlanDetails,
-    fetchPlans
+    updatePlan: hookUpdatePlan
   } = useSavedMealPlans();
 
-  const handleEditPlan = (plan: any) => {
+  const handleEditPlan = (plan: MealPlan) => {
     setEditPlan(plan);
     setNewPlanName(plan.name);
     setNewPlanDescription(plan.plan_data?.description || '');
@@ -86,23 +89,23 @@ const SavedPlansPage = () => {
     }
   };
 
-  const handleViewPlanDetails = (plan: any) => {
-    console.log('Viewing plan details:', plan);
-    setSelectedPlan(plan);
-    setIsPlanDetailOpen(true);
+  const handleViewPlanDetails = (plan: MealPlan) => {
+    if (setSelectedPlan) {
+      setSelectedPlan(plan);
+      setIsPlanDetailOpen(true);
+    }
   };
 
-  const handleCopyAndEdit = (plan: any) => {
+  const handleCopyAndEdit = (plan: MealPlan) => {
     sessionStorage.setItem('planToCopy', JSON.stringify(plan));
     navigate('/planning');
   };
   
-  const handleUsePlan = (plan: any) => {
+  const handleUsePlan = (plan: MealPlan) => {
     if (selectedDate) {
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
       sessionStorage.setItem('activatePlanDate', formattedDate);
       sessionStorage.setItem('activatePlanData', JSON.stringify(plan));
-      setIsCalendarOpen(false);
       
       processMealPlanForGroceries(plan);
       
