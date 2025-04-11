@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -115,6 +114,25 @@ export const useSavedMealPlans = () => {
         return false;
       }
 
+      // First verify if the plan exists and belongs to the user
+      const { data: existingPlan, error: fetchError } = await supabase
+        .from('saved_meal_plans')
+        .select('id, user_id')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
+        
+      if (fetchError || !existingPlan) {
+        console.error('Error fetching plan to delete:', fetchError);
+        toast({
+          title: "Error",
+          description: "Cannot find the meal plan to delete.",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      // If plan exists and belongs to user, proceed with deletion
       const { error } = await supabase
         .from('saved_meal_plans')
         .delete()
@@ -158,7 +176,7 @@ export const useSavedMealPlans = () => {
         description: "Failed to delete the meal plan.",
         variant: "destructive"
       });
-      throw error;
+      return false;
     }
   };
 

@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { format } from 'date-fns';
+import { Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useGroceryListUtils } from '@/hooks/useGroceryListUtils';
 import { useSavedMealPlans, MealPlan } from '@/hooks/useSavedMealPlans';
@@ -14,6 +15,7 @@ import DeletePlanDialog from '@/components/saved-plans/DeletePlanDialog';
 import EmptyPlansState from '@/components/saved-plans/EmptyPlansState';
 import GroceryListConfirmationDialog from '@/components/GroceryListConfirmationDialog';
 import MealPlanDetailView from '@/components/MealPlanDetailView';
+import { Button } from '@/components/ui/button';
 
 const SavedPlansPage = () => {
   const { toast } = useToast();
@@ -61,6 +63,10 @@ const SavedPlansPage = () => {
         description: newPlanDescription 
       });
       setIsEditDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Meal plan updated successfully."
+      });
     } catch (error) {
       console.error('Error updating plan:', error);
     }
@@ -75,9 +81,17 @@ const SavedPlansPage = () => {
     if (!deletePlanId) return;
 
     try {
-      await hookDeletePlan(deletePlanId);
-      setIsDeleteDialogOpen(false);
-      setDeletePlanId(null);
+      const success = await hookDeletePlan(deletePlanId);
+      if (success) {
+        setIsDeleteDialogOpen(false);
+        setDeletePlanId(null);
+        toast({
+          title: "Success",
+          description: "Meal plan deleted successfully."
+        });
+      } else {
+        throw new Error("Failed to delete the meal plan.");
+      }
     } catch (error) {
       console.error('Error deleting plan:', error);
       toast({
@@ -113,7 +127,7 @@ const SavedPlansPage = () => {
   const renderContent = () => {
     if (isLoading) {
       return (
-        <div className="col-span-3 flex justify-center py-12">
+        <div className="flex justify-center py-12">
           <p>Loading your meal plans...</p>
         </div>
       );
@@ -123,26 +137,37 @@ const SavedPlansPage = () => {
       return <EmptyPlansState />;
     }
 
-    return plans.map((plan) => (
-      <PlanCard
-        key={plan.id}
-        plan={plan}
-        selectedDate={selectedDate}
-        onEdit={handleEditPlan}
-        onDelete={handleDeletePlan}
-        onViewDetails={viewPlanDetails}
-        onCopyAndEdit={handleCopyAndEdit}
-        onAddToGrocery={processMealPlanForGroceries}
-        onUsePlan={handleUsePlan}
-      />
-    ));
+    return (
+      <>
+        <Link to="/planning" className="block mb-6">
+          <div className="border border-dashed border-gray-300 rounded-lg p-4 flex items-center justify-center hover:bg-gray-50 transition-colors">
+            <Plus className="text-green-500 mr-2" />
+            <span className="text-lg">Create a new meal plan</span>
+          </div>
+        </Link>
+        
+        {plans.map((plan) => (
+          <PlanCard
+            key={plan.id}
+            plan={plan}
+            selectedDate={selectedDate}
+            onEdit={handleEditPlan}
+            onDelete={handleDeletePlan}
+            onViewDetails={viewPlanDetails}
+            onCopyAndEdit={handleCopyAndEdit}
+            onAddToGrocery={processMealPlanForGroceries}
+            onUsePlan={handleUsePlan}
+          />
+        ))}
+      </>
+    );
   };
 
   return (
     <div className="container mx-auto py-8 animate-fade-in">
-      <SavedPlansHeader title="Saved Meal Plans" />
+      <SavedPlansHeader title="Saved Plans" />
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="max-w-3xl mx-auto">
         {renderContent()}
       </div>
 

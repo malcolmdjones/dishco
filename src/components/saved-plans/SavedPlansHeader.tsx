@@ -10,17 +10,17 @@ interface SavedPlansHeaderProps {
 
 const SavedPlansHeader: React.FC<SavedPlansHeaderProps> = ({ 
   title, 
-  subtitle = "Access and manage your saved meal plans"
+  subtitle = "Your collection of meal plans"
 }) => {
   return (
-    <header className="mb-6 flex items-center">
-      <Link to="/more" className="mr-3">
-        <ArrowLeft size={20} />
-      </Link>
-      <div>
-        <h1 className="text-2xl font-bold">{title}</h1>
-        <p className="text-dishco-text-light">{subtitle}</p>
+    <header className="mb-6">
+      <div className="flex items-center mb-1">
+        <Link to="/more" className="mr-3">
+          <ArrowLeft size={20} />
+        </Link>
+        <h1 className="text-3xl font-bold">{title}</h1>
       </div>
+      <p className="text-gray-600">{subtitle}</p>
     </header>
   );
 };

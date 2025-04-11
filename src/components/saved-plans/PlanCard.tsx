@@ -1,12 +1,9 @@
 
 import React from 'react';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Pencil, Trash, ShoppingBag } from 'lucide-react';
-import { MealPlan } from '@/hooks/useSavedMealPlans';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
+import { Pencil, Trash, Calendar } from 'lucide-react';
+import { MealPlan } from '@/hooks/useSavedMealPlans';
+import { Button } from '@/components/ui/button';
 
 interface PlanCardProps {
   plan: MealPlan;
@@ -21,12 +18,9 @@ interface PlanCardProps {
 
 const PlanCard: React.FC<PlanCardProps> = ({
   plan,
-  selectedDate = new Date(),
   onEdit,
   onDelete,
-  onViewDetails,
   onCopyAndEdit,
-  onAddToGrocery,
   onUsePlan
 }) => {
   const planData = plan.plan_data || { days: [], description: '', tags: [] };
@@ -70,117 +64,75 @@ const PlanCard: React.FC<PlanCardProps> = ({
     return Math.round(total / (days.length || 1));
   };
 
-  return (
-    <Card className="relative overflow-hidden animate-fade-in">
-      <div className="absolute top-3 right-3 flex gap-2 z-10">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit(plan);
-          }}
-          className="h-8 w-8 rounded-full bg-white/80 shadow-sm hover:bg-white"
-        >
-          <Pencil size={16} />
-        </Button>
-        <Button
-          variant="ghost" 
-          size="icon"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(plan.id);
-          }}
-          className="h-8 w-8 rounded-full bg-white/80 shadow-sm hover:bg-white"
-        >
-          <Trash size={16} />
-        </Button>
-        <Button
-          variant="ghost" 
-          size="icon"
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddToGrocery(plan);
-          }}
-          className="h-8 w-8 rounded-full bg-white/80 shadow-sm hover:bg-white"
-          title="Add to grocery list"
-        >
-          <ShoppingBag size={16} />
-        </Button>
-      </div>
+  const createdDate = new Date(plan.created_at);
+  const formattedDate = format(createdDate, 'MMM d, yyyy');
+  const description = planData.description || "Custom meal plan";
+  const caloriesPerDay = calculateTotalCalories(days);
 
-      <div 
-        className="cursor-pointer"
-        onClick={() => onViewDetails(plan)}
-      >
-        <div className="h-32 bg-gradient-to-r from-dishco-primary/20 to-dishco-secondary/20 p-4">
-          <h3 className="text-lg font-bold mb-1">{plan.name}</h3>
-          <p className="text-sm text-dishco-text-light line-clamp-2">
-            {planData.description || "No description available"}
-          </p>
+  return (
+    <div className="border rounded-lg mb-4">
+      <div className="p-4">
+        <div className="flex items-start justify-between">
+          <div className="flex gap-3">
+            <Calendar className="text-green-500 mt-1" size={24} />
+            <div>
+              <h3 className="text-xl font-semibold">{plan.name}</h3>
+              <p className="text-gray-500 text-sm">Created {formattedDate}</p>
+            </div>
+          </div>
+          <div className="flex space-x-2">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(plan);
+              }}
+              className="h-8 w-8"
+            >
+              <Pencil size={18} />
+            </Button>
+            <Button
+              variant="ghost" 
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(plan.id);
+              }}
+              className="h-8 w-8"
+            >
+              <Trash size={18} />
+            </Button>
+          </div>
         </div>
         
-        <CardContent className="p-4 pt-3">
-          <div className="flex justify-between mb-2">
-            <span className="text-sm text-dishco-text-light">
-              {days.length} days
-            </span>
-            <span className="text-sm">
-              {calculateTotalCalories(days)} calories/day
-            </span>
-          </div>
-          
-          <div className="flex gap-2">
-            {planData.tags && Array.isArray(planData.tags) && planData.tags.map((tag: string, i: number) => (
-              <span 
-                key={i}
-                className="px-2 py-1 bg-dishco-primary/10 rounded text-xs text-dishco-primary"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        </CardContent>
-      </div>
-
-      <CardFooter className="p-4 pt-0 flex justify-between">
-        <Button 
-          variant="outline" 
-          size="sm"
-          className="text-sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            onCopyAndEdit(plan);
-          }}
-        >
-          Copy & Edit
-        </Button>
+        <p className="mt-3">{description}</p>
+        <p className="mt-1 font-medium">{caloriesPerDay} calories/day · {days.length} days</p>
         
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button 
-              size="sm"
-              className="text-sm"
-              onClick={(e) => e.stopPropagation()}
-            >
-              Use this plan
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="center">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              className="border-0 shadow-md"
-            />
-            <div className="p-2">
-              <Button size="sm" className="w-full" onClick={() => onUsePlan(plan)}>
-                Activate Plan
-              </Button>
-            </div>
-          </PopoverContent>
-        </Popover>
-      </CardFooter>
-    </Card>
+        <div className="mt-4 flex justify-between">
+          <Button 
+            variant="outline" 
+            onClick={(e) => {
+              e.stopPropagation();
+              onCopyAndEdit(plan);
+            }}
+            className="px-4 py-2"
+          >
+            Copy & Edit
+          </Button>
+          
+          <Button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onUsePlan(plan);
+            }}
+            className="px-4 py-2 bg-green-600 hover:bg-green-700"
+          >
+            Use This Plan <span className="ml-1">→</span>
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 };
 
