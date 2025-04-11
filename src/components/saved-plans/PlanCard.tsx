@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { format } from 'date-fns';
 import { Pencil, Trash, Calendar } from 'lucide-react';
@@ -21,7 +20,8 @@ const PlanCard: React.FC<PlanCardProps> = ({
   onEdit,
   onDelete,
   onCopyAndEdit,
-  onUsePlan
+  onUsePlan,
+  onViewDetails
 }) => {
   const planData = plan.plan_data || { days: [], description: '', tags: [] };
   const days = planData.days || [];
@@ -70,7 +70,10 @@ const PlanCard: React.FC<PlanCardProps> = ({
   const caloriesPerDay = calculateTotalCalories(days);
 
   return (
-    <div className="border rounded-lg mb-4">
+    <div 
+      className="border rounded-lg mb-4 cursor-pointer hover:shadow-md transition-shadow"
+      onClick={() => onViewDetails(plan)}
+    >
       <div className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex gap-3">
