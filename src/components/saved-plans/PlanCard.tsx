@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { format } from 'date-fns';
 import { Pencil, Trash, Calendar } from 'lucide-react';
@@ -66,7 +67,6 @@ const PlanCard: React.FC<PlanCardProps> = ({
 
   const createdDate = new Date(plan.created_at);
   const formattedDate = format(createdDate, 'MMM d, yyyy');
-  const description = planData.description || "Custom meal plan";
   const caloriesPerDay = calculateTotalCalories(days);
 
   return (
@@ -109,7 +109,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
           </div>
         </div>
         
-        <p className="mt-3">{description}</p>
+        {planData.description && <p className="mt-3">{planData.description}</p>}
         <p className="mt-1 font-medium">{caloriesPerDay} calories/day · {days.length} days</p>
         
         <div className="mt-4 flex justify-between">

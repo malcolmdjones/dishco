@@ -112,11 +112,13 @@ const MealPlanDetailView: React.FC<MealPlanDetailViewProps> = ({ plan, isOpen, o
   
   const handleOpenRecipe = (recipe: any) => {
     if (recipe) {
-      // Ensure recipe has an ID for RecipeDetail component
+      // Ensure recipe has valid ID and data for RecipeDetail component
       const recipeWithId = {
         ...recipe,
-        id: recipe.id || `recipe-${Date.now()}`
+        id: recipe.id || `temp-${Date.now()}` // Generate temporary ID if none exists
       };
+      
+      // Ensure RecipeDetail component has all required fields
       setSelectedRecipe(recipeWithId);
       setIsRecipeDetailOpen(true);
     }
@@ -188,9 +190,11 @@ const MealPlanDetailView: React.FC<MealPlanDetailViewProps> = ({ plan, isOpen, o
           </DialogHeader>
           
           <div className="space-y-6">
-            <p className="text-dishco-text-light">
-              {plan.plan_data.description || "Custom meal plan"}
-            </p>
+            {plan.plan_data.description && (
+              <p className="text-dishco-text-light">
+                {plan.plan_data.description}
+              </p>
+            )}
             
             <div className="bg-muted/30 p-4 rounded-lg space-y-3">
               <h3 className="font-medium">Average Daily Nutrition</h3>
