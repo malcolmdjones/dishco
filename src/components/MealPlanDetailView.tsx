@@ -6,7 +6,7 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import RecipeDetail from './RecipeDetail';
 import { Progress } from '@/components/ui/progress';
-import { MealPlan } from '@/types/MealPlan';
+import { MealPlan } from '@/hooks/useSavedMealPlans';
 import { Recipe } from '@/data/mockData';
 
 interface MealPlanDetailViewProps {

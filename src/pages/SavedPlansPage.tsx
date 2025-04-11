@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Calendar, Calendar as CalendarIcon, Pencil, Trash, ShoppingBag } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import MealPlanDetailView from '@/components/MealPlanDetailView';
 import { useNavigate } from 'react-router-dom';
@@ -14,25 +16,19 @@ import { Calendar as ReactCalendar } from '@/components/ui/calendar';
 import { useGroceryListUtils } from '@/hooks/useGroceryListUtils';
 import GroceryListConfirmationDialog from '@/components/GroceryListConfirmationDialog';
 import { useSavedMealPlans } from '@/hooks/useSavedMealPlans';
-import { MealPlan } from '@/types/MealPlan';
 
 const SavedPlansPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editPlan, setEditPlan] = useState<MealPlan | null>(null);
+  const [editPlan, setEditPlan] = useState<any>(null);
   const [newPlanName, setNewPlanName] = useState('');
   const [newPlanDescription, setNewPlanDescription] = useState('');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletePlanId, setDeletePlanId] = useState<string | null>(null);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const { 
-    showConfirmation, 
-    setShowConfirmation, 
-    processMealPlanForGroceries, 
-    handleConfirmGroceryAddition, 
-    currentMealPlan 
-  } = useGroceryListUtils();
+  const { showConfirmation, setShowConfirmation, processMealPlanForGroceries, handleConfirmGroceryAddition, currentMealPlan } = useGroceryListUtils();
   
   const { 
     plans, 
@@ -44,11 +40,10 @@ const SavedPlansPage = () => {
     deletePlan: hookDeletePlan,
     updatePlan: hookUpdatePlan,
     viewPlanDetails,
-    copyAndEditPlan,
-    activatePlan
+    fetchPlans
   } = useSavedMealPlans();
 
-  const handleEditPlan = (plan: MealPlan) => {
+  const handleEditPlan = (plan: any) => {
     setEditPlan(plan);
     setNewPlanName(plan.name);
     setNewPlanDescription(plan.plan_data?.description || '');
@@ -91,25 +86,28 @@ const SavedPlansPage = () => {
     }
   };
 
-  const handleViewPlanDetails = (plan: MealPlan) => {
-    if (setSelectedPlan) {
-      setSelectedPlan(plan);
-      setIsPlanDetailOpen(true);
-    }
+  const handleViewPlanDetails = (plan: any) => {
+    console.log('Viewing plan details:', plan);
+    setSelectedPlan(plan);
+    setIsPlanDetailOpen(true);
   };
 
-  const handleCopyAndEdit = (plan: MealPlan) => {
-    copyAndEditPlan(plan);
+  const handleCopyAndEdit = (plan: any) => {
+    sessionStorage.setItem('planToCopy', JSON.stringify(plan));
     navigate('/planning');
   };
   
-  const handleUsePlan = (plan: MealPlan) => {
+  const handleUsePlan = (plan: any) => {
     if (selectedDate) {
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
       sessionStorage.setItem('activatePlanDate', formattedDate);
+      sessionStorage.setItem('activatePlanData', JSON.stringify(plan));
+      setIsCalendarOpen(false);
       
-      activatePlan(plan, 0);
       processMealPlanForGroceries(plan);
+      
+      setShowConfirmation(false);
+      navigate('/grocery');
     } else {
       toast({
         title: "Select Date",
@@ -232,7 +230,7 @@ const SavedPlansPage = () => {
             <CardContent className="p-4 pt-3">
               <div className="flex justify-between mb-2">
                 <span className="text-sm text-dishco-text-light">
-                  {days?.length || 0} days
+                  {days.length} days
                 </span>
                 <span className="text-sm">
                   {calculateTotalCalories(days)} calories/day
