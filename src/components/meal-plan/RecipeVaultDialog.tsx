@@ -42,6 +42,8 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
       let type = mealType.toLowerCase();
       // Handle plural form of 'snacks' to singular 'snack' for filtering
       if (type === 'snacks') type = 'snack';
+      // Handle 'desserts' to 'dessert' for filtering
+      if (type === 'desserts') type = 'dessert';
       setSelectedType(type);
     }
   }, [mealType, isOpen]);

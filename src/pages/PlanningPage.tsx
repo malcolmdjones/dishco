@@ -28,7 +28,7 @@ const PlanningPage = () => {
   const recipeSelection = recipes.slice(0, 2);
   // Get 2 snack recipes for the Snack Savvy section
   const snackSelection = recipes.filter(recipe => recipe.type === 'snack').slice(0, 2);
-  // Get 2 dessert recipes for the Desserts section
+  // Get 2 dessert recipes for the Desserts section (fixed spelling from 'desert' to 'dessert')
   const dessertSelection = recipes.filter(recipe => recipe.type === 'dessert').slice(0, 2);
 
   return (
