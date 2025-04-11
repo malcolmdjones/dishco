@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
@@ -34,7 +35,8 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
   
   const averageCalories = Math.round(
     plan.plan_data.days.reduce((sum: number, day: any) => {
-      const convertedDayMeals = day?.meals ? convertMealsForMacroCalculation(day.meals) : {};
+      const dayMeals = day?.meals || {};
+      const convertedDayMeals = convertMealsForMacroCalculation(dayMeals);
       const dayMacros = calculateDailyMacros(convertedDayMeals);
       return sum + dayMacros.calories;
     }, 0) / plan.plan_data.days.length
@@ -42,17 +44,20 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
   
   const totalMacros = {
     protein: Math.round(plan.plan_data.days.reduce((sum: number, day: any) => {
-      const convertedDayMeals = day?.meals ? convertMealsForMacroCalculation(day.meals) : {};
+      const dayMeals = day?.meals || {};
+      const convertedDayMeals = convertMealsForMacroCalculation(dayMeals);
       const dayMacros = calculateDailyMacros(convertedDayMeals);
       return sum + dayMacros.protein;
     }, 0) / plan.plan_data.days.length),
     carbs: Math.round(plan.plan_data.days.reduce((sum: number, day: any) => {
-      const convertedDayMeals = day?.meals ? convertMealsForMacroCalculation(day.meals) : {};
+      const dayMeals = day?.meals || {};
+      const convertedDayMeals = convertMealsForMacroCalculation(dayMeals);
       const dayMacros = calculateDailyMacros(convertedDayMeals);
       return sum + dayMacros.carbs;
     }, 0) / plan.plan_data.days.length),
     fat: Math.round(plan.plan_data.days.reduce((sum: number, day: any) => {
-      const convertedDayMeals = day?.meals ? convertMealsForMacroCalculation(day.meals) : {};
+      const dayMeals = day?.meals || {};
+      const convertedDayMeals = convertMealsForMacroCalculation(dayMeals);
       const dayMacros = calculateDailyMacros(convertedDayMeals);
       return sum + dayMacros.fat;
     }, 0) / plan.plan_data.days.length),

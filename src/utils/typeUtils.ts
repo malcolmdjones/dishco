@@ -46,9 +46,9 @@ export const convertMealsForMacroCalculation = (meals: {
   };
   
   return {
-    breakfast: convertSingleOrArray(meals.breakfast),
-    lunch: convertSingleOrArray(meals.lunch),
-    dinner: convertSingleOrArray(meals.dinner),
+    breakfast: convertSingleOrArray(meals.breakfast) || null,
+    lunch: convertSingleOrArray(meals.lunch) || null,
+    dinner: convertSingleOrArray(meals.dinner) || null,
     snacks: meals.snacks ? meals.snacks.map(snack => convertToMockDataRecipe(snack)) : []
   };
 };

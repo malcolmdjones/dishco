@@ -198,7 +198,7 @@ const HomePage = () => {
     setSelectedDate(new Date());
   };
 
-  const handleOpenRecipe = (recipe: Recipe | Recipe[]) => {
+  const handleOpenRecipe = (recipe: any) => {
     const recipeData = getMealData(recipe);
     if (recipeData) {
       const convertedRecipe = convertToMockDataRecipe(recipeData);
