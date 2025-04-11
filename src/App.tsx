@@ -23,6 +23,7 @@ import EditCustomRecipePage from "./pages/EditCustomRecipePage";
 import CreateMealPlanPage from "./pages/CreateMealPlanPage";
 import ExploreRecipesPage from "./pages/ExploreRecipesPage";
 import ExploreSnacksPage from "./pages/ExploreSnacksPage";
+import ExploreDesserts from "./pages/ExploreDesserts";
 import SavedSnacksPage from "./pages/SavedSnacksPage";
 import EditProfilePage from "./pages/EditProfilePage";
 import ChangeEmailPage from "./pages/ChangeEmailPage";
@@ -85,6 +86,7 @@ const App = () => (
             <Route path="/create-meal-plan" element={<ProtectedRoute><AppLayout><CreateMealPlanPage /></AppLayout></ProtectedRoute>} />
             <Route path="/explore-recipes" element={<AppLayout><ExploreRecipesPage /></AppLayout>} />
             <Route path="/explore-snacks" element={<AppLayout><ExploreSnacksPage /></AppLayout>} />
+            <Route path="/explore-desserts" element={<AppLayout><ExploreDesserts /></AppLayout>} />
             <Route path="/recipe-discovery" element={<AppLayout><RecipeDiscoveryPage /></AppLayout>} />
             <Route path="/grocery" element={<ProtectedRoute><AppLayout><GroceryListPage /></AppLayout></ProtectedRoute>} />
             <Route path="/more" element={<AppLayout><MorePage /></AppLayout>} />

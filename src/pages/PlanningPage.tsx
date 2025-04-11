@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Search } from 'lucide-react';
@@ -25,8 +26,10 @@ const PlanningPage = () => {
 
   // Get a selection of 2 recipes for display
   const recipeSelection = recipes.slice(0, 2);
-  // Get 2 snack recipes for the Snack Savvy section (changed from 4 to 2)
+  // Get 2 snack recipes for the Snack Savvy section
   const snackSelection = recipes.filter(recipe => recipe.type === 'snack').slice(0, 2);
+  // Get 2 dessert recipes for the Desserts section
+  const dessertSelection = recipes.filter(recipe => recipe.type === 'dessert').slice(0, 2);
 
   return (
     <div className="animate-fade-in">
@@ -61,7 +64,7 @@ const PlanningPage = () => {
                 <span className="text-black">ver Recipes</span>
               </h2>
               <Link to="/explore-recipes">
-                <Button variant="ghost" size="sm">Explore Recipes</Button>
+                <Button variant="ghost" size="sm">View All Recipes</Button>
               </Link>
             </div>
             <p className="text-sm text-dishco-text-light mb-4">
@@ -93,7 +96,7 @@ const PlanningPage = () => {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">Snack Savvy</h2>
               <Link to="/explore-snacks">
-                <Button variant="ghost" size="sm">Explore Snacks</Button>
+                <Button variant="ghost" size="sm">View All Snacks</Button>
               </Link>
             </div>
             <p className="text-sm text-dishco-text-light mb-4">
@@ -129,6 +132,53 @@ const PlanningPage = () => {
                     className="mt-2"
                   >
                     Find Snacks
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Desserts Section */}
+          <div className="bg-white rounded-xl p-4 shadow-sm animate-slide-up">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Desserts</h2>
+              <Link to="/explore-desserts">
+                <Button variant="ghost" size="sm">View All Desserts</Button>
+              </Link>
+            </div>
+            <p className="text-sm text-dishco-text-light mb-4">
+              Satisfy your sweet tooth while staying on track.
+            </p>
+            
+            <div className="grid grid-cols-2 gap-4">
+              {dessertSelection.length > 0 ? (
+                dessertSelection.map((dessert) => (
+                  <div key={dessert.id} className="cursor-pointer" onClick={() => navigate('/explore-desserts')}>
+                    <div className="bg-gray-100 rounded-lg aspect-square mb-2 flex items-center justify-center overflow-hidden">
+                      <img 
+                        src={dessert.imageSrc || imageUrl} 
+                        alt={dessert.name} 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <h3 className="font-medium text-sm line-clamp-1">{dessert.name}</h3>
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-sm text-gray-600">{dessert.macros.calories} cal</span>
+                      <span className="text-xs text-purple-600">Dessert</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                // Fallback for no desserts
+                <div className="col-span-2 text-center py-6">
+                  <p className="text-gray-400">No desserts available. Explore desserts to discover more!</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => navigate('/explore-desserts')}
+                    className="mt-2"
+                  >
+                    Find Desserts
                   </Button>
                 </div>
               )}
