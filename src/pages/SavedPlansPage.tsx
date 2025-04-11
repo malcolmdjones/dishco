@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Plus } from 'lucide-react';
@@ -15,7 +15,6 @@ import DeletePlanDialog from '@/components/saved-plans/DeletePlanDialog';
 import EmptyPlansState from '@/components/saved-plans/EmptyPlansState';
 import GroceryListConfirmationDialog from '@/components/GroceryListConfirmationDialog';
 import MealPlanDetailView from '@/components/MealPlanDetailView';
-import { Button } from '@/components/ui/button';
 
 const SavedPlansPage = () => {
   const { toast } = useToast();
@@ -45,7 +44,13 @@ const SavedPlansPage = () => {
     viewPlanDetails,
     deletePlan: hookDeletePlan,
     updatePlan: hookUpdatePlan,
+    fetchPlans
   } = useSavedMealPlans();
+
+  // Re-fetch plans when the page loads
+  useEffect(() => {
+    fetchPlans();
+  }, []);
 
   const handleEditPlan = (plan: MealPlan) => {
     setEditPlan(plan);
@@ -73,13 +78,18 @@ const SavedPlansPage = () => {
   };
 
   const handleDeletePlan = (id: string) => {
+    console.log(`Setting up deletion for plan: ${id}`);
     setDeletePlanId(id);
     setIsDeleteDialogOpen(true);
   };
 
   const confirmDeletePlan = async () => {
-    if (!deletePlanId) return;
+    if (!deletePlanId) {
+      console.error("No plan ID set for deletion");
+      return;
+    }
 
+    console.log(`Confirming deletion for plan: ${deletePlanId}`);
     try {
       const success = await hookDeletePlan(deletePlanId);
       if (success) {
@@ -89,6 +99,8 @@ const SavedPlansPage = () => {
           title: "Success",
           description: "Meal plan deleted successfully."
         });
+        // Re-fetch plans after deletion
+        fetchPlans();
       } else {
         throw new Error("Failed to delete the meal plan.");
       }

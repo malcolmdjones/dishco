@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -114,15 +115,16 @@ export const useSavedMealPlans = () => {
         return false;
       }
 
+      console.log(`Attempting to delete plan with ID: ${id}`);
+      
       // First verify if the plan exists and belongs to the user
       const { data: existingPlan, error: fetchError } = await supabase
         .from('saved_meal_plans')
         .select('id, user_id')
         .eq('id', id)
-        .eq('user_id', user.id)
         .single();
         
-      if (fetchError || !existingPlan) {
+      if (fetchError) {
         console.error('Error fetching plan to delete:', fetchError);
         toast({
           title: "Error",
@@ -132,17 +134,31 @@ export const useSavedMealPlans = () => {
         return false;
       }
 
+      console.log('Existing plan found:', existingPlan);
+      
+      // Verify ownership before deletion
+      if (existingPlan.user_id !== user.id) {
+        console.error('User does not own this plan');
+        toast({
+          title: "Permission Denied",
+          description: "You can only delete your own meal plans.",
+          variant: "destructive"
+        });
+        return false;
+      }
+
       // If plan exists and belongs to user, proceed with deletion
       const { error } = await supabase
         .from('saved_meal_plans')
         .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);  // Ensure we only delete the user's own plans
+        .match({ id: id, user_id: user.id });
       
       if (error) {
         console.error('Deletion error:', error);
         throw error;
       }
+      
+      console.log('Plan deleted successfully from database');
       
       // Update local state to remove the deleted plan
       setPlans(prevPlans => prevPlans.filter(plan => plan.id !== id));

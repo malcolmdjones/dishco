@@ -23,11 +23,17 @@ const DeletePlanDialog: React.FC<DeletePlanDialogProps> = ({
             Are you sure you want to delete this meal plan? This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter>
-          <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="flex flex-row justify-between sm:justify-between mt-4">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type="submit" variant="destructive" onClick={onConfirmDelete}>
+          <Button 
+            type="submit" 
+            variant="destructive" 
+            onClick={() => {
+              onConfirmDelete();
+            }}
+          >
             Delete Plan
           </Button>
         </DialogFooter>
