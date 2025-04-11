@@ -15,7 +15,7 @@ import { Calendar as ReactCalendar } from '@/components/ui/calendar';
 import { useGroceryListUtils } from '@/hooks/useGroceryListUtils';
 import GroceryListConfirmationDialog from '@/components/GroceryListConfirmationDialog';
 import { useSavedMealPlans } from '@/hooks/useSavedMealPlans';
-import { ArrowLeft, ChevronLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const SavedPlansPage = () => {
@@ -174,7 +174,7 @@ const SavedPlansPage = () => {
 
     return plans.map((plan) => {
       const planData = plan.plan_data || {};
-      const days = planData.days || [];
+      const days = planData?.days || [];
       
       return (
         <Card key={plan.id} className="relative overflow-hidden animate-fade-in">
@@ -222,7 +222,7 @@ const SavedPlansPage = () => {
             <div className="h-32 bg-gradient-to-r from-dishco-primary/20 to-dishco-secondary/20 p-4">
               <h3 className="text-lg font-bold mb-1">{plan.name}</h3>
               <p className="text-sm text-dishco-text-light line-clamp-2">
-                {planData.description || "No description available"}
+                {planData?.description || "No description available"}
               </p>
             </div>
             
@@ -237,7 +237,7 @@ const SavedPlansPage = () => {
               </div>
               
               <div className="flex gap-2">
-                {planData.tags && Array.isArray(planData.tags) && planData.tags.map((tag: string, i: number) => (
+                {planData?.tags && Array.isArray(planData.tags) && planData.tags.map((tag: string, i: number) => (
                   <span 
                     key={i}
                     className="px-2 py-1 bg-dishco-primary/10 rounded text-xs text-dishco-primary"
