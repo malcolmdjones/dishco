@@ -43,8 +43,8 @@ const SavedPlansPage = () => {
     setIsPlanDetailOpen,
     selectedPlan, 
     viewPlanDetails,
-    deletePlan: hookDeletePlan,
-    updatePlan: hookUpdatePlan, // This now correctly references the updatePlan function 
+    deletePlan,
+    updatePlan,
     fetchPlans
   } = useSavedMealPlans();
 
@@ -64,7 +64,7 @@ const SavedPlansPage = () => {
     if (!editPlan) return;
 
     try {
-      await hookUpdatePlan(editPlan.id, { 
+      await updatePlan(editPlan.id, { 
         name: newPlanName, 
         description: newPlanDescription 
       });
@@ -95,7 +95,7 @@ const SavedPlansPage = () => {
     try {
       setIsDeleting(true);
       console.log(`Confirming deletion for plan: ${deletePlanId}`);
-      const success = await hookDeletePlan(deletePlanId);
+      const success = await deletePlan(deletePlanId);
       
       if (success) {
         toast({

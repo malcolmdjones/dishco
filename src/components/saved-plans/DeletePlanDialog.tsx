@@ -2,6 +2,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface DeletePlanDialogProps {
   isOpen: boolean;
@@ -16,35 +17,37 @@ const DeletePlanDialog: React.FC<DeletePlanDialogProps> = ({
   onConfirmDelete,
   isDeleting
 }) => {
+  const handleConfirm = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await onConfirmDelete();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Delete Meal Plan</DialogTitle>
-          <DialogDescription>
+    <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Meal Plan</AlertDialogTitle>
+          <AlertDialogDescription>
             Are you sure you want to delete this meal plan? This action cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="flex flex-row justify-between sm:justify-between mt-4">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={() => onOpenChange(false)}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex flex-row justify-between sm:justify-between mt-4">
+          <AlertDialogCancel 
             disabled={isDeleting}
           >
             Cancel
-          </Button>
-          <Button 
-            type="submit" 
-            variant="destructive" 
-            onClick={onConfirmDelete}
+          </AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={handleConfirm}
             disabled={isDeleting}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             {isDeleting ? 'Deleting...' : 'Delete Plan'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };
 
