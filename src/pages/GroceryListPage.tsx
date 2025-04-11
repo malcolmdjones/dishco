@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Check, ChevronDown, ChevronUp, Plus, RotateCcw, Search, ShoppingBag, Trash2 } from 'lucide-react';
 import { generateGroceryList } from '../data/mockData';
@@ -14,7 +13,6 @@ const initialGroceryItems = generateGroceryList();
 const GroceryListPage = () => {
   const { toast } = useToast();
   const [groceryItems, setGroceryItems] = useState<GroceryItem[]>(() => {
-    // Try to load from localStorage first
     const savedItems = localStorage.getItem('groceryItems');
     return savedItems ? JSON.parse(savedItems) : initialGroceryItems;
   });
@@ -23,17 +21,15 @@ const GroceryListPage = () => {
   const [newItem, setNewItem] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeTab, setActiveTab] = useState('active');
+  const [itemBeingAnimated, setItemBeingAnimated] = useState<string | null>(null);
 
-  // Save items to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('groceryItems', JSON.stringify(groceryItems));
   }, [groceryItems]);
 
-  // Filter active and completed items
   const activeItems = groceryItems.filter(item => !item.checked);
   const completedItems = groceryItems.filter(item => item.checked);
 
-  // Group items by first letter
   const groupItems = (items: GroceryItem[]) => {
     return items
       .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -54,11 +50,15 @@ const GroceryListPage = () => {
   const sortedCompletedGroups = Object.keys(groupedCompletedItems).sort();
 
   const handleToggleItem = (itemName: string) => {
-    setGroceryItems(prevItems =>
-      prevItems.map(item =>
-        item.name === itemName ? { ...item, checked: !item.checked } : item
-      )
-    );
+    setItemBeingAnimated(itemName);
+    setTimeout(() => {
+      setGroceryItems(prevItems =>
+        prevItems.map(item =>
+          item.name === itemName ? { ...item, checked: !item.checked } : item
+        )
+      );
+      setItemBeingAnimated(null);
+    }, 300);
   };
 
   const handleAddItem = (e: React.FormEvent) => {
@@ -70,7 +70,7 @@ const GroceryListPage = () => {
           id: `item-${Date.now()}`,
           name: newItem.trim(), 
           category: 'Other',
-          quantity: "1", // Changed to string to match GroceryItem type
+          quantity: "1",
           unit: 'item(s)',
           checked: false 
         }
@@ -114,7 +114,6 @@ const GroceryListPage = () => {
         <p className="text-dishco-text-light">Items needed for your meal plan</p>
       </header>
 
-      {/* Progress Summary */}
       <div className="bg-white rounded-xl shadow-md p-4 mb-6 flex items-center">
         <div className="w-14 h-14 rounded-full bg-dishco-primary bg-opacity-10 flex items-center justify-center mr-4">
           <ShoppingBag size={24} className="text-dishco-primary" />
@@ -135,7 +134,6 @@ const GroceryListPage = () => {
         </div>
       </div>
 
-      {/* Search and Add Form */}
       <div className="mb-6 space-y-3">
         <div className="relative">
           <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -166,7 +164,6 @@ const GroceryListPage = () => {
         </form>
       </div>
 
-      {/* Tabs for Active and Completed Items */}
       <Tabs defaultValue="active" onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 mb-4">
           <TabsTrigger value="active" className="flex items-center justify-center">
@@ -201,6 +198,7 @@ const GroceryListPage = () => {
                       item={item}
                       onToggle={() => handleToggleItem(item.name)}
                       showUndoButton={false}
+                      isBeingAnimated={itemBeingAnimated === item.name}
                     />
                   ))}
                 </div>
@@ -282,34 +280,40 @@ interface GroceryItemProps {
   onToggle: () => void;
   showUndoButton: boolean;
   onUndo?: () => void;
+  isBeingAnimated?: boolean;
 }
 
-const GroceryItem: React.FC<GroceryItemProps> = ({ item, onToggle, showUndoButton, onUndo }) => {
-  // Parse quantity as number for comparison, defaulting to 1 if parsing fails
+const GroceryItem: React.FC<GroceryItemProps> = ({ 
+  item, 
+  onToggle, 
+  showUndoButton, 
+  onUndo,
+  isBeingAnimated = false 
+}) => {
   const quantityNum = parseInt(item.quantity) || 1;
   
   return (
     <div 
-      className={`bg-white rounded-lg p-3 flex items-center transition-all duration-200 animate-scale-in ${
+      className={`bg-white rounded-lg p-3 flex items-center transition-all duration-300 ${
         item.checked ? 'bg-opacity-70' : 'shadow-sm'
-      }`}
+      } ${isBeingAnimated ? 'animate-scale-in scale-105 bg-green-50' : ''}`}
     >
       <button
         onClick={(e) => {
-          e.stopPropagation(); // Prevent card click from triggering
+          e.stopPropagation();
           onToggle();
         }}
-        className={`w-6 h-6 rounded-full mr-3 flex items-center justify-center ${
+        className={`w-6 h-6 rounded-full mr-3 flex items-center justify-center transition-all duration-300 ${
           item.checked 
             ? 'bg-dishco-primary text-white' 
-            : 'border-2 border-gray-300'
+            : 'border-2 border-gray-300 hover:border-dishco-primary'
         }`}
       >
         {item.checked && <Check size={16} className="stroke-2" />}
       </button>
       
       <div className="flex-1">
-        <p className={`${item.checked ? 'line-through text-gray-500' : 'text-dishco-text'}`}>
+        <p className={`transition-all duration-300 ${item.checked ? 'line-through text-gray-500' : 'text-dishco-text'}`}>
           {item.name}
         </p>
       </div>
@@ -323,10 +327,10 @@ const GroceryItem: React.FC<GroceryItemProps> = ({ item, onToggle, showUndoButto
       {showUndoButton && onUndo && (
         <button
           onClick={(e) => {
-            e.stopPropagation(); // Prevent card click from triggering
+            e.stopPropagation();
             onUndo();
           }}
-          className="p-1.5 text-gray-500 hover:text-dishco-primary rounded-full hover:bg-gray-100"
+          className="p-1.5 text-gray-500 hover:text-dishco-primary rounded-full hover:bg-gray-100 transition-colors"
           title="Restore item"
         >
           <RotateCcw size={14} />

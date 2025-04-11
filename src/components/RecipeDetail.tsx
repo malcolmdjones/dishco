@@ -61,7 +61,7 @@ const RecipeDetail: React.FC<RecipeDetailProps> = ({
   
   if (!recipe) {
     return (
-      <div className={`fixed inset-0 bg-black/50 z-50 flex items-center justify-center ${className}`}>
+      <div className={`fixed inset-0 bg-black/50 z-[110] flex items-center justify-center ${className}`}>
         <div className="bg-white rounded-xl p-6 max-w-md w-full max-h-[85vh] overflow-y-auto">
           <p>Recipe not found</p>
           <button onClick={onClose} className="mt-4 w-full py-2 bg-blue-500 text-white rounded">Close</button>
@@ -74,7 +74,7 @@ const RecipeDetail: React.FC<RecipeDetailProps> = ({
   const imageUrl = getRecipeImage(recipe.imageSrc);
 
   return (
-    <div className={`fixed inset-0 bg-black/50 z-50 flex items-center justify-center ${className}`}>
+    <div className={`fixed inset-0 bg-black/50 z-[110] flex items-center justify-center ${className}`}>
       <div className="bg-white rounded-xl p-0 max-w-md w-full max-h-[85vh] overflow-hidden flex flex-col">
         <RecipeDetailHeader 
           imageUrl={imageUrl}
