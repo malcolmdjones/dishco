@@ -25,6 +25,7 @@ export interface Day {
   };
 }
 
+// Expanded Recipe interface to match the one from mockData
 export interface Recipe {
   id: string;
   name: string;
@@ -38,5 +39,12 @@ export interface Recipe {
   };
   imageSrc?: string;
   ingredients?: string[];
+  instructions?: string[];
+  // Additional properties from mockData.Recipe
+  requiresBlender?: boolean;
+  requiresCooking?: boolean;
+  cookTime?: number;
+  prepTime?: number;
+  servings?: number;
   [key: string]: any;
 }

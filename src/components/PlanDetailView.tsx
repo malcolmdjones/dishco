@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
@@ -7,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import RecipeDetail from './RecipeDetail';
 import { calculateDailyMacros } from '@/data/mockData';
 import { Progress } from '@/components/ui/progress';
-import { PlanData, MealPlan } from '@/types/MealPlan';
+import { MealPlan } from '@/types/MealPlan';
 import { getMealData } from '@/hooks/utils';
+import { convertToMockDataRecipe } from '@/utils/typeUtils';
 
 interface PlanDetailViewProps {
   plan: MealPlan | null;
@@ -25,7 +25,17 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
     return null;
   }
 
-  const dailyMacros = calculateDailyMacros(plan.plan_data.days[activeDay]?.meals || {});
+  // Convert meal data for calculateDailyMacros which expects MockData.Recipe
+  const convertedMeals = plan.plan_data.days[activeDay]?.meals 
+    ? {
+        breakfast: plan.plan_data.days[activeDay].meals.breakfast,
+        lunch: plan.plan_data.days[activeDay].meals.lunch,
+        dinner: plan.plan_data.days[activeDay].meals.dinner,
+        snacks: plan.plan_data.days[activeDay].meals.snacks || []
+      }
+    : { breakfast: null, lunch: null, dinner: null, snacks: [] };
+
+  const dailyMacros = calculateDailyMacros(convertedMeals);
   
   const averageCalories = Math.round(
     plan.plan_data.days.reduce((sum: number, day: any) => {

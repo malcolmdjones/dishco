@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { useSavedMealPlans } from '@/hooks/useSavedMealPlans';
 import { Recipe } from '@/types/MealPlan';
 import { getMealData } from '@/hooks/utils';
+import { convertToMockDataRecipe } from '@/utils/typeUtils';
 
 interface Meal {
   id: string;
@@ -65,11 +66,12 @@ const HomePage = () => {
       if (planMeals.breakfast) {
         const breakfastData = getMealData(planMeals.breakfast);
         if (breakfastData) {
+          const convertedRecipe = convertToMockDataRecipe(breakfastData);
           plannedMealArray.push({
             id: `breakfast-planned-${formattedDate}`,
-            name: breakfastData.name,
+            name: convertedRecipe.name,
             type: 'breakfast',
-            recipe: breakfastData,
+            recipe: convertedRecipe,
             consumed: false,
             loggedAt: formattedDate
           });
@@ -79,11 +81,12 @@ const HomePage = () => {
       if (planMeals.lunch) {
         const lunchData = getMealData(planMeals.lunch);
         if (lunchData) {
+          const convertedRecipe = convertToMockDataRecipe(lunchData);
           plannedMealArray.push({
             id: `lunch-planned-${formattedDate}`,
-            name: lunchData.name,
+            name: convertedRecipe.name,
             type: 'lunch',
-            recipe: lunchData,
+            recipe: convertedRecipe,
             consumed: false,
             loggedAt: formattedDate
           });
@@ -93,11 +96,12 @@ const HomePage = () => {
       if (planMeals.dinner) {
         const dinnerData = getMealData(planMeals.dinner);
         if (dinnerData) {
+          const convertedRecipe = convertToMockDataRecipe(dinnerData);
           plannedMealArray.push({
             id: `dinner-planned-${formattedDate}`,
-            name: dinnerData.name,
+            name: convertedRecipe.name,
             type: 'dinner',
-            recipe: dinnerData,
+            recipe: convertedRecipe,
             consumed: false,
             loggedAt: formattedDate
           });
@@ -106,11 +110,12 @@ const HomePage = () => {
       
       if (planMeals.snacks && planMeals.snacks.length > 0) {
         planMeals.snacks.forEach((snack, index) => {
+          const convertedRecipe = convertToMockDataRecipe(snack);
           plannedMealArray.push({
             id: `snack-planned-${index}-${formattedDate}`,
-            name: snack.name,
+            name: convertedRecipe.name,
             type: 'snack',
-            recipe: snack,
+            recipe: convertedRecipe,
             consumed: false,
             loggedAt: formattedDate
           });

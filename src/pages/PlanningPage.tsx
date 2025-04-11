@@ -1,4 +1,3 @@
-
 // Import necessary libraries and components
 import React from 'react';
 import { useMealPlanUtils } from '@/hooks/useMealPlanUtils';
@@ -8,6 +7,7 @@ import WeekOverviewDialog from '@/components/meal-plan/WeekOverviewDialog';
 import RecipeVaultDialog from '@/components/meal-plan/RecipeVaultDialog';
 import { useRecipeVault } from '@/hooks/useRecipeVault';
 import { Recipe } from '@/types/MealPlan';
+import { convertToMockDataRecipe } from '@/utils/typeUtils';
 
 const PlanningPage = () => {
   const [isOverviewOpen, setIsOverviewOpen] = React.useState(false);
@@ -47,7 +47,9 @@ const PlanningPage = () => {
 
   // Add recipe from vault to meal plan
   const handleAddRecipeFromVault = (recipe: Recipe) => {
-    updateMeal(currentMealType, recipe, currentMealIndex);
+    // Convert to MockData Recipe type as needed by updateMeal
+    const convertedRecipe = convertToMockDataRecipe(recipe);
+    updateMeal(currentMealType, convertedRecipe, currentMealIndex);
     setIsVaultOpen(false);
   };
 
