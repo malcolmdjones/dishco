@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -101,8 +102,16 @@ export const useSavedMealPlans = () => {
         throw error;
       }
       
+      // Update local state to remove the deleted plan
       setPlans(prevPlans => prevPlans.filter(plan => plan.id !== id));
       
+      // Close plan detail view if it was showing the deleted plan
+      if (selectedPlan?.id === id) {
+        setSelectedPlan(null);
+        setIsPlanDetailOpen(false);
+      }
+      
+      // Check if active plan is being deleted
       if (activePlan?.plan.id === id) {
         sessionStorage.removeItem('activePlan');
         setActivePlan(null);
@@ -111,6 +120,11 @@ export const useSavedMealPlans = () => {
           description: "The deleted plan was your active plan and has been deactivated.",
         });
       }
+      
+      toast({
+        title: "Plan Deleted",
+        description: "Your meal plan has been deleted successfully.",
+      });
       
       return true;
     } catch (error) {

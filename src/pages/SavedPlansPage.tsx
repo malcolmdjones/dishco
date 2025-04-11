@@ -1,9 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Calendar, Calendar as CalendarIcon, Pencil, Trash, ShoppingBag } from 'lucide-react';
-import { generateMockMealPlan } from '@/data/mockData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,62 +14,37 @@ import { format } from 'date-fns';
 import { Calendar as ReactCalendar } from '@/components/ui/calendar';
 import { useGroceryListUtils } from '@/hooks/useGroceryListUtils';
 import GroceryListConfirmationDialog from '@/components/GroceryListConfirmationDialog';
+import { useSavedMealPlans } from '@/hooks/useSavedMealPlans';
 
 const SavedPlansPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [plans, setPlans] = useState([]);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editPlan, setEditPlan] = useState(null);
   const [newPlanName, setNewPlanName] = useState('');
   const [newPlanDescription, setNewPlanDescription] = useState('');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletePlanId, setDeletePlanId] = useState(null);
-  const [isPlanDetailOpen, setIsPlanDetailOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const { showConfirmation, setShowConfirmation, processMealPlanForGroceries, handleConfirmGroceryAddition, currentMealPlan } = useGroceryListUtils();
-
-  useEffect(() => {
-    fetchPlans();
-  }, []);
-
-  const fetchPlans = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('saved_meal_plans')
-        .select('*');
-
-      if (error) {
-        console.error('Error fetching plans:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch your meal plans.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (data) {
-        // Log the data structure to help debug
-        console.log('Loaded meal plans:', data);
-        setPlans(data);
-      }
-    } catch (error) {
-      console.error('Error fetching plans:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch your meal plans.",
-        variant: "destructive"
-      });
-    }
-  };
+  
+  const { 
+    plans, 
+    isLoading,
+    isPlanDetailOpen, 
+    setIsPlanDetailOpen,
+    selectedPlan, 
+    deletePlan: hookDeletePlan,
+    updatePlan: hookUpdatePlan,
+    viewPlanDetails,
+    fetchPlans
+  } = useSavedMealPlans();
 
   const handleEditPlan = (plan) => {
     setEditPlan(plan);
     setNewPlanName(plan.name);
-    setNewPlanDescription(plan.description);
+    setNewPlanDescription(plan.plan_data?.description || '');
     setIsEditDialogOpen(true);
   };
 
@@ -79,21 +52,10 @@ const SavedPlansPage = () => {
     if (!editPlan) return;
 
     try {
-      const { error } = await supabase
-        .from('saved_meal_plans')
-        .update({ name: newPlanName, description: newPlanDescription })
-        .eq('id', editPlan.id);
-
-      if (error) {
-        console.error('Error updating plan:', error);
-        return;
-      }
-
-      toast({
-        title: "Plan Updated",
-        description: "Your meal plan has been updated.",
+      await hookUpdatePlan(editPlan.id, { 
+        name: newPlanName, 
+        description: newPlanDescription 
       });
-      fetchPlans();
       setIsEditDialogOpen(false);
     } catch (error) {
       console.error('Error updating plan:', error);
@@ -109,28 +71,7 @@ const SavedPlansPage = () => {
     if (!deletePlanId) return;
 
     try {
-      const { error } = await supabase
-        .from('saved_meal_plans')
-        .delete()
-        .eq('id', deletePlanId);
-
-      if (error) {
-        console.error('Error deleting plan:', error);
-        toast({
-          title: "Error",
-          description: "Failed to delete the meal plan.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      setPlans(prevPlans => prevPlans.filter(plan => plan.id !== deletePlanId));
-      
-      toast({
-        title: "Plan Deleted",
-        description: "Your meal plan has been deleted.",
-      });
-      
+      await hookDeletePlan(deletePlanId);
       setIsDeleteDialogOpen(false);
       setDeletePlanId(null);
     } catch (error) {
@@ -144,7 +85,6 @@ const SavedPlansPage = () => {
   };
 
   const handleViewPlanDetails = (plan) => {
-    // Log the plan to see its structure
     console.log('Viewing plan details:', plan);
     setSelectedPlan(plan);
     setIsPlanDetailOpen(true);
@@ -162,10 +102,10 @@ const SavedPlansPage = () => {
       sessionStorage.setItem('activatePlanData', JSON.stringify(plan));
       setIsCalendarOpen(false);
       
-      // Process the meal plan for the grocery list
       processMealPlanForGroceries(plan);
       
-      // Don't navigate immediately - we'll navigate after the user decides on the grocery list dialog
+      setShowConfirmation(false);
+      navigate('/grocery');
     } else {
       toast({
         title: "Select Date",
@@ -176,7 +116,6 @@ const SavedPlansPage = () => {
   
   const handleConfirmGrocery = () => {
     handleConfirmGroceryAddition();
-    // No need to navigate here as handleConfirmGroceryAddition already navigates to /grocery
   };
   
   const handleSkipGrocery = () => {
@@ -191,7 +130,6 @@ const SavedPlansPage = () => {
     days.forEach(day => {
       if (!day || !day.meals) return;
       
-      // Get breakfast calories
       const breakfast = day.meals.breakfast;
       if (Array.isArray(breakfast) && breakfast.length > 0) {
         total += breakfast[0]?.macros?.calories || 0;
@@ -199,7 +137,6 @@ const SavedPlansPage = () => {
         total += breakfast.macros.calories || 0;
       }
       
-      // Get lunch calories
       const lunch = day.meals.lunch;
       if (Array.isArray(lunch) && lunch.length > 0) {
         total += lunch[0]?.macros?.calories || 0;
@@ -207,7 +144,6 @@ const SavedPlansPage = () => {
         total += lunch.macros.calories || 0;
       }
       
-      // Get dinner calories
       const dinner = day.meals.dinner;
       if (Array.isArray(dinner) && dinner.length > 0) {
         total += dinner[0]?.macros?.calories || 0;
@@ -215,7 +151,6 @@ const SavedPlansPage = () => {
         total += dinner.macros.calories || 0;
       }
       
-      // Get snacks calories
       const snacks = day.meals.snacks;
       if (Array.isArray(snacks)) {
         snacks.forEach(snack => {
@@ -428,8 +363,8 @@ const SavedPlansPage = () => {
       <GroceryListConfirmationDialog
         isOpen={showConfirmation}
         onOpenChange={setShowConfirmation}
-        onConfirm={handleConfirmGrocery}
-        onCancel={handleSkipGrocery}
+        onConfirm={handleConfirmGroceryAddition}
+        onCancel={() => setShowConfirmation(false)}
         mealPlanName={currentMealPlan?.name || 'your meal plan'}
       />
     </div>
