@@ -633,6 +633,7 @@ export const useSavedMealPlans = () => {
     plans,
     isLoading,
     selectedPlan,
+    setSelectedPlan,
     isPlanDetailOpen,
     setIsPlanDetailOpen,
     fetchPlans,

@@ -15,6 +15,7 @@ import DeletePlanDialog from '@/components/saved-plans/DeletePlanDialog';
 import EmptyPlansState from '@/components/saved-plans/EmptyPlansState';
 import GroceryListConfirmationDialog from '@/components/GroceryListConfirmationDialog';
 import MealPlanDetailView from '@/components/MealPlanDetailView';
+import PlanStartDateDialog from '@/components/saved-plans/PlanStartDateDialog';
 
 const SavedPlansPage = () => {
   const { toast } = useToast();
@@ -24,6 +25,7 @@ const SavedPlansPage = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isStartDateDialogOpen, setIsStartDateDialogOpen] = useState(false);
   
   // Form states
   const [editPlan, setEditPlan] = useState<MealPlan | null>(null);
@@ -35,17 +37,26 @@ const SavedPlansPage = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   
   // Use hooks
-  const { showConfirmation, setShowConfirmation, processMealPlanForGroceries, handleConfirmGroceryAddition, currentMealPlan } = useGroceryListUtils();
+  const { 
+    showConfirmation, 
+    setShowConfirmation, 
+    processMealPlanForGroceries, 
+    handleConfirmGroceryAddition, 
+    currentMealPlan 
+  } = useGroceryListUtils();
+  
   const { 
     plans, 
     isLoading,
     isPlanDetailOpen, 
     setIsPlanDetailOpen,
     selectedPlan, 
+    setSelectedPlan,
     viewPlanDetails,
     deletePlan,
     updatePlan,
-    fetchPlans
+    fetchPlans,
+    activatePlan
   } = useSavedMealPlans();
 
   // Re-fetch plans when the page loads
@@ -128,19 +139,27 @@ const SavedPlansPage = () => {
   };
   
   const handleUsePlan = (plan: MealPlan) => {
-    if (selectedDate) {
-      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-      sessionStorage.setItem('activatePlanDate', formattedDate);
-      sessionStorage.setItem('activatePlanData', JSON.stringify(plan));
+    setSelectedPlan(plan);
+    setIsStartDateDialogOpen(true);
+  };
+  
+  const handleDateSelected = (date: Date) => {
+    setIsStartDateDialogOpen(false);
+    if (selectedPlan) {
+      // Calculate the start day based on the selected date
+      const startDay = 0; // Default to day 0
       
-      processMealPlanForGroceries(plan);
-      setShowConfirmation(false);
-      navigate('/grocery');
-    } else {
-      toast({
-        title: "Select Date",
-        description: "Please select a date to activate the plan.",
-      });
+      // Activate the plan in the system
+      activatePlan(selectedPlan, startDay);
+      
+      // Store the date for grocery list integration
+      const formattedDate = format(date, 'yyyy-MM-dd');
+      sessionStorage.setItem('activatePlanDate', formattedDate);
+      sessionStorage.setItem('activatePlanData', JSON.stringify(selectedPlan));
+      
+      // Prompt for grocery list addition
+      processMealPlanForGroceries(selectedPlan);
+      setShowConfirmation(true);
     }
   };
   
@@ -213,6 +232,13 @@ const SavedPlansPage = () => {
         plan={selectedPlan} 
         isOpen={isPlanDetailOpen} 
         onClose={() => setIsPlanDetailOpen(false)} 
+      />
+      
+      <PlanStartDateDialog
+        isOpen={isStartDateDialogOpen}
+        onOpenChange={setIsStartDateDialogOpen}
+        onConfirm={handleDateSelected}
+        plan={selectedPlan}
       />
       
       <GroceryListConfirmationDialog
