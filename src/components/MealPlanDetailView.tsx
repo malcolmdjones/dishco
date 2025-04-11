@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
@@ -111,7 +112,12 @@ const MealPlanDetailView: React.FC<MealPlanDetailViewProps> = ({ plan, isOpen, o
   
   const handleOpenRecipe = (recipe: any) => {
     if (recipe) {
-      setSelectedRecipe(recipe);
+      // Ensure recipe has an ID for RecipeDetail component
+      const recipeWithId = {
+        ...recipe,
+        id: recipe.id || `recipe-${Date.now()}`
+      };
+      setSelectedRecipe(recipeWithId);
       setIsRecipeDetailOpen(true);
     }
   };

@@ -15,7 +15,7 @@ export interface Ingredient {
 
 interface Recipe {
   name: string;
-  ingredients?: Ingredient[];
+  ingredients?: Ingredient[] | string[] | Record<string, any>[];
   // Add other properties as needed
 }
 
@@ -26,9 +26,9 @@ interface MealPlan {
     days: Array<{
       date: string;
       meals: {
-        breakfast?: Recipe;
-        lunch?: Recipe;
-        dinner?: Recipe;
+        breakfast?: Recipe | Recipe[];
+        lunch?: Recipe | Recipe[];
+        dinner?: Recipe | Recipe[];
         snacks?: Recipe[];
       };
     }>;
@@ -51,30 +51,25 @@ export const useGroceryListUtils = () => {
       return allIngredients;
     }
     
+    // Log the meal plan for debugging
+    console.log('Processing meal plan for ingredients:', mealPlan);
+    
     mealPlan.plan_data.days.forEach(day => {
       if (!day.meals) return;
       
       // Process breakfast
-      if (day.meals.breakfast?.ingredients) {
-        processIngredients(day.meals.breakfast.ingredients, ingredientMap);
-      }
+      processMealForIngredients(day.meals.breakfast, ingredientMap);
       
       // Process lunch
-      if (day.meals.lunch?.ingredients) {
-        processIngredients(day.meals.lunch.ingredients, ingredientMap);
-      }
+      processMealForIngredients(day.meals.lunch, ingredientMap);
       
       // Process dinner
-      if (day.meals.dinner?.ingredients) {
-        processIngredients(day.meals.dinner.ingredients, ingredientMap);
-      }
+      processMealForIngredients(day.meals.dinner, ingredientMap);
       
       // Process snacks
-      if (day.meals.snacks) {
+      if (day.meals.snacks && Array.isArray(day.meals.snacks)) {
         day.meals.snacks.forEach(snack => {
-          if (snack && snack.ingredients) {
-            processIngredients(snack.ingredients, ingredientMap);
-          }
+          processMealForIngredients(snack, ingredientMap);
         });
       }
     });
@@ -84,46 +79,104 @@ export const useGroceryListUtils = () => {
       allIngredients.push(value);
     });
     
+    // Log extracted ingredients for debugging
+    console.log('Extracted ingredients:', allIngredients);
+    
     return allIngredients;
   };
   
-  // Helper function to process ingredients and combine duplicates
-  const processIngredients = (ingredients: Ingredient[], map: Map<string, Ingredient>) => {
-    ingredients.forEach(ingredient => {
-      // Guard against undefined or null ingredient names
-      if (!ingredient || !ingredient.name) {
-        console.warn('Skipping invalid ingredient:', ingredient);
-        return;
-      }
+  // Helper function to process ingredients from a meal
+  const processMealForIngredients = (meal: any, map: Map<string, Ingredient>) => {
+    if (!meal) return;
+    
+    // Handle both single meal and array of meals
+    const mealsToProcess = Array.isArray(meal) ? meal : [meal];
+    
+    mealsToProcess.forEach(mealItem => {
+      if (!mealItem) return;
       
-      const normalizedName = ingredient.name.toLowerCase().trim();
-      
-      if (map.has(normalizedName)) {
-        // If ingredient already exists, try to combine quantities
-        const existingIngredient = map.get(normalizedName)!;
+      // Process ingredients depending on their format
+      if (mealItem.ingredients) {
+        const ingredients = mealItem.ingredients;
         
-        let newQty = 1;
-        // Handle both numeric quantities and string quantities
-        try {
-          const existingQty = parseInt(existingIngredient.quantity || "1");
-          const ingredientQty = parseInt(ingredient.quantity || "1");
-          newQty = existingQty + ingredientQty;
-        } catch (e) {
-          console.warn('Error parsing quantities, defaulting to incremental:', e);
-          newQty = parseInt(existingIngredient.quantity || "1") + 1;
+        // Check if ingredients is an array
+        if (Array.isArray(ingredients)) {
+          ingredients.forEach(ingredient => {
+            processIngredient(ingredient, map);
+          });
         }
-        
-        existingIngredient.quantity = newQty.toString();
-      } else {
-        // Add new ingredient to map
-        map.set(normalizedName, {
-          ...ingredient,
-          checked: false,
-          // Ensure quantity is a string
-          quantity: ingredient.quantity || "1"
-        });
       }
     });
+  };
+  
+  // Helper function to process a single ingredient
+  const processIngredient = (ingredient: any, map: Map<string, Ingredient>) => {
+    // Handle different ingredient formats
+    let name, quantity, unit;
+    
+    if (typeof ingredient === 'string') {
+      // Parse string format like "1 cup flour"
+      const parts = ingredient.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        quantity = parts[0];
+        name = parts.slice(1).join(' ');
+        
+        // Try to extract unit if present
+        if (parts.length >= 3) {
+          const commonUnits = ['cup', 'cups', 'tbsp', 'tsp', 'oz', 'g', 'kg', 'lb', 'ml', 'l'];
+          if (commonUnits.includes(parts[1].toLowerCase())) {
+            quantity = parts[0];
+            unit = parts[1];
+            name = parts.slice(2).join(' ');
+          }
+        }
+      } else {
+        name = ingredient;
+        quantity = "1";
+      }
+    } else if (typeof ingredient === 'object' && ingredient !== null) {
+      // Handle object format
+      if ('name' in ingredient) {
+        name = ingredient.name;
+        quantity = ingredient.quantity || "1";
+        unit = ingredient.unit;
+      } else if ('ingredient' in ingredient) {
+        name = ingredient.ingredient;
+        quantity = ingredient.quantity || "1";
+      }
+    }
+    
+    // Skip if we couldn't determine a name
+    if (!name) return;
+    
+    const normalizedName = name.toLowerCase().trim();
+    
+    if (map.has(normalizedName)) {
+      // If ingredient already exists, try to combine quantities
+      const existingIngredient = map.get(normalizedName)!;
+      
+      let newQty = 1;
+      // Handle both numeric quantities and string quantities
+      try {
+        const existingQty = parseInt(existingIngredient.quantity || "1");
+        const ingredientQty = parseInt(quantity || "1");
+        newQty = existingQty + ingredientQty;
+      } catch (e) {
+        console.warn('Error parsing quantities, defaulting to incremental:', e);
+        newQty = parseInt(existingIngredient.quantity || "1") + 1;
+      }
+      
+      existingIngredient.quantity = newQty.toString();
+    } else {
+      // Add new ingredient to map
+      map.set(normalizedName, {
+        name,
+        checked: false,
+        // Ensure quantity is a string
+        quantity: quantity || "1",
+        unit: unit
+      });
+    }
   };
   
   // Function to add ingredients to grocery list
