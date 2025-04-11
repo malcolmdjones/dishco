@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Recipe } from '@/data/mockData';
+import { Recipe } from '@/types/MealPlan';
 
 export const useSavedRecipes = (recipes: Recipe[], isAuthenticated: boolean) => {
   const [savedRecipeIds, setSavedRecipeIds] = useState<string[]>([]);

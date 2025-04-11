@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -43,7 +42,10 @@ const SavedPlansPage = () => {
     selectedPlan, 
     setSelectedPlan,
     deletePlan: hookDeletePlan,
-    updatePlan: hookUpdatePlan
+    updatePlan: hookUpdatePlan,
+    viewPlanDetails,
+    copyAndEditPlan,
+    activatePlan
   } = useSavedMealPlans();
 
   const handleEditPlan = (plan: MealPlan) => {
@@ -97,7 +99,7 @@ const SavedPlansPage = () => {
   };
 
   const handleCopyAndEdit = (plan: MealPlan) => {
-    sessionStorage.setItem('planToCopy', JSON.stringify(plan));
+    copyAndEditPlan(plan);
     navigate('/planning');
   };
   
@@ -105,12 +107,9 @@ const SavedPlansPage = () => {
     if (selectedDate) {
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
       sessionStorage.setItem('activatePlanDate', formattedDate);
-      sessionStorage.setItem('activatePlanData', JSON.stringify(plan));
       
+      activatePlan(plan, 0);
       processMealPlanForGroceries(plan);
-      
-      setShowConfirmation(false);
-      navigate('/grocery');
     } else {
       toast({
         title: "Select Date",
@@ -233,7 +232,7 @@ const SavedPlansPage = () => {
             <CardContent className="p-4 pt-3">
               <div className="flex justify-between mb-2">
                 <span className="text-sm text-dishco-text-light">
-                  {days.length} days
+                  {days?.length || 0} days
                 </span>
                 <span className="text-sm">
                   {calculateTotalCalories(days)} calories/day

@@ -7,9 +7,15 @@ import { Button } from '@/components/ui/button';
 import RecipeDetail from './RecipeDetail';
 import { calculateDailyMacros } from '@/data/mockData';
 import { Progress } from '@/components/ui/progress';
+import { PlanData } from '@/types/MealPlan';
 
 interface PlanDetailViewProps {
-  plan: any;
+  plan: {
+    name: string;
+    description?: string;
+  } & {
+    plan_data?: PlanData 
+  };
   isOpen: boolean;
   onClose: () => void;
 }

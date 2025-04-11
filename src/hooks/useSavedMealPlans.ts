@@ -40,7 +40,15 @@ export const useSavedMealPlans = () => {
         throw error;
       }
 
-      setPlans(data || []);
+      // Transform the data to ensure it matches our MealPlan type
+      const transformedPlans: MealPlan[] = data?.map(plan => ({
+        ...plan,
+        plan_data: typeof plan.plan_data === 'string' 
+          ? JSON.parse(plan.plan_data) 
+          : plan.plan_data
+      })) || [];
+
+      setPlans(transformedPlans);
     } catch (error) {
       console.error('Error fetching meal plans:', error);
       toast({
@@ -122,12 +130,33 @@ export const useSavedMealPlans = () => {
 
       // Update the local state
       setPlans(prevPlans => prevPlans.map(plan => 
-        plan.id === planId ? { ...plan, ...updatePayload } : plan
+        plan.id === planId ? { 
+          ...plan, 
+          ...(updates.name ? { name: updates.name } : {}),
+          ...(updates.description !== undefined ? { 
+            plan_data: {
+              ...plan.plan_data,
+              description: updates.description
+            }
+          } : {})
+        } : plan
       ));
       
       // If the selected plan was updated, update it too
       if (selectedPlan && selectedPlan.id === planId) {
-        setSelectedPlan(data ? data[0] : null);
+        const updatedPlan = plans.find(p => p.id === planId);
+        if (updatedPlan) {
+          setSelectedPlan({
+            ...updatedPlan,
+            ...(updates.name ? { name: updates.name } : {}),
+            ...(updates.description !== undefined ? { 
+              plan_data: {
+                ...updatedPlan.plan_data,
+                description: updates.description
+              }
+            } : {})
+          });
+        }
       }
       
       toast({
@@ -150,6 +179,25 @@ export const useSavedMealPlans = () => {
   const viewPlanDetails = (plan: MealPlan) => {
     setSelectedPlan(plan);
     setIsPlanDetailOpen(true);
+  };
+
+  const activatePlan = (plan: MealPlan, startDay: number) => {
+    // Save the plan to session storage
+    sessionStorage.setItem('activatePlanData', JSON.stringify(plan));
+    sessionStorage.setItem('activatePlanDate', format(new Date(), 'yyyy-MM-dd'));
+    sessionStorage.setItem('activatePlanStartDay', String(startDay));
+    
+    setActivePlan(plan);
+    
+    toast({
+      title: "Plan Activated",
+      description: `${plan.name} has been set as your active meal plan.`,
+    });
+  };
+
+  const copyAndEditPlan = (plan: MealPlan) => {
+    sessionStorage.setItem('planToCopy', JSON.stringify(plan));
+    return true;
   };
 
   const getMealsForDate = (dateString: string) => {
@@ -177,6 +225,8 @@ export const useSavedMealPlans = () => {
     viewPlanDetails,
     fetchPlans,
     activePlan,
-    getMealsForDate
+    getMealsForDate,
+    activatePlan,
+    copyAndEditPlan
   };
 };

@@ -37,5 +37,6 @@ export interface Recipe {
     fat: number;
   };
   imageSrc?: string;
+  ingredients?: string[];
   [key: string]: any;
 }
