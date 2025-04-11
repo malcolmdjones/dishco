@@ -1,18 +1,21 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { Calendar, Calendar as CalendarIcon, Pencil, Trash } from 'lucide-react';
+import { Calendar, Calendar as CalendarIcon, Pencil, Trash, ShoppingBag } from 'lucide-react';
 import { generateMockMealPlan } from '@/data/mockData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import PlanDetailView from '@/components/PlanDetailView';
+import MealPlanDetailView from '@/components/MealPlanDetailView';
 import { useNavigate } from 'react-router-dom';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { Calendar as ReactCalendar } from '@/components/ui/calendar';
+import { useGroceryListUtils } from '@/hooks/useGroceryListUtils';
+import GroceryListConfirmationDialog from '@/components/GroceryListConfirmationDialog';
 
 const SavedPlansPage = () => {
   const { toast } = useToast();
@@ -28,6 +31,7 @@ const SavedPlansPage = () => {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const { showConfirmation, setShowConfirmation, processMealPlanForGroceries, handleConfirmGroceryAddition, currentMealPlan } = useGroceryListUtils();
 
   useEffect(() => {
     fetchPlans();
@@ -50,6 +54,8 @@ const SavedPlansPage = () => {
       }
 
       if (data) {
+        // Log the data structure to help debug
+        console.log('Loaded meal plans:', data);
         setPlans(data);
       }
     } catch (error) {
@@ -138,6 +144,8 @@ const SavedPlansPage = () => {
   };
 
   const handleViewPlanDetails = (plan) => {
+    // Log the plan to see its structure
+    console.log('Viewing plan details:', plan);
     setSelectedPlan(plan);
     setIsPlanDetailOpen(true);
   };
@@ -153,7 +161,11 @@ const SavedPlansPage = () => {
       sessionStorage.setItem('activatePlanDate', formattedDate);
       sessionStorage.setItem('activatePlanData', JSON.stringify(plan));
       setIsCalendarOpen(false);
-      navigate('/planning');
+      
+      // Process the meal plan for the grocery list
+      processMealPlanForGroceries(plan);
+      
+      // Don't navigate immediately - we'll navigate after the user decides on the grocery list dialog
     } else {
       toast({
         title: "Select Date",
@@ -161,18 +173,55 @@ const SavedPlansPage = () => {
       });
     }
   };
+  
+  const handleConfirmGrocery = () => {
+    handleConfirmGroceryAddition();
+    // No need to navigate here as handleConfirmGroceryAddition already navigates to /grocery
+  };
+  
+  const handleSkipGrocery = () => {
+    setShowConfirmation(false);
+    navigate('/planning');
+  };
 
   const calculateTotalCalories = (days) => {
+    if (!days || !Array.isArray(days)) return 0;
+    
     let total = 0;
     days.forEach(day => {
       if (!day || !day.meals) return;
       
-      total += day.meals.breakfast?.macros?.calories || 0;
-      total += day.meals.lunch?.macros?.calories || 0;
-      total += day.meals.dinner?.macros?.calories || 0;
-      day.meals.snacks?.forEach(snack => {
-        total += snack?.macros?.calories || 0;
-      });
+      // Get breakfast calories
+      const breakfast = day.meals.breakfast;
+      if (Array.isArray(breakfast) && breakfast.length > 0) {
+        total += breakfast[0]?.macros?.calories || 0;
+      } else if (breakfast?.macros) {
+        total += breakfast.macros.calories || 0;
+      }
+      
+      // Get lunch calories
+      const lunch = day.meals.lunch;
+      if (Array.isArray(lunch) && lunch.length > 0) {
+        total += lunch[0]?.macros?.calories || 0;
+      } else if (lunch?.macros) {
+        total += lunch.macros.calories || 0;
+      }
+      
+      // Get dinner calories
+      const dinner = day.meals.dinner;
+      if (Array.isArray(dinner) && dinner.length > 0) {
+        total += dinner[0]?.macros?.calories || 0;
+      } else if (dinner?.macros) {
+        total += dinner.macros.calories || 0;
+      }
+      
+      // Get snacks calories
+      const snacks = day.meals.snacks;
+      if (Array.isArray(snacks)) {
+        snacks.forEach(snack => {
+          total += snack?.macros?.calories || 0;
+        });
+      }
     });
     return Math.round(total / (days.length || 1));
   };
@@ -215,6 +264,18 @@ const SavedPlansPage = () => {
               className="h-8 w-8 rounded-full bg-white/80 shadow-sm hover:bg-white"
             >
               <Trash size={16} />
+            </Button>
+            <Button
+              variant="ghost" 
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                processMealPlanForGroceries(plan);
+              }}
+              className="h-8 w-8 rounded-full bg-white/80 shadow-sm hover:bg-white"
+              title="Add to grocery list"
+            >
+              <ShoppingBag size={16} />
             </Button>
           </div>
 
@@ -358,7 +419,19 @@ const SavedPlansPage = () => {
         </DialogContent>
       </Dialog>
       
-      <PlanDetailView plan={selectedPlan} isOpen={isPlanDetailOpen} onClose={() => setIsPlanDetailOpen(false)} />
+      <MealPlanDetailView 
+        plan={selectedPlan} 
+        isOpen={isPlanDetailOpen} 
+        onClose={() => setIsPlanDetailOpen(false)} 
+      />
+      
+      <GroceryListConfirmationDialog
+        isOpen={showConfirmation}
+        onOpenChange={setShowConfirmation}
+        onConfirm={handleConfirmGrocery}
+        onCancel={handleSkipGrocery}
+        mealPlanName={currentMealPlan?.name || 'your meal plan'}
+      />
     </div>
   );
 };

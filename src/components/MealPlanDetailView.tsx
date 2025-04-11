@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
@@ -117,29 +116,52 @@ const MealPlanDetailView: React.FC<MealPlanDetailViewProps> = ({ plan, isOpen, o
     }
   };
 
+  // Get the actual meal data, handling both array and single object formats
+  const getMealData = (mealData: any) => {
+    if (!mealData) return null;
+    
+    // If it's an array with items, return the first one
+    if (Array.isArray(mealData) && mealData.length > 0) {
+      return mealData[0]; 
+    }
+    
+    // Otherwise return the meal data as is (it's likely an object)
+    return mealData;
+  };
+
   // Safely render a meal item or show a placeholder
   const renderMealItem = (meal: any, mealType: string) => {
-    if (!meal) {
+    const mealData = getMealData(meal);
+    
+    if (!mealData || !mealData.name) {
       return (
         <p className="text-sm text-dishco-text-light">No {mealType} scheduled</p>
       );
     }
     
+    // Default values for missing properties
+    const calories = mealData.macros?.calories || 0;
+    const imageSrc = mealData.imageSrc || "/placeholder.svg";
+    
     return (
       <div 
         className="p-3 bg-muted/20 rounded-md flex items-center cursor-pointer hover:bg-muted/30 transition-colors"
-        onClick={() => handleOpenRecipe(meal)}
+        onClick={() => handleOpenRecipe(mealData)}
       >
         <div className="w-10 h-10 rounded-md overflow-hidden mr-3 flex-shrink-0">
           <img 
-            src={meal.imageSrc || "/placeholder.svg"} 
-            alt={meal.name}
+            src={imageSrc} 
+            alt={mealData.name}
             className="w-full h-full object-cover"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = "/placeholder.svg";
+            }}
           />
         </div>
         <div className="flex-1">
-          <p className="font-medium text-sm">{meal.name}</p>
-          <p className="text-xs text-dishco-text-light">{meal.macros?.calories || 0} cal</p>
+          <p className="font-medium text-sm">{mealData.name}</p>
+          <p className="text-xs text-dishco-text-light">{calories} cal</p>
         </div>
       </div>
     );
@@ -240,8 +262,10 @@ const MealPlanDetailView: React.FC<MealPlanDetailViewProps> = ({ plan, isOpen, o
                     <h4 className="text-sm font-medium mb-2">Snacks</h4>
                     {currentMeals.snacks && Array.isArray(currentMeals.snacks) && currentMeals.snacks.length > 0 ? (
                       <div className="space-y-2">
-                        {currentMeals.snacks.map((snack: any, index: number) => (
-                          snack && (
+                        {currentMeals.snacks.map((snack: any, index: number) => {
+                          if (!snack || !snack.name) return null;
+                          
+                          return (
                             <div 
                               key={index}
                               className="p-3 bg-muted/20 rounded-md flex items-center cursor-pointer hover:bg-muted/30 transition-colors"
@@ -252,6 +276,10 @@ const MealPlanDetailView: React.FC<MealPlanDetailViewProps> = ({ plan, isOpen, o
                                   src={snack.imageSrc || "/placeholder.svg"} 
                                   alt={snack.name}
                                   className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = "/placeholder.svg";
+                                  }}
                                 />
                               </div>
                               <div className="flex-1">
@@ -259,8 +287,8 @@ const MealPlanDetailView: React.FC<MealPlanDetailViewProps> = ({ plan, isOpen, o
                                 <p className="text-xs text-dishco-text-light">{snack.macros?.calories || 0} cal</p>
                               </div>
                             </div>
-                          )
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <p className="text-sm text-dishco-text-light">No snacks scheduled</p>
