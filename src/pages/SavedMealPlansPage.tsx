@@ -14,6 +14,8 @@ import { useSavedMealPlans } from '@/hooks/useSavedMealPlans';
 import MealPlanDetailView from '@/components/MealPlanDetailView';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import GroceryListConfirmationDialog from '@/components/GroceryListConfirmationDialog';
+import { useGroceryListUtils } from '@/hooks/useGroceryListUtils';
 
 const SavedMealPlansPage = () => {
   const navigate = useNavigate();
@@ -46,6 +48,16 @@ const SavedMealPlansPage = () => {
   const [isSelectingStartDay, setIsSelectingStartDay] = useState(false);
   const [planToActivateId, setPlanToActivateId] = useState<string | null>(null);
   const [selectedStartDay, setSelectedStartDay] = useState(0);
+  
+  // State for grocery list confirmation
+  const {
+    showConfirmation,
+    setShowConfirmation,
+    processMealPlanForGroceries,
+    handleConfirmGroceryAddition,
+    currentMealPlan
+  } = useGroceryListUtils();
+  const [planToAddToGroceries, setPlanToAddToGroceries] = useState<any>(null);
 
   useEffect(() => {
     // Remove the specific meal plans when component loads
@@ -153,7 +165,10 @@ const SavedMealPlansPage = () => {
     activatePlan(plan, selectedStartDay);
     setIsSelectingStartDay(false);
     setPlanToActivateId(null);
-    navigate('/planning');
+    
+    // Process the activated meal plan for grocery list confirmation
+    processMealPlanForGroceries(plan);
+    setShowConfirmation(true);
   };
 
   const calculateAverageCalories = (days: any[]) => {
@@ -406,6 +421,15 @@ const SavedMealPlansPage = () => {
         plan={selectedPlan} 
         isOpen={isPlanDetailOpen} 
         onClose={() => setIsPlanDetailOpen(false)}
+      />
+      
+      {/* Grocery List Confirmation Dialog */}
+      <GroceryListConfirmationDialog 
+        isOpen={showConfirmation}
+        onOpenChange={setShowConfirmation}
+        onConfirm={handleConfirmGroceryAddition}
+        onCancel={() => setShowConfirmation(false)}
+        mealPlanName={currentMealPlan?.name || 'your meal plan'}
       />
     </div>
   );

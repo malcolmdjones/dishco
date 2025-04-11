@@ -8,8 +8,6 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import GroceryListConfirmationDialog from './GroceryListConfirmationDialog';
-import { useGroceryListUtils } from '@/hooks/useGroceryListUtils';
 
 interface SavePlanDialogProps {
   isOpen: boolean;
@@ -23,14 +21,6 @@ const SavePlanDialog: React.FC<SavePlanDialogProps> = ({ isOpen, onClose, mealPl
   const [planName, setPlanName] = useState('');
   const [planDescription, setPlanDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  
-  const {
-    showConfirmation,
-    setShowConfirmation,
-    processMealPlanForGroceries,
-    handleConfirmGroceryAddition,
-    currentMealPlan
-  } = useGroceryListUtils();
 
   const handleSave = async () => {
     if (!planName.trim()) {
@@ -77,16 +67,6 @@ const SavePlanDialog: React.FC<SavePlanDialogProps> = ({ isOpen, onClose, mealPl
       // Close the dialog
       onClose();
       
-      // Show grocery list confirmation
-      if (data) {
-        const savedPlan = {
-          name: planName,
-          plan_data: planData,
-          id: data.id
-        };
-        processMealPlanForGroceries(savedPlan);
-      }
-      
     } catch (error) {
       console.error('Error saving plan:', error);
       toast({
@@ -100,56 +80,46 @@ const SavePlanDialog: React.FC<SavePlanDialogProps> = ({ isOpen, onClose, mealPl
   };
 
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Save Meal Plan</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label htmlFor="plan-name" className="text-sm font-medium">
-                Plan Name
-              </label>
-              <Input
-                id="plan-name"
-                placeholder="e.g. My Healthy Week, Keto Plan, etc."
-                value={planName}
-                onChange={(e) => setPlanName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="plan-description" className="text-sm font-medium">
-                Description (Optional)
-              </label>
-              <Textarea
-                id="plan-description"
-                placeholder="Add notes or details about this meal plan..."
-                value={planDescription}
-                onChange={(e) => setPlanDescription(e.target.value)}
-                rows={3}
-              />
-            </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Save Meal Plan</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <label htmlFor="plan-name" className="text-sm font-medium">
+              Plan Name
+            </label>
+            <Input
+              id="plan-name"
+              placeholder="e.g. My Healthy Week, Keto Plan, etc."
+              value={planName}
+              onChange={(e) => setPlanName(e.target.value)}
+            />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={onClose} disabled={isSaving}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? "Saving..." : "Save Plan"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      <GroceryListConfirmationDialog 
-        isOpen={showConfirmation}
-        onOpenChange={setShowConfirmation}
-        onConfirm={handleConfirmGroceryAddition}
-        onCancel={() => setShowConfirmation(false)}
-        mealPlanName={currentMealPlan?.name || 'your meal plan'}
-      />
-    </>
+          <div className="space-y-2">
+            <label htmlFor="plan-description" className="text-sm font-medium">
+              Description (Optional)
+            </label>
+            <Textarea
+              id="plan-description"
+              placeholder="Add notes or details about this meal plan..."
+              value={planDescription}
+              onChange={(e) => setPlanDescription(e.target.value)}
+              rows={3}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save Plan"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 

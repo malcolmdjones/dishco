@@ -1,3 +1,4 @@
+
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
@@ -20,6 +21,7 @@ interface Recipe {
 
 interface MealPlan {
   name?: string;
+  id?: string;
   plan_data: {
     days: Array<{
       date: string;

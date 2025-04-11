@@ -2,7 +2,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface GroceryListConfirmationDialogProps {
@@ -35,17 +35,36 @@ const GroceryListConfirmationDialog: React.FC<GroceryListConfirmationDialogProps
 
         <div className="flex justify-center py-4">
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="bg-green-50 rounded-full p-6"
+            className="relative"
           >
             <motion.div 
-              animate={{ y: [0, -10, 0] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
-              className="flex items-center justify-center"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ 
+                type: "spring",
+                stiffness: 260,
+                damping: 20,
+                delay: 0.2
+              }}
+              className="bg-green-50 rounded-full p-8"
             >
               <ShoppingBag size={48} className="text-dishco-primary" />
+            </motion.div>
+            <motion.div
+              initial={{ scale: 0, x: 30, y: -10 }}
+              animate={{ scale: 1, x: 30, y: -10 }}
+              transition={{ 
+                type: "spring",
+                stiffness: 260,
+                damping: 20,
+                delay: 0.6
+              }}
+              className="absolute top-0 right-0"
+            >
+              <CheckCircle className="h-8 w-8 text-green-500" />
             </motion.div>
           </motion.div>
         </div>
