@@ -5,25 +5,28 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { dbToFrontendRecipe } from '@/utils/recipeDbUtils';
 import { Recipe } from '@/data/mockData';
+import { Json } from '@/integrations/supabase/types';
+
+export type MealPlanData = {
+  days: Array<{
+    date: string;
+    meals: {
+      breakfast?: any;
+      lunch?: any;
+      dinner?: any;
+      snacks?: any[];
+    };
+  }>;
+  description?: string;
+  tags?: string[];
+};
 
 export type MealPlan = {
   id: string;
   name: string;
   created_at: string;
   schema_version?: number;
-  plan_data: {
-    days: Array<{
-      date: string;
-      meals: {
-        breakfast?: any;
-        lunch?: any;
-        dinner?: any;
-        snacks?: any[];
-      };
-    }>;
-    description?: string;
-    tags?: string[];
-  };
+  plan_data: MealPlanData;
   user_id?: string;
 };
 
@@ -111,7 +114,10 @@ export const useSavedMealPlans = () => {
             // Add the plan with empty days as fallback
             processedPlans.push({
               ...plan,
-              plan_data: { days: [], description: plan.plan_data?.description || '' }
+              plan_data: { 
+                days: [], 
+                description: typeof plan.plan_data === 'object' ? plan.plan_data.description || '' : ''
+              }
             });
             continue;
           }
@@ -130,17 +136,20 @@ export const useSavedMealPlans = () => {
             }
             
             const day = dayMap.get(day_index);
-            const recipe = dbToFrontendRecipe(recipe_data);
-            
-            // Add recipe to the appropriate meal slot
-            if (meal_type === 'breakfast') {
-              day.meals.breakfast = recipe;
-            } else if (meal_type === 'lunch') {
-              day.meals.lunch = recipe;
-            } else if (meal_type === 'dinner') {
-              day.meals.dinner = recipe;
-            } else if (meal_type === 'snacks') {
-              day.meals.snacks.push(recipe);
+            // Make sure recipe_data is an object before converting
+            if (recipe_data && typeof recipe_data === 'object') {
+              const recipe = dbToFrontendRecipe(recipe_data);
+              
+              // Add recipe to the appropriate meal slot
+              if (meal_type === 'breakfast') {
+                day.meals.breakfast = recipe;
+              } else if (meal_type === 'lunch') {
+                day.meals.lunch = recipe;
+              } else if (meal_type === 'dinner') {
+                day.meals.dinner = recipe;
+              } else if (meal_type === 'snacks') {
+                day.meals.snacks.push(recipe);
+              }
             }
           });
           
@@ -149,17 +158,37 @@ export const useSavedMealPlans = () => {
             .sort((a, b) => a[0] - b[0])
             .map(([_, dayData]) => dayData);
             
-          // Create the processed plan
+          // Create the processed plan with proper typing
           processedPlans.push({
-            ...plan,
+            id: plan.id,
+            name: plan.name,
+            created_at: plan.created_at,
+            schema_version: plan.schema_version,
+            user_id: plan.user_id,
             plan_data: {
-              ...plan.plan_data,
-              days: daysArray
+              days: daysArray,
+              description: typeof plan.plan_data === 'object' ? plan.plan_data.description || '' : '',
+              tags: typeof plan.plan_data === 'object' && Array.isArray(plan.plan_data.tags) ? plan.plan_data.tags : []
             }
           });
         } else {
-          // For legacy plans (schema_version < 2), use the existing plan_data
-          processedPlans.push(plan);
+          // For legacy plans (schema_version < 2), ensure plan_data is properly typed
+          const planData = typeof plan.plan_data === 'string' 
+            ? JSON.parse(plan.plan_data) 
+            : plan.plan_data;
+            
+          processedPlans.push({
+            id: plan.id,
+            name: plan.name,
+            created_at: plan.created_at,
+            schema_version: plan.schema_version,
+            user_id: plan.user_id,
+            plan_data: {
+              days: planData.days || [],
+              description: planData.description || '',
+              tags: planData.tags || []
+            }
+          });
         }
       }
       
