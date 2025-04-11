@@ -54,6 +54,51 @@ export type Database = {
         }
         Relationships: []
       }
+      meal_plan_recipes: {
+        Row: {
+          created_at: string | null
+          day_index: number
+          id: string
+          item_position: number | null
+          meal_plan_id: string
+          meal_type: string
+          recipe_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          day_index: number
+          id?: string
+          item_position?: number | null
+          meal_plan_id: string
+          meal_type: string
+          recipe_id: string
+        }
+        Update: {
+          created_at?: string | null
+          day_index?: number
+          id?: string
+          item_position?: number | null
+          meal_plan_id?: string
+          meal_type?: string
+          recipe_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_plan_recipes_meal_plan_id_fkey"
+            columns: ["meal_plan_id"]
+            isOneToOne: false
+            referencedRelation: "saved_meal_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_plan_recipes_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       nutrition_goals: {
         Row: {
           calories: number
@@ -228,6 +273,7 @@ export type Database = {
           id: string
           name: string
           plan_data: Json
+          schema_version: number | null
           user_id: string | null
         }
         Insert: {
@@ -235,6 +281,7 @@ export type Database = {
           id?: string
           name: string
           plan_data: Json
+          schema_version?: number | null
           user_id?: string | null
         }
         Update: {
@@ -242,6 +289,7 @@ export type Database = {
           id?: string
           name?: string
           plan_data?: Json
+          schema_version?: number | null
           user_id?: string | null
         }
         Relationships: []
@@ -293,6 +341,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_meal_plan_recipes: {
+        Args: { plan_id: string }
+        Returns: {
+          day_index: number
+          meal_type: string
+          item_position: number
+          recipe_id: string
+          recipe_data: Json
+        }[]
+      }
       is_admin: {
         Args: { user_id: string }
         Returns: boolean
