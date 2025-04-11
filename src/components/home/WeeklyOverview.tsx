@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format, addDays } from 'date-fns';
-import { MealPlan } from '@/types/MealPlan';
+import { MealPlan, Recipe } from '@/types/MealPlan';
 import { getMealData } from '@/hooks/utils';
 
 interface WeeklyOverviewProps {

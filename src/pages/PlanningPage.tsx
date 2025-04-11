@@ -7,6 +7,7 @@ import CreateMealPlanContent from '@/components/meal-plan/CreateMealPlanContent'
 import WeekOverviewDialog from '@/components/meal-plan/WeekOverviewDialog';
 import RecipeVaultDialog from '@/components/meal-plan/RecipeVaultDialog';
 import { useRecipeVault } from '@/hooks/useRecipeVault';
+import { Recipe } from '@/types/MealPlan';
 
 const PlanningPage = () => {
   const [isOverviewOpen, setIsOverviewOpen] = React.useState(false);
@@ -30,12 +31,8 @@ const PlanningPage = () => {
     preferences
   } = useMealPlanUtils();
 
-  // Recipe vault hooks
-  const { 
-    recipes, 
-    getRecipesByType,
-    isRecipeSaved 
-  } = useRecipeVault();
+  // Get recipe vault functionality
+  const { getRecipesByType, isRecipeSaved } = useRecipeVault();
   
   // Check if there's an active plan
   const { activePlan } = useSavedMealPlans();
@@ -49,7 +46,7 @@ const PlanningPage = () => {
   };
 
   // Add recipe from vault to meal plan
-  const handleAddRecipeFromVault = (recipe: any) => {
+  const handleAddRecipeFromVault = (recipe: Recipe) => {
     updateMeal(currentMealType, recipe, currentMealIndex);
     setIsVaultOpen(false);
   };
@@ -83,7 +80,7 @@ const PlanningPage = () => {
       <RecipeVaultDialog
         isOpen={isVaultOpen}
         onClose={() => setIsVaultOpen(false)}
-        recipes={getRecipesByType(currentMealType)}
+        mealType={currentMealType}
         onSelectRecipe={handleAddRecipeFromVault}
         isRecipeSaved={isRecipeSaved}
       />

@@ -9,38 +9,51 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { CookingPot, Zap, Blend, Search, Plus } from 'lucide-react';
-import { Recipe } from '@/data/mockData';
-import { useRecipes } from '@/hooks/useRecipes';
+import { CookingPot, Zap, Blend, Search } from 'lucide-react';
+import { Recipe } from '@/types/MealPlan';
 import { getRecipeImage } from '@/utils/recipeUtils';
 
 interface RecipeVaultDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectRecipe: (recipe: Recipe) => void;
-  mealType: string;
+  mealType?: string;
   targetMealIndex?: number;
+  isRecipeSaved?: (recipeId: string) => boolean;
 }
 
 const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
   isOpen,
   onClose,
   onSelectRecipe,
-  mealType,
-  targetMealIndex
+  mealType = '',
+  targetMealIndex,
+  isRecipeSaved
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>([]);
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  const { recipes, loading } = useRecipes();
+  // Simulated loading of recipes for development
+  useEffect(() => {
+    if (isOpen) {
+      setLoading(true);
+      // In a real implementation, this would fetch recipes from an API
+      // For now, we'll use the recipes provided via props
+      setTimeout(() => {
+        setLoading(false);
+      }, 500);
+    }
+  }, [isOpen]);
 
   // Set initial filter based on target meal type
   useEffect(() => {
     if (mealType && isOpen) {
       // Convert mealType to recipe type format
       let type = mealType.toLowerCase();
-      // Handle plural form of 'snacks' to singular 'snack' for filtering
+      // Handle plural form of 'snacks' to singular 'snack'
       if (type === 'snacks') type = 'snack';
       setSelectedType(type);
     }
@@ -52,15 +65,15 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
     
     // Filter by meal type if selected
     if (selectedType) {
-      filtered = filtered.filter(recipe => recipe.type === selectedType);
+      filtered = filtered.filter(recipe => recipe.type?.toLowerCase() === selectedType);
     }
     
     // Filter by search term
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(recipe => 
-        recipe.name.toLowerCase().includes(term) || 
-        recipe.description.toLowerCase().includes(term)
+        recipe.name?.toLowerCase().includes(term) || 
+        recipe.description?.toLowerCase().includes(term)
       );
     }
     
@@ -68,7 +81,7 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
   }, [searchTerm, selectedType, recipes]);
 
   // Get unique recipe types
-  const recipeTypes = [...new Set(recipes.map(recipe => recipe.type))];
+  const recipeTypes = [...new Set(recipes.map(recipe => recipe.type))].filter(Boolean);
 
   // Handle recipe selection
   const handleSelectRecipe = (recipe: Recipe) => {
@@ -109,9 +122,9 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
                   key={type} 
                   variant={selectedType === type ? "default" : "outline"} 
                   size="sm"
-                  onClick={() => setSelectedType(type)}
+                  onClick={() => setSelectedType(type as string)}
                 >
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                  {type?.charAt(0).toUpperCase() + type?.slice(1)}
                 </Button>
               ))}
             </div>
@@ -161,10 +174,10 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
                     <p className="text-sm text-gray-500 line-clamp-2 mt-2 mb-2">{recipe.description}</p>
                     <div className="flex items-center justify-between">
                       <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded">
-                        {recipe.type.charAt(0).toUpperCase() + recipe.type.slice(1)}
+                        {recipe.type?.charAt(0).toUpperCase() + recipe.type?.slice(1)}
                       </span>
                       <span className="text-xs bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded">
-                        {recipe.macros.calories} kcal
+                        {recipe.macros?.calories} kcal
                       </span>
                     </div>
                   </div>
