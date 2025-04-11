@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { dbToFrontendRecipe } from '@/utils/recipeDbUtils';
+import { dbToFrontendRecipe, DbRecipe } from '@/utils/recipeDbUtils';
 import { Recipe } from '@/data/mockData';
 import { Json } from '@/integrations/supabase/types';
 
@@ -74,7 +73,6 @@ export const useSavedMealPlans = () => {
     }
   }, [plans]);
 
-  // Helper function to safely get description from plan_data
   const getDescription = (planData: Json): string => {
     if (typeof planData === 'object' && planData !== null && !Array.isArray(planData)) {
       return (planData as {description?: string}).description || '';
@@ -82,7 +80,6 @@ export const useSavedMealPlans = () => {
     return '';
   };
   
-  // Helper function to safely get tags from plan_data
   const getTags = (planData: Json): string[] => {
     if (typeof planData === 'object' && planData !== null && !Array.isArray(planData)) {
       const tags = (planData as {tags?: string[]}).tags;
@@ -91,18 +88,58 @@ export const useSavedMealPlans = () => {
     return [];
   };
 
-  // Fetch meal plans and their recipes
+  const jsonToDbRecipe = (data: any): DbRecipe => {
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid recipe data provided');
+    }
+
+    return {
+      id: data.id || '',
+      title: data.title || null,
+      short_description: data.short_description || null,
+      type: data.type || null,
+      meal_prep: data.meal_prep || null,
+      prep_duration_days: data.prep_duration_days || null,
+      servings: data.servings || null,
+      prep_time: data.prep_time || null,
+      cook_time: data.cook_time || null,
+      total_time: data.total_time || null,
+      price_range: data.price_range || null,
+      calorie_bracket: data.calorie_bracket || null,
+      nutrition_calories: data.nutrition_calories || null,
+      nutrition_protein: data.nutrition_protein || null,
+      nutrition_carbs: data.nutrition_carbs || null,
+      nutrition_fat: data.nutrition_fat || null,
+      ingredients_json: data.ingredients_json || null,
+      instructions_json: data.instructions_json || null,
+      tags: data.tags || null,
+      protein_focus: data.protein_focus || null,
+      cuisine: data.cuisine || null,
+      dietary_tags: data.dietary_tags || null,
+      upc_ingredients: data.upc_ingredients || null,
+      image_url: data.image_url || null,
+      created_by: data.created_by || null,
+      is_public: data.is_public || null,
+      created_at: data.created_at || null,
+      updated_at: data.updated_at || null,
+      oven: data.oven || null,
+      stovetop: data.stovetop || null,
+      air_fryer: data.air_fryer || null,
+      blender: data.blender || null,
+      grill: data.grill || null,
+      slow_cooker: data.slow_cooker || null
+    };
+  };
+
   const fetchPlans = async () => {
     setIsLoading(true);
     try {
-      // Only fetch plans if user is authenticated
       if (!user) {
         setPlans([]);
         setIsLoading(false);
         return;
       }
 
-      // Fetch the meal plans
       const { data: plansData, error: plansError } = await supabase
         .from('saved_meal_plans')
         .select('*')
@@ -116,19 +153,15 @@ export const useSavedMealPlans = () => {
         return;
       }
 
-      // Process each plan
       const processedPlans: MealPlan[] = [];
       
       for (const plan of plansData) {
-        // For newer plans (schema_version >= 2), we'll fetch recipes from the junction table
         if (plan.schema_version && plan.schema_version >= 2) {
-          // Fetch recipes for this plan using the database function
           const { data: recipesData, error: recipesError } = await supabase
             .rpc('get_meal_plan_recipes', { plan_id: plan.id });
             
           if (recipesError) {
             console.error('Error fetching plan recipes:', recipesError);
-            // Add the plan with empty days as fallback
             processedPlans.push({
               ...plan,
               plan_data: { 
@@ -139,7 +172,6 @@ export const useSavedMealPlans = () => {
             continue;
           }
           
-          // Group recipes by day and meal type
           const dayMap = new Map();
           
           recipesData.forEach(recipeItem => {
@@ -153,12 +185,12 @@ export const useSavedMealPlans = () => {
             }
             
             const day = dayMap.get(day_index);
-            // Make sure recipe_data is an object before converting
+            
             if (recipe_data && typeof recipe_data === 'object' && !Array.isArray(recipe_data)) {
               try {
-                const recipe = dbToFrontendRecipe(recipe_data);
+                const dbRecipe = jsonToDbRecipe(recipe_data);
+                const recipe = dbToFrontendRecipe(dbRecipe);
                 
-                // Add recipe to the appropriate meal slot
                 if (meal_type === 'breakfast') {
                   day.meals.breakfast = recipe;
                 } else if (meal_type === 'lunch') {
@@ -174,12 +206,10 @@ export const useSavedMealPlans = () => {
             }
           });
           
-          // Convert dayMap to array and sort by day index
           const daysArray = Array.from(dayMap.entries())
             .sort((a, b) => a[0] - b[0])
             .map(([_, dayData]) => dayData);
             
-          // Create the processed plan with proper typing
           processedPlans.push({
             id: plan.id,
             name: plan.name,
@@ -193,7 +223,6 @@ export const useSavedMealPlans = () => {
             }
           });
         } else {
-          // For legacy plans (schema_version < 2), ensure plan_data is properly typed
           let planData: MealPlanData;
           
           if (typeof plan.plan_data === 'string') {
@@ -204,7 +233,6 @@ export const useSavedMealPlans = () => {
               planData = { days: [], description: '', tags: [] };
             }
           } else if (typeof plan.plan_data === 'object' && plan.plan_data !== null) {
-            // Handle case where plan_data is already an object
             const rawPlanData = plan.plan_data as any;
             planData = {
               days: Array.isArray(rawPlanData.days) ? rawPlanData.days : [],
@@ -212,7 +240,6 @@ export const useSavedMealPlans = () => {
               tags: Array.isArray(rawPlanData.tags) ? rawPlanData.tags : []
             };
           } else {
-            // Fallback for unexpected data type
             planData = { days: [], description: '', tags: [] };
           }
             
@@ -240,10 +267,8 @@ export const useSavedMealPlans = () => {
     }
   };
 
-  // Delete a meal plan
   const deletePlan = async (id: string) => {
     try {
-      // Make sure we have a user
       if (!user) {
         toast({
           title: "Authentication Required",
@@ -255,7 +280,6 @@ export const useSavedMealPlans = () => {
 
       console.log(`Attempting to delete plan with ID: ${id}`);
       
-      // First verify if the plan exists
       const { data: existingPlan, error: fetchError } = await supabase
         .from('saved_meal_plans')
         .select('id, user_id')
@@ -274,7 +298,6 @@ export const useSavedMealPlans = () => {
 
       console.log('Existing plan found:', existingPlan);
       
-      // Verify ownership before deletion
       if (existingPlan.user_id !== user.id) {
         console.error('User does not own this plan');
         toast({
@@ -285,8 +308,6 @@ export const useSavedMealPlans = () => {
         return false;
       }
 
-      // If plan exists and belongs to user, proceed with deletion
-      // The junction table entries will be automatically deleted due to CASCADE
       const { error } = await supabase
         .from('saved_meal_plans')
         .delete()
@@ -299,16 +320,13 @@ export const useSavedMealPlans = () => {
       
       console.log('Plan deleted successfully from database');
       
-      // Update local state to remove the deleted plan
       setPlans(prevPlans => prevPlans.filter(plan => plan.id !== id));
       
-      // Close plan detail view if it was showing the deleted plan
       if (selectedPlan?.id === id) {
         setSelectedPlan(null);
         setIsPlanDetailOpen(false);
       }
       
-      // Check if active plan is being deleted
       if (activePlan?.plan.id === id) {
         sessionStorage.removeItem('activePlan');
         setActivePlan(null);
@@ -335,7 +353,6 @@ export const useSavedMealPlans = () => {
     }
   };
 
-  // Save a new meal plan or update an existing one
   const saveMealPlan = async (plan: {
     id?: string;
     name: string;
@@ -360,21 +377,19 @@ export const useSavedMealPlans = () => {
         return null;
       }
       
-      // Create or update the meal plan entry
       const planData = {
         name: plan.name,
         user_id: user.id,
         plan_data: {
           description: plan.description || '',
-          days: [] // We'll store just the minimal info in plan_data now
+          days: []
         },
-        schema_version: 2 // Mark as new schema version
+        schema_version: 2
       };
       
       let planId = plan.id;
       
       if (plan.id) {
-        // Update existing plan
         const { error: updateError } = await supabase
           .from('saved_meal_plans')
           .update(planData)
@@ -383,7 +398,6 @@ export const useSavedMealPlans = () => {
           
         if (updateError) throw updateError;
       } else {
-        // Create new plan
         const { data: newPlan, error: createError } = await supabase
           .from('saved_meal_plans')
           .insert(planData)
@@ -396,17 +410,6 @@ export const useSavedMealPlans = () => {
       
       if (!planId) throw new Error('Failed to get plan ID after save');
       
-      // Delete existing recipes for this plan (for updates)
-      if (plan.id) {
-        const { error: deleteError } = await supabase
-          .from('meal_plan_recipes')
-          .delete()
-          .eq('meal_plan_id', plan.id);
-          
-        if (deleteError) throw deleteError;
-      }
-      
-      // Insert recipes for this meal plan
       const recipeEntries = [];
       
       plan.days.forEach((day, dayIndex) => {
@@ -468,7 +471,6 @@ export const useSavedMealPlans = () => {
           "Your meal plan has been saved successfully."
       });
       
-      // Refresh plans list
       await fetchPlans();
       
       return planId;
@@ -483,13 +485,11 @@ export const useSavedMealPlans = () => {
     }
   };
 
-  // Update plan metadata (name, description)
   const updatePlan = async (id: string, updates: { name?: string; description?: string }) => {
     try {
       const plan = plans.find(p => p.id === id);
       if (!plan) return;
       
-      // If it's a new schema plan, we just update the fields directly
       const updateData: any = {};
       
       if (updates.name) {
@@ -497,7 +497,6 @@ export const useSavedMealPlans = () => {
       }
       
       if (updates.description !== undefined) {
-        // Update plan_data.description
         updateData.plan_data = {
           ...plan.plan_data,
           description: updates.description
@@ -513,7 +512,6 @@ export const useSavedMealPlans = () => {
         throw error;
       }
       
-      // Update local state
       setPlans(prevPlans => prevPlans.map(p => 
         p.id === id 
           ? { 
@@ -547,7 +545,6 @@ export const useSavedMealPlans = () => {
   };
 
   const activatePlan = (plan: MealPlan, startDay: number = 0) => {
-    // Ensure we're storing the complete plan data with all recipe details
     sessionStorage.setItem('activePlan', JSON.stringify({
       ...plan.plan_data,
       startDay
