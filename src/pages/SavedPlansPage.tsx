@@ -44,7 +44,7 @@ const SavedPlansPage = () => {
     selectedPlan, 
     viewPlanDetails,
     deletePlan: hookDeletePlan,
-    updatePlan: hookUpdatePlan,
+    updatePlan: hookUpdatePlan, // This now correctly references the updatePlan function 
     fetchPlans
   } = useSavedMealPlans();
 

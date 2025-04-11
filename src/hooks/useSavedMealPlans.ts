@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -344,7 +345,7 @@ export const useSavedMealPlans = () => {
     setIsPlanDetailOpen,
     fetchPlans,
     deletePlan,
-    updatePlan: hookUpdatePlan,
+    updatePlan, // Fixed: replaced hookUpdatePlan with updatePlan
     viewPlanDetails,
     activePlan,
     activatePlan,
