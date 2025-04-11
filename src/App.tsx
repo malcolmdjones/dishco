@@ -15,7 +15,7 @@ import LogMealPage from "./pages/LogMealPage";
 import NutritionGoalsPage from "./pages/NutritionGoalsPage";
 import SavedRecipesPage from "./pages/SavedRecipesPage";
 import AccountSettingsPage from "./pages/AccountSettingsPage";
-import SavedMealPlansPage from "./pages/SavedMealPlansPage";
+import SavedPlansPage from "./pages/SavedPlansPage";
 import DietaryRestrictionsPage from "./pages/DietaryRestrictionsPage";
 import AddExternalRecipePage from "./pages/AddExternalRecipePage";
 import CustomRecipesPage from "./pages/CustomRecipesPage";
@@ -92,7 +92,7 @@ const App = () => (
             <Route path="/grocery" element={<ProtectedRoute><AppLayout><GroceryListPage /></AppLayout></ProtectedRoute>} />
             <Route path="/more" element={<AppLayout><MorePage /></AppLayout>} />
             <Route path="/log-meal" element={<ProtectedRoute><AppLayout><LogMealPage /></AppLayout></ProtectedRoute>} />
-            <Route path="/saved-plans" element={<ProtectedRoute><AppLayout><SavedMealPlansPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/saved-plans" element={<ProtectedRoute><AppLayout><SavedPlansPage /></AppLayout></ProtectedRoute>} />
             <Route path="/saved-recipes" element={<ProtectedRoute><AppLayout><SavedRecipesPage /></AppLayout></ProtectedRoute>} />
             <Route path="/saved-snacks" element={<ProtectedRoute><AppLayout><SavedSnacksPage /></AppLayout></ProtectedRoute>} />
             <Route path="/saved-desserts" element={<ProtectedRoute><AppLayout><SavedDessertsPage /></AppLayout></ProtectedRoute>} />

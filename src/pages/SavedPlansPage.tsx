@@ -1,12 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Calendar, Calendar as CalendarIcon, Pencil, Trash, ShoppingBag } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import MealPlanDetailView from '@/components/MealPlanDetailView';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +15,8 @@ import { Calendar as ReactCalendar } from '@/components/ui/calendar';
 import { useGroceryListUtils } from '@/hooks/useGroceryListUtils';
 import GroceryListConfirmationDialog from '@/components/GroceryListConfirmationDialog';
 import { useSavedMealPlans } from '@/hooks/useSavedMealPlans';
+import { ArrowLeft, ChevronLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const SavedPlansPage = () => {
   const { toast } = useToast();
@@ -91,7 +92,7 @@ const SavedPlansPage = () => {
   };
 
   const handleCopyAndEdit = (plan: any) => {
-    sessionStorage.setItem('planToCopy', JSON.stringify(plan));
+    sessionStorage.setItem('planToCopy', JSON.stringify(plan.plan_data));
     navigate('/planning');
   };
   
@@ -293,11 +294,24 @@ const SavedPlansPage = () => {
 
   return (
     <div className="container mx-auto py-8 animate-fade-in">
-      <h1 className="text-2xl font-bold mb-4">Saved Meal Plans</h1>
-      <p className="text-dishco-text-light mb-6">Access and manage your saved meal plans</p>
+      <header className="mb-6 flex items-center">
+        <Link to="/more" className="mr-3">
+          <ArrowLeft size={20} />
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold">Saved Meal Plans</h1>
+          <p className="text-dishco-text-light">Access and manage your saved meal plans</p>
+        </div>
+      </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {renderCards()}
+        {isLoading ? (
+          <div className="col-span-3 flex justify-center py-12">
+            <p>Loading your meal plans...</p>
+          </div>
+        ) : (
+          renderCards()
+        )}
       </div>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
