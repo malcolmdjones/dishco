@@ -7,16 +7,20 @@ import { Recipe as MockDataRecipe } from '@/data/mockData';
  */
 export const convertToMockDataRecipe = (recipe: MealPlanRecipe): MockDataRecipe => {
   return {
-    ...recipe,
-    description: recipe.description || '',  // MockData.Recipe requires description
+    id: recipe.id,
+    name: recipe.name,
+    description: recipe.description || '', // MockData.Recipe requires description
+    type: recipe.type || 'unknown',
+    imageSrc: recipe.imageSrc || '',
     requiresBlender: recipe.requiresBlender || false,
     requiresCooking: recipe.requiresCooking || false,
     cookTime: recipe.cookTime || 0,
     prepTime: recipe.prepTime || 0,
     servings: recipe.servings || 1,
-    type: recipe.type || 'unknown',
-    imageSrc: recipe.imageSrc || ''
-  } as MockDataRecipe;
+    macros: recipe.macros,
+    ingredients: recipe.ingredients || [],
+    instructions: recipe.instructions || []
+  };
 };
 
 /**
