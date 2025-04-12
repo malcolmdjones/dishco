@@ -25,7 +25,12 @@ const OverlapWarningDialog: React.FC<OverlapWarningDialogProps> = ({
   planName
 }) => {
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(open) => {
+        if (!open) onCancel();
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-amber-700">
@@ -49,7 +54,9 @@ const OverlapWarningDialog: React.FC<OverlapWarningDialogProps> = ({
           </Button>
           <Button 
             variant="destructive" 
-            onClick={onConfirm}
+            onClick={() => {
+              onConfirm();
+            }}
           >
             Replace Existing Plan
           </Button>

@@ -184,17 +184,23 @@ const SavedPlansPage = () => {
   };
   
   const handleConfirmOverlap = () => {
+    console.log("Confirming overlap with pendingActivation:", pendingActivation);
     if (pendingActivation) {
-      forceActivatePlan();
+      const success = forceActivatePlan();
+      console.log("Force activate result:", success);
       
-      // Store the date for grocery list integration  
-      const formattedDate = format(new Date(pendingActivation.startDate), 'yyyy-MM-dd');
-      sessionStorage.setItem('activatePlanDate', formattedDate);
-      sessionStorage.setItem('activatePlanData', JSON.stringify(pendingActivation.plan));
-      
-      // Prompt for grocery list addition
-      processMealPlanForGroceries(pendingActivation.plan);
-      setShowConfirmation(true);
+      if (success) {
+        // Store the date for grocery list integration  
+        const formattedDate = format(new Date(pendingActivation.startDate), 'yyyy-MM-dd');
+        sessionStorage.setItem('activatePlanDate', formattedDate);
+        sessionStorage.setItem('activatePlanData', JSON.stringify(pendingActivation.plan));
+        
+        // Prompt for grocery list addition
+        processMealPlanForGroceries(pendingActivation.plan);
+        setShowConfirmation(true);
+      }
+    } else {
+      console.error("No pending activation found when confirming overlap");
     }
   };
   
