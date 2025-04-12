@@ -1,33 +1,31 @@
 
 export interface ExternalFood {
-  id: string;
   foodId: string;
   label: string;
   brand?: string;
-  category?: string;
-  categoryLabel?: string;
   nutrients: {
-    ENERC_KCAL: number;
-    PROCNT: number;
-    FAT: number;
-    CHOCDF: number;
-    FIBTG?: number;
+    ENERC_KCAL: number; // calories
+    PROCNT: number;      // protein
+    FAT: number;         // fat
+    CHOCDF: number;      // carbs
+    FIBTG?: number;      // fiber (optional)
   };
   image?: string;
-  source?: string;
-  quantity: number;
-  type: string;
-  loggedAt: string;
-  externalSource?: boolean;
-  externalId?: string;
+  quantity?: number;
 }
 
 export interface LoggedMeal {
   id: string;
   name: string;
   type: string;
-  recipe: any;
-  consumed: boolean;
+  macros: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
   loggedAt: string;
   externalSource?: boolean;
+  externalId?: string;
+  imageSrc?: string;
 }

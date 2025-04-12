@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { searchFoods, convertToMealFormat, FoodItem } from '@/services/foodDatabaseService';
+import { searchFoods, convertToMealFormat } from '@/services/foodDatabaseService';
 
 interface FoodSearchModalProps {
   isOpen: boolean;
@@ -25,16 +26,22 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
   const [selectedMealType, setSelectedMealType] = useState('snack');
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [selectedFood, setSelectedFood] = useState<any | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     
     setIsSearching(true);
+    setError(null);
     try {
       const results = await searchFoods(searchQuery);
       setSearchResults(results);
+      if (results.length === 0) {
+        console.log('No results found for query:', searchQuery);
+      }
     } catch (error) {
       console.error("Error searching foods:", error);
+      setError("Failed to search for foods. Please try again later.");
     } finally {
       setIsSearching(false);
     }
@@ -83,6 +90,12 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
             </Button>
           </div>
           
+          {error && (
+            <div className="p-4 bg-red-50 text-red-600 rounded-md text-sm">
+              {error}
+            </div>
+          )}
+          
           {isSearching && (
             <div className="text-center py-4">
               <Loader2 className="h-6 w-6 animate-spin mx-auto" />
@@ -113,7 +126,7 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
                   <div>
                     <p className="text-sm font-medium">{food.label}</p>
                     <p className="text-xs text-gray-500">
-                      {food.brand || food.categoryLabel || 'Food item'} • {Math.round(food.nutrients.ENERC_KCAL)} kcal
+                      {food.brand || 'Food item'} • {Math.round(food.nutrients.ENERC_KCAL)} kcal
                     </p>
                   </div>
                 </div>
@@ -138,7 +151,7 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
                 <div>
                   <h3 className="font-medium">{selectedFood.label}</h3>
                   <p className="text-sm text-gray-500">
-                    {selectedFood.brand || ''} {selectedFood.categoryLabel || ''}
+                    {selectedFood.brand || ''}
                   </p>
                 </div>
               </div>
