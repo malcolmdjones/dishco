@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Search, CalendarPlus } from 'lucide-react';
@@ -54,21 +53,6 @@ const PlanningPage = () => {
           >
             <CalendarPlus className="mr-2" />
             Generate Meal Plan
-          </Button>
-
-          <div className="flex items-center my-4">
-            <div className="flex-grow border-t border-gray-200"></div>
-            <span className="mx-2 text-sm text-gray-500">or</span>
-            <div className="flex-grow border-t border-gray-200"></div>
-          </div>
-
-          <Button 
-            variant="outline"
-            className="w-full py-6 text-lg font-medium"
-            onClick={() => navigate('/saved-plans')}
-          >
-            Add a saved meal plan
-            <ArrowRight className="ml-2" />
           </Button>
 
           <div className="bg-white rounded-xl p-4 shadow-sm animate-slide-up">

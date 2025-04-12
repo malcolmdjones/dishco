@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, ChevronRight } from 'lucide-react';
+import { Calendar, ChevronRight, CalendarPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -122,7 +122,15 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlans, getMealsFo
                       </Badge>
                     )}
                   </div>
-                  <p className="text-xs text-gray-400">No meals planned</p>
+                  <div className="flex justify-between items-center">
+                    <p className="text-xs text-gray-400">No meals planned</p>
+                    <Link to="/saved-plans">
+                      <Button variant="outline" size="sm" className="text-xs py-1 px-2 h-auto">
+                        <CalendarPlus className="h-3 w-3 mr-1" />
+                        Add a meal plan
+                      </Button>
+                    </Link>
+                  </div>
                 </CardContent>
               </Card>
             );
