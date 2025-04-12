@@ -48,11 +48,22 @@ export const usePlanOperations = () => {
     setSelectedDate
   } = usePlanDialogState();
 
+  // Convert updatePlan (Promise<void>) to updatePlanWithResult (Promise<boolean>)
+  const updatePlanWithResult = async (id: string, updates: { name?: string; description?: string }) => {
+    try {
+      await updatePlan(id, updates);
+      return true; // If the function completes without throwing an error, return true
+    } catch (error) {
+      console.error('Error updating plan with result:', error);
+      return false;
+    }
+  };
+
   const {
     handleEditPlan: handleEditPlanBase,
     handleUpdatePlan: handleUpdatePlanBase,
     handleCopyAndEdit
-  } = usePlanEditOperations(fetchPlans, updatePlan);
+  } = usePlanEditOperations(fetchPlans, updatePlanWithResult);
 
   const {
     handleDeletePlan: handleDeletePlanBase,
