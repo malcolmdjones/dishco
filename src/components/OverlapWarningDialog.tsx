@@ -25,14 +25,8 @@ const OverlapWarningDialog: React.FC<OverlapWarningDialogProps> = ({
   onCancel,
   planName
 }) => {
-  const handleConfirm = (event: React.MouseEvent) => {
-    // Prevent any default actions
-    event.preventDefault();
-    event.stopPropagation();
-    
+  const handleConfirm = () => {
     console.log("OverlapWarningDialog: handleConfirm called - executing onConfirm callback");
-    
-    // Execute the confirmation callback
     onConfirm();
   };
 

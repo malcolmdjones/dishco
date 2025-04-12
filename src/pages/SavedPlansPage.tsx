@@ -166,6 +166,27 @@ const SavedPlansPage = () => {
     }
   };
   
+  const handleOverlapDetected = (date: Date) => {
+    console.log("Overlap detected for date:", date);
+    if (selectedPlan) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      date.setHours(0, 0, 0, 0);
+      
+      const dayDiff = Math.round((date.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+      
+      console.log(`Setting up pending activation with start day offset: ${dayDiff}`);
+      
+      setPendingActivation({
+        plan: selectedPlan,
+        startDay: dayDiff,
+        startDate: date.toISOString()
+      });
+      
+      setShowOverlapWarning(true);
+    }
+  };
+  
   const handleConfirmOverlap = () => {
     console.log("SavedPlansPage: handleConfirmOverlap called with pendingActivation:", pendingActivation);
     if (pendingActivation) {
@@ -216,10 +237,6 @@ const SavedPlansPage = () => {
     }
     
     setShowOverlapWarning(false);
-  };
-  
-  const handleOverlapDetected = (date: Date) => {
-    console.log("Overlap detected for date:", date);
   };
   
   const activeDates = getDatesWithActivePlans();

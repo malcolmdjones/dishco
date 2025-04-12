@@ -30,9 +30,10 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
   
   useEffect(() => {
     if (isOpen) {
-      setSelectedDate(new Date());
-      setCurrentMonth(new Date());
-      checkForOverlap(new Date());
+      const newDate = new Date();
+      setSelectedDate(newDate);
+      setCurrentMonth(newDate);
+      checkForOverlap(newDate);
     }
   }, [isOpen, activeDates]);
   
@@ -49,11 +50,13 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
       const dateKey = format(checkDate, 'yyyy-MM-dd');
       
       if (activeDates[dateKey]) {
+        console.log(`Overlap detected for date: ${dateKey} with plan: ${activeDates[dateKey]}`);
         hasConflict = true;
         break;
       }
     }
     
+    console.log(`Overlap check result for ${format(date, 'yyyy-MM-dd')}: ${hasConflict ? 'Has overlap' : 'No overlap'}`);
     setHasOverlap(hasConflict);
     return hasConflict;
   };
@@ -65,8 +68,10 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
   
   const handleConfirm = () => {
     if (hasOverlap && onOverlap) {
+      console.log("Overlap detected, calling onOverlap with date:", selectedDate);
       onOverlap(selectedDate);
     } else {
+      console.log("No overlap detected, calling onConfirm with date:", selectedDate);
       onConfirm(selectedDate);
     }
   };
