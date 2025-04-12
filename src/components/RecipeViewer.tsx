@@ -41,19 +41,34 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
     }
   }, [recipe, propIsSaved, isRecipeSaved]);
   
-  if (!recipe) return null;
+  // Don't render the component if recipe is not available
+  if (!recipe) {
+    return null;
+  }
+  
+  // Make sure recipe has the required properties
+  const validRecipe = recipe.macros ? recipe : {
+    ...recipe,
+    macros: {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+      ...(recipe.macros || {})
+    }
+  };
   
   const handleSaveRecipe = async () => {
-    if (!recipe.id) return;
+    if (!validRecipe.id) return;
     
     setSaving(true);
     try {
-      await toggleSaveRecipe(recipe.id);
+      await toggleSaveRecipe(validRecipe.id);
       setRecipeSaved(!recipeSaved);
       
       // Call parent handler if exists
       if (onToggleSave) {
-        await onToggleSave(recipe.id, !recipeSaved);
+        await onToggleSave(validRecipe.id, !recipeSaved);
       }
     } catch (error) {
       console.error('Error saving recipe:', error);
@@ -68,21 +83,21 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
   };
 
   // Use consistent image handling
-  const imageUrl = getRecipeImage(recipe.imageSrc);
+  const imageUrl = getRecipeImage(validRecipe.imageSrc);
 
   return (
     <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent className="max-h-[85vh] overflow-hidden">
         <RecipeHeader 
           imageUrl={imageUrl}
-          recipeName={recipe.name}
-          recipeType={recipe.type}
+          recipeName={validRecipe.name}
+          recipeType={validRecipe.type}
           onClose={onClose}
         />
 
         <DrawerHeader>
           <div className="flex justify-between items-start">
-            <DrawerTitle className="text-2xl">{recipe.name}</DrawerTitle>
+            <DrawerTitle className="text-2xl">{validRecipe.name}</DrawerTitle>
             <button
               className="p-2 rounded-full hover:bg-gray-100"
               onClick={handleSaveRecipe}
@@ -94,11 +109,11 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
               />
             </button>
           </div>
-          <DrawerDescription>{recipe.description}</DrawerDescription>
+          <DrawerDescription>{validRecipe.description}</DrawerDescription>
         </DrawerHeader>
 
         <div className="flex-1 overflow-y-auto px-4 pb-6">
-          <RecipeContent recipe={recipe} />
+          <RecipeContent recipe={validRecipe} />
         </div>
 
         <DrawerFooter>

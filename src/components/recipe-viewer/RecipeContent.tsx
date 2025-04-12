@@ -8,10 +8,15 @@ interface RecipeContentProps {
 }
 
 const RecipeContent: React.FC<RecipeContentProps> = ({ recipe }) => {
+  // Add null check for recipe
+  if (!recipe) {
+    return <div>Recipe information not available</div>;
+  }
+
   return (
     <div>
-      {/* Nutrition Information */}
-      <NutritionInfo macros={recipe.macros} />
+      {/* Nutrition Information - ensure macros exists */}
+      {recipe.macros && <NutritionInfo macros={recipe.macros} />}
 
       {/* Ingredients */}
       <div className="mb-6">
