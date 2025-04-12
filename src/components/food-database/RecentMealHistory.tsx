@@ -40,7 +40,7 @@ const RecentMealHistory: React.FC<RecentMealHistoryProps> = ({ recentMeals, onAd
                 {meal.servingInfo && <span>, {meal.servingInfo}</span>}
                 {meal.brand && <span>, {meal.brand}</span>}
                 {meal.source ? <span>, {meal.source}</span> : null}
-                {meal.protein && <span>, {meal.protein}g protein</span>}
+                {meal.protein && <span>, {meal.protein}</span>}
               </p>
             </div>
           </div>

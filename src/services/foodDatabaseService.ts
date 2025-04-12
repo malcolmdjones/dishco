@@ -1,6 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalFood } from "@/types/food";
+import { ExternalFood, FoodDatabaseItem } from "@/types/food";
 import { Recipe } from "@/data/mockData";
 
 // Convert USDA API food item to our app's Recipe format
@@ -17,7 +16,6 @@ export const convertToMealFormat = (foodItem: any, quantity: number = 1): Recipe
     type: 'snack', // Default type, can be changed by user
     description: foodItem.brand ? `${foodItem.brand}` : '',
     imageSrc: foodItem.image || '',
-    brand: foodItem.brand || '',
     macros: {
       calories,
       protein,
@@ -33,15 +31,135 @@ export const convertToMealFormat = (foodItem: any, quantity: number = 1): Recipe
     ingredients: [],
     instructions: [],
     externalSource: true,
-    externalId: foodItem.foodId
+    externalId: foodItem.foodId,
+    brand: foodItem.brand || ''
   };
 };
 
-// Search for foods in the USDA database
-export const searchFoods = async (query: string): Promise<any[]> => {
+// Convert external food to FoodDatabaseItem
+export const convertExternalToLocalFood = (externalFood: ExternalFood): FoodDatabaseItem => {
+  return {
+    id: externalFood.id,
+    name: externalFood.name,
+    brand: externalFood.brand,
+    macros: externalFood.macros,
+    servingSize: externalFood.servingSize,
+    servingUnit: externalFood.servingUnit,
+    imageSrc: externalFood.imageSrc,
+    type: externalFood.type || 'snack',
+    isCommon: false
+  };
+};
+
+// Mock local database for common foods
+const commonFoods: FoodDatabaseItem[] = [
+  {
+    id: 'common-1',
+    name: 'Apple',
+    macros: { calories: 95, protein: 0.5, carbs: 25, fat: 0.3 },
+    servingSize: '1',
+    servingUnit: 'medium',
+    imageSrc: 'https://www.fda.gov/files/food/published/fruits-and-vegetables-723x406-72-dpi.jpg',
+    isCommon: true,
+    type: 'snack'
+  },
+  {
+    id: 'common-2',
+    name: 'Chicken Breast',
+    macros: { calories: 165, protein: 31, carbs: 0, fat: 3.6 },
+    servingSize: '100',
+    servingUnit: 'g',
+    imageSrc: 'https://cdn.britannica.com/16/234216-050-C66F8665/bevy-of-bluebirds-feast-on-birdseed.jpg',
+    isCommon: true,
+    type: 'protein'
+  },
+  {
+    id: 'common-3',
+    name: 'Brown Rice',
+    macros: { calories: 215, protein: 5, carbs: 45, fat: 1.8 },
+    servingSize: '1',
+    servingUnit: 'cup cooked',
+    imageSrc: 'https://www.healthyeating.org/images/default-source/home-0.0/nutrition-topics-2.0/general-nutrition-wellness/2-2-2-2foodgroups_vegetables_detailfeature.jpg?sfvrsn=226f1bc7_6',
+    isCommon: true,
+    type: 'carb'
+  },
+  {
+    id: 'common-4',
+    name: 'Egg',
+    macros: { calories: 70, protein: 6, carbs: 0.6, fat: 5 },
+    servingSize: '1',
+    servingUnit: 'large',
+    imageSrc: 'https://www.tasteofhome.com/wp-content/uploads/2019/11/dairy-shutterstock_311353164.jpg',
+    isCommon: true,
+    type: 'protein'
+  },
+  {
+    id: 'common-5',
+    name: 'Greek Yogurt',
+    brand: 'Generic',
+    macros: { calories: 100, protein: 17, carbs: 6, fat: 0.5 },
+    servingSize: '170',
+    servingUnit: 'g',
+    imageSrc: 'https://www.tasteofhome.com/wp-content/uploads/2019/11/dairy-shutterstock_311353164.jpg',
+    isCommon: true,
+    type: 'dairy'
+  }
+];
+
+// Get recently used foods from local storage
+export const getRecentFoods = (): FoodDatabaseItem[] => {
+  try {
+    const recentFoodsJSON = localStorage.getItem('recentFoods') || '[]';
+    return JSON.parse(recentFoodsJSON);
+  } catch (error) {
+    console.error("Error getting recent foods:", error);
+    return [];
+  }
+};
+
+// Add food to recent foods
+export const addToRecentFoods = (food: FoodDatabaseItem) => {
+  try {
+    const recentFoods = getRecentFoods();
+    // Remove if already exists
+    const filteredFoods = recentFoods.filter(item => item.id !== food.id);
+    // Add to beginning of array
+    const updatedFoods = [food, ...filteredFoods].slice(0, 20); // Keep only last 20
+    localStorage.setItem('recentFoods', JSON.stringify(updatedFoods));
+  } catch (error) {
+    console.error("Error adding to recent foods:", error);
+  }
+};
+
+// Search local database first, then external API if needed
+export const searchFoods = async (query: string, searchExternal: boolean = true): Promise<FoodDatabaseItem[]> => {
+  if (!query.trim()) return [];
+  
   try {
     console.log(`Searching for foods with query: ${query}`);
     
+    // First, search in common foods
+    const localResults = commonFoods.filter(food => 
+      food.name.toLowerCase().includes(query.toLowerCase()) ||
+      (food.brand && food.brand.toLowerCase().includes(query.toLowerCase()))
+    );
+    
+    // Then, search in recent foods
+    const recentFoods = getRecentFoods();
+    const recentResults = recentFoods.filter(food => 
+      !localResults.some(local => local.id === food.id) && 
+      (food.name.toLowerCase().includes(query.toLowerCase()) ||
+       (food.brand && food.brand.toLowerCase().includes(query.toLowerCase())))
+    );
+    
+    const combinedResults = [...localResults, ...recentResults];
+    
+    // If we have enough local results or user doesn't want external search, return them
+    if (combinedResults.length >= 5 || !searchExternal) {
+      return combinedResults;
+    }
+    
+    // Otherwise, also search in external API
     // We'll use a Supabase Edge Function to proxy our API calls
     const { data, error } = await supabase.functions.invoke("search-foods", {
       body: { query }
@@ -49,33 +167,71 @@ export const searchFoods = async (query: string): Promise<any[]> => {
 
     if (error) {
       console.error("Error searching foods:", error);
-      throw error;
+      return combinedResults;
     }
 
     // Process and return the data
     if (data && Array.isArray(data)) {
-      console.log(`Found ${data.length} food items`);
+      console.log(`Found ${data.length} external food items`);
       
       // Make sure each item has brand and correct nutrient values
       const processedData = data.map(item => {
-        return {
-          ...item,
+        const externalItem: FoodDatabaseItem = {
+          id: `usda-${item.foodId}`,
+          name: item.label,
           brand: item.brand || '',
-          nutrients: {
-            ENERC_KCAL: item.nutrients.ENERC_KCAL || 0,
-            PROCNT: item.nutrients.PROCNT || 0,
-            CHOCDF: item.nutrients.CHOCDF || 0, 
-            FAT: item.nutrients.FAT || 0
-          }
+          macros: {
+            calories: Math.round(item.nutrients.ENERC_KCAL || 0),
+            protein: Math.round(item.nutrients.PROCNT || 0),
+            carbs: Math.round(item.nutrients.CHOCDF || 0),
+            fat: Math.round(item.nutrients.FAT || 0)
+          },
+          imageSrc: item.image || '',
+          isCommon: false,
+          type: 'snack'
         };
+        return externalItem;
       });
       
-      return processedData;
+      return [...combinedResults, ...processedData];
     }
 
-    return [];
+    return combinedResults;
   } catch (error) {
     console.error("Error in searchFoods:", error);
-    throw error;
+    // Return local results if external API search fails
+    return [...localResults, ...recentResults];
   }
+};
+
+// Convert FoodDatabaseItem to Recipe for the meal log
+export const foodItemToRecipe = (foodItem: FoodDatabaseItem, quantity: number = 1): Recipe => {
+  const calories = Math.round(foodItem.macros.calories * quantity);
+  const protein = Math.round(foodItem.macros.protein * quantity);
+  const carbs = Math.round(foodItem.macros.carbs * quantity);
+  const fat = Math.round(foodItem.macros.fat * quantity);
+
+  return {
+    id: foodItem.id,
+    name: foodItem.name,
+    type: foodItem.type || 'snack',
+    description: foodItem.servingSize ? `${foodItem.servingSize} ${foodItem.servingUnit || ''}` : '',
+    imageSrc: foodItem.imageSrc || '',
+    macros: {
+      calories,
+      protein,
+      carbs,
+      fat
+    },
+    requiresBlender: false,
+    requiresCooking: false,
+    cookTime: 0,
+    prepTime: 0,
+    servings: 1,
+    ingredients: [],
+    instructions: [],
+    externalSource: !foodItem.isCommon,
+    externalId: foodItem.id,
+    brand: foodItem.brand || ''
+  };
 };

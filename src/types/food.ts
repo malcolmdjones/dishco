@@ -16,6 +16,7 @@ export interface ExternalFood {
   servingUnit?: string;
   brand?: string;
   externalId: string;
+  source?: string;
 }
 
 export interface LoggedMeal {
@@ -31,4 +32,21 @@ export interface LoggedMeal {
   brand?: string;
   servingInfo?: string;
   source?: string;
+}
+
+export interface FoodDatabaseItem {
+  id: string;
+  name: string;
+  brand?: string;
+  macros: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  servingSize?: string;
+  servingUnit?: string;
+  imageSrc?: string;
+  type?: string;
+  isCommon: boolean;
 }

@@ -11,15 +11,19 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import RecentMealHistory from '@/components/food-database/RecentMealHistory';
 import { cn } from '@/lib/utils';
+import { searchFoods, foodItemToRecipe, addToRecentFoods } from '@/services/foodDatabaseService';
+import { FoodDatabaseItem } from '@/types/food';
 
 const LogMealPage = () => {
   const { toast } = useToast();
-  const { recipes, loading } = useRecipes();
+  const { recipes } = useRecipes();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTab, setSelectedTab] = useState('all');
   const [isExternalSearchOpen, setIsExternalSearchOpen] = useState(false);
   const [recentMeals, setRecentMeals] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchResults, setSearchResults] = useState<FoodDatabaseItem[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Get only meals logged from this screen
   useEffect(() => {
@@ -33,6 +37,30 @@ const LogMealPage = () => {
 
   const handleClearSearch = () => {
     setSearchQuery('');
+    setSearchResults([]);
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    
+    setIsSearching(true);
+    try {
+      // Search local database first (don't go to external API yet)
+      const results = await searchFoods(searchQuery, false);
+      setSearchResults(results);
+    } catch (error) {
+      console.error("Error searching foods:", error);
+      toast({
+        title: "Search Error",
+        description: "Could not search the food database. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleSearchFocus = () => {
@@ -43,10 +71,16 @@ const LogMealPage = () => {
     setTimeout(() => setShowSuggestions(false), 200);
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   const filteredRecipes = recipes.filter(recipe => {
     const matchesSearch = searchQuery ? 
       recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      recipe.description.toLowerCase().includes(searchQuery.toLowerCase())
+      (recipe.description && recipe.description.toLowerCase().includes(searchQuery.toLowerCase()))
       : true;
       
     const matchesTab = 
@@ -89,9 +123,9 @@ const LogMealPage = () => {
     const currentNutrition = JSON.parse(localStorage.getItem('dailyNutrition') || '{}');
     const updatedNutrition = {
       calories: (currentNutrition.calories || 0) + recipe.macros.calories,
-      protein: (currentNutrition.protein || 0) + recipe.macros.protein,
-      carbs: (currentNutrition.carbs || 0) + recipe.macros.carbs,
-      fat: (currentNutrition.fat || 0) + recipe.macros.fat
+      protein: (currentNutrition.protein || 0) + (recipe.macros.protein || 0),
+      carbs: (currentNutrition.carbs || 0) + (recipe.macros.carbs || 0),
+      fat: (currentNutrition.fat || 0) + (recipe.macros.fat || 0)
     };
     
     localStorage.setItem('dailyNutrition', JSON.stringify(updatedNutrition));
@@ -102,32 +136,12 @@ const LogMealPage = () => {
     });
   };
 
-  const handleLogExternalFood = (foodItem: any) => {
-    const externalRecipe: Recipe = {
-      id: foodItem.id || `external-${Date.now()}`,
-      name: foodItem.name,
-      description: foodItem.description || '',
-      type: foodItem.type || 'snack',
-      imageSrc: foodItem.imageSrc || '',
-      requiresBlender: false,
-      requiresCooking: false,
-      cookTime: 0,
-      prepTime: 0,
-      servings: 1,
-      brand: foodItem.brand || '',
-      macros: {
-        calories: foodItem.macros?.calories || 0,
-        protein: foodItem.macros?.protein || 0,
-        carbs: foodItem.macros?.carbs || 0,
-        fat: foodItem.macros?.fat || 0
-      },
-      ingredients: [],
-      instructions: [],
-      externalSource: true,
-      externalId: foodItem.externalId
-    };
-    handleLogMeal(externalRecipe);
-    setIsExternalSearchOpen(false);
+  const handleLogDatabaseFood = (foodItem: FoodDatabaseItem) => {
+    const recipe = foodItemToRecipe(foodItem);
+    handleLogMeal(recipe);
+    
+    // Add to recent foods
+    addToRecentFoods(foodItem);
   };
 
   const suggestedSearches = [
@@ -157,6 +171,7 @@ const LogMealPage = () => {
             className="pl-10 pr-10 py-2 border-0 bg-gray-100 rounded-full focus:ring-0 focus-visible:ring-0"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleKeyPress}
             onFocus={handleSearchFocus}
             onBlur={handleSearchBlur}
           />
@@ -248,9 +263,85 @@ const LogMealPage = () => {
               onAddMeal={handleLogMeal}
             />
 
+            {searchQuery && (
+              <div className="mt-4">
+                {isSearching ? (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="text-sm text-gray-500 mt-2">Searching...</p>
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  <>
+                    <h3 className="text-lg font-medium mb-2">Search Results</h3>
+                    <div className="space-y-2">
+                      {searchResults.map(food => (
+                        <div 
+                          key={food.id} 
+                          className="flex items-center justify-between bg-gray-50 p-3 rounded-lg"
+                        >
+                          <div>
+                            <p className="font-medium">{food.name}</p>
+                            <p className="text-sm text-gray-500">
+                              {food.brand && <span>{food.brand} • </span>}
+                              <span className="font-medium">{food.macros.calories} cal</span>, 
+                              {food.servingSize && <span> {food.servingSize} {food.servingUnit}</span>}
+                              {food.macros.protein ? `, ${food.macros.protein}g protein` : ''}
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleLogDatabaseFood(food)}
+                            className="h-10 w-10 rounded-full bg-gray-200"
+                          >
+                            <Plus size={20} />
+                          </Button>
+                        </div>
+                      ))}
+                      
+                      <Button 
+                        variant="outline" 
+                        className="w-full mt-2 border-blue-500 text-blue-600"
+                        onClick={() => setIsExternalSearchOpen(true)}
+                      >
+                        Advanced Food Search
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-lg font-medium mb-2">Suggested Searches</h3>
+                    <div className="space-y-2">
+                      {suggestedSearches.map((term, index) => (
+                        <button
+                          key={index}
+                          className="flex items-center w-full p-3 hover:bg-gray-100 rounded-lg"
+                          onClick={() => {
+                            setSearchQuery(term);
+                            handleSearch();
+                          }}
+                        >
+                          <Search size={18} className="mr-2 text-gray-400" />
+                          <span>{term}</span>
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <Button 
+                      variant="outline" 
+                      className="w-full mt-4 border-blue-500 text-blue-600"
+                      onClick={() => setIsExternalSearchOpen(true)}
+                    >
+                      Advanced Food Search
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
+            
             {searchQuery && filteredRecipes.length > 0 && (
               <div className="mt-4">
-                <h3 className="text-lg font-medium mb-2">Search Results</h3>
+                <h3 className="text-lg font-medium mb-2">My Recipes</h3>
                 <div className="space-y-2">
                   {filteredRecipes.map(recipe => (
                     <div key={recipe.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
@@ -273,44 +364,6 @@ const LogMealPage = () => {
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-            
-            {showSuggestions && searchQuery && filteredRecipes.length === 0 && (
-              <div className="mt-4">
-                <h3 className="text-lg font-medium mb-2">Suggested Searches</h3>
-                <div className="space-y-2">
-                  {suggestedSearches.map((term, index) => (
-                    <button
-                      key={index}
-                      className="flex items-center w-full p-3 hover:bg-gray-100 rounded-lg"
-                      onClick={() => setSearchQuery(term)}
-                    >
-                      <Search size={18} className="mr-2 text-gray-400" />
-                      <span>{term}</span>
-                    </button>
-                  ))}
-                </div>
-                
-                <Button 
-                  variant="outline" 
-                  className="w-full mt-4 border-blue-500 text-blue-600"
-                  onClick={() => setIsExternalSearchOpen(true)}
-                >
-                  Search external food database
-                </Button>
-              </div>
-            )}
-
-            {searchQuery && filteredRecipes.length === 0 && !showSuggestions && (
-              <div className="text-center py-8">
-                <p className="text-gray-500 mb-4">No foods found matching "{searchQuery}"</p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsExternalSearchOpen(true)}
-                >
-                  Try external food search
-                </Button>
               </div>
             )}
           </div>
@@ -338,10 +391,11 @@ const LogMealPage = () => {
       <FoodSearchModal
         isOpen={isExternalSearchOpen}
         onClose={() => setIsExternalSearchOpen(false)}
-        onSelectFood={handleLogExternalFood}
+        onSelectFood={handleLogMeal}
       />
 
-      <style jsx global>{`
+      <style jsx global>
+        {`
         .no-scrollbar {
           -ms-overflow-style: none;  /* IE and Edge */
           scrollbar-width: none;  /* Firefox */
@@ -350,7 +404,8 @@ const LogMealPage = () => {
         .no-scrollbar::-webkit-scrollbar {
           display: none;  /* Chrome, Safari, Opera */
         }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 };

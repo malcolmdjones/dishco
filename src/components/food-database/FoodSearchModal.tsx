@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -11,23 +11,25 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { searchFoods, convertToMealFormat } from '@/services/foodDatabaseService';
+import { searchFoods, foodItemToRecipe, addToRecentFoods } from '@/services/foodDatabaseService';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { FoodDatabaseItem } from '@/types/food';
+import { Recipe } from '@/data/mockData';
 
 interface FoodSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectFood: (foodItem: any) => void;
+  onSelectFood: (foodItem: Recipe) => void;
 }
 
 const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSelectFood }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<FoodDatabaseItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedMealType, setSelectedMealType] = useState('snack');
   const [selectedQuantity, setSelectedQuantity] = useState(1);
-  const [selectedFood, setSelectedFood] = useState<any | null>(null);
+  const [selectedFood, setSelectedFood] = useState<FoodDatabaseItem | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -61,19 +63,22 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
     }
   };
 
-  const handleSelectFood = (food: any) => {
+  const handleSelectFood = (food: FoodDatabaseItem) => {
     setSelectedFood(food);
   };
 
   const handleAddFood = () => {
     if (selectedFood) {
-      const formattedFood = convertToMealFormat(selectedFood, selectedQuantity);
-      formattedFood.type = selectedMealType;
-      formattedFood.brand = selectedFood.brand || '';
-      onSelectFood(formattedFood);
+      const recipe = foodItemToRecipe(selectedFood, selectedQuantity);
+      recipe.type = selectedMealType;
+      
+      // Add to recent foods
+      addToRecentFoods(selectedFood);
+      
+      onSelectFood(recipe);
       toast({
         title: "Food Added",
-        description: `${formattedFood.name} added to your food log.`
+        description: `${recipe.name} added to your food log.`
       });
     }
   };
@@ -94,7 +99,7 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-md w-[95vw] sm:max-w-lg p-0 rounded-xl">
         <DialogHeader className="px-4 py-3 border-b">
-          <DialogTitle className="text-xl text-blue-600 text-center">External Food Search</DialogTitle>
+          <DialogTitle className="text-xl text-blue-600 text-center">Food Search</DialogTitle>
         </DialogHeader>
         
         <div className="p-4 space-y-4">
@@ -136,15 +141,15 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
               <div className="space-y-2">
                 {searchResults.map((food) => (
                   <div 
-                    key={food.foodId}
+                    key={food.id}
                     className="flex items-center justify-between p-3 hover:bg-gray-100 rounded-lg cursor-pointer"
                     onClick={() => handleSelectFood(food)}
                   >
                     <div className="flex items-center">
-                      {food.image ? (
+                      {food.imageSrc ? (
                         <img 
-                          src={food.image} 
-                          alt={food.label} 
+                          src={food.imageSrc} 
+                          alt={food.name} 
                           className="w-12 h-12 rounded object-cover mr-3"
                         />
                       ) : (
@@ -153,11 +158,11 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
                         </div>
                       )}
                       <div>
-                        <p className="font-medium">{food.label}</p>
+                        <p className="font-medium">{food.name}</p>
                         <p className="text-sm text-gray-500">
                           {food.brand ? `${food.brand} • ` : ''}
-                          <span className="font-medium">{food.nutrients?.ENERC_KCAL ? Math.round(food.nutrients.ENERC_KCAL) : 0} cal</span>
-                          {food.nutrients?.PROCNT ? `, ${Math.round(food.nutrients.PROCNT)}g protein` : ''}
+                          <span className="font-medium">{food.macros.calories} cal</span>
+                          {food.macros.protein ? `, ${food.macros.protein}g protein` : ''}
                         </p>
                       </div>
                     </div>
@@ -177,10 +182,10 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
           {selectedFood && (
             <div className="space-y-4">
               <div className="flex items-center p-3 bg-blue-50 rounded-lg">
-                {selectedFood.image ? (
+                {selectedFood.imageSrc ? (
                   <img 
-                    src={selectedFood.image} 
-                    alt={selectedFood.label} 
+                    src={selectedFood.imageSrc} 
+                    alt={selectedFood.name} 
                     className="w-16 h-16 rounded object-cover mr-4"
                   />
                 ) : (
@@ -189,11 +194,11 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
                   </div>
                 )}
                 <div>
-                  <h3 className="font-medium text-lg">{selectedFood.label}</h3>
+                  <h3 className="font-medium text-lg">{selectedFood.name}</h3>
                   <p className="text-sm text-gray-600">
                     {selectedFood.brand || 'Generic'} • 
-                    <span className="font-medium"> {Math.round(selectedFood.nutrients.ENERC_KCAL)} cal</span>
-                    {selectedFood.nutrients.PROCNT ? `, ${Math.round(selectedFood.nutrients.PROCNT)}g protein` : ''}
+                    <span className="font-medium"> {selectedFood.macros.calories} cal</span>
+                    {selectedFood.macros.protein ? `, ${selectedFood.macros.protein}g protein` : ''}
                   </p>
                 </div>
               </div>
@@ -232,19 +237,19 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                    <p>Calories: <span className="font-medium">{Math.round(selectedFood.nutrients.ENERC_KCAL * selectedQuantity)}</span></p>
+                    <p>Calories: <span className="font-medium">{Math.round(selectedFood.macros.calories * selectedQuantity)}</span></p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                    <p>Protein: <span className="font-medium">{Math.round(selectedFood.nutrients.PROCNT * selectedQuantity)}g</span></p>
+                    <p>Protein: <span className="font-medium">{Math.round(selectedFood.macros.protein * selectedQuantity)}g</span></p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                    <p>Carbs: <span className="font-medium">{Math.round(selectedFood.nutrients.CHOCDF * selectedQuantity)}g</span></p>
+                    <p>Carbs: <span className="font-medium">{Math.round(selectedFood.macros.carbs * selectedQuantity)}g</span></p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                    <p>Fat: <span className="font-medium">{Math.round(selectedFood.nutrients.FAT * selectedQuantity)}g</span></p>
+                    <p>Fat: <span className="font-medium">{Math.round(selectedFood.macros.fat * selectedQuantity)}g</span></p>
                   </div>
                 </div>
               </div>
@@ -269,7 +274,7 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
               ) : (
                 <div className="space-y-4">
                   <p className="text-center text-gray-500">
-                    Search for foods in our external database
+                    Search for foods in our database
                   </p>
                   
                   <div className="mt-2">
