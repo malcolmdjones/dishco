@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -20,6 +19,7 @@ interface Meal {
   recipe: Recipe;
   consumed: boolean;
   loggedAt?: string;
+  planned?: boolean;
 }
 
 const HomePage = () => {
@@ -45,10 +45,8 @@ const HomePage = () => {
   const [todaysMeals, setTodaysMeals] = useState<Meal[]>([]);
 
   useEffect(() => {
-    // Get logged meals from local storage
     const storedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
     
-    // Filter stored meals for the selected date
     const selectedDateStart = startOfDay(selectedDate);
     const filteredMeals = storedMeals.filter((meal: Meal) => {
       if (!meal.loggedAt) return false;
@@ -56,16 +54,12 @@ const HomePage = () => {
       return isEqual(mealDate, selectedDateStart);
     });
     
-    // Format date for meal plan lookup
     const formattedDate = format(selectedDate, 'yyyy-MM-dd');
     
-    // Get meals from active meal plan for the selected date
     const planMeals = getMealsForDate(formattedDate);
     
-    // Create array for planned meals
     const plannedMealArray: Meal[] = [];
     
-    // If there are planned meals for this date, add them to the array
     if (planMeals) {
       console.log('Plan meals found for date:', formattedDate, planMeals);
       
@@ -76,7 +70,8 @@ const HomePage = () => {
           type: 'breakfast',
           recipe: planMeals.breakfast,
           consumed: false,
-          loggedAt: formattedDate
+          loggedAt: formattedDate,
+          planned: true
         });
       }
       
@@ -87,7 +82,8 @@ const HomePage = () => {
           type: 'lunch',
           recipe: planMeals.lunch,
           consumed: false,
-          loggedAt: formattedDate
+          loggedAt: formattedDate,
+          planned: true
         });
       }
       
@@ -98,7 +94,8 @@ const HomePage = () => {
           type: 'dinner',
           recipe: planMeals.dinner,
           consumed: false,
-          loggedAt: formattedDate
+          loggedAt: formattedDate,
+          planned: true
         });
       }
       
@@ -111,32 +108,33 @@ const HomePage = () => {
               type: 'snack',
               recipe: snack,
               consumed: false,
-              loggedAt: formattedDate
+              loggedAt: formattedDate,
+              planned: true
             });
           }
         });
       }
     }
     
-    // Decide which meals to show based on priority:
-    // 1. Logged meals for the day
-    // 2. Planned meals from the active meal plan
-    // 3. Empty state if neither exist
-    if (filteredMeals.length > 0) {
-      // Merge with any planned meals not already logged
-      const loggedMealIds = new Set(filteredMeals.map((meal: Meal) => meal.name));
-      const unloggedPlannedMeals = plannedMealArray.filter(meal => !loggedMealIds.has(meal.name));
+    const updatedPlannedMeals = plannedMealArray.map(plannedMeal => {
+      const matchingLoggedMeal = filteredMeals.find((loggedMeal: Meal) => 
+        loggedMeal.recipe.id === plannedMeal.recipe.id && 
+        loggedMeal.type === plannedMeal.type
+      );
       
-      setTodaysMeals([...filteredMeals, ...unloggedPlannedMeals]);
-    } else if (plannedMealArray.length > 0) {
-      // Show planned meals if no logged meals
-      setTodaysMeals(plannedMealArray);
-    } else {
-      // Show empty state
-      setTodaysMeals([]);
-    }
+      return matchingLoggedMeal ? { ...plannedMeal, consumed: true } : plannedMeal;
+    });
     
-    calculateNutritionForDate(filteredMeals);
+    const uniqueLoggedMeals = filteredMeals.filter((loggedMeal: Meal) => 
+      !updatedPlannedMeals.some(plannedMeal => 
+        plannedMeal.recipe.id === loggedMeal.recipe.id && 
+        plannedMeal.type === loggedMeal.type
+      )
+    );
+    
+    setTodaysMeals([...uniqueLoggedMeals, ...updatedPlannedMeals]);
+    
+    calculateNutritionForDate([...uniqueLoggedMeals, ...updatedPlannedMeals.filter(meal => meal.consumed)]);
   }, [selectedDate, getMealsForDate, activePlan]);
 
   const calculateNutritionForDate = (meals: Meal[]) => {
@@ -218,17 +216,14 @@ const HomePage = () => {
     
     const storedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
     
-    // Check if the meal already exists in stored meals
     const mealExists = storedMeals.some((m: Meal) => m.id === meal.id);
     
     let updatedStoredMeals;
     if (mealExists) {
-      // Update existing meal
       updatedStoredMeals = storedMeals.map((m: Meal) => 
         m.id === meal.id ? { ...m, consumed: !m.consumed } : m
       );
     } else {
-      // Add new meal to stored meals
       updatedStoredMeals = [...storedMeals, { ...meal, consumed: true }];
     }
     
@@ -484,9 +479,16 @@ const HomePage = () => {
             </div>
           ) : (
             todaysMeals.map((meal) => (
-              <div key={meal.id} className="bg-white rounded-xl p-4 shadow-sm">
+              <div key={meal.id} className={`bg-white rounded-xl p-4 shadow-sm ${meal.planned && !meal.consumed ? 'border-l-4 border-green-400' : ''}`}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-500">{formatMealType(meal.type)}</span>
+                  <div className="flex items-center">
+                    <span className="text-sm text-gray-500">{formatMealType(meal.type)}</span>
+                    {meal.planned && !meal.consumed && (
+                      <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                        Planned
+                      </span>
+                    )}
+                  </div>
                   <span className="text-sm bg-amber-50 text-amber-800 px-2 py-1 rounded-full">
                     {meal.recipe.macros?.calories || 0} kcal
                   </span>

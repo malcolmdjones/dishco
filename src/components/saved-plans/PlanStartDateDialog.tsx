@@ -58,8 +58,8 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleConfirm}>
-            Continue
+          <Button onClick={handleConfirm} className="bg-green-500 hover:bg-green-600">
+            Confirm & Continue
           </Button>
         </DialogFooter>
       </DialogContent>
