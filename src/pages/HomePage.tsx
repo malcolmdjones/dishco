@@ -65,39 +65,57 @@ const HomePage = () => {
       
       if (planMeals) {
         if (planMeals.breakfast) {
-          plannedMealArray.push({
-            id: `breakfast-planned-${formattedDate}`,
-            name: planMeals.breakfast.name || 'Breakfast',
-            type: 'breakfast',
-            recipe: planMeals.breakfast,
-            consumed: false,
-            loggedAt: formattedDate,
-            planned: true
-          });
+          const breakfastRecipe = Array.isArray(planMeals.breakfast) 
+            ? planMeals.breakfast[0] 
+            : planMeals.breakfast;
+            
+          if (breakfastRecipe) {
+            plannedMealArray.push({
+              id: `breakfast-planned-${formattedDate}`,
+              name: breakfastRecipe.name || 'Breakfast',
+              type: 'breakfast',
+              recipe: breakfastRecipe,
+              consumed: false,
+              loggedAt: formattedDate,
+              planned: true
+            });
+          }
         }
         
         if (planMeals.lunch) {
-          plannedMealArray.push({
-            id: `lunch-planned-${formattedDate}`,
-            name: planMeals.lunch.name || 'Lunch',
-            type: 'lunch',
-            recipe: planMeals.lunch,
-            consumed: false,
-            loggedAt: formattedDate,
-            planned: true
-          });
+          const lunchRecipe = Array.isArray(planMeals.lunch) 
+            ? planMeals.lunch[0] 
+            : planMeals.lunch;
+            
+          if (lunchRecipe) {
+            plannedMealArray.push({
+              id: `lunch-planned-${formattedDate}`,
+              name: lunchRecipe.name || 'Lunch',
+              type: 'lunch',
+              recipe: lunchRecipe,
+              consumed: false,
+              loggedAt: formattedDate,
+              planned: true
+            });
+          }
         }
         
         if (planMeals.dinner) {
-          plannedMealArray.push({
-            id: `dinner-planned-${formattedDate}`,
-            name: planMeals.dinner.name || 'Dinner',
-            type: 'dinner',
-            recipe: planMeals.dinner,
-            consumed: false,
-            loggedAt: formattedDate,
-            planned: true
-          });
+          const dinnerRecipe = Array.isArray(planMeals.dinner) 
+            ? planMeals.dinner[0] 
+            : planMeals.dinner;
+            
+          if (dinnerRecipe) {
+            plannedMealArray.push({
+              id: `dinner-planned-${formattedDate}`,
+              name: dinnerRecipe.name || 'Dinner',
+              type: 'dinner',
+              recipe: dinnerRecipe,
+              consumed: false,
+              loggedAt: formattedDate,
+              planned: true
+            });
+          }
         }
         
         if (planMeals.snacks && Array.isArray(planMeals.snacks) && planMeals.snacks.length > 0) {
@@ -119,7 +137,7 @@ const HomePage = () => {
       
       const updatedPlannedMeals = plannedMealArray.map(plannedMeal => {
         const matchingLoggedMeal = filteredMeals.find((loggedMeal: Meal) => 
-          loggedMeal.recipe.id === plannedMeal.recipe.id && 
+          loggedMeal.recipe?.id === plannedMeal.recipe?.id && 
           loggedMeal.type === plannedMeal.type
         );
         
@@ -128,7 +146,7 @@ const HomePage = () => {
       
       const uniqueLoggedMeals = filteredMeals.filter((loggedMeal: Meal) => 
         !updatedPlannedMeals.some(plannedMeal => 
-          plannedMeal.recipe.id === loggedMeal.recipe.id && 
+          plannedMeal.recipe?.id === loggedMeal.recipe?.id && 
           plannedMeal.type === loggedMeal.type
         )
       );
@@ -206,8 +224,17 @@ const HomePage = () => {
   };
 
   const handleOpenRecipe = (recipe: Recipe) => {
-    setSelectedRecipe(recipe);
-    setIsRecipeViewerOpen(true);
+    if (recipe) {
+      setSelectedRecipe(recipe);
+      setIsRecipeViewerOpen(true);
+    } else {
+      console.error("Attempted to open undefined recipe");
+      toast({
+        title: "Error",
+        description: "Recipe details couldn't be loaded.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleToggleSave = async (recipeId: string, currentlySaved: boolean) => {
@@ -474,66 +501,70 @@ const HomePage = () => {
               </Button>
             </div>
           ) : (
-            todaysMeals.map((meal) => (
-              <div key={meal.id} className={`bg-white rounded-xl p-4 shadow-sm ${meal.planned && !meal.consumed ? 'border-l-4 border-green-400' : ''}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center">
-                    <span className="text-sm text-gray-500">{formatMealType(meal.type)}</span>
-                    {meal.planned && !meal.consumed && (
-                      <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
-                        Planned
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-sm bg-amber-50 text-amber-800 px-2 py-1 rounded-full">
-                    {meal.recipe?.macros?.calories || 0} kcal
-                  </span>
-                </div>
-                
-                <div className="flex gap-3">
-                  <div 
-                    className="w-20 h-20 rounded-lg overflow-hidden cursor-pointer"
-                    onClick={() => handleOpenRecipe(meal.recipe)}
-                  >
-                    <img 
-                      src={meal.recipe?.imageSrc || imageUrl} 
-                      alt={meal.name}
-                      className="w-full h-full object-cover"
-                    />
+            todaysMeals.map((meal) => {
+              const mealRecipe = Array.isArray(meal.recipe) ? meal.recipe[0] : meal.recipe;
+              
+              return (
+                <div key={meal.id} className={`bg-white rounded-xl p-4 shadow-sm ${meal.planned && !meal.consumed ? 'border-l-4 border-green-400' : ''}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center">
+                      <span className="text-sm text-gray-500">{formatMealType(meal.type)}</span>
+                      {meal.planned && !meal.consumed && (
+                        <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                          Planned
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-sm bg-amber-50 text-amber-800 px-2 py-1 rounded-full">
+                      {mealRecipe?.macros?.calories || 0} kcal
+                    </span>
                   </div>
                   
-                  <div className="flex-1">
-                    <h3 
-                      className="font-semibold mb-2 cursor-pointer"
-                      onClick={() => handleOpenRecipe(meal.recipe)}
+                  <div className="flex gap-3">
+                    <div 
+                      className="w-20 h-20 rounded-lg overflow-hidden cursor-pointer"
+                      onClick={() => mealRecipe && handleOpenRecipe(mealRecipe)}
                     >
-                      {meal.name}
-                    </h3>
+                      <img 
+                        src={mealRecipe?.imageSrc || imageUrl} 
+                        alt={meal.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                     
-                    <Button
-                      variant={meal.consumed ? "outline" : "outline"}
-                      size="sm"
-                      className={`w-full ${meal.consumed ? 'text-green-600 border-green-600' : ''}`}
-                      onClick={() => handleToggleConsumed(meal)}
-                    >
-                      {meal.consumed ? 'Consumed ✓' : 'Mark as consumed'}
-                    </Button>
+                    <div className="flex-1">
+                      <h3 
+                        className="font-semibold mb-2 cursor-pointer"
+                        onClick={() => mealRecipe && handleOpenRecipe(mealRecipe)}
+                      >
+                        {meal.name}
+                      </h3>
+                      
+                      <Button
+                        variant={meal.consumed ? "outline" : "outline"}
+                        size="sm"
+                        className={`w-full ${meal.consumed ? 'text-green-600 border-green-600' : ''}`}
+                        onClick={() => handleToggleConsumed(meal)}
+                      >
+                        {meal.consumed ? 'Consumed ✓' : 'Mark as consumed'}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2 mt-3">
+                    <span className="px-3 py-1 bg-blue-100 rounded-full text-xs">
+                      P: {mealRecipe?.macros?.protein || 0}g
+                    </span>
+                    <span className="px-3 py-1 bg-yellow-100 rounded-full text-xs">
+                      C: {mealRecipe?.macros?.carbs || 0}g
+                    </span>
+                    <span className="px-3 py-1 bg-purple-100 rounded-full text-xs">
+                      F: {mealRecipe?.macros?.fat || 0}g
+                    </span>
                   </div>
                 </div>
-                
-                <div className="flex gap-2 mt-3">
-                  <span className="px-3 py-1 bg-blue-100 rounded-full text-xs">
-                    P: {meal.recipe?.macros?.protein || 0}g
-                  </span>
-                  <span className="px-3 py-1 bg-yellow-100 rounded-full text-xs">
-                    C: {meal.recipe?.macros?.carbs || 0}g
-                  </span>
-                  <span className="px-3 py-1 bg-purple-100 rounded-full text-xs">
-                    F: {meal.recipe?.macros?.fat || 0}g
-                  </span>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
@@ -545,9 +576,10 @@ const HomePage = () => {
           onClose={() => setIsRecipeViewerOpen(false)}
           isSaved={isSaved}
           onToggleSave={handleToggleSave}
-          isConsumed={!!todaysMeals.find(meal => 
-            meal.recipe?.id === selectedRecipe.id && meal.consumed
-          )}
+          isConsumed={!!todaysMeals.find(meal => {
+            const mealRecipe = Array.isArray(meal.recipe) ? meal.recipe[0] : meal.recipe;
+            return mealRecipe?.id === selectedRecipe.id && meal.consumed;
+          })}
           onToggleConsumed={handleRecipeConsumed}
         />
       )}
