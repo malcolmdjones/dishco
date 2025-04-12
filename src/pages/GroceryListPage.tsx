@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Check, ChevronDown, ChevronUp, Plus, RotateCcw, Search, ShoppingBag, Trash2, ArrowLeft } from 'lucide-react';
 import { generateGroceryList } from '../data/mockData';
+import type { GroceryItem } from '../data/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Link } from 'react-router-dom';
-import type { Ingredient as GroceryItem } from '@/types/groceryTypes';
 
+// Generate initial grocery list
 const initialGroceryItems = generateGroceryList();
 
 const GroceryListPage = () => {
