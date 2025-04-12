@@ -39,36 +39,64 @@ export const useSavedMealPlans = () => {
   const { user } = useAuth();
 
   useEffect(() => {
-    const storedActivePlan = sessionStorage.getItem('activePlan');
-    if (storedActivePlan) {
+    const loadActivePlan = () => {
+      const storedActivePlan = sessionStorage.getItem('activePlan');
+      if (!storedActivePlan) return;
+      
       try {
         const parsedPlan = JSON.parse(storedActivePlan);
-        // First check if this is one of our saved plans
-        const matchingPlan = plans.find(p => 
-          p.plan_data.days?.length === parsedPlan.days?.length && 
-          JSON.stringify(p.plan_data.days) === JSON.stringify(parsedPlan.days)
-        );
+        
+        if (plans.length > 0) {
+          const matchingPlan = plans.find(p => p.id === parsedPlan.planId);
+          
+          if (matchingPlan) {
+            setActivePlan({ 
+              plan: matchingPlan, 
+              startDay: parsedPlan.startDay || 0 
+            });
+            return;
+          }
+        }
+        
+        setActivePlan({ 
+          plan: { 
+            id: parsedPlan.planId || 'active', 
+            name: parsedPlan.name || 'Active Plan', 
+            created_at: new Date().toISOString(),
+            plan_data: {
+              days: parsedPlan.days || [],
+              description: parsedPlan.description || '',
+              tags: parsedPlan.tags || []
+            }
+          },
+          startDay: parsedPlan.startDay || 0
+        });
+      } catch (error) {
+        console.error('Error parsing active meal plan:', error);
+        sessionStorage.removeItem('activePlan');
+      }
+    };
+    
+    loadActivePlan();
+  }, []);
+  
+  useEffect(() => {
+    if (plans.length > 0 && activePlan && activePlan.plan.id !== 'active') {
+      const storedActivePlan = sessionStorage.getItem('activePlan');
+      if (!storedActivePlan) return;
+      
+      try {
+        const parsedPlan = JSON.parse(storedActivePlan);
+        const matchingPlan = plans.find(p => p.id === parsedPlan.planId);
         
         if (matchingPlan) {
           setActivePlan({ 
             plan: matchingPlan, 
             startDay: parsedPlan.startDay || 0 
           });
-        } else {
-          // If not a saved plan, create a temporary plan object
-          setActivePlan({ 
-            plan: { 
-              id: 'active', 
-              name: 'Active Plan', 
-              created_at: new Date().toISOString(),
-              plan_data: parsedPlan
-            },
-            startDay: parsedPlan.startDay || 0
-          });
         }
       } catch (error) {
-        console.error('Error parsing active meal plan:', error);
-        sessionStorage.removeItem('activePlan');
+        console.error('Error updating active meal plan after plans loaded:', error);
       }
     }
   }, [plans]);
@@ -545,11 +573,16 @@ export const useSavedMealPlans = () => {
   };
 
   const activatePlan = (plan: MealPlan, startDay: number = 0) => {
-    sessionStorage.setItem('activePlan', JSON.stringify({
-      ...plan.plan_data,
-      startDay
-    }));
+    const planToStore = {
+      planId: plan.id,
+      name: plan.name,
+      startDay: startDay,
+      days: plan.plan_data.days,
+      description: plan.plan_data.description,
+      tags: plan.plan_data.tags
+    };
     
+    sessionStorage.setItem('activePlan', JSON.stringify(planToStore));
     setActivePlan({ plan, startDay });
     
     toast({
@@ -607,21 +640,34 @@ export const useSavedMealPlans = () => {
   };
 
   const getMealsForDate = (dateString: string) => {
-    if (!activePlan || !activePlan.plan.plan_data.days) {
+    if (!activePlan || !activePlan.plan.plan_data.days || activePlan.plan.plan_data.days.length === 0) {
       return null;
     }
     
     const targetDate = new Date(dateString);
     const startDate = new Date();
-    startDate.setDate(startDate.getDate() - activePlan.startDay);
+    
+    if (activePlan.startDay > 0) {
+      startDate.setDate(startDate.getDate() - activePlan.startDay);
+    } else if (activePlan.startDay < 0) {
+      startDate.setDate(startDate.getDate() + Math.abs(activePlan.startDay));
+    }
+    
+    startDate.setHours(0, 0, 0, 0);
+    targetDate.setHours(0, 0, 0, 0);
     
     const dayDiff = Math.floor((targetDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     
+    console.log('Target date:', dateString);
+    console.log('Start date:', format(startDate, 'yyyy-MM-dd'));
+    console.log('Day difference:', dayDiff);
+    
     if (dayDiff >= 0 && dayDiff < activePlan.plan.plan_data.days.length) {
-      const dayMeals = activePlan.plan.plan_data.days[dayDiff].meals;
-      return dayMeals;
+      console.log(`Found meals for day ${dayDiff}:`, activePlan.plan.plan_data.days[dayDiff].meals);
+      return activePlan.plan.plan_data.days[dayDiff].meals;
     }
     
+    console.log('No meals found for this date');
     return null;
   };
 

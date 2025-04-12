@@ -146,11 +146,21 @@ const SavedPlansPage = () => {
   const handleDateSelected = (date: Date) => {
     setIsStartDateDialogOpen(false);
     if (selectedPlan) {
-      // Calculate the start day based on the selected date
-      const startDay = 0; // Default to day 0
+      // Calculate the start day offset based on the selected date
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      date.setHours(0, 0, 0, 0);
       
-      // Activate the plan in the system
-      activatePlan(selectedPlan, startDay);
+      // Calculate days between today and selected date
+      // If date is today -> startDay = 0
+      // If date is tomorrow -> startDay = -1 (start day is "ahead" of today)
+      // If date is yesterday -> startDay = 1 (start day is "behind" today)
+      const dayDiff = Math.round((today.getTime() - date.getTime()) / (24 * 60 * 60 * 1000));
+      
+      console.log(`Activating plan with start day offset: ${dayDiff}`);
+      
+      // Activate the plan in the system with the calculated offset
+      activatePlan(selectedPlan, dayDiff);
       
       // Store the date for grocery list integration
       const formattedDate = format(date, 'yyyy-MM-dd');

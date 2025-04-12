@@ -45,96 +45,98 @@ const HomePage = () => {
   const [todaysMeals, setTodaysMeals] = useState<Meal[]>([]);
 
   useEffect(() => {
-    const storedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
-    
-    const selectedDateStart = startOfDay(selectedDate);
-    const filteredMeals = storedMeals.filter((meal: Meal) => {
-      if (!meal.loggedAt) return false;
-      const mealDate = startOfDay(parseISO(meal.loggedAt));
-      return isEqual(mealDate, selectedDateStart);
-    });
-    
-    const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-    
-    const planMeals = getMealsForDate(formattedDate);
-    
-    const plannedMealArray: Meal[] = [];
-    
-    if (planMeals) {
-      console.log('Plan meals found for date:', formattedDate, planMeals);
+    const loadMealsForSelectedDate = () => {
+      const storedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
       
-      if (planMeals.breakfast) {
-        plannedMealArray.push({
-          id: `breakfast-planned-${formattedDate}`,
-          name: planMeals.breakfast.name || 'Breakfast',
-          type: 'breakfast',
-          recipe: planMeals.breakfast,
-          consumed: false,
-          loggedAt: formattedDate,
-          planned: true
-        });
+      const selectedDateStart = startOfDay(selectedDate);
+      const filteredMeals = storedMeals.filter((meal: Meal) => {
+        if (!meal.loggedAt) return false;
+        const mealDate = startOfDay(parseISO(meal.loggedAt));
+        return isEqual(mealDate, selectedDateStart);
+      });
+      
+      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      
+      const planMeals = getMealsForDate(formattedDate);
+      
+      const plannedMealArray: Meal[] = [];
+      
+      if (planMeals) {
+        if (planMeals.breakfast) {
+          plannedMealArray.push({
+            id: `breakfast-planned-${formattedDate}`,
+            name: planMeals.breakfast.name || 'Breakfast',
+            type: 'breakfast',
+            recipe: planMeals.breakfast,
+            consumed: false,
+            loggedAt: formattedDate,
+            planned: true
+          });
+        }
+        
+        if (planMeals.lunch) {
+          plannedMealArray.push({
+            id: `lunch-planned-${formattedDate}`,
+            name: planMeals.lunch.name || 'Lunch',
+            type: 'lunch',
+            recipe: planMeals.lunch,
+            consumed: false,
+            loggedAt: formattedDate,
+            planned: true
+          });
+        }
+        
+        if (planMeals.dinner) {
+          plannedMealArray.push({
+            id: `dinner-planned-${formattedDate}`,
+            name: planMeals.dinner.name || 'Dinner',
+            type: 'dinner',
+            recipe: planMeals.dinner,
+            consumed: false,
+            loggedAt: formattedDate,
+            planned: true
+          });
+        }
+        
+        if (planMeals.snacks && Array.isArray(planMeals.snacks) && planMeals.snacks.length > 0) {
+          planMeals.snacks.forEach((snack, index) => {
+            if (snack) {
+              plannedMealArray.push({
+                id: `snack-planned-${index}-${formattedDate}`,
+                name: snack.name || `Snack ${index + 1}`,
+                type: 'snack',
+                recipe: snack,
+                consumed: false,
+                loggedAt: formattedDate,
+                planned: true
+              });
+            }
+          });
+        }
       }
       
-      if (planMeals.lunch) {
-        plannedMealArray.push({
-          id: `lunch-planned-${formattedDate}`,
-          name: planMeals.lunch.name || 'Lunch',
-          type: 'lunch',
-          recipe: planMeals.lunch,
-          consumed: false,
-          loggedAt: formattedDate,
-          planned: true
-        });
-      }
+      const updatedPlannedMeals = plannedMealArray.map(plannedMeal => {
+        const matchingLoggedMeal = filteredMeals.find((loggedMeal: Meal) => 
+          loggedMeal.recipe.id === plannedMeal.recipe.id && 
+          loggedMeal.type === plannedMeal.type
+        );
+        
+        return matchingLoggedMeal ? { ...plannedMeal, consumed: true } : plannedMeal;
+      });
       
-      if (planMeals.dinner) {
-        plannedMealArray.push({
-          id: `dinner-planned-${formattedDate}`,
-          name: planMeals.dinner.name || 'Dinner',
-          type: 'dinner',
-          recipe: planMeals.dinner,
-          consumed: false,
-          loggedAt: formattedDate,
-          planned: true
-        });
-      }
-      
-      if (planMeals.snacks && Array.isArray(planMeals.snacks) && planMeals.snacks.length > 0) {
-        planMeals.snacks.forEach((snack, index) => {
-          if (snack) {
-            plannedMealArray.push({
-              id: `snack-planned-${index}-${formattedDate}`,
-              name: snack.name || `Snack ${index + 1}`,
-              type: 'snack',
-              recipe: snack,
-              consumed: false,
-              loggedAt: formattedDate,
-              planned: true
-            });
-          }
-        });
-      }
-    }
-    
-    const updatedPlannedMeals = plannedMealArray.map(plannedMeal => {
-      const matchingLoggedMeal = filteredMeals.find((loggedMeal: Meal) => 
-        loggedMeal.recipe.id === plannedMeal.recipe.id && 
-        loggedMeal.type === plannedMeal.type
+      const uniqueLoggedMeals = filteredMeals.filter((loggedMeal: Meal) => 
+        !updatedPlannedMeals.some(plannedMeal => 
+          plannedMeal.recipe.id === loggedMeal.recipe.id && 
+          plannedMeal.type === loggedMeal.type
+        )
       );
       
-      return matchingLoggedMeal ? { ...plannedMeal, consumed: true } : plannedMeal;
-    });
+      setTodaysMeals([...uniqueLoggedMeals, ...updatedPlannedMeals]);
+      
+      calculateNutritionForDate([...uniqueLoggedMeals, ...updatedPlannedMeals.filter(meal => meal.consumed)]);
+    };
     
-    const uniqueLoggedMeals = filteredMeals.filter((loggedMeal: Meal) => 
-      !updatedPlannedMeals.some(plannedMeal => 
-        plannedMeal.recipe.id === loggedMeal.recipe.id && 
-        plannedMeal.type === loggedMeal.type
-      )
-    );
-    
-    setTodaysMeals([...uniqueLoggedMeals, ...updatedPlannedMeals]);
-    
-    calculateNutritionForDate([...uniqueLoggedMeals, ...updatedPlannedMeals.filter(meal => meal.consumed)]);
+    loadMealsForSelectedDate();
   }, [selectedDate, getMealsForDate, activePlan]);
 
   const calculateNutritionForDate = (meals: Meal[]) => {
