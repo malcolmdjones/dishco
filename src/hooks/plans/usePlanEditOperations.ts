@@ -29,22 +29,28 @@ export const usePlanEditOperations = (
     newPlanName: string,
     newPlanDescription: string,
     setIsEditDialogOpen: (isOpen: boolean) => void
-  ) => {
-    if (!editPlan) return;
+  ): Promise<boolean> => {
+    if (!editPlan) return false;
 
     try {
-      await updatePlan(editPlan.id, { 
+      const success = await updatePlan(editPlan.id, { 
         name: newPlanName, 
         description: newPlanDescription 
       });
-      setIsEditDialogOpen(false);
-      toast({
-        title: "Success",
-        description: "Meal plan updated successfully."
-      });
-      await fetchPlans();
+      
+      if (success) {
+        setIsEditDialogOpen(false);
+        toast({
+          title: "Success",
+          description: "Meal plan updated successfully."
+        });
+        await fetchPlans();
+        return true;
+      }
+      return false;
     } catch (error) {
       console.error('Error updating plan:', error);
+      return false;
     }
   };
 
