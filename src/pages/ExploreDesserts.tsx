@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CakeSlice, ArrowLeft, Search, Filter, X } from 'lucide-react';
@@ -468,11 +467,11 @@ const ExploreDesserts = () => {
                 </div>
               </div>
               <div className="flex flex-wrap gap-1 mt-2">
-                {dessert.dietary?.map(diet => (
-                  <span key={diet} className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-800 rounded">
-                    {diet}
+                {dessert.type && (
+                  <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-800 rounded">
+                    {dessert.type}
                   </span>
-                ))}
+                )}
               </div>
             </div>
           </div>
