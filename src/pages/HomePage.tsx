@@ -153,10 +153,12 @@ const HomePage = () => {
     };
     
     consumedMeals.forEach(meal => {
-      calculatedNutrition.calories += meal.recipe.macros.calories;
-      calculatedNutrition.protein += meal.recipe.macros.protein;
-      calculatedNutrition.carbs += meal.recipe.macros.carbs;
-      calculatedNutrition.fat += meal.recipe.macros.fat;
+      if (meal.recipe && meal.recipe.macros) {
+        calculatedNutrition.calories += meal.recipe.macros.calories || 0;
+        calculatedNutrition.protein += meal.recipe.macros.protein || 0;
+        calculatedNutrition.carbs += meal.recipe.macros.carbs || 0;
+        calculatedNutrition.fat += meal.recipe.macros.fat || 0;
+      }
     });
     
     setDailyNutrition(prev => ({
@@ -234,12 +236,12 @@ const HomePage = () => {
     
     localStorage.setItem('loggedMeals', JSON.stringify(updatedStoredMeals));
     
-    if (!meal.consumed) {
+    if (!meal.consumed && meal.recipe && meal.recipe.macros) {
       const updatedNutrition = {
-        calories: dailyNutrition.calories + meal.recipe.macros.calories,
-        protein: dailyNutrition.protein + meal.recipe.macros.protein,
-        carbs: dailyNutrition.carbs + meal.recipe.macros.carbs,
-        fat: dailyNutrition.fat + meal.recipe.macros.fat
+        calories: dailyNutrition.calories + (meal.recipe.macros.calories || 0),
+        protein: dailyNutrition.protein + (meal.recipe.macros.protein || 0),
+        carbs: dailyNutrition.carbs + (meal.recipe.macros.carbs || 0),
+        fat: dailyNutrition.fat + (meal.recipe.macros.fat || 0)
       };
       
       setDailyNutrition(prev => ({
@@ -251,12 +253,12 @@ const HomePage = () => {
         title: "Meal logged",
         description: `${meal.name} has been marked as consumed.`
       });
-    } else {
+    } else if (meal.recipe && meal.recipe.macros) {
       const updatedNutrition = {
-        calories: Math.max(0, dailyNutrition.calories - meal.recipe.macros.calories),
-        protein: Math.max(0, dailyNutrition.protein - meal.recipe.macros.protein),
-        carbs: Math.max(0, dailyNutrition.carbs - meal.recipe.macros.carbs),
-        fat: Math.max(0, dailyNutrition.fat - meal.recipe.macros.fat)
+        calories: Math.max(0, dailyNutrition.calories - (meal.recipe.macros.calories || 0)),
+        protein: Math.max(0, dailyNutrition.protein - (meal.recipe.macros.protein || 0)),
+        carbs: Math.max(0, dailyNutrition.carbs - (meal.recipe.macros.carbs || 0)),
+        fat: Math.max(0, dailyNutrition.fat - (meal.recipe.macros.fat || 0))
       };
       
       setDailyNutrition(prev => ({
@@ -495,7 +497,7 @@ const HomePage = () => {
                     )}
                   </div>
                   <span className="text-sm bg-amber-50 text-amber-800 px-2 py-1 rounded-full">
-                    {meal.recipe.macros?.calories || 0} kcal
+                    {meal.recipe?.macros?.calories || 0} kcal
                   </span>
                 </div>
                 
@@ -505,7 +507,7 @@ const HomePage = () => {
                     onClick={() => handleOpenRecipe(meal.recipe)}
                   >
                     <img 
-                      src={meal.recipe.imageSrc || imageUrl} 
+                      src={meal.recipe?.imageSrc || imageUrl} 
                       alt={meal.name}
                       className="w-full h-full object-cover"
                     />
@@ -532,13 +534,13 @@ const HomePage = () => {
                 
                 <div className="flex gap-2 mt-3">
                   <span className="px-3 py-1 bg-blue-100 rounded-full text-xs">
-                    P: {meal.recipe.macros?.protein || 0}g
+                    P: {meal.recipe?.macros?.protein || 0}g
                   </span>
                   <span className="px-3 py-1 bg-yellow-100 rounded-full text-xs">
-                    C: {meal.recipe.macros?.carbs || 0}g
+                    C: {meal.recipe?.macros?.carbs || 0}g
                   </span>
                   <span className="px-3 py-1 bg-purple-100 rounded-full text-xs">
-                    F: {meal.recipe.macros?.fat || 0}g
+                    F: {meal.recipe?.macros?.fat || 0}g
                   </span>
                 </div>
               </div>
