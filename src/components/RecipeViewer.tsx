@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from '@/components/ui/drawer';
-import { Heart } from 'lucide-react';
+import { Heart, Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Recipe } from '@/data/mockData';
 import { useRecipes } from '@/hooks/useRecipes';
 import { getRecipeImage } from '@/utils/recipeUtils';
 
-// Import the new components
+// Import the components
 import RecipeHeader from './recipe-viewer/RecipeHeader';
 import RecipeContent from './recipe-viewer/RecipeContent';
 import RecipeFooter from './recipe-viewer/RecipeFooter';
@@ -18,6 +18,8 @@ interface RecipeViewerProps {
   onClose: () => void;
   isSaved?: boolean;
   onToggleSave?: (recipeId: string, isSaved: boolean) => Promise<void>;
+  isConsumed?: boolean;
+  onToggleConsumed?: (recipe: Recipe, isConsumed: boolean) => void;
 }
 
 const RecipeViewer: React.FC<RecipeViewerProps> = ({ 
@@ -25,12 +27,15 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
   isOpen, 
   onClose, 
   isSaved: propIsSaved,
-  onToggleSave
+  onToggleSave,
+  isConsumed: propIsConsumed,
+  onToggleConsumed
 }) => {
   const { toast } = useToast();
   const { isRecipeSaved, toggleSaveRecipe } = useRecipes();
   const [saving, setSaving] = useState(false);
   const [recipeSaved, setRecipeSaved] = useState(false);
+  const [consumed, setConsumed] = useState(false);
   
   useEffect(() => {
     // Use provided value or check from our hook
@@ -39,7 +44,12 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
     } else if (recipe?.id) {
       setRecipeSaved(isRecipeSaved(recipe.id));
     }
-  }, [recipe, propIsSaved, isRecipeSaved]);
+    
+    // Set consumed state from props
+    if (propIsConsumed !== undefined) {
+      setConsumed(propIsConsumed);
+    }
+  }, [recipe, propIsSaved, isRecipeSaved, propIsConsumed]);
   
   // Don't render the component if recipe is not available
   if (!recipe) {
@@ -79,6 +89,14 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleToggleConsumed = () => {
+    if (onToggleConsumed) {
+      const newConsumedState = !consumed;
+      setConsumed(newConsumedState);
+      onToggleConsumed(validRecipe, newConsumedState);
     }
   };
 
@@ -122,6 +140,8 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
             saving={saving}
             onSave={handleSaveRecipe}
             onClose={onClose}
+            isConsumed={consumed}
+            onToggleConsumed={onToggleConsumed ? handleToggleConsumed : undefined}
           />
         </DrawerFooter>
       </DrawerContent>

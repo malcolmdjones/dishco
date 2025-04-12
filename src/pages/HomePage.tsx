@@ -236,40 +236,29 @@ const HomePage = () => {
     
     localStorage.setItem('loggedMeals', JSON.stringify(updatedStoredMeals));
     
-    if (!meal.consumed && meal.recipe && meal.recipe.macros) {
-      const updatedNutrition = {
-        calories: dailyNutrition.calories + (meal.recipe.macros.calories || 0),
-        protein: dailyNutrition.protein + (meal.recipe.macros.protein || 0),
-        carbs: dailyNutrition.carbs + (meal.recipe.macros.carbs || 0),
-        fat: dailyNutrition.fat + (meal.recipe.macros.fat || 0)
-      };
-      
-      setDailyNutrition(prev => ({
-        ...prev,
-        ...updatedNutrition
-      }));
-      
+    calculateNutritionForDate(updatedTodaysMeals.filter(m => m.consumed));
+    
+    if (!meal.consumed) {
       toast({
         title: "Meal logged",
         description: `${meal.name} has been marked as consumed.`
       });
-    } else if (meal.recipe && meal.recipe.macros) {
-      const updatedNutrition = {
-        calories: Math.max(0, dailyNutrition.calories - (meal.recipe.macros.calories || 0)),
-        protein: Math.max(0, dailyNutrition.protein - (meal.recipe.macros.protein || 0)),
-        carbs: Math.max(0, dailyNutrition.carbs - (meal.recipe.macros.carbs || 0)),
-        fat: Math.max(0, dailyNutrition.fat - (meal.recipe.macros.fat || 0))
-      };
-      
-      setDailyNutrition(prev => ({
-        ...prev,
-        ...updatedNutrition
-      }));
-      
+    } else {
       toast({
         title: "Meal unlogged",
         description: `${meal.name} has been unmarked as consumed.`
       });
+    }
+  };
+
+  const handleRecipeConsumed = (recipe: Recipe, isConsumed: boolean) => {
+    const mealWithRecipe = todaysMeals.find(meal => 
+      meal.recipe?.id === recipe.id || 
+      (Array.isArray(meal.recipe) && meal.recipe.some(r => r.id === recipe.id))
+    );
+    
+    if (mealWithRecipe) {
+      handleToggleConsumed(mealWithRecipe);
     }
   };
 
@@ -556,6 +545,10 @@ const HomePage = () => {
           onClose={() => setIsRecipeViewerOpen(false)}
           isSaved={isSaved}
           onToggleSave={handleToggleSave}
+          isConsumed={!!todaysMeals.find(meal => 
+            meal.recipe?.id === selectedRecipe.id && meal.consumed
+          )}
+          onToggleConsumed={handleRecipeConsumed}
         />
       )}
     </div>
