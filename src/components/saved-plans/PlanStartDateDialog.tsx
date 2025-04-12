@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { format, addDays, parseISO } from 'date-fns';
-import { CalendarIcon, ChevronRight, AlertTriangle } from 'lucide-react';
+import { CalendarIcon, ChevronRight, AlertTriangle, Trash2 } from 'lucide-react';
 import { MealPlan } from '@/hooks/useSavedMealPlans';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -14,6 +13,7 @@ interface PlanStartDateDialogProps {
   plan: MealPlan | null;
   activeDates: {[key: string]: string};
   onOverlap?: (date: Date) => void;
+  onClearDate?: (date: Date) => void;
 }
 
 const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
@@ -22,11 +22,13 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
   onConfirm,
   plan,
   activeDates = {},
-  onOverlap
+  onOverlap,
+  onClearDate
 }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [hasOverlap, setHasOverlap] = useState<boolean>(false);
+  const [canClearSelectedDate, setCanClearSelectedDate] = useState<boolean>(false);
   
   useEffect(() => {
     if (isOpen) {
@@ -34,6 +36,7 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
       setSelectedDate(newDate);
       setCurrentMonth(newDate);
       checkForOverlap(newDate);
+      checkIfDateCanBeCleared(newDate);
     }
   }, [isOpen, activeDates]);
   
@@ -61,9 +64,17 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
     return hasConflict;
   };
   
+  const checkIfDateCanBeCleared = (date: Date): boolean => {
+    const dateKey = format(date, 'yyyy-MM-dd');
+    const canClear = !!activeDates[dateKey];
+    setCanClearSelectedDate(canClear);
+    return canClear;
+  };
+  
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
     checkForOverlap(date);
+    checkIfDateCanBeCleared(date);
   };
   
   const handleConfirm = () => {
@@ -73,6 +84,13 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
     } else {
       console.log("No overlap detected, calling onConfirm with date:", selectedDate);
       onConfirm(selectedDate);
+    }
+  };
+
+  const handleClear = () => {
+    if (onClearDate) {
+      console.log("Clearing date:", selectedDate);
+      onClearDate(selectedDate);
     }
   };
   
@@ -116,7 +134,6 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
     return weeks;
   };
   
-  // Generate the calendar weeks for the current month
   const weeks = generateCalendar(currentMonth);
   
   const isDateInPlanRange = (date: Date) => {
@@ -244,8 +261,14 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
           </div>
           
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Starting date: <strong>{format(selectedDate, 'EEEE, MMMM d, yyyy')}</strong>
+            Selected date: <strong>{format(selectedDate, 'EEEE, MMMM d, yyyy')}</strong>
           </p>
+          
+          {canClearSelectedDate && (
+            <p className="text-center text-sm text-amber-600">
+              This date already has the plan: <strong>{activeDates[format(selectedDate, 'yyyy-MM-dd')]}</strong>
+            </p>
+          )}
           
           {planDuration > 1 && (
             <p className="text-center text-sm text-green-600">
@@ -254,10 +277,22 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
           )}
         </div>
         
-        <DialogFooter>
+        <DialogFooter className="flex items-center justify-end space-x-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
+          
+          {canClearSelectedDate && onClearDate && (
+            <Button 
+              variant="destructive"
+              onClick={handleClear}
+              className="flex items-center gap-1"
+            >
+              <Trash2 className="h-4 w-4" />
+              Clear Selected Date
+            </Button>
+          )}
+          
           <Button onClick={handleConfirm} className="bg-green-500 hover:bg-green-600">
             {hasOverlap ? "Continue with Overlaps" : "Confirm & Continue"}
           </Button>

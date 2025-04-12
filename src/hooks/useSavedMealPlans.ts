@@ -883,6 +883,53 @@ export const useSavedMealPlans = () => {
     return result;
   };
 
+  const deactivatePlanForDate = (dateString: string): boolean => {
+    console.log(`Attempting to deactivate plan for date: ${dateString}`);
+    
+    const dateHasPlan = activeDates[dateString];
+    if (!dateHasPlan) {
+      console.log("No plan found for this date");
+      return false;
+    }
+
+    const updatedActivePlans = activePlans.filter(activePlan => {
+      const startDate = parseISO(activePlan.startDate);
+      const endDate = parseISO(activePlan.endDate);
+      const targetDate = parseISO(dateString);
+      
+      if (targetDate >= startDate && targetDate <= endDate) {
+        console.log(`Found plan ${activePlan.plan.name} that includes this date`);
+        
+        const daysBeforeTarget = differenceInDays(targetDate, startDate);
+        const daysAfterTarget = differenceInDays(endDate, targetDate);
+        
+        if (daysBeforeTarget === 0 && daysAfterTarget === 0) {
+          console.log("Plan only covers this date, removing entire plan");
+          return false;
+        }
+        
+        console.log("Removing entire plan that includes this date");
+        return false;
+      }
+      
+      return true;
+    });
+    
+    if (updatedActivePlans.length !== activePlans.length) {
+      setActivePlans(updatedActivePlans);
+      
+      if (updatedActivePlans.length === 0) {
+        sessionStorage.removeItem('activePlans');
+      } else {
+        sessionStorage.setItem('activePlans', JSON.stringify(updatedActivePlans));
+      }
+      
+      return true;
+    }
+    
+    return false;
+  };
+
   useEffect(() => {
     fetchPlans();
   }, [user]);
@@ -898,6 +945,7 @@ export const useSavedMealPlans = () => {
     showOverlapWarning,
     setShowOverlapWarning,
     pendingActivation,
+    setPendingActivation,
     fetchPlans,
     deletePlan,
     updatePlan,
@@ -907,6 +955,7 @@ export const useSavedMealPlans = () => {
     cancelActivation,
     deactivatePlan,
     deactivateAllPlans,
+    deactivatePlanForDate,
     copyAndEditPlan,
     getMealsForDate,
     dateHasActivePlan,

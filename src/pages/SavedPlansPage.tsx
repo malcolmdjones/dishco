@@ -57,7 +57,11 @@ const SavedPlansPage = () => {
     forceActivatePlan,
     cancelActivation,
     pendingActivation,
-    getDatesWithActivePlans
+    setPendingActivation,
+    getDatesWithActivePlans,
+    deactivatePlan,
+    deactivateAllPlans,
+    deactivatePlanForDate
   } = useSavedMealPlans();
 
   useEffect(() => {
@@ -239,6 +243,25 @@ const SavedPlansPage = () => {
     setShowOverlapWarning(false);
   };
   
+  const handleClearSelectedDate = (date: Date) => {
+    console.log("Attempting to clear date:", format(date, 'yyyy-MM-dd'));
+    const success = deactivatePlanForDate(format(date, 'yyyy-MM-dd'));
+    
+    if (success) {
+      toast({
+        title: "Date Cleared",
+        description: `The meal plan for ${format(date, 'MMM d, yyyy')} has been removed.`,
+      });
+    } else {
+      toast({
+        title: "Note",
+        description: "There was no active meal plan on this date to clear.",
+      });
+    }
+    
+    setIsStartDateDialogOpen(false);
+  };
+  
   const activeDates = getDatesWithActivePlans();
   
   const renderContent = () => {
@@ -319,6 +342,7 @@ const SavedPlansPage = () => {
         plan={selectedPlan}
         activeDates={activeDates}
         onOverlap={handleOverlapDetected}
+        onClearDate={handleClearSelectedDate}
       />
       
       <OverlapWarningDialog
