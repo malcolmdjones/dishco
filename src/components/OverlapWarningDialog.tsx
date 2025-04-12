@@ -7,7 +7,8 @@ import {
   DialogHeader, 
   DialogTitle, 
   DialogDescription, 
-  DialogFooter 
+  DialogFooter,
+  DialogClose
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
@@ -24,8 +25,14 @@ const OverlapWarningDialog: React.FC<OverlapWarningDialogProps> = ({
   onCancel,
   planName
 }) => {
-  const handleConfirm = () => {
-    console.log("OverlapWarningDialog: handleConfirm called");
+  const handleConfirm = (event: React.MouseEvent) => {
+    // Prevent any default actions
+    event.preventDefault();
+    event.stopPropagation();
+    
+    console.log("OverlapWarningDialog: handleConfirm called - executing onConfirm callback");
+    
+    // Execute the confirmation callback
     onConfirm();
   };
 
@@ -33,7 +40,10 @@ const OverlapWarningDialog: React.FC<OverlapWarningDialogProps> = ({
     <Dialog 
       open={isOpen} 
       onOpenChange={(open) => {
-        if (!open) onCancel();
+        if (!open) {
+          console.log("Dialog closing via onOpenChange");
+          onCancel();
+        }
       }}
     >
       <DialogContent className="sm:max-w-md">
@@ -60,6 +70,8 @@ const OverlapWarningDialog: React.FC<OverlapWarningDialogProps> = ({
           <Button 
             variant="destructive" 
             onClick={handleConfirm}
+            type="button"
+            className="focus:outline-none focus:ring-2 focus:ring-red-500"
             aria-label="Replace existing plan"
           >
             Replace Existing Plan

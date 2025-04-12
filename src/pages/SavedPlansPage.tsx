@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -137,18 +136,20 @@ const SavedPlansPage = () => {
   };
   
   const handleUsePlan = (plan: MealPlan) => {
+    console.log("handleUsePlan called with plan:", plan.name);
     setSelectedPlan(plan);
     setIsStartDateDialogOpen(true);
   };
   
   const handleDateSelected = (date: Date) => {
+    console.log("handleDateSelected called with date:", date);
     setIsStartDateDialogOpen(false);
     if (selectedPlan) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       date.setHours(0, 0, 0, 0);
       
-      const dayDiff = Math.round((today.getTime() - date.getTime()) / (24 * 60 * 60 * 1000));
+      const dayDiff = Math.round((date.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
       
       console.log(`Activating plan with start day offset: ${dayDiff}`);
       
@@ -187,6 +188,8 @@ const SavedPlansPage = () => {
             title: "Success",
             description: `${pendingActivation.plan.name} has been activated and overlapping plans have been replaced.`,
           });
+
+          setShowOverlapWarning(false);
         } else {
           console.error("Failed to force activate the meal plan");
           toast({
@@ -205,14 +208,18 @@ const SavedPlansPage = () => {
       }
     } else {
       console.error("No pending activation found when confirming overlap");
+      toast({
+        title: "Error",
+        description: "No meal plan found to activate. Please try again.",
+        variant: "destructive"
+      });
     }
     
     setShowOverlapWarning(false);
   };
   
   const handleOverlapDetected = (date: Date) => {
-    // This will be handled by the useSavedMealPlans hook logic
-    // The warning dialog will be shown automatically via showOverlapWarning state
+    console.log("Overlap detected for date:", date);
   };
   
   const activeDates = getDatesWithActivePlans();
