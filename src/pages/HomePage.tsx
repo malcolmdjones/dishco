@@ -12,7 +12,7 @@ import { useSavedMealPlans } from '@/hooks/useSavedMealPlans';
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const { activePlan } = useSavedMealPlans();
+  const { activePlans, getMealsForDate } = useSavedMealPlans();
   
   const {
     selectedDate,
@@ -61,7 +61,10 @@ const HomePage = () => {
         formatMealType={formatMealType}
       />
       
-      <WeeklyOverview activePlan={activePlan} />
+      <WeeklyOverview 
+        activePlans={activePlans} 
+        getMealsForDate={getMealsForDate} 
+      />
       
       {selectedRecipe && (
         <RecipeViewer

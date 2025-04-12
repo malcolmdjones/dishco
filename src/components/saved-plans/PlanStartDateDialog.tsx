@@ -2,38 +2,76 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { format, addDays } from 'date-fns';
-import { CalendarIcon, ChevronRight } from 'lucide-react';
+import { format, addDays, parseISO } from 'date-fns';
+import { CalendarIcon, ChevronRight, AlertTriangle } from 'lucide-react';
 import { MealPlan } from '@/hooks/useSavedMealPlans';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface PlanStartDateDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (date: Date) => void;
   plan: MealPlan | null;
+  activeDates: {[key: string]: string};
+  onOverlap?: (date: Date) => void;
 }
 
 const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
   isOpen,
   onOpenChange,
   onConfirm,
-  plan
+  plan,
+  activeDates = {},
+  onOverlap
 }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [hasOverlap, setHasOverlap] = useState<boolean>(false);
   
   // Reset selected date when dialog opens
   useEffect(() => {
     if (isOpen) {
       setSelectedDate(new Date());
       setCurrentMonth(new Date());
+      checkForOverlap(new Date());
     }
-  }, [isOpen]);
+  }, [isOpen, activeDates]);
   
   if (!plan) return null;
   
+  // Check if selected date range overlaps with active plans
+  const checkForOverlap = (date: Date): boolean => {
+    if (!plan) return false;
+    
+    const planDuration = plan.plan_data?.days?.length || 7;
+    let hasConflict = false;
+    
+    // Check each day in the planned range
+    for (let i = 0; i < planDuration; i++) {
+      const checkDate = addDays(date, i);
+      const dateKey = format(checkDate, 'yyyy-MM-dd');
+      
+      if (activeDates[dateKey]) {
+        hasConflict = true;
+        break;
+      }
+    }
+    
+    setHasOverlap(hasConflict);
+    return hasConflict;
+  };
+  
+  const handleDateChange = (date: Date) => {
+    setSelectedDate(date);
+    checkForOverlap(date);
+  };
+  
   const handleConfirm = () => {
-    onConfirm(selectedDate);
+    if (hasOverlap && onOverlap) {
+      onOverlap(selectedDate);
+    } else {
+      onConfirm(selectedDate);
+    }
   };
   
   // Get plan duration (number of days)
@@ -97,6 +135,18 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
     return date >= selectedDate && date <= planEndDate;
   };
   
+  // Function to check if a date has an active meal plan
+  const hasActivePlan = (date: Date) => {
+    const dateKey = format(date, 'yyyy-MM-dd');
+    return !!activeDates[dateKey];
+  };
+  
+  // Function to get the active plan name for a date
+  const getActivePlanName = (date: Date) => {
+    const dateKey = format(date, 'yyyy-MM-dd');
+    return activeDates[dateKey] || '';
+  };
+  
   // Navigate to next month
   const goToNextMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
@@ -131,9 +181,26 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
             <span className="ml-2 text-sm text-muted-foreground">({planDuration} days)</span>
           </div>
           
+          {hasOverlap && (
+            <Alert variant="warning" className="mb-4 border-amber-600 bg-amber-50">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <AlertTitle className="text-amber-600">Date Overlap Detected</AlertTitle>
+              <AlertDescription className="text-amber-700 text-sm">
+                Some dates in your selected range already have active meal plans.
+                Activating this plan will replace existing plans on those dates.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <div className="w-full max-w-xs">
             {/* Calendar Header */}
             <div className="flex items-center justify-between mb-4">
+              <button 
+                onClick={goToPreviousMonth}
+                className="p-1 rounded-full hover:bg-gray-100"
+              >
+                <ChevronRight className="h-5 w-5 transform rotate-180" />
+              </button>
               <h2 className="text-xl font-bold">
                 {format(currentMonth, 'MMMM yyyy')}
               </h2>
@@ -161,21 +228,31 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
                     const isSelected = day.toDateString() === selectedDate?.toDateString();
                     const inPlanRange = isDateInPlanRange(day);
                     const isCurrentMonth = isSameMonth(day);
+                    const hasExistingPlan = hasActivePlan(day);
+                    const activePlanName = getActivePlanName(day);
                     
                     return (
-                      <button
-                        key={`day-${dayIndex}`}
-                        className={`h-10 w-10 mx-auto flex items-center justify-center text-sm rounded-full relative
-                          ${!isCurrentMonth ? 'text-gray-400' : 'text-gray-900'}
-                          ${isSelected ? 'bg-blue-500 text-white' : ''}
-                          ${inPlanRange && !isSelected ? 'bg-blue-200' : ''}
-                          ${!isSelected && !inPlanRange ? 'hover:bg-gray-100' : ''}
-                        `}
-                        onClick={() => setSelectedDate(day)}
-                        disabled={!isCurrentMonth}
-                      >
-                        {formatDay(day)}
-                      </button>
+                      <div key={`day-${dayIndex}`} className="relative">
+                        <button
+                          className={`h-10 w-10 mx-auto flex items-center justify-center text-sm rounded-full relative
+                            ${!isCurrentMonth ? 'text-gray-400' : 'text-gray-900'}
+                            ${isSelected ? 'bg-blue-500 text-white' : ''}
+                            ${inPlanRange && !isSelected ? 'bg-blue-200' : ''}
+                            ${hasExistingPlan && !isSelected && !inPlanRange ? 'bg-amber-100' : ''}
+                            ${hasExistingPlan && inPlanRange && !isSelected ? 'bg-amber-200' : ''}
+                            ${!isSelected && !inPlanRange ? 'hover:bg-gray-100' : ''}
+                          `}
+                          onClick={() => handleDateChange(day)}
+                          disabled={!isCurrentMonth}
+                        >
+                          {formatDay(day)}
+                        </button>
+                        {hasExistingPlan && isCurrentMonth && (
+                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-amber-500" 
+                            title={`Active plan: ${activePlanName}`}
+                          />
+                        )}
+                      </div>
                     );
                   })}
                 </div>
@@ -199,7 +276,7 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
             Cancel
           </Button>
           <Button onClick={handleConfirm} className="bg-green-500 hover:bg-green-600">
-            Confirm & Continue
+            {hasOverlap ? "Continue with Overlaps" : "Confirm & Continue"}
           </Button>
         </DialogFooter>
       </DialogContent>

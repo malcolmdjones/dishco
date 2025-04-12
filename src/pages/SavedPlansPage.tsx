@@ -16,6 +16,7 @@ import EmptyPlansState from '@/components/saved-plans/EmptyPlansState';
 import GroceryListConfirmationDialog from '@/components/GroceryListConfirmationDialog';
 import MealPlanDetailView from '@/components/MealPlanDetailView';
 import PlanStartDateDialog from '@/components/saved-plans/PlanStartDateDialog';
+import OverlapWarningDialog from '@/components/OverlapWarningDialog';
 
 const SavedPlansPage = () => {
   const { toast } = useToast();
@@ -56,7 +57,13 @@ const SavedPlansPage = () => {
     deletePlan,
     updatePlan,
     fetchPlans,
-    activatePlan
+    activatePlan,
+    showOverlapWarning,
+    setShowOverlapWarning,
+    forceActivatePlan,
+    cancelActivation,
+    pendingActivation,
+    getDatesWithActivePlans
   } = useSavedMealPlans();
 
   // Re-fetch plans when the page loads
@@ -159,19 +166,44 @@ const SavedPlansPage = () => {
       
       console.log(`Activating plan with start day offset: ${dayDiff}`);
       
-      // Activate the plan in the system with the calculated offset
-      activatePlan(selectedPlan, dayDiff);
+      // Attempt to activate the plan - this might show overlap warning
+      const activated = activatePlan(selectedPlan, dayDiff);
       
-      // Store the date for grocery list integration
-      const formattedDate = format(date, 'yyyy-MM-dd');
+      // If activated successfully (no overlaps), proceed with grocery list
+      if (activated) {
+        // Store the date for grocery list integration
+        const formattedDate = format(date, 'yyyy-MM-dd');
+        sessionStorage.setItem('activatePlanDate', formattedDate);
+        sessionStorage.setItem('activatePlanData', JSON.stringify(selectedPlan));
+        
+        // Prompt for grocery list addition
+        processMealPlanForGroceries(selectedPlan);
+        setShowConfirmation(true);
+      }
+    }
+  };
+  
+  const handleConfirmOverlap = () => {
+    if (pendingActivation) {
+      forceActivatePlan();
+      
+      // Store the date for grocery list integration  
+      const formattedDate = format(new Date(pendingActivation.startDate), 'yyyy-MM-dd');
       sessionStorage.setItem('activatePlanDate', formattedDate);
-      sessionStorage.setItem('activatePlanData', JSON.stringify(selectedPlan));
+      sessionStorage.setItem('activatePlanData', JSON.stringify(pendingActivation.plan));
       
       // Prompt for grocery list addition
-      processMealPlanForGroceries(selectedPlan);
+      processMealPlanForGroceries(pendingActivation.plan);
       setShowConfirmation(true);
     }
   };
+  
+  const handleOverlapDetected = (date: Date) => {
+    // This will be handled by the useSavedMealPlans hook logic
+    // The warning dialog will be shown automatically via showOverlapWarning state
+  };
+  
+  const activeDates = getDatesWithActivePlans();
   
   const renderContent = () => {
     if (isLoading) {
@@ -249,6 +281,15 @@ const SavedPlansPage = () => {
         onOpenChange={setIsStartDateDialogOpen}
         onConfirm={handleDateSelected}
         plan={selectedPlan}
+        activeDates={activeDates}
+        onOverlap={handleOverlapDetected}
+      />
+      
+      <OverlapWarningDialog
+        isOpen={showOverlapWarning}
+        onConfirm={handleConfirmOverlap}
+        onCancel={cancelActivation}
+        planName={pendingActivation?.plan.name || 'this meal plan'}
       />
       
       <GroceryListConfirmationDialog

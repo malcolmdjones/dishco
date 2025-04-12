@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { format, parseISO, startOfDay, differenceInDays, isEqual } from 'date-fns';
+import { format, parseISO, startOfDay, differenceInDays, isEqual, addDays } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -30,74 +30,90 @@ export type MealPlan = {
   user_id?: string;
 };
 
+export type ActiveMealPlan = {
+  plan: MealPlan;
+  startDay: number;
+  startDate: string; // ISO string date when the plan starts
+  endDate: string;   // ISO string date when the plan ends
+};
+
 export const useSavedMealPlans = () => {
   const [plans, setPlans] = useState<MealPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<MealPlan | null>(null);
   const [isPlanDetailOpen, setIsPlanDetailOpen] = useState(false);
-  const [activePlan, setActivePlan] = useState<{plan: MealPlan, startDay: number} | null>(null);
+  const [activePlans, setActivePlans] = useState<ActiveMealPlan[]>([]);
+  const [showOverlapWarning, setShowOverlapWarning] = useState(false);
+  const [pendingActivation, setPendingActivation] = useState<{plan: MealPlan, startDay: number, startDate: string} | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
   useEffect(() => {
-    const loadActivePlan = () => {
-      const storedActivePlan = sessionStorage.getItem('activePlan');
-      if (!storedActivePlan) return;
+    const loadActivePlans = () => {
+      const storedActivePlans = sessionStorage.getItem('activePlans');
+      if (!storedActivePlans) return;
       
       try {
-        const parsedPlan = JSON.parse(storedActivePlan);
+        const parsedPlans = JSON.parse(storedActivePlans) as ActiveMealPlan[];
         
         if (plans.length > 0) {
-          const matchingPlan = plans.find(p => p.id === parsedPlan.planId);
+          const updatedActivePlans: ActiveMealPlan[] = [];
           
-          if (matchingPlan) {
-            setActivePlan({ 
-              plan: matchingPlan, 
-              startDay: parsedPlan.startDay || 0 
-            });
-            return;
-          }
-        }
-        
-        setActivePlan({ 
-          plan: { 
-            id: parsedPlan.planId || 'active', 
-            name: parsedPlan.name || 'Active Plan', 
-            created_at: new Date().toISOString(),
-            plan_data: {
-              days: parsedPlan.days || [],
-              description: parsedPlan.description || '',
-              tags: parsedPlan.tags || []
+          for (const activePlan of parsedPlans) {
+            const matchingPlan = plans.find(p => p.id === activePlan.plan.id);
+            
+            if (matchingPlan) {
+              updatedActivePlans.push({
+                plan: matchingPlan,
+                startDay: activePlan.startDay,
+                startDate: activePlan.startDate,
+                endDate: activePlan.endDate
+              });
+            } else {
+              updatedActivePlans.push(activePlan);
             }
-          },
-          startDay: parsedPlan.startDay || 0
-        });
+          }
+          
+          setActivePlans(updatedActivePlans);
+        } else {
+          setActivePlans(parsedPlans);
+        }
       } catch (error) {
-        console.error('Error parsing active meal plan:', error);
-        sessionStorage.removeItem('activePlan');
+        console.error('Error parsing active meal plans:', error);
+        sessionStorage.removeItem('activePlans');
       }
     };
     
-    loadActivePlan();
+    loadActivePlans();
   }, []);
   
   useEffect(() => {
-    if (plans.length > 0 && activePlan && activePlan.plan.id !== 'active') {
-      const storedActivePlan = sessionStorage.getItem('activePlan');
-      if (!storedActivePlan) return;
+    if (plans.length > 0) {
+      const storedActivePlans = sessionStorage.getItem('activePlans');
+      if (!storedActivePlans) return;
       
       try {
-        const parsedPlan = JSON.parse(storedActivePlan);
-        const matchingPlan = plans.find(p => p.id === parsedPlan.planId);
+        const parsedPlans = JSON.parse(storedActivePlans) as ActiveMealPlan[];
+        const updatedActivePlans: ActiveMealPlan[] = [];
         
-        if (matchingPlan) {
-          setActivePlan({ 
-            plan: matchingPlan, 
-            startDay: parsedPlan.startDay || 0 
-          });
+        for (const activePlan of parsedPlans) {
+          const matchingPlan = plans.find(p => p.id === activePlan.plan.id);
+          
+          if (matchingPlan) {
+            updatedActivePlans.push({
+              plan: matchingPlan,
+              startDay: activePlan.startDay,
+              startDate: activePlan.startDate,
+              endDate: activePlan.endDate
+            });
+          } else {
+            updatedActivePlans.push(activePlan);
+          }
         }
+        
+        setActivePlans(updatedActivePlans);
       } catch (error) {
-        console.error('Error updating active meal plan after plans loaded:', error);
+        console.error('Error updating active meal plans after plans loaded:', error);
       }
     }
   }, [plans]);
@@ -573,32 +589,161 @@ export const useSavedMealPlans = () => {
     setIsPlanDetailOpen(true);
   };
 
-  const activatePlan = (plan: MealPlan, startDay: number = 0) => {
-    const planToStore = {
-      planId: plan.id,
-      name: plan.name,
-      startDay: startDay,
-      days: plan.plan_data.days,
-      description: plan.plan_data.description,
-      tags: plan.plan_data.tags
+  const checkPlanOverlap = (plan: MealPlan, startDate: string): boolean => {
+    if (activePlans.length === 0) return false;
+    
+    const planStartDate = new Date(startDate);
+    const planDuration = plan.plan_data.days.length;
+    const planEndDate = addDays(planStartDate, planDuration - 1);
+    
+    for (const activePlan of activePlans) {
+      const activeStartDate = new Date(activePlan.startDate);
+      const activeEndDate = new Date(activePlan.endDate);
+      
+      if (
+        (planStartDate <= activeEndDate && planStartDate >= activeStartDate) ||
+        (planEndDate <= activeEndDate && planEndDate >= activeStartDate) ||
+        (planStartDate <= activeStartDate && planEndDate >= activeEndDate)
+      ) {
+        return true;
+      }
+    }
+    
+    return false;
+  };
+
+  const getActivePlanForDate = (dateString: string): ActiveMealPlan | null => {
+    const targetDate = parseISO(dateString);
+    
+    for (const activePlan of activePlans) {
+      const startDate = parseISO(activePlan.startDate);
+      const endDate = parseISO(activePlan.endDate);
+      
+      if (targetDate >= startDate && targetDate <= endDate) {
+        return activePlan;
+      }
+    }
+    
+    return null;
+  };
+
+  const calculatePlanDates = (plan: MealPlan, startDay: number): {startDate: string, endDate: string} => {
+    const today = new Date();
+    const startDate = new Date();
+    
+    if (startDay > 0) {
+      startDate.setDate(startDate.getDate() - startDay);
+    } else if (startDay < 0) {
+      startDate.setDate(startDate.getDate() + Math.abs(startDay));
+    }
+    
+    const endDate = addDays(startDate, plan.plan_data.days.length - 1);
+    
+    return {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString()
+    };
+  };
+
+  const activatePlan = (plan: MealPlan, startDay: number = 0, force: boolean = false) => {
+    const { startDate, endDate } = calculatePlanDates(plan, startDay);
+    
+    if (!force && checkPlanOverlap(plan, startDate)) {
+      setPendingActivation({ plan, startDay, startDate });
+      setShowOverlapWarning(true);
+      return false;
+    }
+    
+    const newActivePlan: ActiveMealPlan = {
+      plan,
+      startDay,
+      startDate,
+      endDate
     };
     
-    sessionStorage.setItem('activePlan', JSON.stringify(planToStore));
-    setActivePlan({ plan, startDay });
+    const updatedActivePlans = [...activePlans, newActivePlan];
+    setActivePlans(updatedActivePlans);
+    
+    sessionStorage.setItem('activePlans', JSON.stringify(updatedActivePlans));
     
     toast({
       title: "Plan Activated",
-      description: "This meal plan is now your active plan.",
+      description: `${plan.name} is now active from ${format(parseISO(startDate), 'MMM d')} to ${format(parseISO(endDate), 'MMM d')}.`,
     });
+    
+    return true;
   };
 
-  const deactivatePlan = () => {
-    sessionStorage.removeItem('activePlan');
-    setActivePlan(null);
+  const forceActivatePlan = () => {
+    if (!pendingActivation) return;
+    
+    const { plan, startDay, startDate } = pendingActivation;
+    const { endDate } = calculatePlanDates(plan, startDay);
+    
+    const updatedActivePlans = activePlans.filter(activePlan => {
+      const activeStartDate = new Date(activePlan.startDate);
+      const activeEndDate = new Date(activePlan.endDate);
+      const newStartDate = new Date(startDate);
+      const newEndDate = new Date(endDate);
+      
+      return !(
+        (newStartDate <= activeEndDate && newStartDate >= activeStartDate) ||
+        (newEndDate <= activeEndDate && newEndDate >= activeStartDate) ||
+        (newStartDate <= activeStartDate && newEndDate >= activeEndDate)
+      );
+    });
+    
+    const newActivePlan: ActiveMealPlan = {
+      plan,
+      startDay,
+      startDate,
+      endDate
+    };
+    
+    updatedActivePlans.push(newActivePlan);
+    setActivePlans(updatedActivePlans);
+    
+    sessionStorage.setItem('activePlans', JSON.stringify(updatedActivePlans));
+    
+    setPendingActivation(null);
+    setShowOverlapWarning(false);
+    
+    toast({
+      title: "Plan Activated",
+      description: `${plan.name} is now active from ${format(parseISO(startDate), 'MMM d')} to ${format(parseISO(endDate), 'MMM d')}.`,
+    });
+    
+    return true;
+  };
+
+  const cancelActivation = () => {
+    setPendingActivation(null);
+    setShowOverlapWarning(false);
+  };
+
+  const deactivatePlan = (planId: string) => {
+    const updatedActivePlans = activePlans.filter(ap => ap.plan.id !== planId);
+    setActivePlans(updatedActivePlans);
+    
+    if (updatedActivePlans.length === 0) {
+      sessionStorage.removeItem('activePlans');
+    } else {
+      sessionStorage.setItem('activePlans', JSON.stringify(updatedActivePlans));
+    }
     
     toast({
       title: "Plan Deactivated",
-      description: "You no longer have an active meal plan.",
+      description: "The meal plan has been deactivated.",
+    });
+  };
+
+  const deactivateAllPlans = () => {
+    setActivePlans([]);
+    sessionStorage.removeItem('activePlans');
+    
+    toast({
+      title: "All Plans Deactivated",
+      description: "You no longer have any active meal plans.",
     });
   };
 
@@ -641,50 +786,71 @@ export const useSavedMealPlans = () => {
   };
 
   const getMealsForDate = (dateString: string) => {
-    if (!activePlan || !activePlan.plan.plan_data.days || activePlan.plan.plan_data.days.length === 0) {
+    if (activePlans.length === 0) {
       return null;
     }
     
     const targetDate = parseISO(dateString);
-    const today = new Date();
-    const startDate = new Date();
     
-    if (activePlan.startDay > 0) {
-      startDate.setDate(startDate.getDate() - activePlan.startDay);
-    } else if (activePlan.startDay < 0) {
-      startDate.setDate(startDate.getDate() + Math.abs(activePlan.startDay));
-    }
-    
-    const targetDayStart = startOfDay(targetDate);
-    const startDayStart = startOfDay(startDate);
-    
-    const dayDiff = differenceInDays(targetDayStart, startDayStart);
-    
-    console.log('Target date:', dateString);
-    console.log('Start date:', format(startDayStart, 'yyyy-MM-dd'));
-    console.log('Day difference:', dayDiff);
-    console.log('Plan days length:', activePlan.plan.plan_data.days.length);
-    
-    if (dayDiff >= 0 && dayDiff < activePlan.plan.plan_data.days.length) {
-      console.log(`Found meals for day ${dayDiff}:`, activePlan.plan.plan_data.days[dayDiff].meals);
+    for (const activePlan of activePlans) {
+      const startDate = parseISO(activePlan.startDate);
+      const endDate = parseISO(activePlan.endDate);
       
-      const storedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
-      const loggedMealsForDate = storedMeals.filter(meal => {
-        if (!meal.loggedAt) return false;
-        const mealDate = startOfDay(parseISO(meal.loggedAt));
-        return isEqual(mealDate, targetDayStart);
-      });
-      
-      if (loggedMealsForDate.length > 0) {
-        console.log('Found manually logged meals for this date, prioritizing them');
-        return activePlan.plan.plan_data.days[dayDiff].meals;
+      if (targetDate >= startDate && targetDate <= endDate) {
+        console.log('Found active plan for date:', dateString);
+        
+        const startDayStart = startOfDay(startDate);
+        const targetDayStart = startOfDay(targetDate);
+        
+        const dayDiff = differenceInDays(targetDayStart, startDayStart);
+        
+        console.log('Day difference:', dayDiff);
+        console.log('Plan days length:', activePlan.plan.plan_data.days.length);
+        
+        if (dayDiff >= 0 && dayDiff < activePlan.plan.plan_data.days.length) {
+          console.log(`Found meals for day ${dayDiff}:`, activePlan.plan.plan_data.days[dayDiff].meals);
+          
+          const storedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
+          const loggedMealsForDate = storedMeals.filter(meal => {
+            if (!meal.loggedAt) return false;
+            const mealDate = startOfDay(parseISO(meal.loggedAt));
+            return isEqual(mealDate, targetDayStart);
+          });
+          
+          if (loggedMealsForDate.length > 0) {
+            console.log('Found manually logged meals for this date, prioritizing them');
+          }
+          
+          return activePlan.plan.plan_data.days[dayDiff].meals;
+        }
       }
-      
-      return activePlan.plan.plan_data.days[dayDiff].meals;
     }
     
     console.log('No meals found for this date');
     return null;
+  };
+
+  const dateHasActivePlan = (date: Date): boolean => {
+    const dateString = date.toISOString();
+    return getActivePlanForDate(dateString) !== null;
+  };
+
+  const getDatesWithActivePlans = (): {[key: string]: string} => {
+    const result: {[key: string]: string} = {};
+    
+    activePlans.forEach(activePlan => {
+      const startDate = parseISO(activePlan.startDate);
+      const endDate = parseISO(activePlan.endDate);
+      let currentDate = startDate;
+      
+      while (currentDate <= endDate) {
+        const dateKey = format(currentDate, 'yyyy-MM-dd');
+        result[dateKey] = activePlan.plan.name;
+        currentDate = addDays(currentDate, 1);
+      }
+    });
+    
+    return result;
   };
 
   useEffect(() => {
@@ -698,15 +864,24 @@ export const useSavedMealPlans = () => {
     setSelectedPlan,
     isPlanDetailOpen,
     setIsPlanDetailOpen,
+    activePlans,
+    showOverlapWarning,
+    setShowOverlapWarning,
+    pendingActivation,
     fetchPlans,
     deletePlan,
     updatePlan,
     viewPlanDetails,
-    activePlan,
     activatePlan,
+    forceActivatePlan,
+    cancelActivation,
     deactivatePlan,
+    deactivateAllPlans,
     copyAndEditPlan,
     getMealsForDate,
+    dateHasActivePlan,
+    getDatesWithActivePlans,
+    getActivePlanForDate,
     saveMealPlan
   };
 };
