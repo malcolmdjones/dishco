@@ -153,7 +153,7 @@ const SavedPlansPage = () => {
       today.setHours(0, 0, 0, 0);
       date.setHours(0, 0, 0, 0);
       
-      const dayDiff = Math.round((date.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+      const dayDiff = Math.round((today.getTime() - date.getTime()) / (24 * 60 * 60 * 1000));
       
       console.log(`Activating plan with start day offset: ${dayDiff}`);
       
@@ -177,7 +177,7 @@ const SavedPlansPage = () => {
       today.setHours(0, 0, 0, 0);
       date.setHours(0, 0, 0, 0);
       
-      const dayDiff = Math.round((date.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+      const dayDiff = Math.round((today.getTime() - date.getTime()) / (24 * 60 * 60 * 1000));
       
       console.log(`Setting up pending activation with start day offset: ${dayDiff}`);
       

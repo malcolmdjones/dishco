@@ -44,11 +44,13 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlans, getMealsFo
 
   // Load meals for each of the next 7 days
   const daysToShow = next7Days.map(date => {
+    // Format date to yyyy-MM-dd for consistent lookup
     const formattedDate = format(date, 'yyyy-MM-dd');
     const planMeals = getMealsForDate(formattedDate);
     
     return {
       date,
+      formattedDate,
       planData: planMeals ? { meals: planMeals } : null
     };
   });
@@ -57,10 +59,13 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlans, getMealsFo
   const getActivePlanForDate = (date: Date): ActiveMealPlan | null => {
     if (!activePlans) return null;
     
+    const formattedDate = format(date, 'yyyy-MM-dd');
+    
     for (const plan of activePlans) {
       const startDate = parseISO(plan.startDate);
       const endDate = parseISO(plan.endDate);
       
+      // Use normalized date comparison for accuracy
       if (date >= startDate && date <= endDate) {
         return plan;
       }

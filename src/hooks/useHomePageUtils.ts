@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { format, addDays, subDays, isToday, isEqual, parseISO, startOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -37,6 +38,7 @@ export const useHomePageUtils = () => {
 
   useEffect(() => {
     const loadMealsForSelectedDate = () => {
+      // Get manually logged meals from localStorage
       const storedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
       
       const selectedDateStart = startOfDay(selectedDate);
@@ -46,123 +48,122 @@ export const useHomePageUtils = () => {
         return isEqual(mealDate, selectedDateStart);
       });
       
+      // Format date to yyyy-MM-dd for consistent lookup
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
       console.log('HomePage - Loading meals for date:', formattedDate);
       
+      // Get planned meals for the date from active meal plans
       const planMeals = getMealsForDate(formattedDate);
       console.log('HomePage - Plan meals retrieved:', planMeals);
       
       const plannedMealArray: Meal[] = [];
       
+      // Process plan meals if they exist
       if (planMeals) {
-        const processBreakfast = () => {
-          if (planMeals.breakfast) {
-            const breakfastRecipe = Array.isArray(planMeals.breakfast) 
-              ? planMeals.breakfast[0] 
-              : planMeals.breakfast;
-              
-            if (breakfastRecipe) {
-              const existingBreakfast = filteredMeals.find((meal: Meal) => 
-                meal.type === 'breakfast' && meal.recipe?.id === breakfastRecipe.id
+        // Process breakfast meal
+        if (planMeals.breakfast) {
+          const breakfastRecipe = Array.isArray(planMeals.breakfast) 
+            ? planMeals.breakfast[0] 
+            : planMeals.breakfast;
+            
+          if (breakfastRecipe) {
+            // Check if this meal is already logged
+            const existingBreakfast = filteredMeals.find((meal: Meal) => 
+              meal.type === 'breakfast' && meal.recipe?.id === breakfastRecipe.id
+            );
+            
+            if (!existingBreakfast) {
+              plannedMealArray.push({
+                id: `breakfast-planned-${formattedDate}`,
+                name: breakfastRecipe.name || 'Breakfast',
+                type: 'breakfast',
+                recipe: breakfastRecipe,
+                consumed: false,
+                loggedAt: formattedDate,
+                planned: true
+              });
+            }
+          }
+        }
+        
+        // Process lunch meal
+        if (planMeals.lunch) {
+          const lunchRecipe = Array.isArray(planMeals.lunch) 
+            ? planMeals.lunch[0] 
+            : planMeals.lunch;
+            
+          if (lunchRecipe) {
+            // Check if this meal is already logged
+            const existingLunch = filteredMeals.find((meal: Meal) => 
+              meal.type === 'lunch' && meal.recipe?.id === lunchRecipe.id
+            );
+            
+            if (!existingLunch) {
+              plannedMealArray.push({
+                id: `lunch-planned-${formattedDate}`,
+                name: lunchRecipe.name || 'Lunch',
+                type: 'lunch',
+                recipe: lunchRecipe,
+                consumed: false,
+                loggedAt: formattedDate,
+                planned: true
+              });
+            }
+          }
+        }
+        
+        // Process dinner meal
+        if (planMeals.dinner) {
+          const dinnerRecipe = Array.isArray(planMeals.dinner) 
+            ? planMeals.dinner[0] 
+            : planMeals.dinner;
+            
+          if (dinnerRecipe) {
+            // Check if this meal is already logged
+            const existingDinner = filteredMeals.find((meal: Meal) => 
+              meal.type === 'dinner' && meal.recipe?.id === dinnerRecipe.id
+            );
+            
+            if (!existingDinner) {
+              plannedMealArray.push({
+                id: `dinner-planned-${formattedDate}`,
+                name: dinnerRecipe.name || 'Dinner',
+                type: 'dinner',
+                recipe: dinnerRecipe,
+                consumed: false,
+                loggedAt: formattedDate,
+                planned: true
+              });
+            }
+          }
+        }
+        
+        // Process snacks
+        if (planMeals.snacks && Array.isArray(planMeals.snacks) && planMeals.snacks.length > 0) {
+          planMeals.snacks.forEach((snack, index) => {
+            if (snack) {
+              // Check if this snack is already logged
+              const existingSnack = filteredMeals.find((meal: Meal) => 
+                meal.type === 'snack' && meal.recipe?.id === snack.id
               );
               
-              if (!existingBreakfast) {
+              if (!existingSnack) {
                 plannedMealArray.push({
-                  id: `breakfast-planned-${formattedDate}`,
-                  name: breakfastRecipe.name || 'Breakfast',
-                  type: 'breakfast',
-                  recipe: breakfastRecipe,
+                  id: `snack-planned-${index}-${formattedDate}`,
+                  name: snack.name || `Snack ${index + 1}`,
+                  type: 'snack',
+                  recipe: snack,
                   consumed: false,
                   loggedAt: formattedDate,
                   planned: true
                 });
               }
             }
-          }
-        };
-        
-        const processLunch = () => {
-          if (planMeals.lunch) {
-            const lunchRecipe = Array.isArray(planMeals.lunch) 
-              ? planMeals.lunch[0] 
-              : planMeals.lunch;
-              
-            if (lunchRecipe) {
-              const existingLunch = filteredMeals.find((meal: Meal) => 
-                meal.type === 'lunch' && meal.recipe?.id === lunchRecipe.id
-              );
-              
-              if (!existingLunch) {
-                plannedMealArray.push({
-                  id: `lunch-planned-${formattedDate}`,
-                  name: lunchRecipe.name || 'Lunch',
-                  type: 'lunch',
-                  recipe: lunchRecipe,
-                  consumed: false,
-                  loggedAt: formattedDate,
-                  planned: true
-                });
-              }
-            }
-          }
-        };
-        
-        const processDinner = () => {
-          if (planMeals.dinner) {
-            const dinnerRecipe = Array.isArray(planMeals.dinner) 
-              ? planMeals.dinner[0] 
-              : planMeals.dinner;
-              
-            if (dinnerRecipe) {
-              const existingDinner = filteredMeals.find((meal: Meal) => 
-                meal.type === 'dinner' && meal.recipe?.id === dinnerRecipe.id
-              );
-              
-              if (!existingDinner) {
-                plannedMealArray.push({
-                  id: `dinner-planned-${formattedDate}`,
-                  name: dinnerRecipe.name || 'Dinner',
-                  type: 'dinner',
-                  recipe: dinnerRecipe,
-                  consumed: false,
-                  loggedAt: formattedDate,
-                  planned: true
-                });
-              }
-            }
-          }
-        };
-        
-        const processSnacks = () => {
-          if (planMeals.snacks && Array.isArray(planMeals.snacks) && planMeals.snacks.length > 0) {
-            planMeals.snacks.forEach((snack, index) => {
-              if (snack) {
-                const existingSnack = filteredMeals.find((meal: Meal) => 
-                  meal.type === 'snack' && meal.recipe?.id === snack.id
-                );
-                
-                if (!existingSnack) {
-                  plannedMealArray.push({
-                    id: `snack-planned-${index}-${formattedDate}`,
-                    name: snack.name || `Snack ${index + 1}`,
-                    type: 'snack',
-                    recipe: snack,
-                    consumed: false,
-                    loggedAt: formattedDate,
-                    planned: true
-                  });
-                }
-              }
-            });
-          }
-        };
-        
-        processBreakfast();
-        processLunch();
-        processDinner();
-        processSnacks();
+          });
+        }
       }
       
+      // Update planned meals with consumed status from manually logged meals
       const updatedPlannedMeals = plannedMealArray.map(plannedMeal => {
         const matchingLoggedMeal = filteredMeals.find((loggedMeal: Meal) => 
           loggedMeal.recipe?.id === plannedMeal.recipe?.id && 
@@ -172,6 +173,7 @@ export const useHomePageUtils = () => {
         return matchingLoggedMeal ? { ...plannedMeal, consumed: true } : plannedMeal;
       });
       
+      // Filter out manually logged meals that would duplicate planned meals
       const uniqueLoggedMeals = filteredMeals.filter((loggedMeal: Meal) => 
         !updatedPlannedMeals.some(plannedMeal => 
           plannedMeal.recipe?.id === loggedMeal.recipe?.id && 
@@ -182,6 +184,7 @@ export const useHomePageUtils = () => {
       console.log('HomePage - Setting today\'s meals:', [...uniqueLoggedMeals, ...updatedPlannedMeals]);
       setTodaysMeals([...uniqueLoggedMeals, ...updatedPlannedMeals]);
       
+      // Calculate nutrition only from consumed meals
       calculateNutritionForDate([...uniqueLoggedMeals, ...updatedPlannedMeals.filter(meal => meal.consumed)]);
     };
     

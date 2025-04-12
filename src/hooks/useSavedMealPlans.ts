@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { format, parseISO, startOfDay, differenceInDays, isEqual, addDays } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -638,9 +639,14 @@ export const useSavedMealPlans = () => {
     const today = new Date();
     const startDate = new Date();
     
+    // Important: Set hours, minutes, seconds to zero for consistent date comparison
+    startDate.setHours(0, 0, 0, 0);
+    
     if (startDay > 0) {
+      // If startDay is positive, we're looking at previous days (e.g., yesterday = 1)
       startDate.setDate(startDate.getDate() - startDay);
     } else if (startDay < 0) {
+      // If startDay is negative, we're looking at future days (e.g., tomorrow = -1)
       startDate.setDate(startDate.getDate() + Math.abs(startDay));
     }
     
@@ -653,6 +659,7 @@ export const useSavedMealPlans = () => {
   };
 
   const activatePlan = (plan: MealPlan, startDay: number = 0, force: boolean = false) => {
+    // Fix the date handling for the start date
     const { startDate, endDate } = calculatePlanDates(plan, startDay);
     
     if (!force && checkPlanOverlap(plan, startDate)) {
@@ -668,9 +675,13 @@ export const useSavedMealPlans = () => {
       endDate
     };
     
+    // Include today's date in the plan by ensuring startDay is 0 when selecting today
+    console.log(`Activating plan from ${startDate} to ${endDate} with startDay ${startDay}`);
+    
     const updatedActivePlans = [...activePlans, newActivePlan];
     setActivePlans(updatedActivePlans);
     
+    // Save to session storage
     sessionStorage.setItem('activePlans', JSON.stringify(updatedActivePlans));
     
     toast({
@@ -826,11 +837,13 @@ export const useSavedMealPlans = () => {
       const startDate = parseISO(activePlan.startDate);
       const endDate = parseISO(activePlan.endDate);
       
-      if (targetDate >= startDate && targetDate <= endDate) {
+      // Normalize dates to start of day for consistent comparison
+      const startDayStart = startOfDay(startDate);
+      const targetDayStart = startOfDay(targetDate);
+      const endDayStart = startOfDay(endDate);
+      
+      if (targetDayStart >= startDayStart && targetDayStart <= endDayStart) {
         console.log('Found active plan for date:', dateString);
-        
-        const startDayStart = startOfDay(startDate);
-        const targetDayStart = startOfDay(targetDate);
         
         const dayDiff = differenceInDays(targetDayStart, startDayStart);
         
