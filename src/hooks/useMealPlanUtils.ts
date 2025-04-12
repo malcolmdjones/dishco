@@ -3,6 +3,7 @@ import { useMealPlanState } from './meal-plan/useMealPlanState';
 import { useMealGeneration } from './meal-plan/useMealGeneration';
 import { useMealManagement } from './meal-plan/useMealManagement';
 import { useNutritionCalculations } from './meal-plan/useNutritionCalculations';
+import { useEffect } from 'react';
 
 /**
  * Main hook that combines all meal plan functionality
@@ -51,6 +52,13 @@ export const useMealPlanUtils = () => {
     currentDay,
     userGoals
   });
+
+  // Generate meal plan automatically if preferences are provided and plan is empty
+  useEffect(() => {
+    if (preferences && Object.keys(preferences).length > 1 && (!mealPlan || mealPlan.length === 0)) {
+      generateFullMealPlan();
+    }
+  }, [preferences, mealPlan, generateFullMealPlan]);
 
   return {
     currentDate,

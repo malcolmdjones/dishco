@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -11,9 +11,12 @@ import { useMealPlanUtils } from '@/hooks/useMealPlanUtils';
 import CreateMealPlanContent from '@/components/meal-plan/CreateMealPlanContent';
 import RecipeVaultDialog from '@/components/meal-plan/RecipeVaultDialog';
 import WeekOverviewDialog from '@/components/meal-plan/WeekOverviewDialog';
+import { useToast } from '@/hooks/use-toast';
 
 const CreateMealPlanPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { toast } = useToast();
   const [isVaultOpen, setIsVaultOpen] = useState(false);
   const [isWeekOverviewOpen, setIsWeekOverviewOpen] = useState(false);
   const [currentVaultMealType, setCurrentVaultMealType] = useState('');
@@ -35,6 +38,16 @@ const CreateMealPlanPage = () => {
     preferences
   } = useMealPlanUtils();
 
+  // Show loading toast when generating initially
+  useEffect(() => {
+    if (location.state?.preferences && !aiReasoning) {
+      toast({
+        title: "Generating your meal plan",
+        description: "Please wait while we create your personalized meal plan...",
+      });
+    }
+  }, [location.state, aiReasoning, toast]);
+
   const handleOpenVault = (mealType: string, index?: number) => {
     setCurrentVaultMealType(mealType);
     setCurrentVaultIndex(index);
@@ -49,6 +62,11 @@ const CreateMealPlanPage = () => {
   };
 
   const handleRegenerate = () => {
+    toast({
+      title: "Regenerating meals",
+      description: "Updating your meal plan with new recipes...",
+    });
+    
     if (mealPlan && mealPlan.length > 0) {
       regenerateMeals();
     }

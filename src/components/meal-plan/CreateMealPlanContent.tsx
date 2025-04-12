@@ -6,6 +6,7 @@ import DailyNutritionCard from '@/components/meal-plan/DailyNutritionCard';
 import BottomActionBar from '@/components/meal-plan/BottomActionBar';
 import MealSections from '@/components/meal-plan/meal-sections/MealSections';
 import SavePlanDialog from '@/components/SavePlanDialog';
+import { Loader2 } from 'lucide-react';
 
 interface CreateMealPlanContentProps {
   currentDay: number;
@@ -45,6 +46,18 @@ const CreateMealPlanContent: React.FC<CreateMealPlanContentProps> = ({
   
   // State for save dialog
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+
+  if (isGenerating || !currentDayData) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
+        <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Creating your meal plan</h2>
+        <p className="text-center text-muted-foreground max-w-md">
+          We're generating a personalized meal plan based on your preferences and nutrition goals. This will just take a moment...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="pb-24 px-4 animate-fade-in">

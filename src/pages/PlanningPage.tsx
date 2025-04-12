@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Search } from 'lucide-react';
+import { ArrowRight, Search, CalendarPlus } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useRecipes } from '@/hooks/useRecipes';
@@ -47,6 +47,21 @@ const PlanningPage = () => {
           <WeeklyOverview activePlan={activePlan} />
 
           <Button 
+            className="w-full py-6 text-lg font-medium bg-green-600 hover:bg-green-700"
+            onClick={handleGeneratePlan}
+          >
+            <CalendarPlus className="mr-2" />
+            Generate Meal Plan
+          </Button>
+
+          <div className="flex items-center my-4">
+            <div className="flex-grow border-t border-gray-200"></div>
+            <span className="mx-2 text-sm text-gray-500">or</span>
+            <div className="flex-grow border-t border-gray-200"></div>
+          </div>
+
+          <Button 
+            variant="outline"
             className="w-full py-6 text-lg font-medium"
             onClick={() => navigate('/saved-plans')}
           >

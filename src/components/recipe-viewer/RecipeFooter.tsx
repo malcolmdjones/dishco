@@ -29,8 +29,8 @@ const RecipeFooter: React.FC<RecipeFooterProps> = ({
           onClick={onToggleConsumed}
         >
           {isConsumed ? (
-            <span className="flex items-center">
-              Consumed <Check className="ml-2" size={16} />
+            <span className="flex items-center gap-1">
+              Consumed <Check className="w-4 h-4" />
             </span>
           ) : (
             "Mark as consumed"
