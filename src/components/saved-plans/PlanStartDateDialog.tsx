@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -110,8 +111,6 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
     return weeks;
   };
   
-  const weeks = generateCalendar(currentMonth);
-  
   const isDateInPlanRange = (date: Date) => {
     if (!selectedDate) return false;
     
@@ -160,7 +159,7 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
           </div>
           
           {hasOverlap && (
-            <Alert variant="destructive" className="mb-4 border-amber-600 bg-amber-50">
+            <Alert variant="default" className="mb-4 border-amber-600 bg-amber-50">
               <AlertTriangle className="h-4 w-4 text-amber-600" />
               <AlertTitle className="text-amber-600">Date Overlap Detected</AlertTitle>
               <AlertDescription className="text-amber-700 text-sm">
