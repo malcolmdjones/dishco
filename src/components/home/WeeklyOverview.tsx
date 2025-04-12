@@ -75,6 +75,7 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlan }) => {
           const formattedDate = format(dayDate, 'EEE, MMM d');
           const isTodayDate = isToday(dayDate);
           
+          // Safely access meals with null checks
           const meals = day.meals || { breakfast: null, lunch: null, dinner: null, snacks: [] };
           
           // Calculate total calories with null checks
