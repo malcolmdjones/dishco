@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { format, parseISO, startOfDay, differenceInDays } from 'date-fns';
+import { format, parseISO, startOfDay, differenceInDays, isEqual } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
