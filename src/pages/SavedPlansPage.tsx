@@ -186,6 +186,7 @@ const SavedPlansPage = () => {
   const handleConfirmOverlap = () => {
     console.log("Confirming overlap with pendingActivation:", pendingActivation);
     if (pendingActivation) {
+      console.log("Attempting to force activate plan:", pendingActivation.plan.name);
       const success = forceActivatePlan();
       console.log("Force activate result:", success);
       
@@ -198,6 +199,13 @@ const SavedPlansPage = () => {
         // Prompt for grocery list addition
         processMealPlanForGroceries(pendingActivation.plan);
         setShowConfirmation(true);
+      } else {
+        console.error("Failed to force activate the meal plan");
+        toast({
+          title: "Error",
+          description: "Failed to activate the meal plan. Please try again.",
+          variant: "destructive"
+        });
       }
     } else {
       console.error("No pending activation found when confirming overlap");

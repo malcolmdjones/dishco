@@ -54,9 +54,7 @@ const OverlapWarningDialog: React.FC<OverlapWarningDialogProps> = ({
           </Button>
           <Button 
             variant="destructive" 
-            onClick={() => {
-              onConfirm();
-            }}
+            onClick={onConfirm}
           >
             Replace Existing Plan
           </Button>

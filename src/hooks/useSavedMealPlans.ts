@@ -682,45 +682,60 @@ export const useSavedMealPlans = () => {
   };
 
   const forceActivatePlan = () => {
-    if (!pendingActivation) return false;
+    if (!pendingActivation) {
+      console.error("No pending activation found when trying to force activate");
+      return false;
+    }
     
-    const { plan, startDay, startDate } = pendingActivation;
-    const { endDate } = calculatePlanDates(plan, startDay);
-    
-    const updatedActivePlans = activePlans.filter(activePlan => {
-      const activeStartDate = new Date(activePlan.startDate);
-      const activeEndDate = new Date(activePlan.endDate);
-      const newStartDate = new Date(startDate);
-      const newEndDate = new Date(endDate);
+    try {
+      console.log("Force activating plan:", pendingActivation.plan.name);
       
-      return !(
-        (newStartDate <= activeEndDate && newStartDate >= activeStartDate) ||
-        (newEndDate <= activeEndDate && newEndDate >= activeStartDate) ||
-        (newStartDate <= activeStartDate && newEndDate >= activeEndDate)
-      );
-    });
-    
-    const newActivePlan: ActiveMealPlan = {
-      plan,
-      startDay,
-      startDate,
-      endDate
-    };
-    
-    updatedActivePlans.push(newActivePlan);
-    setActivePlans(updatedActivePlans);
-    
-    sessionStorage.setItem('activePlans', JSON.stringify(updatedActivePlans));
-    
-    setPendingActivation(null);
-    setShowOverlapWarning(false);
-    
-    toast({
-      title: "Plan Activated",
-      description: `${plan.name} is now active from ${format(parseISO(startDate), 'MMM d')} to ${format(parseISO(endDate), 'MMM d')}.`,
-    });
-    
-    return true;
+      const { plan, startDay, startDate } = pendingActivation;
+      const { endDate } = calculatePlanDates(plan, startDay);
+      
+      const updatedActivePlans = activePlans.filter(activePlan => {
+        const activeStartDate = new Date(activePlan.startDate);
+        const activeEndDate = new Date(activePlan.endDate);
+        const newStartDate = new Date(startDate);
+        const newEndDate = new Date(endDate);
+        
+        const hasOverlap = (
+          (newStartDate <= activeEndDate && newStartDate >= activeStartDate) ||
+          (newEndDate <= activeEndDate && newEndDate >= activeStartDate) ||
+          (newStartDate <= activeStartDate && newEndDate >= activeEndDate)
+        );
+        
+        return !hasOverlap;
+      });
+      
+      const newActivePlan: ActiveMealPlan = {
+        plan,
+        startDay,
+        startDate,
+        endDate
+      };
+      
+      updatedActivePlans.push(newActivePlan);
+      setActivePlans(updatedActivePlans);
+      
+      sessionStorage.setItem('activePlans', JSON.stringify(updatedActivePlans));
+      
+      setPendingActivation(null);
+      setShowOverlapWarning(false);
+      
+      toast({
+        title: "Plan Activated",
+        description: `${plan.name} is now active from ${format(parseISO(startDate), 'MMM d')} to ${format(parseISO(endDate), 'MMM d')}.`,
+      });
+      
+      console.log("Plan successfully activated");
+      return true;
+    } catch (error) {
+      console.error("Error in forceActivatePlan:", error);
+      setPendingActivation(null);
+      setShowOverlapWarning(false);
+      return false;
+    }
   };
 
   const cancelActivation = () => {
