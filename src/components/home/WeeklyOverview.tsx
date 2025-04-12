@@ -69,6 +69,17 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlans, getMealsFo
     return null;
   };
 
+  // Helper function to safely extract meal name
+  const getMealName = (meal: any): string | null => {
+    if (!meal) return null;
+    
+    if (Array.isArray(meal) && meal.length > 0) {
+      return meal[0]?.name || null;
+    }
+    
+    return meal.name || null;
+  };
+
   return (
     <div className="bg-white rounded-xl p-4 shadow-sm animate-slide-up">
       <div className="flex items-center justify-between mb-4">
@@ -120,11 +131,12 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlans, getMealsFo
           // Safely access meals with null checks
           const meals = dayInfo.planData.meals || { breakfast: null, lunch: null, dinner: null, snacks: [] };
           
-          // Get actual recipe names
-          const breakfastName = meals.breakfast?.name;
-          const lunchName = meals.lunch?.name;
-          const dinnerName = meals.dinner?.name;
-          const snacksCount = Array.isArray(meals.snacks) ? meals.snacks.length : 0;
+          // Get actual recipe names with improved safety checks
+          const breakfastName = getMealName(meals.breakfast);
+          const lunchName = getMealName(meals.lunch);
+          const dinnerName = getMealName(meals.dinner);
+          const snacks = Array.isArray(meals.snacks) ? meals.snacks : [];
+          const snacksCount = snacks.length;
 
           return (
             <Card key={index} className={`${isTodayDate ? 'border-green-300 bg-green-50' : ''}`}>
@@ -148,33 +160,33 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlans, getMealsFo
                 </div>
                 
                 <div className="grid grid-cols-2 gap-1 text-xs">
-                  {breakfastName ? (
+                  {breakfastName && (
                     <div className="flex items-center">
                       <span className="bg-blue-100 w-2 h-2 rounded-full mr-1"></span>
                       <span className="truncate">{breakfastName}</span>
                     </div>
-                  ) : null}
+                  )}
                   
-                  {lunchName ? (
+                  {lunchName && (
                     <div className="flex items-center">
                       <span className="bg-green-100 w-2 h-2 rounded-full mr-1"></span>
                       <span className="truncate">{lunchName}</span>
                     </div>
-                  ) : null}
+                  )}
                   
-                  {dinnerName ? (
+                  {dinnerName && (
                     <div className="flex items-center">
                       <span className="bg-purple-100 w-2 h-2 rounded-full mr-1"></span>
                       <span className="truncate">{dinnerName}</span>
                     </div>
-                  ) : null}
+                  )}
                   
                   {snacksCount > 0 && (
                     <div className="flex items-center">
                       <span className="bg-yellow-100 w-2 h-2 rounded-full mr-1"></span>
                       <span className="truncate">
-                        {snacksCount === 1 
-                          ? meals.snacks[0].name 
+                        {snacksCount === 1 && snacks[0]?.name 
+                          ? snacks[0].name 
                           : `${snacksCount} snack(s)`}
                       </span>
                     </div>

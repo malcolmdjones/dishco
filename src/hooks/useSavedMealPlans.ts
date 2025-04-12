@@ -682,7 +682,7 @@ export const useSavedMealPlans = () => {
   };
 
   const forceActivatePlan = () => {
-    if (!pendingActivation) return;
+    if (!pendingActivation) return false;
     
     const { plan, startDay, startDate } = pendingActivation;
     const { endDate } = calculatePlanDates(plan, startDay);
@@ -794,6 +794,7 @@ export const useSavedMealPlans = () => {
 
   const getMealsForDate = (dateString: string) => {
     if (activePlans.length === 0) {
+      console.log('No active plans to get meals from');
       return null;
     }
     
