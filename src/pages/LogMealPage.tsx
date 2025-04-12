@@ -1,25 +1,58 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, Info, Globe, UtensilsCrossed } from 'lucide-react';
+import { X, Search, Plus, Mic, BarcodeScan, ArrowDown, Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useRecipes } from '@/hooks/useRecipes';
 import { Recipe } from '@/data/mockData';
 import FoodSearchModal from '@/components/food-database/FoodSearchModal';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import RecentMealHistory from '@/components/food-database/RecentMealHistory';
+import { cn } from '@/lib/utils';
 
 const LogMealPage = () => {
   const { toast } = useToast();
   const { recipes, loading } = useRecipes();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedTab, setSelectedTab] = useState('all');
   const [isExternalSearchOpen, setIsExternalSearchOpen] = useState(false);
+  const [recentMeals, setRecentMeals] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Fetch recent meals from localStorage on component mount
+  useEffect(() => {
+    const loggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
+    setRecentMeals(loggedMeals.slice(0, 10).reverse()); // Get last 10 meals, most recent first
+  }, []);
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+  };
+
+  const handleSearchFocus = () => {
+    setShowSuggestions(true);
+  };
+
+  const handleSearchBlur = () => {
+    // Small delay to allow click events on suggestions to fire
+    setTimeout(() => setShowSuggestions(false), 200);
+  };
 
   const filteredRecipes = recipes.filter(recipe => {
-    const matchesSearch = recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          recipe.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || recipe.type === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesSearch = searchQuery ? 
+      recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      recipe.description.toLowerCase().includes(searchQuery.toLowerCase())
+      : true;
+      
+    const matchesTab = 
+      selectedTab === 'all' || 
+      (selectedTab === 'meals' && ['breakfast', 'lunch', 'dinner'].includes(recipe.type)) ||
+      (selectedTab === 'recipes' && recipe.ingredients?.length > 0) ||
+      (selectedTab === 'myFoods' && recipe.type === 'snack');
+      
+    return matchesSearch && matchesTab;
   });
 
   const handleLogMeal = (recipe: Recipe) => {
@@ -29,46 +62,41 @@ const LogMealPage = () => {
     // Create a unique ID that includes the current timestamp
     const uniqueId = `${recipe.id}-${Date.now()}`;
     
-    // Check if this exact meal was already logged today (using the unique ID)
-    const isDuplicate = existingLoggedMeals.some((meal: any) => meal.id === uniqueId);
+    // Add new meal with timestamp and consumed status
+    const newMeal = {
+      id: uniqueId,
+      name: recipe.name,
+      type: recipe.type || 'snack',
+      recipe: recipe,
+      consumed: true,
+      loggedAt: new Date().toISOString(),
+      calories: recipe.macros.calories,
+      servingInfo: recipe.servings === 1 ? '1 serving' : `${recipe.servings} servings`,
+      source: recipe.externalSource ? 'External' : 'Custom'
+    };
     
-    if (!isDuplicate) {
-      // Add new meal with timestamp and consumed status
-      const newMeal = {
-        id: uniqueId,
-        name: recipe.name,
-        type: recipe.type || 'snack', // Default to snack if no type
-        recipe: recipe,
-        consumed: true,
-        loggedAt: new Date().toISOString() // Store the current date/time
-      };
-      
-      // Add to logged meals
-      const updatedLoggedMeals = [...existingLoggedMeals, newMeal];
-      localStorage.setItem('loggedMeals', JSON.stringify(updatedLoggedMeals));
-      
-      // Get current nutrition totals or initialize
-      const currentNutrition = JSON.parse(localStorage.getItem('dailyNutrition') || '{}');
-      const updatedNutrition = {
-        calories: (currentNutrition.calories || 0) + recipe.macros.calories,
-        protein: (currentNutrition.protein || 0) + recipe.macros.protein,
-        carbs: (currentNutrition.carbs || 0) + recipe.macros.carbs,
-        fat: (currentNutrition.fat || 0) + recipe.macros.fat
-      };
-      
-      localStorage.setItem('dailyNutrition', JSON.stringify(updatedNutrition));
-      
-      toast({
-        title: "Meal Logged",
-        description: `${recipe.name} has been added to your daily log.`,
-      });
-    } else {
-      toast({
-        title: "Already Logged",
-        description: "This meal has already been logged today.",
-        variant: "destructive",
-      });
-    }
+    // Add to logged meals
+    const updatedLoggedMeals = [newMeal, ...existingLoggedMeals];
+    localStorage.setItem('loggedMeals', JSON.stringify(updatedLoggedMeals));
+    
+    // Update recent meals
+    setRecentMeals([newMeal, ...recentMeals].slice(0, 10));
+    
+    // Get current nutrition totals or initialize
+    const currentNutrition = JSON.parse(localStorage.getItem('dailyNutrition') || '{}');
+    const updatedNutrition = {
+      calories: (currentNutrition.calories || 0) + recipe.macros.calories,
+      protein: (currentNutrition.protein || 0) + recipe.macros.protein,
+      carbs: (currentNutrition.carbs || 0) + recipe.macros.carbs,
+      fat: (currentNutrition.fat || 0) + recipe.macros.fat
+    };
+    
+    localStorage.setItem('dailyNutrition', JSON.stringify(updatedNutrition));
+    
+    toast({
+      title: "Meal Logged",
+      description: `${recipe.name} has been added to your daily log.`,
+    });
   };
 
   const handleLogExternalFood = (foodItem: any) => {
@@ -98,147 +126,219 @@ const LogMealPage = () => {
 
     // Use the existing log meal function with the properly formatted recipe
     handleLogMeal(externalRecipe);
+    
+    // Close modal after logging
+    setIsExternalSearchOpen(false);
   };
 
-  const categories = [
-    { id: 'all', name: 'All' },
-    { id: 'breakfast', name: 'Breakfast' },
-    { id: 'lunch', name: 'Lunch' },
-    { id: 'dinner', name: 'Dinner' },
-    { id: 'snack', name: 'Snack' },
+  const suggestedSearches = [
+    'chicken breast',
+    'yogurt',
+    'salad',
+    'protein shake',
+    'banana'
   ];
-
-  // Always use the provided Unsplash image instead of possibly broken imageUrl
-  const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
   return (
     <div className="animate-fade-in pb-16">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold">Log a Meal</h1>
-        <p className="text-dishco-text-light">Track what you've eaten today</p>
-      </header>
+      <div className="flex justify-center items-center py-3 border-b">
+        <button className="absolute left-4" onClick={() => window.history.back()}>
+          <X size={24} />
+        </button>
+        <h1 className="text-xl font-semibold text-blue-600">
+          Select a Meal <ArrowDown size={16} className="inline" />
+        </h1>
+      </div>
 
       {/* Search bar */}
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-        <Input
-          placeholder="Search recipes..."
-          className="pl-10 pr-4 py-2"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+      <div className="relative px-4 py-3">
+        <div className="relative flex items-center bg-gray-100 rounded-full">
+          <Search className="absolute left-3 text-blue-600" size={20} />
+          <Input
+            placeholder="Search for a food"
+            className="pl-10 pr-10 py-2 border-0 bg-gray-100 rounded-full focus:ring-0 focus-visible:ring-0"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={handleSearchFocus}
+            onBlur={handleSearchBlur}
+          />
+          {searchQuery && (
+            <button 
+              className="absolute right-3"
+              onClick={handleClearSearch}
+            >
+              <X size={16} className="text-gray-400" />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Category filters */}
-      <div className="flex overflow-x-auto space-x-2 mb-6 pb-2">
-        {categories.map(category => (
-          <button
-            key={category.id}
-            className={`px-4 py-2 rounded-full whitespace-nowrap ${
-              selectedCategory === category.id
-                ? 'bg-dishco-primary text-white'
-                : 'bg-gray-100 text-gray-700'
-            }`}
-            onClick={() => setSelectedCategory(category.id)}
+      {/* Tabs */}
+      <Tabs defaultValue="all" value={selectedTab} onValueChange={setSelectedTab}>
+        <TabsList className="w-full justify-start px-2 bg-white border-b">
+          <TabsTrigger 
+            value="all" 
+            className={cn(
+              "px-6 py-3 data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:rounded-none data-[state=active]:shadow-none",
+              "data-[state=active]:bg-transparent text-base font-medium"
+            )}
           >
-            {category.name}
-          </button>
-        ))}
-      </div>
+            All
+          </TabsTrigger>
+          <TabsTrigger 
+            value="meals" 
+            className={cn(
+              "px-6 py-3 data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:rounded-none data-[state=active]:shadow-none",
+              "data-[state=active]:bg-transparent text-base font-medium"
+            )}
+          >
+            My Meals
+          </TabsTrigger>
+          <TabsTrigger 
+            value="recipes" 
+            className={cn(
+              "px-6 py-3 data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:rounded-none data-[state=active]:shadow-none",
+              "data-[state=active]:bg-transparent text-base font-medium"
+            )}
+          >
+            My Recipes
+          </TabsTrigger>
+          <TabsTrigger 
+            value="myFoods" 
+            className={cn(
+              "px-6 py-3 data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:rounded-none data-[state=active]:shadow-none",
+              "data-[state=active]:bg-transparent text-base font-medium"
+            )}
+          >
+            My Foods
+          </TabsTrigger>
+        </TabsList>
 
-      {/* External food search button */}
-      <Button 
-        variant="outline" 
-        className="w-full mb-4 border-dashed justify-start"
-        onClick={() => setIsExternalSearchOpen(true)}
-      >
-        <Globe size={18} className="mr-2 text-dishco-primary" />
-        Search food database (restaurant & store items)
-      </Button>
-
-      {/* Custom meal button */}
-      <Button 
-        variant="outline" 
-        className="w-full mb-6 border-dashed justify-start"
-        onClick={() => toast({
-          title: "Coming Soon",
-          description: "Custom meal logging will be available in the next update."
-        })}
-      >
-        <Plus size={18} className="mr-2 text-dishco-primary" />
-        Log custom meal (manual entry)
-      </Button>
-
-      {/* Recipe list */}
-      <div className="space-y-4">
-        {loading ? (
-          <div className="text-center py-8">
-            <p className="text-gray-500">Loading recipes...</p>
-          </div>
-        ) : filteredRecipes.length === 0 ? (
-          <div className="text-center py-8">
-            <Info size={48} className="mx-auto text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium">No recipes found</h3>
-            <p className="text-dishco-text-light">Try a different search term</p>
-          </div>
-        ) : (
-          filteredRecipes.map(recipe => (
-            <div key={recipe.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div className="flex">
-                <div className="w-20 h-20 bg-gray-200">
-                  <img 
-                    src={recipe.imageSrc || imageUrl} 
-                    alt={recipe.name} 
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="flex-1 p-3">
-                  <div className="flex justify-between">
-                    <div>
-                      <h3 className="font-medium">{recipe.name}</h3>
-                      <p className="text-sm text-dishco-text-light line-clamp-1">{recipe.description}</p>
-                    </div>
-                    <div className="bg-dishco-secondary bg-opacity-20 rounded-full px-2 py-0.5 h-fit">
-                      <span className="text-xs font-medium">{recipe.macros.calories} kcal</span>
-                    </div>
+        <TabsContent value="all" className="mt-0">
+          {!searchQuery && (
+            <div className="bg-blue-50 p-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div onClick={() => toast({ title: "Coming Soon", description: "Voice logging will be available in a future update" })} 
+                     className="bg-white p-4 rounded-lg shadow flex flex-col items-center justify-center">
+                  <div className="bg-blue-100 rounded-full p-3 mb-2">
+                    <Mic className="text-blue-600" size={24} />
                   </div>
-                  
-                  <div className="flex mt-2 space-x-2">
-                    <span className="macro-pill macro-pill-protein">P: {recipe.macros.protein}g</span>
-                    <span className="macro-pill macro-pill-carbs">C: {recipe.macros.carbs}g</span>
-                    <span className="macro-pill macro-pill-fat">F: {recipe.macros.fat}g</span>
-                  </div>
+                  <span className="text-blue-600 font-medium">Voice Log</span>
+                  <span className="bg-blue-100 text-xs text-blue-800 px-2 py-0.5 rounded mt-1">NEW</span>
                 </div>
-              </div>
-              <div className="px-3 pb-3">
-                <Button 
-                  size="sm" 
-                  className="w-full"
-                  onClick={() => handleLogMeal(recipe)}
-                >
-                  Log this meal
-                </Button>
+                <div onClick={() => toast({ title: "Coming Soon", description: "Barcode scanning will be available in a future update" })}
+                     className="bg-white p-4 rounded-lg shadow flex flex-col items-center justify-center">
+                  <div className="bg-blue-100 rounded-full p-3 mb-2">
+                    <BarcodeScan className="text-blue-600" size={24} />
+                  </div>
+                  <span className="text-blue-600 font-medium">Scan a Barcode</span>
+                </div>
               </div>
             </div>
-          ))
-        )}
+          )}
 
-        {/* No recipes state with external search suggestion */}
-        {!loading && filteredRecipes.length === 0 && (
-          <div className="text-center mt-4 p-4 border border-dashed rounded-lg">
-            <UtensilsCrossed size={32} className="mx-auto text-gray-300 mb-2" />
-            <p className="font-medium">Can't find what you're looking for?</p>
-            <Button 
-              variant="outline" 
-              className="mt-3" 
-              onClick={() => setIsExternalSearchOpen(true)}
-            >
-              <Globe size={16} className="mr-2" />
-              Search external food database
-            </Button>
+          <div className="p-4">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-xl font-bold">History</h2>
+              <div className="flex items-center border rounded-full px-3 py-1 text-sm">
+                <span>Most Recent</span>
+                <ArrowDown size={14} className="ml-1" />
+              </div>
+            </div>
+
+            {/* Recent food history */}
+            <RecentMealHistory 
+              recentMeals={recentMeals} 
+              onAddMeal={handleLogMeal}
+            />
+
+            {/* Search results */}
+            {searchQuery && filteredRecipes.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-lg font-medium mb-2">Search Results</h3>
+                <div className="space-y-2">
+                  {filteredRecipes.map(recipe => (
+                    <div key={recipe.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                      <div>
+                        <p className="font-medium">{recipe.name}</p>
+                        <p className="text-sm text-gray-500">
+                          {recipe.macros.calories} cal, {recipe.servings} serving
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleLogMeal(recipe)}
+                        className="h-10 w-10 rounded-full bg-gray-200"
+                      >
+                        <Plus size={20} />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Suggested searches when focused and no results */}
+            {showSuggestions && searchQuery && filteredRecipes.length === 0 && (
+              <div className="mt-4">
+                <h3 className="text-lg font-medium mb-2">Suggested Searches</h3>
+                <div className="space-y-2">
+                  {suggestedSearches.map((term, index) => (
+                    <button
+                      key={index}
+                      className="flex items-center w-full p-3 hover:bg-gray-100 rounded-lg"
+                      onClick={() => setSearchQuery(term)}
+                    >
+                      <Search size={18} className="mr-2 text-gray-400" />
+                      <span>{term}</span>
+                    </button>
+                  ))}
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full mt-4 border-blue-500 text-blue-600"
+                  onClick={() => setIsExternalSearchOpen(true)}
+                >
+                  Search external food database
+                </Button>
+              </div>
+            )}
+
+            {/* Empty state */}
+            {searchQuery && filteredRecipes.length === 0 && !showSuggestions && (
+              <div className="text-center py-8">
+                <p className="text-gray-500 mb-4">No foods found matching "{searchQuery}"</p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsExternalSearchOpen(true)}
+                >
+                  Try external food search
+                </Button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </TabsContent>
+
+        <TabsContent value="meals" className="mt-0">
+          <div className="p-4">
+            <p>Your saved meals will appear here.</p>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="recipes" className="mt-0">
+          <div className="p-4">
+            <p>Your saved recipes will appear here.</p>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="myFoods" className="mt-0">
+          <div className="p-4">
+            <p>Your custom foods will appear here.</p>
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* External food search modal */}
       <FoodSearchModal
