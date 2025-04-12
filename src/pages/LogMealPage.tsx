@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -72,24 +71,31 @@ const LogMealPage = () => {
   };
 
   const handleLogExternalFood = (foodItem: any) => {
-    // Convert the external food item to the format we need
-    const recipe = {
-      id: foodItem.id,
+    // Cast the external food to match the Recipe type
+    const externalRecipe: Recipe = {
+      id: foodItem.id || `external-${Date.now()}`,
       name: foodItem.name,
       description: foodItem.description || '',
-      type: foodItem.type,
+      type: foodItem.type || 'snack',
+      imageSrc: foodItem.imageSrc || '',
+      requiresBlender: false,
+      requiresCooking: false,
+      cookTime: 0,
+      prepTime: 0,
+      servings: 1,
       macros: {
-        calories: foodItem.macros.calories,
-        protein: foodItem.macros.protein,
-        carbs: foodItem.macros.carbs,
-        fat: foodItem.macros.fat
+        calories: foodItem.macros?.calories || 0,
+        protein: foodItem.macros?.protein || 0,
+        carbs: foodItem.macros?.carbs || 0,
+        fat: foodItem.macros?.fat || 0
       },
-      imageSrc: foodItem.imageSrc,
+      ingredients: [],
+      instructions: [],
       externalSource: true
     };
 
-    // Use the existing log meal function
-    handleLogMeal(recipe);
+    // Use the existing log meal function with the properly formatted recipe
+    handleLogMeal(externalRecipe);
   };
 
   const categories = [

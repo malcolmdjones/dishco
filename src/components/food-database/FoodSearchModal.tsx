@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -16,7 +15,7 @@ import { searchFoods, convertToMealFormat, FoodItem } from '@/services/foodDatab
 interface FoodSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectFood: (foodItem: any, mealType: string) => void;
+  onSelectFood: (foodItem: any) => void;
 }
 
 const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSelectFood }) => {
@@ -53,11 +52,9 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
 
   const handleAddFood = () => {
     if (selectedFood) {
-      const formattedFood = {
-        ...convertToMealFormat(selectedFood, selectedQuantity),
-        type: selectedMealType
-      };
-      onSelectFood(formattedFood, selectedMealType);
+      const formattedFood = convertToMealFormat(selectedFood, selectedQuantity);
+      formattedFood.type = selectedMealType;
+      onSelectFood(formattedFood);
       onClose();
     }
   };

@@ -52,9 +52,18 @@ export const convertToMealFormat = (foodItem: FoodItem, quantity: number = 1) =>
       carbs: Math.round(foodItem.nutrients.CHOCDF * quantity),
       fat: Math.round(foodItem.nutrients.FAT * quantity)
     },
+    // Adding the required Recipe properties
+    requiresBlender: false,
+    requiresCooking: false,
+    cookTime: 0,
+    prepTime: 0,
+    servings: 1,
+    ingredients: [],
+    instructions: [],
     source: 'edamam',
     quantity: quantity,
-    externalId: foodItem.foodId
+    externalId: foodItem.foodId,
+    externalSource: true
   };
 };
 
