@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { usePlanOperations } from '@/hooks/usePlanOperations';
 import SavedPlansHeader from '@/components/saved-plans/SavedPlansHeader';
@@ -6,6 +5,7 @@ import PlansDisplay from '@/components/saved-plans/PlansDisplay';
 import PlanDialogs from '@/components/saved-plans/PlanDialogs';
 
 const SavedPlansPage: React.FC = () => {
+  // Since we've refactored our hook, we can keep using it the same way
   const {
     // State
     plans,
