@@ -18,6 +18,8 @@ export interface ExternalFood {
   quantity: number;
   type: string;
   loggedAt: string;
+  externalSource?: boolean;
+  externalId?: string;
 }
 
 export interface LoggedMeal {

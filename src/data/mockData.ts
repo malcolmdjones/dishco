@@ -26,6 +26,8 @@ export interface Recipe {
   };
   ingredients: string[];
   instructions: string[];
+  externalSource?: boolean; // Added this property as optional
+  externalId?: string;      // Adding this for tracking the original ID
 }
 
 export interface NutritionGoals {

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -91,7 +92,8 @@ const LogMealPage = () => {
       },
       ingredients: [],
       instructions: [],
-      externalSource: true
+      externalSource: true,
+      externalId: foodItem.externalId
     };
 
     // Use the existing log meal function with the properly formatted recipe
