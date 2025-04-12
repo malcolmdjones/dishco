@@ -111,6 +111,9 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
     return weeks;
   };
   
+  // Generate the calendar weeks for the current month
+  const weeks = generateCalendar(currentMonth);
+  
   const isDateInPlanRange = (date: Date) => {
     if (!selectedDate) return false;
     
