@@ -372,9 +372,16 @@ export const useSavedMealPlans = () => {
         setIsPlanDetailOpen(false);
       }
       
-      if (activePlan?.plan.id === id) {
-        sessionStorage.removeItem('activePlan');
-        setActivePlan(null);
+      // Check if any active plans need to be removed
+      const updatedActivePlans = activePlans.filter(ap => ap.plan.id !== id);
+      if (updatedActivePlans.length !== activePlans.length) {
+        setActivePlans(updatedActivePlans);
+        if (updatedActivePlans.length === 0) {
+          sessionStorage.removeItem('activePlans');
+        } else {
+          sessionStorage.setItem('activePlans', JSON.stringify(updatedActivePlans));
+        }
+        
         toast({
           title: "Active Plan Removed",
           description: "The deleted plan was your active plan and has been deactivated.",

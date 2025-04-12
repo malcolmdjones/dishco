@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -28,7 +27,6 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [hasOverlap, setHasOverlap] = useState<boolean>(false);
   
-  // Reset selected date when dialog opens
   useEffect(() => {
     if (isOpen) {
       setSelectedDate(new Date());
@@ -39,14 +37,12 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
   
   if (!plan) return null;
   
-  // Check if selected date range overlaps with active plans
   const checkForOverlap = (date: Date): boolean => {
     if (!plan) return false;
     
     const planDuration = plan.plan_data?.days?.length || 7;
     let hasConflict = false;
     
-    // Check each day in the planned range
     for (let i = 0; i < planDuration; i++) {
       const checkDate = addDays(date, i);
       const dateKey = format(checkDate, 'yyyy-MM-dd');
@@ -74,30 +70,22 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
     }
   };
   
-  // Get plan duration (number of days)
   const planDuration = plan.plan_data?.days?.length || 7;
   
-  // Generate calendar data
   const generateCalendar = (month: Date) => {
     const firstDayOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
     const lastDayOfMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0);
     
-    // Get day of week for first day (0 = Sunday, 1 = Monday, etc.)
     let firstDayOfWeek = firstDayOfMonth.getDay();
-    // Adjust to make Monday the first day (0 = Monday, ... 6 = Sunday)
     firstDayOfWeek = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
     
-    // Calculate days from previous month to display
     const daysFromPreviousMonth = firstDayOfWeek;
     
-    // Calculate days from next month to display (to complete the grid)
-    const totalDaysInGrid = 6 * 7; // 6 rows of 7 days
+    const totalDaysInGrid = 6 * 7;
     const daysFromNextMonth = totalDaysInGrid - daysFromPreviousMonth - lastDayOfMonth.getDate();
     
-    // Generate array of dates
     const calendarDays: Date[] = [];
     
-    // Add days from previous month
     const previousMonth = new Date(month.getFullYear(), month.getMonth() - 1, 1);
     const daysInPreviousMonth = new Date(previousMonth.getFullYear(), previousMonth.getMonth() + 1, 0).getDate();
     
@@ -105,18 +93,15 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
       calendarDays.push(new Date(previousMonth.getFullYear(), previousMonth.getMonth(), i));
     }
     
-    // Add days from current month
     for (let i = 1; i <= lastDayOfMonth.getDate(); i++) {
       calendarDays.push(new Date(month.getFullYear(), month.getMonth(), i));
     }
     
-    // Add days from next month
     const nextMonth = new Date(month.getFullYear(), month.getMonth() + 1, 1);
     for (let i = 1; i <= daysFromNextMonth; i++) {
       calendarDays.push(new Date(nextMonth.getFullYear(), nextMonth.getMonth(), i));
     }
     
-    // Group the dates into weeks
     const weeks: Date[][] = [];
     for (let i = 0; i < calendarDays.length; i += 7) {
       weeks.push(calendarDays.slice(i, i + 7));
@@ -127,7 +112,6 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
   
   const weeks = generateCalendar(currentMonth);
   
-  // Function to check if a date is in the plan range
   const isDateInPlanRange = (date: Date) => {
     if (!selectedDate) return false;
     
@@ -135,34 +119,28 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
     return date >= selectedDate && date <= planEndDate;
   };
   
-  // Function to check if a date has an active meal plan
   const hasActivePlan = (date: Date) => {
     const dateKey = format(date, 'yyyy-MM-dd');
     return !!activeDates[dateKey];
   };
   
-  // Function to get the active plan name for a date
   const getActivePlanName = (date: Date) => {
     const dateKey = format(date, 'yyyy-MM-dd');
     return activeDates[dateKey] || '';
   };
   
-  // Navigate to next month
   const goToNextMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   };
   
-  // Navigate to previous month
   const goToPreviousMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
   };
   
-  // Format day for display
   const formatDay = (date: Date) => {
     return date.getDate().toString();
   };
   
-  // Check if date is the same month as current view
   const isSameMonth = (date: Date) => {
     return date.getMonth() === currentMonth.getMonth();
   };
@@ -182,7 +160,7 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
           </div>
           
           {hasOverlap && (
-            <Alert variant="warning" className="mb-4 border-amber-600 bg-amber-50">
+            <Alert variant="destructive" className="mb-4 border-amber-600 bg-amber-50">
               <AlertTriangle className="h-4 w-4 text-amber-600" />
               <AlertTitle className="text-amber-600">Date Overlap Detected</AlertTitle>
               <AlertDescription className="text-amber-700 text-sm">
@@ -193,7 +171,6 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
           )}
           
           <div className="w-full max-w-xs">
-            {/* Calendar Header */}
             <div className="flex items-center justify-between mb-4">
               <button 
                 onClick={goToPreviousMonth}
@@ -212,7 +189,6 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
               </button>
             </div>
             
-            {/* Calendar Days */}
             <div className="mb-2">
               <div className="grid grid-cols-7 mb-2">
                 {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (

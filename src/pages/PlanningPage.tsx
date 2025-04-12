@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Search, CalendarPlus } from 'lucide-react';
@@ -15,7 +14,7 @@ const PlanningPage = () => {
   const [loading, setLoading] = useState(false);
   const { recipes, loading: recipesLoading } = useRecipes();
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
-  const { activePlan } = useSavedMealPlans();
+  const { activePlans, getMealsForDate } = useSavedMealPlans();
   
   const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
@@ -44,7 +43,7 @@ const PlanningPage = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          <WeeklyOverview activePlan={activePlan} />
+          <WeeklyOverview activePlans={activePlans} getMealsForDate={getMealsForDate} />
 
           <Button 
             className="w-full py-6 text-lg font-medium bg-green-600 hover:bg-green-700"

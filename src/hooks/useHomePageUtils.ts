@@ -20,7 +20,7 @@ export const useHomePageUtils = () => {
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
-  const { activePlan, getMealsForDate } = useSavedMealPlans();
+  const { activePlans, getMealsForDate } = useSavedMealPlans();
   
   const [dailyNutrition, setDailyNutrition] = useState({
     calories: 0,
@@ -173,7 +173,7 @@ export const useHomePageUtils = () => {
     };
     
     loadMealsForSelectedDate();
-  }, [selectedDate, getMealsForDate, activePlan]);
+  }, [selectedDate, getMealsForDate, activePlans]);
 
   const calculateNutritionForDate = (meals: Meal[]) => {
     const consumedMeals = meals.filter(meal => meal.consumed);
