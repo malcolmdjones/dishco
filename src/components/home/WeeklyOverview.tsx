@@ -78,21 +78,11 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlan }) => {
           // Safely access meals with null checks
           const meals = day.meals || { breakfast: null, lunch: null, dinner: null, snacks: [] };
           
-          // Calculate total calories with null checks
-          const totalCalories = [
-            meals.breakfast, 
-            meals.lunch, 
-            meals.dinner, 
-            ...(Array.isArray(meals.snacks) ? meals.snacks : [])
-          ]
-            .filter(Boolean)
-            .reduce((sum, meal) => {
-              // Add null checks to prevent accessing properties of undefined
-              if (meal && meal.macros && typeof meal.macros.calories === 'number') {
-                return sum + meal.macros.calories;
-              }
-              return sum;
-            }, 0);
+          // Get actual recipe names
+          const breakfastName = meals.breakfast?.name;
+          const lunchName = meals.lunch?.name;
+          const dinnerName = meals.dinner?.name;
+          const snacksCount = Array.isArray(meals.snacks) ? meals.snacks.length : 0;
 
           return (
             <Card key={index} className={`${isTodayDate ? 'border-green-300 bg-green-50' : ''}`}>
@@ -108,34 +98,38 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlan }) => {
                       </Badge>
                     )}
                   </div>
-                  <span className="text-xs bg-amber-50 text-amber-800 px-2 py-0.5 rounded-full">
-                    {totalCalories} cal
-                  </span>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-1 text-xs">
-                  {meals.breakfast && (
+                  {breakfastName ? (
                     <div className="flex items-center">
                       <span className="bg-blue-100 w-2 h-2 rounded-full mr-1"></span>
-                      <span className="truncate">{meals.breakfast.name || "Breakfast"}</span>
+                      <span className="truncate">{breakfastName}</span>
                     </div>
-                  )}
-                  {meals.lunch && (
+                  ) : null}
+                  
+                  {lunchName ? (
                     <div className="flex items-center">
                       <span className="bg-green-100 w-2 h-2 rounded-full mr-1"></span>
-                      <span className="truncate">{meals.lunch.name || "Lunch"}</span>
+                      <span className="truncate">{lunchName}</span>
                     </div>
-                  )}
-                  {meals.dinner && (
+                  ) : null}
+                  
+                  {dinnerName ? (
                     <div className="flex items-center">
                       <span className="bg-purple-100 w-2 h-2 rounded-full mr-1"></span>
-                      <span className="truncate">{meals.dinner.name || "Dinner"}</span>
+                      <span className="truncate">{dinnerName}</span>
                     </div>
-                  )}
-                  {Array.isArray(meals.snacks) && meals.snacks.length > 0 && (
+                  ) : null}
+                  
+                  {snacksCount > 0 && (
                     <div className="flex items-center">
                       <span className="bg-yellow-100 w-2 h-2 rounded-full mr-1"></span>
-                      <span className="truncate">{meals.snacks.length} snack(s)</span>
+                      <span className="truncate">
+                        {snacksCount === 1 
+                          ? meals.snacks[0].name 
+                          : `${snacksCount} snack(s)`}
+                      </span>
                     </div>
                   )}
                 </div>
