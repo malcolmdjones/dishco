@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, X } from 'lucide-react';
+import { Search, Loader2, X, Plus } from 'lucide-react';
 import { 
   Select, 
   SelectContent, 

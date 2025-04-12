@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { X, Search, Plus, Mic, BarcodeScan, ArrowDown, Check } from 'lucide-react';
+import { X, Search, Plus, Mic, Barcode, ArrowDown, Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useRecipes } from '@/hooks/useRecipes';
 import { Recipe } from '@/data/mockData';
@@ -21,10 +20,9 @@ const LogMealPage = () => {
   const [recentMeals, setRecentMeals] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // Fetch recent meals from localStorage on component mount
   useEffect(() => {
     const loggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
-    setRecentMeals(loggedMeals.slice(0, 10).reverse()); // Get last 10 meals, most recent first
+    setRecentMeals(loggedMeals.slice(0, 10).reverse());
   }, []);
 
   const handleClearSearch = () => {
@@ -36,7 +34,6 @@ const LogMealPage = () => {
   };
 
   const handleSearchBlur = () => {
-    // Small delay to allow click events on suggestions to fire
     setTimeout(() => setShowSuggestions(false), 200);
   };
 
@@ -56,13 +53,8 @@ const LogMealPage = () => {
   });
 
   const handleLogMeal = (recipe: Recipe) => {
-    // Get current logged meals from localStorage or initialize empty array
     const existingLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
-    
-    // Create a unique ID that includes the current timestamp
     const uniqueId = `${recipe.id}-${Date.now()}`;
-    
-    // Add new meal with timestamp and consumed status
     const newMeal = {
       id: uniqueId,
       name: recipe.name,
@@ -74,15 +66,9 @@ const LogMealPage = () => {
       servingInfo: recipe.servings === 1 ? '1 serving' : `${recipe.servings} servings`,
       source: recipe.externalSource ? 'External' : 'Custom'
     };
-    
-    // Add to logged meals
     const updatedLoggedMeals = [newMeal, ...existingLoggedMeals];
     localStorage.setItem('loggedMeals', JSON.stringify(updatedLoggedMeals));
-    
-    // Update recent meals
     setRecentMeals([newMeal, ...recentMeals].slice(0, 10));
-    
-    // Get current nutrition totals or initialize
     const currentNutrition = JSON.parse(localStorage.getItem('dailyNutrition') || '{}');
     const updatedNutrition = {
       calories: (currentNutrition.calories || 0) + recipe.macros.calories,
@@ -90,9 +76,7 @@ const LogMealPage = () => {
       carbs: (currentNutrition.carbs || 0) + recipe.macros.carbs,
       fat: (currentNutrition.fat || 0) + recipe.macros.fat
     };
-    
     localStorage.setItem('dailyNutrition', JSON.stringify(updatedNutrition));
-    
     toast({
       title: "Meal Logged",
       description: `${recipe.name} has been added to your daily log.`,
@@ -100,7 +84,6 @@ const LogMealPage = () => {
   };
 
   const handleLogExternalFood = (foodItem: any) => {
-    // Cast the external food to match the Recipe type
     const externalRecipe: Recipe = {
       id: foodItem.id || `external-${Date.now()}`,
       name: foodItem.name,
@@ -123,11 +106,7 @@ const LogMealPage = () => {
       externalSource: true,
       externalId: foodItem.externalId
     };
-
-    // Use the existing log meal function with the properly formatted recipe
     handleLogMeal(externalRecipe);
-    
-    // Close modal after logging
     setIsExternalSearchOpen(false);
   };
 
@@ -150,7 +129,6 @@ const LogMealPage = () => {
         </h1>
       </div>
 
-      {/* Search bar */}
       <div className="relative px-4 py-3">
         <div className="relative flex items-center bg-gray-100 rounded-full">
           <Search className="absolute left-3 text-blue-600" size={20} />
@@ -173,7 +151,6 @@ const LogMealPage = () => {
         </div>
       </div>
 
-      {/* Tabs */}
       <Tabs defaultValue="all" value={selectedTab} onValueChange={setSelectedTab}>
         <TabsList className="w-full justify-start px-2 bg-white border-b">
           <TabsTrigger 
@@ -229,7 +206,7 @@ const LogMealPage = () => {
                 <div onClick={() => toast({ title: "Coming Soon", description: "Barcode scanning will be available in a future update" })}
                      className="bg-white p-4 rounded-lg shadow flex flex-col items-center justify-center">
                   <div className="bg-blue-100 rounded-full p-3 mb-2">
-                    <BarcodeScan className="text-blue-600" size={24} />
+                    <Barcode className="text-blue-600" size={24} />
                   </div>
                   <span className="text-blue-600 font-medium">Scan a Barcode</span>
                 </div>
@@ -246,13 +223,11 @@ const LogMealPage = () => {
               </div>
             </div>
 
-            {/* Recent food history */}
             <RecentMealHistory 
               recentMeals={recentMeals} 
               onAddMeal={handleLogMeal}
             />
 
-            {/* Search results */}
             {searchQuery && filteredRecipes.length > 0 && (
               <div className="mt-4">
                 <h3 className="text-lg font-medium mb-2">Search Results</h3>
@@ -279,7 +254,6 @@ const LogMealPage = () => {
               </div>
             )}
             
-            {/* Suggested searches when focused and no results */}
             {showSuggestions && searchQuery && filteredRecipes.length === 0 && (
               <div className="mt-4">
                 <h3 className="text-lg font-medium mb-2">Suggested Searches</h3>
@@ -306,7 +280,6 @@ const LogMealPage = () => {
               </div>
             )}
 
-            {/* Empty state */}
             {searchQuery && filteredRecipes.length === 0 && !showSuggestions && (
               <div className="text-center py-8">
                 <p className="text-gray-500 mb-4">No foods found matching "{searchQuery}"</p>
@@ -340,7 +313,6 @@ const LogMealPage = () => {
         </TabsContent>
       </Tabs>
 
-      {/* External food search modal */}
       <FoodSearchModal
         isOpen={isExternalSearchOpen}
         onClose={() => setIsExternalSearchOpen(false)}
