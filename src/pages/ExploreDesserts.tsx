@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import RecipeCard from '@/components/recipe-discovery/RecipeCard';
 import { useRecipes } from '@/hooks/useRecipes';
+import { useToast } from '@/hooks/use-toast';
 
 const ExploreDesserts = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { recipes, loading, isRecipeSaved, toggleSaveRecipe } = useRecipes();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredDesserts, setFilteredDesserts] = useState([]);
@@ -17,11 +19,16 @@ const ExploreDesserts = () => {
   useEffect(() => {
     const filtered = recipes
       .filter(recipe => 
-        recipe.type === 'dessert' && 
+        recipe.type?.toLowerCase() === 'dessert' && 
         (searchQuery === '' || 
          recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         recipe.description.toLowerCase().includes(searchQuery.toLowerCase()))
+         recipe.description?.toLowerCase().includes(searchQuery.toLowerCase()))
       );
+    
+    console.log('Total recipes:', recipes.length);
+    console.log('Dessert recipes found:', filtered.length);
+    console.log('Recipe types available:', [...new Set(recipes.map(r => r.type))]);
+    
     setFilteredDesserts(filtered);
   }, [recipes, searchQuery]);
 

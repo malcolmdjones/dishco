@@ -90,21 +90,23 @@ export const useFetchRecipes = () => {
       }
 
       if (!dbRecipes || dbRecipes.length === 0) {
-        console.log('No recipes found in database even after import attempt');
-        setRecipes([]);
+        console.log('No recipes found in database even after import attempt, using mock recipes');
+        setRecipes(mockRecipes);
       } else {
         // Convert db recipes to frontend format
         const frontendRecipes = dbRecipes.map((recipe: any) => dbToFrontendRecipe(recipe as DbRecipe));
+        console.log(`Fetched ${frontendRecipes.length} recipes from database`);
+        console.log('Recipe types in database:', [...new Set(frontendRecipes.map(r => r.type))]);
         setRecipes(frontendRecipes);
       }
     } catch (error) {
       console.error('Error fetching recipes:', error);
       toast({
         title: "Error",
-        description: "Failed to load recipes.",
+        description: "Failed to load recipes. Using mock recipes instead.",
         variant: "destructive"
       });
-      setRecipes([]);
+      setRecipes(mockRecipes);
     } finally {
       setLoading(false);
     }
@@ -120,13 +122,13 @@ export const useFetchRecipes = () => {
       // Match search query
       const matchesSearch = !searchQuery || 
         recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        recipe.description.toLowerCase().includes(searchQuery.toLowerCase());
+        recipe.description?.toLowerCase()?.includes(searchQuery.toLowerCase());
       
       // Match recipe type
-      const matchesType = !type || type === 'all' || recipe.type === type;
+      const matchesType = !type || type === 'all' || recipe.type?.toLowerCase() === type?.toLowerCase();
       
       // Match meal type
-      const matchesMealType = !mealType || recipe.type === mealType;
+      const matchesMealType = !mealType || recipe.type?.toLowerCase() === mealType?.toLowerCase();
       
       return matchesSearch && matchesType && matchesMealType;
     });
@@ -134,7 +136,7 @@ export const useFetchRecipes = () => {
 
   // Get recipes by type (e.g., 'snack', 'breakfast', etc.)
   const getRecipesByType = (type: string): Recipe[] => {
-    return recipes.filter(recipe => recipe.type === type);
+    return recipes.filter(recipe => recipe.type?.toLowerCase() === type.toLowerCase());
   };
 
   // Load recipes on component mount

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Search, CalendarPlus } from 'lucide-react';
@@ -23,12 +24,14 @@ const PlanningPage = () => {
   };
 
   const recipeSelection = recipes.slice(0, 2);
-  const snackSelection = recipes.filter(recipe => recipe.type === 'snack').slice(0, 2);
-  const dessertSelection = recipes.filter(recipe => recipe.type === 'dessert').slice(0, 2);
+  const snackSelection = recipes.filter(recipe => recipe.type?.toLowerCase() === 'snack').slice(0, 2);
+  const dessertSelection = recipes.filter(recipe => recipe.type?.toLowerCase() === 'dessert').slice(0, 2);
 
   useEffect(() => {
     console.log('PlanningPage mounted - checking active plan');
-  }, []);
+    console.log('All recipe types:', [...new Set(recipes.map(r => r.type))]);
+    console.log('Dessert recipes found:', recipes.filter(recipe => recipe.type?.toLowerCase() === 'dessert').length);
+  }, [recipes]);
 
   return (
     <div className="animate-fade-in">
