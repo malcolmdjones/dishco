@@ -2,16 +2,18 @@
 import React, { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, Info } from 'lucide-react';
+import { Search, Plus, Info, Globe, UtensilsCrossed } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useRecipes } from '@/hooks/useRecipes';
 import { Recipe } from '@/data/mockData';
+import FoodSearchModal from '@/components/food-database/FoodSearchModal';
 
 const LogMealPage = () => {
   const { toast } = useToast();
   const { recipes, loading } = useRecipes();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [isExternalSearchOpen, setIsExternalSearchOpen] = useState(false);
 
   const filteredRecipes = recipes.filter(recipe => {
     const matchesSearch = recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -69,6 +71,27 @@ const LogMealPage = () => {
     }
   };
 
+  const handleLogExternalFood = (foodItem: any) => {
+    // Convert the external food item to the format we need
+    const recipe = {
+      id: foodItem.id,
+      name: foodItem.name,
+      description: foodItem.description || '',
+      type: foodItem.type,
+      macros: {
+        calories: foodItem.macros.calories,
+        protein: foodItem.macros.protein,
+        carbs: foodItem.macros.carbs,
+        fat: foodItem.macros.fat
+      },
+      imageSrc: foodItem.imageSrc,
+      externalSource: true
+    };
+
+    // Use the existing log meal function
+    handleLogMeal(recipe);
+  };
+
   const categories = [
     { id: 'all', name: 'All' },
     { id: 'breakfast', name: 'Breakfast' },
@@ -114,6 +137,16 @@ const LogMealPage = () => {
           </button>
         ))}
       </div>
+
+      {/* External food search button */}
+      <Button 
+        variant="outline" 
+        className="w-full mb-4 border-dashed justify-start"
+        onClick={() => setIsExternalSearchOpen(true)}
+      >
+        <Globe size={18} className="mr-2 text-dishco-primary" />
+        Search food database (restaurant & store items)
+      </Button>
 
       {/* Custom meal button */}
       <Button 
@@ -181,7 +214,30 @@ const LogMealPage = () => {
             </div>
           ))
         )}
+
+        {/* No recipes state with external search suggestion */}
+        {!loading && filteredRecipes.length === 0 && (
+          <div className="text-center mt-4 p-4 border border-dashed rounded-lg">
+            <UtensilsCrossed size={32} className="mx-auto text-gray-300 mb-2" />
+            <p className="font-medium">Can't find what you're looking for?</p>
+            <Button 
+              variant="outline" 
+              className="mt-3" 
+              onClick={() => setIsExternalSearchOpen(true)}
+            >
+              <Globe size={16} className="mr-2" />
+              Search external food database
+            </Button>
+          </div>
+        )}
       </div>
+
+      {/* External food search modal */}
+      <FoodSearchModal
+        isOpen={isExternalSearchOpen}
+        onClose={() => setIsExternalSearchOpen(false)}
+        onSelectFood={handleLogExternalFood}
+      />
     </div>
   );
 };
