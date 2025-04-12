@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { format, addDays, subDays, isToday, isEqual, parseISO, startOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -62,15 +61,21 @@ export const useHomePageUtils = () => {
             : planMeals.breakfast;
             
           if (breakfastRecipe) {
-            plannedMealArray.push({
-              id: `breakfast-planned-${formattedDate}`,
-              name: breakfastRecipe.name || 'Breakfast',
-              type: 'breakfast',
-              recipe: breakfastRecipe,
-              consumed: false,
-              loggedAt: formattedDate,
-              planned: true
-            });
+            const existingBreakfast = filteredMeals.find((meal: Meal) => 
+              meal.type === 'breakfast' && meal.recipe?.id === breakfastRecipe.id
+            );
+            
+            if (!existingBreakfast) {
+              plannedMealArray.push({
+                id: `breakfast-planned-${formattedDate}`,
+                name: breakfastRecipe.name || 'Breakfast',
+                type: 'breakfast',
+                recipe: breakfastRecipe,
+                consumed: false,
+                loggedAt: formattedDate,
+                planned: true
+              });
+            }
           }
         }
         
@@ -80,15 +85,21 @@ export const useHomePageUtils = () => {
             : planMeals.lunch;
             
           if (lunchRecipe) {
-            plannedMealArray.push({
-              id: `lunch-planned-${formattedDate}`,
-              name: lunchRecipe.name || 'Lunch',
-              type: 'lunch',
-              recipe: lunchRecipe,
-              consumed: false,
-              loggedAt: formattedDate,
-              planned: true
-            });
+            const existingLunch = filteredMeals.find((meal: Meal) => 
+              meal.type === 'lunch' && meal.recipe?.id === lunchRecipe.id
+            );
+            
+            if (!existingLunch) {
+              plannedMealArray.push({
+                id: `lunch-planned-${formattedDate}`,
+                name: lunchRecipe.name || 'Lunch',
+                type: 'lunch',
+                recipe: lunchRecipe,
+                consumed: false,
+                loggedAt: formattedDate,
+                planned: true
+              });
+            }
           }
         }
         
@@ -98,30 +109,42 @@ export const useHomePageUtils = () => {
             : planMeals.dinner;
             
           if (dinnerRecipe) {
-            plannedMealArray.push({
-              id: `dinner-planned-${formattedDate}`,
-              name: dinnerRecipe.name || 'Dinner',
-              type: 'dinner',
-              recipe: dinnerRecipe,
-              consumed: false,
-              loggedAt: formattedDate,
-              planned: true
-            });
+            const existingDinner = filteredMeals.find((meal: Meal) => 
+              meal.type === 'dinner' && meal.recipe?.id === dinnerRecipe.id
+            );
+            
+            if (!existingDinner) {
+              plannedMealArray.push({
+                id: `dinner-planned-${formattedDate}`,
+                name: dinnerRecipe.name || 'Dinner',
+                type: 'dinner',
+                recipe: dinnerRecipe,
+                consumed: false,
+                loggedAt: formattedDate,
+                planned: true
+              });
+            }
           }
         }
         
         if (planMeals.snacks && Array.isArray(planMeals.snacks) && planMeals.snacks.length > 0) {
           planMeals.snacks.forEach((snack, index) => {
             if (snack) {
-              plannedMealArray.push({
-                id: `snack-planned-${index}-${formattedDate}`,
-                name: snack.name || `Snack ${index + 1}`,
-                type: 'snack',
-                recipe: snack,
-                consumed: false,
-                loggedAt: formattedDate,
-                planned: true
-              });
+              const existingSnack = filteredMeals.find((meal: Meal) => 
+                meal.type === 'snack' && meal.recipe?.id === snack.id
+              );
+              
+              if (!existingSnack) {
+                plannedMealArray.push({
+                  id: `snack-planned-${index}-${formattedDate}`,
+                  name: snack.name || `Snack ${index + 1}`,
+                  type: 'snack',
+                  recipe: snack,
+                  consumed: false,
+                  loggedAt: formattedDate,
+                  planned: true
+                });
+              }
             }
           });
         }

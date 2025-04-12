@@ -1,11 +1,10 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { format, addDays, isToday, parseISO } from 'date-fns';
+import { format, addDays, isToday, parseISO, startOfDay, isWithinInterval } from 'date-fns';
 import { MealPlan } from '@/hooks/useSavedMealPlans';
 
 interface WeeklyOverviewProps {
@@ -13,6 +12,10 @@ interface WeeklyOverviewProps {
 }
 
 const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlan }) => {
+  // Create a 7-day window starting from today
+  const today = new Date();
+  const next7Days = Array.from({ length: 7 }).map((_, i) => addDays(today, i));
+  
   // No active plan
   if (!activePlan) {
     return (
@@ -38,7 +41,6 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlan }) => {
   }
 
   // Get the start date for the active plan
-  const today = new Date();
   const startDate = new Date();
   
   // Apply the startDay offset to the start date
@@ -51,15 +53,31 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlan }) => {
   console.log('Weekly overview - Start date:', format(startDate, 'yyyy-MM-dd'));
   console.log('Weekly overview - Active plan days:', activePlan.plan.plan_data.days.length);
   
-  // Show max 5 days in the overview
-  const daysToShow = Math.min(5, activePlan.plan.plan_data.days.length);
+  // Check if each of the next 7 days falls within the active meal plan's range
+  const daysToShow = next7Days.map(date => {
+    const dayIndex = Math.floor((date.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000));
+    
+    // Only return plan data if the day falls within the plan's range
+    if (dayIndex >= 0 && dayIndex < activePlan.plan.plan_data.days.length) {
+      return {
+        date,
+        planData: activePlan.plan.plan_data.days[dayIndex]
+      };
+    }
+    
+    // Otherwise, return just the date with no plan data
+    return {
+      date,
+      planData: null
+    };
+  });
 
   return (
     <div className="bg-white rounded-xl p-4 shadow-sm animate-slide-up">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-lg font-semibold">Weekly Overview</h2>
-          <p className="text-xs text-green-600 font-medium">Active Plan: {activePlan.plan.name}</p>
+          {activePlan && <p className="text-xs text-green-600 font-medium">Active Plan: {activePlan.plan.name}</p>}
         </div>
         <Link to="/saved-plans">
           <Button variant="ghost" size="sm" className="text-xs">View Saved Plans</Button>
@@ -67,16 +85,35 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlan }) => {
       </div>
       
       <div className="space-y-2 mt-4">
-        {Array.from({ length: daysToShow }).map((_, index) => {
-          if (index >= activePlan.plan.plan_data.days.length) return null;
+        {daysToShow.map((dayInfo, index) => {
+          const formattedDate = format(dayInfo.date, 'EEE, MMM d');
+          const isTodayDate = isToday(dayInfo.date);
           
-          const day = activePlan.plan.plan_data.days[index];
-          const dayDate = addDays(startDate, index);
-          const formattedDate = format(dayDate, 'EEE, MMM d');
-          const isTodayDate = isToday(dayDate);
+          if (!dayInfo.planData) {
+            // Show empty day card if no plan data for this day
+            return (
+              <Card key={index} className={`${isTodayDate ? 'border-green-300 bg-green-50' : ''}`}>
+                <CardContent className="p-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-medium ${isTodayDate ? 'text-green-700' : ''}`}>
+                        {formattedDate}
+                      </span>
+                      {isTodayDate && (
+                        <Badge variant="outline" className="bg-green-100 text-green-800 text-xs">
+                          Today
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-400">No meals planned</p>
+                </CardContent>
+              </Card>
+            );
+          }
           
           // Safely access meals with null checks
-          const meals = day.meals || { breakfast: null, lunch: null, dinner: null, snacks: [] };
+          const meals = dayInfo.planData.meals || { breakfast: null, lunch: null, dinner: null, snacks: [] };
           
           // Get actual recipe names
           const breakfastName = meals.breakfast?.name;
@@ -131,6 +168,10 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlan }) => {
                           : `${snacksCount} snack(s)`}
                       </span>
                     </div>
+                  )}
+
+                  {!breakfastName && !lunchName && !dinnerName && snacksCount === 0 && (
+                    <p className="text-gray-400 col-span-2">No meals planned</p>
                   )}
                 </div>
               </CardContent>

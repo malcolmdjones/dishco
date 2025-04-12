@@ -667,6 +667,19 @@ export const useSavedMealPlans = () => {
     
     if (dayDiff >= 0 && dayDiff < activePlan.plan.plan_data.days.length) {
       console.log(`Found meals for day ${dayDiff}:`, activePlan.plan.plan_data.days[dayDiff].meals);
+      
+      const storedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
+      const loggedMealsForDate = storedMeals.filter(meal => {
+        if (!meal.loggedAt) return false;
+        const mealDate = startOfDay(parseISO(meal.loggedAt));
+        return isEqual(mealDate, targetDayStart);
+      });
+      
+      if (loggedMealsForDate.length > 0) {
+        console.log('Found manually logged meals for this date, prioritizing them');
+        return activePlan.plan.plan_data.days[dayDiff].meals;
+      }
+      
       return activePlan.plan.plan_data.days[dayDiff].meals;
     }
     
