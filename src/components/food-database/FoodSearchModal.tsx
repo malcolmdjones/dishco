@@ -12,6 +12,7 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { searchFoods, convertToMealFormat } from '@/services/foodDatabaseService';
+import { useToast } from '@/hooks/use-toast';
 
 interface FoodSearchModalProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [selectedFood, setSelectedFood] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -42,6 +44,11 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
     } catch (error) {
       console.error("Error searching foods:", error);
       setError("Failed to search for foods. Please try again later.");
+      toast({
+        title: "Search Error",
+        description: "Could not retrieve food database results. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsSearching(false);
     }
@@ -62,6 +69,10 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
       const formattedFood = convertToMealFormat(selectedFood, selectedQuantity);
       formattedFood.type = selectedMealType;
       onSelectFood(formattedFood);
+      toast({
+        title: "Food Added",
+        description: `${formattedFood.name} added to your food log.`
+      });
       onClose();
     }
   };
@@ -70,7 +81,7 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-md sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Search External Food Database</DialogTitle>
+          <DialogTitle>Search Food Database</DialogTitle>
           <DialogDescription>
             Find foods, restaurant meals, and packaged products to add to your log
           </DialogDescription>
@@ -126,7 +137,8 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
                   <div>
                     <p className="text-sm font-medium">{food.label}</p>
                     <p className="text-xs text-gray-500">
-                      {food.brand || 'Food item'} • {Math.round(food.nutrients.ENERC_KCAL)} kcal
+                      {food.brand ? `${food.brand} • ` : ''}
+                      {food.nutrients?.ENERC_KCAL ? Math.round(food.nutrients.ENERC_KCAL) : 0} kcal
                     </p>
                   </div>
                 </div>

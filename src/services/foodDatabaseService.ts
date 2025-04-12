@@ -3,19 +3,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { ExternalFood } from "@/types/food";
 import { Recipe } from "@/data/mockData";
 
-// Convert Edamam API food item to our app's Recipe format
+// Convert USDA API food item to our app's Recipe format
 export const convertToMealFormat = (foodItem: any, quantity: number = 1): Recipe => {
+  // Calculate macros based on quantity
+  const calories = Math.round((foodItem.nutrients.ENERC_KCAL || 0) * quantity);
+  const protein = Math.round((foodItem.nutrients.PROCNT || 0) * quantity);
+  const carbs = Math.round((foodItem.nutrients.CHOCDF || 0) * quantity);
+  const fat = Math.round((foodItem.nutrients.FAT || 0) * quantity);
+
   return {
-    id: `edamam-${foodItem.foodId}`,
+    id: `usda-${foodItem.foodId}`,
     name: foodItem.label,
     type: 'snack', // Default type, can be changed by user
     description: foodItem.brand ? `${foodItem.brand}` : '',
     imageSrc: foodItem.image || '',
     macros: {
-      calories: Math.round(foodItem.nutrients.ENERC_KCAL * quantity),
-      protein: Math.round(foodItem.nutrients.PROCNT * quantity),
-      carbs: Math.round(foodItem.nutrients.CHOCDF * quantity),
-      fat: Math.round(foodItem.nutrients.FAT * quantity)
+      calories,
+      protein,
+      carbs,
+      fat
     },
     // Required Recipe properties
     requiresBlender: false,
@@ -30,7 +36,7 @@ export const convertToMealFormat = (foodItem: any, quantity: number = 1): Recipe
   };
 };
 
-// Search for foods in the Edamam database
+// Search for foods in the USDA database
 export const searchFoods = async (query: string): Promise<any[]> => {
   try {
     console.log(`Searching for foods with query: ${query}`);
