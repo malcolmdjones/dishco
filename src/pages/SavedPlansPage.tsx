@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -7,7 +6,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useGroceryListUtils } from '@/hooks/useGroceryListUtils';
 import { useSavedMealPlans, MealPlan } from '@/hooks/useSavedMealPlans';
 
-// Extracted components
 import SavedPlansHeader from '@/components/saved-plans/SavedPlansHeader';
 import PlanCard from '@/components/saved-plans/PlanCard';
 import EditPlanDialog from '@/components/saved-plans/EditPlanDialog';
@@ -22,22 +20,18 @@ const SavedPlansPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  // Dialog states
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isStartDateDialogOpen, setIsStartDateDialogOpen] = useState(false);
   
-  // Form states
   const [editPlan, setEditPlan] = useState<MealPlan | null>(null);
   const [newPlanName, setNewPlanName] = useState('');
   const [newPlanDescription, setNewPlanDescription] = useState('');
   const [deletePlanId, setDeletePlanId] = useState<string | null>(null);
   
-  // Calendar state
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   
-  // Use hooks
   const { 
     showConfirmation, 
     setShowConfirmation, 
@@ -66,7 +60,6 @@ const SavedPlansPage = () => {
     getDatesWithActivePlans
   } = useSavedMealPlans();
 
-  // Re-fetch plans when the page loads
   useEffect(() => {
     fetchPlans();
   }, []);
@@ -91,7 +84,6 @@ const SavedPlansPage = () => {
         title: "Success",
         description: "Meal plan updated successfully."
       });
-      // Refresh the plans after update
       await fetchPlans();
     } catch (error) {
       console.error('Error updating plan:', error);
@@ -120,8 +112,6 @@ const SavedPlansPage = () => {
           title: "Success",
           description: "Meal plan deleted successfully."
         });
-        
-        // Force refresh of plans after successful deletion
         await fetchPlans();
       } else {
         throw new Error("Failed to delete the meal plan.");
@@ -153,30 +143,21 @@ const SavedPlansPage = () => {
   const handleDateSelected = (date: Date) => {
     setIsStartDateDialogOpen(false);
     if (selectedPlan) {
-      // Calculate the start day offset based on the selected date
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       date.setHours(0, 0, 0, 0);
       
-      // Calculate days between today and selected date
-      // If date is today -> startDay = 0
-      // If date is tomorrow -> startDay = -1 (start day is "ahead" of today)
-      // If date is yesterday -> startDay = 1 (start day is "behind" today)
       const dayDiff = Math.round((today.getTime() - date.getTime()) / (24 * 60 * 60 * 1000));
       
       console.log(`Activating plan with start day offset: ${dayDiff}`);
       
-      // Attempt to activate the plan - this might show overlap warning
       const activated = activatePlan(selectedPlan, dayDiff);
       
-      // If activated successfully (no overlaps), proceed with grocery list
       if (activated) {
-        // Store the date for grocery list integration
         const formattedDate = format(date, 'yyyy-MM-dd');
         sessionStorage.setItem('activatePlanDate', formattedDate);
         sessionStorage.setItem('activatePlanData', JSON.stringify(selectedPlan));
         
-        // Prompt for grocery list addition
         processMealPlanForGroceries(selectedPlan);
         setShowConfirmation(true);
       }
@@ -187,23 +168,37 @@ const SavedPlansPage = () => {
     console.log("Confirming overlap with pendingActivation:", pendingActivation);
     if (pendingActivation) {
       console.log("Attempting to force activate plan:", pendingActivation.plan.name);
-      const success = forceActivatePlan();
-      console.log("Force activate result:", success);
-      
-      if (success) {
-        // Store the date for grocery list integration  
-        const formattedDate = format(new Date(pendingActivation.startDate), 'yyyy-MM-dd');
-        sessionStorage.setItem('activatePlanDate', formattedDate);
-        sessionStorage.setItem('activatePlanData', JSON.stringify(pendingActivation.plan));
+      try {
+        const success = forceActivatePlan();
+        console.log("Force activate result:", success);
         
-        // Prompt for grocery list addition
-        processMealPlanForGroceries(pendingActivation.plan);
-        setShowConfirmation(true);
-      } else {
-        console.error("Failed to force activate the meal plan");
+        if (success) {
+          const formattedDate = format(new Date(pendingActivation.startDate), 'yyyy-MM-dd');
+          sessionStorage.setItem('activatePlanDate', formattedDate);
+          sessionStorage.setItem('activatePlanData', JSON.stringify(pendingActivation.plan));
+          
+          processMealPlanForGroceries(pendingActivation.plan);
+          setShowConfirmation(true);
+          
+          fetchPlans();
+          
+          toast({
+            title: "Success",
+            description: `${pendingActivation.plan.name} has been activated and overlapping plans have been replaced.`,
+          });
+        } else {
+          console.error("Failed to force activate the meal plan");
+          toast({
+            title: "Error",
+            description: "Failed to activate the meal plan. Please try again.",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error("Error during plan activation:", error);
         toast({
           title: "Error",
-          description: "Failed to activate the meal plan. Please try again.",
+          description: "An unexpected error occurred. Please try again.",
           variant: "destructive"
         });
       }

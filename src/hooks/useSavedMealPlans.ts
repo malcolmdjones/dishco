@@ -693,6 +693,9 @@ export const useSavedMealPlans = () => {
       const { plan, startDay, startDate } = pendingActivation;
       const { endDate } = calculatePlanDates(plan, startDay);
       
+      console.log(`Activating plan from ${startDate} to ${endDate}`);
+      console.log(`Current active plans:`, activePlans);
+      
       const updatedActivePlans = activePlans.filter(activePlan => {
         const activeStartDate = new Date(activePlan.startDate);
         const activeEndDate = new Date(activePlan.endDate);
@@ -705,6 +708,9 @@ export const useSavedMealPlans = () => {
           (newStartDate <= activeStartDate && newEndDate >= activeEndDate)
         );
         
+        if (hasOverlap) {
+          console.log(`Removing overlapping plan: ${activePlan.plan.name} (${activePlan.startDate} - ${activePlan.endDate})`);
+        }
         return !hasOverlap;
       });
       
@@ -716,8 +722,9 @@ export const useSavedMealPlans = () => {
       };
       
       updatedActivePlans.push(newActivePlan);
-      setActivePlans(updatedActivePlans);
+      console.log("Updated active plans:", updatedActivePlans);
       
+      setActivePlans(updatedActivePlans);
       sessionStorage.setItem('activePlans', JSON.stringify(updatedActivePlans));
       
       setPendingActivation(null);
