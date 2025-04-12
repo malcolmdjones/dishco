@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -20,9 +21,14 @@ const LogMealPage = () => {
   const [recentMeals, setRecentMeals] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
+  // Get only meals logged from this screen
   useEffect(() => {
-    const loggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
-    setRecentMeals(loggedMeals.slice(0, 10).reverse());
+    const allLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
+    // Filter out default meal types (breakfast, lunch, dinner) unless they are custom recipes
+    const loggedFromThisScreen = allLoggedMeals.filter((meal: any) => 
+      meal.loggedFromScreen === 'log-meal' || meal.externalSource === true
+    );
+    setRecentMeals(loggedFromThisScreen.slice(0, 10).reverse());
   }, []);
 
   const handleClearSearch = () => {
@@ -55,6 +61,10 @@ const LogMealPage = () => {
   const handleLogMeal = (recipe: Recipe) => {
     const existingLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
     const uniqueId = `${recipe.id}-${Date.now()}`;
+    
+    // Calculate protein display value
+    const proteinDisplay = recipe.macros?.protein ? `${recipe.macros.protein}g protein` : '';
+    
     const newMeal = {
       id: uniqueId,
       name: recipe.name,
@@ -62,13 +72,20 @@ const LogMealPage = () => {
       recipe: recipe,
       consumed: true,
       loggedAt: new Date().toISOString(),
+      loggedFromScreen: 'log-meal', // Mark as logged from this screen
       calories: recipe.macros.calories,
+      protein: proteinDisplay,
+      brand: recipe.brand || '',
       servingInfo: recipe.servings === 1 ? '1 serving' : `${recipe.servings} servings`,
       source: recipe.externalSource ? 'External' : 'Custom'
     };
+    
     const updatedLoggedMeals = [newMeal, ...existingLoggedMeals];
     localStorage.setItem('loggedMeals', JSON.stringify(updatedLoggedMeals));
+    
+    // Update the recent meals for display
     setRecentMeals([newMeal, ...recentMeals].slice(0, 10));
+    
     const currentNutrition = JSON.parse(localStorage.getItem('dailyNutrition') || '{}');
     const updatedNutrition = {
       calories: (currentNutrition.calories || 0) + recipe.macros.calories,
@@ -76,7 +93,9 @@ const LogMealPage = () => {
       carbs: (currentNutrition.carbs || 0) + recipe.macros.carbs,
       fat: (currentNutrition.fat || 0) + recipe.macros.fat
     };
+    
     localStorage.setItem('dailyNutrition', JSON.stringify(updatedNutrition));
+    
     toast({
       title: "Meal Logged",
       description: `${recipe.name} has been added to your daily log.`,
@@ -95,6 +114,7 @@ const LogMealPage = () => {
       cookTime: 0,
       prepTime: 0,
       servings: 1,
+      brand: foodItem.brand || '',
       macros: {
         calories: foodItem.macros?.calories || 0,
         protein: foodItem.macros?.protein || 0,
@@ -120,7 +140,7 @@ const LogMealPage = () => {
 
   return (
     <div className="animate-fade-in pb-16">
-      <div className="flex justify-center items-center py-3 border-b">
+      <div className="flex justify-center items-center py-3 border-b sticky top-0 bg-white z-10">
         <button className="absolute left-4" onClick={() => window.history.back()}>
           <X size={24} />
         </button>
@@ -129,7 +149,7 @@ const LogMealPage = () => {
         </h1>
       </div>
 
-      <div className="relative px-4 py-3">
+      <div className="px-4 py-3 sticky top-14 bg-white z-10">
         <div className="relative flex items-center bg-gray-100 rounded-full">
           <Search className="absolute left-3 text-blue-600" size={20} />
           <Input
@@ -152,7 +172,7 @@ const LogMealPage = () => {
       </div>
 
       <Tabs defaultValue="all" value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList className="w-full justify-start px-2 bg-white border-b">
+        <TabsList className="w-full justify-start px-2 bg-white border-b overflow-x-auto flex-nowrap whitespace-nowrap no-scrollbar sticky top-[7.5rem] z-10">
           <TabsTrigger 
             value="all" 
             className={cn(
@@ -215,7 +235,7 @@ const LogMealPage = () => {
           )}
 
           <div className="p-4">
-            <div className="flex justify-between items-center mb-2">
+            <div className="flex justify-between items-center mb-0">
               <h2 className="text-xl font-bold">History</h2>
               <div className="flex items-center border rounded-full px-3 py-1 text-sm">
                 <span>Most Recent</span>
@@ -237,7 +257,9 @@ const LogMealPage = () => {
                       <div>
                         <p className="font-medium">{recipe.name}</p>
                         <p className="text-sm text-gray-500">
-                          {recipe.macros.calories} cal, {recipe.servings} serving
+                          <span className="font-medium">{recipe.macros.calories} cal</span>, 
+                          {recipe.servings === 1 ? '1 serving' : `${recipe.servings} servings`}
+                          {recipe.macros.protein ? `, ${recipe.macros.protein}g protein` : ''}
                         </p>
                       </div>
                       <Button
@@ -318,6 +340,17 @@ const LogMealPage = () => {
         onClose={() => setIsExternalSearchOpen(false)}
         onSelectFood={handleLogExternalFood}
       />
+
+      <style jsx global>{`
+        .no-scrollbar {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+        }
+        
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;  /* Chrome, Safari, Opera */
+        }
+      `}</style>
     </div>
   );
 };

@@ -17,6 +17,7 @@ export const convertToMealFormat = (foodItem: any, quantity: number = 1): Recipe
     type: 'snack', // Default type, can be changed by user
     description: foodItem.brand ? `${foodItem.brand}` : '',
     imageSrc: foodItem.image || '',
+    brand: foodItem.brand || '',
     macros: {
       calories,
       protein,
@@ -54,7 +55,22 @@ export const searchFoods = async (query: string): Promise<any[]> => {
     // Process and return the data
     if (data && Array.isArray(data)) {
       console.log(`Found ${data.length} food items`);
-      return data;
+      
+      // Make sure each item has brand and correct nutrient values
+      const processedData = data.map(item => {
+        return {
+          ...item,
+          brand: item.brand || '',
+          nutrients: {
+            ENERC_KCAL: item.nutrients.ENERC_KCAL || 0,
+            PROCNT: item.nutrients.PROCNT || 0,
+            CHOCDF: item.nutrients.CHOCDF || 0, 
+            FAT: item.nutrients.FAT || 0
+          }
+        };
+      });
+      
+      return processedData;
     }
 
     return [];

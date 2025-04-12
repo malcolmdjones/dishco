@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Loader2, X, Plus } from 'lucide-react';
@@ -69,6 +69,7 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
     if (selectedFood) {
       const formattedFood = convertToMealFormat(selectedFood, selectedQuantity);
       formattedFood.type = selectedMealType;
+      formattedFood.brand = selectedFood.brand || '';
       onSelectFood(formattedFood);
       toast({
         title: "Food Added",
@@ -91,7 +92,7 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md sm:max-w-lg p-0">
+      <DialogContent className="max-w-md w-[95vw] sm:max-w-lg p-0 rounded-xl">
         <DialogHeader className="px-4 py-3 border-b">
           <DialogTitle className="text-xl text-blue-600 text-center">External Food Search</DialogTitle>
         </DialogHeader>
@@ -155,7 +156,8 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
                         <p className="font-medium">{food.label}</p>
                         <p className="text-sm text-gray-500">
                           {food.brand ? `${food.brand} • ` : ''}
-                          {food.nutrients?.ENERC_KCAL ? Math.round(food.nutrients.ENERC_KCAL) : 0} kcal
+                          <span className="font-medium">{food.nutrients?.ENERC_KCAL ? Math.round(food.nutrients.ENERC_KCAL) : 0} cal</span>
+                          {food.nutrients?.PROCNT ? `, ${Math.round(food.nutrients.PROCNT)}g protein` : ''}
                         </p>
                       </div>
                     </div>
@@ -189,7 +191,9 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
                 <div>
                   <h3 className="font-medium text-lg">{selectedFood.label}</h3>
                   <p className="text-sm text-gray-600">
-                    {selectedFood.brand || 'Generic'} • {Math.round(selectedFood.nutrients.ENERC_KCAL)} kcal per serving
+                    {selectedFood.brand || 'Generic'} • 
+                    <span className="font-medium"> {Math.round(selectedFood.nutrients.ENERC_KCAL)} cal</span>
+                    {selectedFood.nutrients.PROCNT ? `, ${Math.round(selectedFood.nutrients.PROCNT)}g protein` : ''}
                   </p>
                 </div>
               </div>
@@ -228,19 +232,19 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                    <p>Calories: {Math.round(selectedFood.nutrients.ENERC_KCAL * selectedQuantity)} kcal</p>
+                    <p>Calories: <span className="font-medium">{Math.round(selectedFood.nutrients.ENERC_KCAL * selectedQuantity)}</span></p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                    <p>Protein: {Math.round(selectedFood.nutrients.PROCNT * selectedQuantity)}g</p>
+                    <p>Protein: <span className="font-medium">{Math.round(selectedFood.nutrients.PROCNT * selectedQuantity)}g</span></p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                    <p>Carbs: {Math.round(selectedFood.nutrients.CHOCDF * selectedQuantity)}g</p>
+                    <p>Carbs: <span className="font-medium">{Math.round(selectedFood.nutrients.CHOCDF * selectedQuantity)}g</span></p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                    <p>Fat: {Math.round(selectedFood.nutrients.FAT * selectedQuantity)}g</p>
+                    <p>Fat: <span className="font-medium">{Math.round(selectedFood.nutrients.FAT * selectedQuantity)}g</span></p>
                   </div>
                 </div>
               </div>

@@ -19,13 +19,13 @@ const RecentMealHistory: React.FC<RecentMealHistoryProps> = ({ recentMeals, onAd
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 mt-2">
       {recentMeals.map((meal) => (
         <div 
           key={meal.id} 
           className="flex items-center justify-between bg-gray-50 p-3 rounded-lg"
         >
-          <div>
+          <div className="w-full">
             <div className="flex items-center">
               <p className="font-medium">{meal.name}</p>
               {meal.consumed && (
@@ -34,15 +34,21 @@ const RecentMealHistory: React.FC<RecentMealHistoryProps> = ({ recentMeals, onAd
                 </span>
               )}
             </div>
-            <p className="text-sm text-gray-500">
-              {meal.calories} cal, {meal.servingInfo || '1 serving'}, {meal.source || ''}
-            </p>
+            <div className="flex justify-between w-full">
+              <p className="text-sm text-gray-500">
+                <span className="font-medium">{meal.calories} cal</span>
+                {meal.servingInfo && <span>, {meal.servingInfo}</span>}
+                {meal.brand && <span>, {meal.brand}</span>}
+                {meal.source ? <span>, {meal.source}</span> : null}
+                {meal.protein && <span>, {meal.protein}g protein</span>}
+              </p>
+            </div>
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => onAddMeal(meal.recipe)}
-            className="h-10 w-10 rounded-full bg-gray-200"
+            className="h-10 w-10 rounded-full bg-gray-200 shrink-0 ml-2"
           >
             <Plus size={20} />
           </Button>

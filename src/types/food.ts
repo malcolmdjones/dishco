@@ -17,3 +17,18 @@ export interface ExternalFood {
   brand?: string;
   externalId: string;
 }
+
+export interface LoggedMeal {
+  id: string;
+  name: string;
+  type: string;
+  recipe: any;
+  consumed: boolean;
+  loggedAt: string;
+  loggedFromScreen?: string;
+  calories: number;
+  protein?: string;
+  brand?: string;
+  servingInfo?: string;
+  source?: string;
+}
