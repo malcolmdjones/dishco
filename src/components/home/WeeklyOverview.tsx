@@ -65,8 +65,18 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlans, getMealsFo
       const startDate = parseISO(plan.startDate);
       const endDate = parseISO(plan.endDate);
       
-      // Use normalized date comparison for accuracy
-      if (date >= startDate && date <= endDate) {
+      // Convert dates to start of day for proper comparison
+      const startDayStart = new Date(startDate);
+      startDayStart.setHours(0, 0, 0, 0);
+      
+      const endDayStart = new Date(endDate);
+      endDayStart.setHours(0, 0, 0, 0);
+      
+      const checkDate = new Date(date);
+      checkDate.setHours(0, 0, 0, 0);
+      
+      // Check if the date falls within the plan's date range (inclusive of end date)
+      if (checkDate >= startDayStart && checkDate <= endDayStart) {
         return plan;
       }
     }
@@ -142,7 +152,7 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlans, getMealsFo
           }
           
           // Safely access meals with null checks
-          const meals = dayInfo.planData.meals || { breakfast: null, lunch: null, dinner: null, snacks: [] };
+          const meals = dayInfo.planData?.meals || { breakfast: null, lunch: null, dinner: null, snacks: [] };
           
           // Get actual recipe names with improved safety checks
           const breakfastName = getMealName(meals.breakfast);

@@ -2,7 +2,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
-import { format } from 'date-fns';
+import { format, parseISO, startOfDay } from 'date-fns';
 import { MealPlanDay, Recipe } from '@/data/mockData';
 
 interface WeekOverviewDialogProps {
