@@ -205,6 +205,8 @@ const SavedPlansPage = () => {
     } else {
       console.error("No pending activation found when confirming overlap");
     }
+    
+    setShowOverlapWarning(false);
   };
   
   const handleOverlapDetected = (date: Date) => {
