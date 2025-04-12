@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Search } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -17,19 +16,19 @@ const PlanningPage = () => {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const { activePlan } = useSavedMealPlans();
   
-  // Fixed image URL to avoid 404s
   const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
   const handleGeneratePlan = () => {
     setIsOnboardingOpen(true);
   };
 
-  // Get a selection of 2 recipes for display
   const recipeSelection = recipes.slice(0, 2);
-  // Get 2 snack recipes for the Snack Savvy section
   const snackSelection = recipes.filter(recipe => recipe.type === 'snack').slice(0, 2);
-  // Get 2 dessert recipes for the Desserts section (fixed spelling from 'desert' to 'dessert')
   const dessertSelection = recipes.filter(recipe => recipe.type === 'dessert').slice(0, 2);
+
+  useEffect(() => {
+    console.log('PlanningPage mounted - checking active plan');
+  }, []);
 
   return (
     <div className="animate-fade-in">
@@ -44,10 +43,8 @@ const PlanningPage = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Weekly Overview - keeping this on the planning page */}
           <WeeklyOverview activePlan={activePlan} />
 
-          {/* Generate Meal Plan Button */}
           <Button 
             className="w-full py-6 text-lg font-medium"
             onClick={handleGeneratePlan}
@@ -56,7 +53,6 @@ const PlanningPage = () => {
             <ArrowRight className="ml-2" />
           </Button>
 
-          {/* Discover Recipes with styled title */}
           <div className="bg-white rounded-xl p-4 shadow-sm animate-slide-up">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">
@@ -90,8 +86,7 @@ const PlanningPage = () => {
               ))}
             </div>
           </div>
-          
-          {/* Snack Savvy Section - reduced to 2 items */}
+
           <div className="bg-white rounded-xl p-4 shadow-sm animate-slide-up">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">Snack Savvy</h2>
@@ -122,7 +117,6 @@ const PlanningPage = () => {
                   </div>
                 ))
               ) : (
-                // Fallback for no snacks
                 <div className="col-span-2 text-center py-6">
                   <p className="text-gray-400">No snacks available. Explore snacks to discover more!</p>
                   <Button 
@@ -138,7 +132,6 @@ const PlanningPage = () => {
             </div>
           </div>
 
-          {/* Desserts Section */}
           <div className="bg-white rounded-xl p-4 shadow-sm animate-slide-up">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">Desserts</h2>
@@ -169,7 +162,6 @@ const PlanningPage = () => {
                   </div>
                 ))
               ) : (
-                // Fallback for no desserts
                 <div className="col-span-2 text-center py-6">
                   <p className="text-gray-400">No desserts available. Explore desserts to discover more!</p>
                   <Button 
@@ -187,7 +179,6 @@ const PlanningPage = () => {
         </div>
       )}
 
-      {/* Onboarding Flow Dialog */}
       <MealPlanOnboarding 
         isOpen={isOnboardingOpen}
         onClose={() => setIsOnboardingOpen(false)}

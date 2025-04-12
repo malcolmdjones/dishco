@@ -5,7 +5,7 @@ import { Calendar, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { format, addDays } from 'date-fns';
+import { format, addDays, isToday, parseISO } from 'date-fns';
 import { MealPlan } from '@/hooks/useSavedMealPlans';
 
 interface WeeklyOverviewProps {
@@ -37,9 +37,19 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlan }) => {
     );
   }
 
-  // Get the start date of the active plan
+  // Get the start date for the active plan
+  const today = new Date();
   const startDate = new Date();
-  startDate.setDate(startDate.getDate() - activePlan.startDay);
+  
+  // Apply the startDay offset to the start date
+  if (activePlan.startDay > 0) {
+    startDate.setDate(startDate.getDate() - activePlan.startDay);
+  } else if (activePlan.startDay < 0) {
+    startDate.setDate(startDate.getDate() + Math.abs(activePlan.startDay));
+  }
+  
+  console.log('Weekly overview - Start date:', format(startDate, 'yyyy-MM-dd'));
+  console.log('Weekly overview - Active plan days:', activePlan.plan.plan_data.days.length);
   
   // Show max 5 days in the overview
   const daysToShow = Math.min(5, activePlan.plan.plan_data.days.length);
@@ -58,10 +68,12 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlan }) => {
       
       <div className="space-y-2 mt-4">
         {Array.from({ length: daysToShow }).map((_, index) => {
+          if (index >= activePlan.plan.plan_data.days.length) return null;
+          
           const day = activePlan.plan.plan_data.days[index];
           const dayDate = addDays(startDate, index);
           const formattedDate = format(dayDate, 'EEE, MMM d');
-          const isToday = format(dayDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+          const isTodayDate = isToday(dayDate);
           
           const meals = day.meals;
           const totalCalories = [
@@ -74,14 +86,14 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlan }) => {
             .reduce((sum, meal) => sum + (meal.macros?.calories || 0), 0);
 
           return (
-            <Card key={index} className={`${isToday ? 'border-green-300 bg-green-50' : ''}`}>
+            <Card key={index} className={`${isTodayDate ? 'border-green-300 bg-green-50' : ''}`}>
               <CardContent className="p-3">
                 <div className="flex justify-between items-center mb-2">
                   <div className="flex items-center gap-2">
-                    <span className={`text-sm font-medium ${isToday ? 'text-green-700' : ''}`}>
+                    <span className={`text-sm font-medium ${isTodayDate ? 'text-green-700' : ''}`}>
                       {formattedDate}
                     </span>
-                    {isToday && (
+                    {isTodayDate && (
                       <Badge variant="outline" className="bg-green-100 text-green-800 text-xs">
                         Today
                       </Badge>

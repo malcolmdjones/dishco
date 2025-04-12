@@ -56,8 +56,10 @@ const HomePage = () => {
       });
       
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      console.log('HomePage - Loading meals for date:', formattedDate);
       
       const planMeals = getMealsForDate(formattedDate);
+      console.log('HomePage - Plan meals retrieved:', planMeals);
       
       const plannedMealArray: Meal[] = [];
       
@@ -131,6 +133,7 @@ const HomePage = () => {
         )
       );
       
+      console.log('HomePage - Setting today\'s meals:', [...uniqueLoggedMeals, ...updatedPlannedMeals]);
       setTodaysMeals([...uniqueLoggedMeals, ...updatedPlannedMeals]);
       
       calculateNutritionForDate([...uniqueLoggedMeals, ...updatedPlannedMeals.filter(meal => meal.consumed)]);

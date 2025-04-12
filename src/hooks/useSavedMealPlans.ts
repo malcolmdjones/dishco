@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format, parseISO, startOfDay, differenceInDays } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -645,7 +645,8 @@ export const useSavedMealPlans = () => {
       return null;
     }
     
-    const targetDate = new Date(dateString);
+    const targetDate = parseISO(dateString);
+    const today = new Date();
     const startDate = new Date();
     
     if (activePlan.startDay > 0) {
@@ -654,14 +655,15 @@ export const useSavedMealPlans = () => {
       startDate.setDate(startDate.getDate() + Math.abs(activePlan.startDay));
     }
     
-    startDate.setHours(0, 0, 0, 0);
-    targetDate.setHours(0, 0, 0, 0);
+    const targetDayStart = startOfDay(targetDate);
+    const startDayStart = startOfDay(startDate);
     
-    const dayDiff = Math.floor((targetDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const dayDiff = differenceInDays(targetDayStart, startDayStart);
     
     console.log('Target date:', dateString);
-    console.log('Start date:', format(startDate, 'yyyy-MM-dd'));
+    console.log('Start date:', format(startDayStart, 'yyyy-MM-dd'));
     console.log('Day difference:', dayDiff);
+    console.log('Plan days length:', activePlan.plan.plan_data.days.length);
     
     if (dayDiff >= 0 && dayDiff < activePlan.plan.plan_data.days.length) {
       console.log(`Found meals for day ${dayDiff}:`, activePlan.plan.plan_data.days[dayDiff].meals);
