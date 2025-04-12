@@ -886,7 +886,8 @@ export const useSavedMealPlans = () => {
   const deactivatePlanForDate = (dateString: string): boolean => {
     console.log(`Attempting to deactivate plan for date: ${dateString}`);
     
-    const dateHasPlan = activeDates[dateString];
+    const activeDatesMap = getDatesWithActivePlans();
+    const dateHasPlan = activeDatesMap[dateString];
     if (!dateHasPlan) {
       console.log("No plan found for this date");
       return false;
