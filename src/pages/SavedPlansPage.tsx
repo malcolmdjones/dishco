@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -165,7 +166,7 @@ const SavedPlansPage = () => {
   };
   
   const handleConfirmOverlap = () => {
-    console.log("Confirming overlap with pendingActivation:", pendingActivation);
+    console.log("SavedPlansPage: handleConfirmOverlap called with pendingActivation:", pendingActivation);
     if (pendingActivation) {
       console.log("Attempting to force activate plan:", pendingActivation.plan.name);
       try {

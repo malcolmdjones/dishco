@@ -24,6 +24,11 @@ const OverlapWarningDialog: React.FC<OverlapWarningDialogProps> = ({
   onCancel,
   planName
 }) => {
+  const handleConfirm = () => {
+    console.log("OverlapWarningDialog: handleConfirm called");
+    onConfirm();
+  };
+
   return (
     <Dialog 
       open={isOpen} 
@@ -54,10 +59,7 @@ const OverlapWarningDialog: React.FC<OverlapWarningDialogProps> = ({
           </Button>
           <Button 
             variant="destructive" 
-            onClick={() => {
-              console.log("Confirm overlap button clicked");
-              onConfirm();
-            }}
+            onClick={handleConfirm}
             aria-label="Replace existing plan"
           >
             Replace Existing Plan
