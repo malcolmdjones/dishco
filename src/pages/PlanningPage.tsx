@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Search } from 'lucide-react';
@@ -47,9 +48,9 @@ const PlanningPage = () => {
 
           <Button 
             className="w-full py-6 text-lg font-medium"
-            onClick={handleGeneratePlan}
+            onClick={() => navigate('/saved-plans')}
           >
-            Generate a Meal Plan
+            Add a saved meal plan
             <ArrowRight className="ml-2" />
           </Button>
 

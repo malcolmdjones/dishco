@@ -29,8 +29,8 @@ const WeeklyOverview: React.FC<WeeklyOverviewProps> = ({ activePlan }) => {
         <div className="mt-4 text-center">
           <Calendar size={48} className="mx-auto text-gray-300" />
           <p className="text-gray-400 mt-2">No active meal plan</p>
-          <Link to="/planning">
-            <Button variant="outline" size="sm" className="mt-3">Create a meal plan</Button>
+          <Link to="/saved-plans">
+            <Button variant="outline" size="sm" className="mt-3">Add a saved meal plan</Button>
           </Link>
         </div>
       </div>
