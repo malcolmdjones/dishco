@@ -97,9 +97,10 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     // Draw current video frame to canvas
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     
+    // For now, we don't have true barcode detection in the browser
+    // In a real app, you would use a barcode scanning library like QuaggaJS or ZXing
+    // For demo purposes, we're simulating detection with some test barcodes
     try {
-      // This would be replaced with an actual barcode detection library
-      // For demo purposes, we'll simulate a successful scan after a few seconds
       if (Math.random() > 0.9) { // 10% chance of "detecting" a barcode each scan
         const simulatedBarcodes = ['3017624010701', '5449000000996', '8410795505533'];
         const randomBarcode = simulatedBarcodes[Math.floor(Math.random() * simulatedBarcodes.length)];
@@ -204,7 +205,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
                     
                     {/* Scanning animation */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="w-4/5 h-1 bg-blue-500 absolute animate-[scan_2s_ease-in-out_infinite]"></div>
+                      <div className="w-4/5 h-1 bg-blue-500 absolute animate-scan"></div>
                     </div>
                   </div>
                   
@@ -280,7 +281,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
         </div>
       </DialogContent>
       
-      <style jsx>{`
+      <style jsx global>{`
         @keyframes scan {
           0% {
             transform: translateY(-100%);
@@ -293,6 +294,10 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
             transform: translateY(100%);
             opacity: 0;
           }
+        }
+        
+        .animate-scan {
+          animation: scan 2s ease-in-out infinite;
         }
       `}</style>
     </Dialog>

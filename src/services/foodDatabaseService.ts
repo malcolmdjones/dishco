@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { ExternalFood, FoodDatabaseItem, OpenFoodFactsProduct, BarcodeResponse } from "@/types/food";
 import { Recipe } from "@/data/mockData";
@@ -32,8 +33,8 @@ export const convertToMealFormat = (foodItem: any, quantity: number = 1): Recipe
     instructions: [],
     externalSource: true,
     externalId: foodItem.foodId,
-    // Food-specific properties that we'll handle in UI rendering
-    brandName: foodItem.brand || ''
+    // Store brand name in description if available
+    // Remove brandName property as it's not in the Recipe type
   };
 };
 
