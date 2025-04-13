@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Check } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Recipe } from '@/data/mockData';
 import { LoggedMeal } from '@/types/food';
 
@@ -29,11 +29,7 @@ const RecentMealHistory: React.FC<RecentMealHistoryProps> = ({ recentMeals, onAd
           <div className="w-full">
             <div className="flex items-center">
               <p className="font-medium">{meal.name}</p>
-              {meal.consumed && (
-                <span className="ml-2">
-                  <Check size={16} className="text-green-500" />
-                </span>
-              )}
+              {/* Removed the check mark that was here */}
             </div>
             <div className="flex justify-between w-full">
               <p className="text-sm text-gray-500">

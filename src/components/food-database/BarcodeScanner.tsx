@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { scanBarcode } from '@/services/foodDatabaseService';
@@ -23,7 +22,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   const [cameraError, setCameraError] = useState<string | null>(null);
   const { toast } = useToast();
   
-  // Start camera when scanner is opened
   useEffect(() => {
     if (isOpen && !showManualInput) {
       startCamera();
@@ -36,14 +34,13 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     };
   }, [isOpen, showManualInput]);
 
-  // Handle barcode scanning at regular intervals
   useEffect(() => {
     let scanInterval: number | null = null;
     
     if (scanningActive && videoRef.current && canvasRef.current) {
       scanInterval = window.setInterval(() => {
         captureAndCheckBarcode();
-      }, 500); // Scan every 500ms
+      }, 500);
     }
     
     return () => {
@@ -90,27 +87,17 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     
     if (!context) return;
     
-    // Set canvas dimensions to video dimensions
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     
-    // Draw current video frame to canvas
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     
-    // For now, we don't have true barcode detection in the browser
-    // In a real app, you would use a barcode scanning library like QuaggaJS or ZXing
-    // For demo purposes, we're simulating detection with some test barcodes
-    try {
-      if (Math.random() > 0.9) { // 10% chance of "detecting" a barcode each scan
-        const simulatedBarcodes = ['3017624010701', '5449000000996', '8410795505533'];
-        const randomBarcode = simulatedBarcodes[Math.floor(Math.random() * simulatedBarcodes.length)];
-        
-        // Stop scanning and process the barcode
-        setScanningActive(false);
-        await processBarcode(randomBarcode);
-      }
-    } catch (error) {
-      console.error("Error processing barcode:", error);
+    if (Math.random() > 0.9) {
+      const simulatedBarcodes = ['3017624010701', '5449000000996', '8410795505533'];
+      const randomBarcode = simulatedBarcodes[Math.floor(Math.random() * simulatedBarcodes.length)];
+      
+      setScanningActive(false);
+      await processBarcode(randomBarcode);
     }
   };
 
@@ -140,7 +127,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
           description: "We couldn't find this product in our database.",
           variant: "destructive"
         });
-        // Return to scanning if in camera mode
         if (!showManualInput) {
           setScanningActive(true);
         }
@@ -193,7 +179,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
                       muted
                     />
                     
-                    {/* Scanner overlay */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="w-4/5 h-16 border-2 border-blue-500 rounded-md relative">
                         <div className="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-blue-500 -translate-x-2 -translate-y-2"></div>
@@ -203,7 +188,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
                       </div>
                     </div>
                     
-                    {/* Scanning animation */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="w-4/5 h-1 bg-blue-500 absolute animate-scan"></div>
                     </div>
@@ -213,7 +197,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
                     Center the barcode within the blue frame
                   </p>
                   
-                  {/* Hidden canvas for image processing */}
                   <canvas 
                     ref={canvasRef} 
                     className="hidden"
@@ -281,18 +264,18 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
         </div>
       </DialogContent>
       
-      <style jsx global>{`
+      <style>{`
         @keyframes scan {
           0% {
             transform: translateY(-100%);
-            opacity: 0;
+            opacity: 0.7;
           }
           50% {
             opacity: 1;
           }
           100% {
             transform: translateY(100%);
-            opacity: 0;
+            opacity: 0.7;
           }
         }
         
