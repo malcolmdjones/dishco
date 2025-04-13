@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalFood, FoodDatabaseItem, OpenFoodFactsProduct } from "@/types/food";
+import { ExternalFood, FoodDatabaseItem, OpenFoodFactsProduct, BarcodeResponse } from "@/types/food";
 import { Recipe } from "@/data/mockData";
 
 // Convert OpenFoodFacts API food item to our app's Recipe format
@@ -204,7 +204,6 @@ export const searchFoods = async (query: string, searchExternal: boolean = true)
     return combinedResults;
   } catch (error) {
     console.error("Error in searchFoods:", error);
-    // Return local results if external API search fails
     return [...localResults, ...recentResults];
   }
 };
@@ -236,10 +235,54 @@ export const foodItemToRecipe = (foodItem: FoodDatabaseItem, quantity: number = 
     ingredients: [],
     instructions: [],
     externalSource: !foodItem.isCommon,
-    externalId: foodItem.id,
-    // Food-specific properties that we'll handle in UI rendering
-    servingSize: foodItem.servingSize,
-    servingUnit: foodItem.servingUnit,
-    brandName: foodItem.brand || ''
+    externalId: foodItem.id
   };
+};
+
+// Scan barcode using OpenFoodFacts API
+export const scanBarcode = async (barcode: string): Promise<FoodDatabaseItem | null> => {
+  try {
+    console.log(`Looking up barcode: ${barcode}`);
+    
+    // Call OpenFoodFacts API directly
+    const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
+    
+    if (!response.ok) {
+      console.error(`Error fetching barcode data: ${response.status}`);
+      return null;
+    }
+    
+    const data: BarcodeResponse = await response.json();
+    
+    if (data.status !== 1 || !data.product) {
+      console.log(`Product not found for barcode ${barcode}`);
+      return null;
+    }
+    
+    // Extract product data
+    const product = data.product;
+    
+    // Create FoodDatabaseItem from product
+    const foodItem: FoodDatabaseItem = {
+      id: `off-barcode-${product.code}`,
+      name: product.product_name || `Product ${product.code}`,
+      brand: product.brands || '',
+      macros: {
+        calories: Math.round(product.nutriments?.['energy-kcal_100g'] || 0),
+        protein: Math.round(product.nutriments?.proteins_100g || 0),
+        carbs: Math.round(product.nutriments?.carbohydrates_100g || 0),
+        fat: Math.round(product.nutriments?.fat_100g || 0)
+      },
+      servingSize: product.serving_size || product.quantity || '100g',
+      servingUnit: '',
+      imageSrc: product.image_url || '',
+      isCommon: false,
+      type: 'snack'
+    };
+    
+    return foodItem;
+  } catch (error) {
+    console.error("Error scanning barcode:", error);
+    return null;
+  }
 };

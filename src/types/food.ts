@@ -1,4 +1,3 @@
-
 // src/types/food.ts
 export interface ExternalFood {
   id: string;
@@ -73,4 +72,18 @@ export interface OpenFoodFactsResponse {
   page_count: number;
   page_size: number;
   products: OpenFoodFactsProduct[];
+}
+
+// Add the barcode scanning types
+export interface BarcodeResult {
+  code: string;
+  status: number;
+  product?: OpenFoodFactsProduct;
+}
+
+export interface BarcodeResponse {
+  code: string;
+  product: OpenFoodFactsProduct;
+  status: number;
+  status_verbose: string;
 }

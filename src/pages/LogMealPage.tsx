@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -12,6 +11,7 @@ import RecentMealHistory from '@/components/food-database/RecentMealHistory';
 import { cn } from '@/lib/utils';
 import { searchFoods, foodItemToRecipe, addToRecentFoods } from '@/services/foodDatabaseService';
 import { FoodDatabaseItem, LoggedMeal } from '@/types/food';
+import BarcodeScanner from '@/components/food-database/BarcodeScanner';
 
 const LogMealPage = () => {
   const { toast } = useToast();
@@ -22,6 +22,7 @@ const LogMealPage = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchResults, setSearchResults] = useState<FoodDatabaseItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
 
   // Get only meals logged from this screen
   useEffect(() => {
@@ -146,6 +147,22 @@ const LogMealPage = () => {
     addToRecentFoods(foodItem);
   };
 
+  const handleOpenBarcodeScanner = () => {
+    setShowBarcodeScanner(true);
+  };
+
+  const handleCloseBarcodeScanner = () => {
+    setShowBarcodeScanner(false);
+  };
+
+  const handleBarcodeResult = (foodItem: FoodDatabaseItem) => {
+    handleLogDatabaseFood(foodItem);
+    toast({
+      title: "Product Found",
+      description: `${foodItem.name} has been added to your log.`
+    });
+  };
+
   const suggestedSearches = [
     'chicken breast',
     'yogurt',
@@ -240,8 +257,8 @@ const LogMealPage = () => {
                   <span className="text-blue-600 font-medium">Voice Log</span>
                   <span className="bg-blue-100 text-xs text-blue-800 px-2 py-0.5 rounded mt-1">NEW</span>
                 </div>
-                <div onClick={() => toast({ title: "Coming Soon", description: "Barcode scanning will be available in a future update" })}
-                     className="bg-white p-4 rounded-lg shadow flex flex-col items-center justify-center">
+                <div onClick={handleOpenBarcodeScanner}
+                     className="bg-white p-4 rounded-lg shadow flex flex-col items-center justify-center cursor-pointer">
                   <div className="bg-blue-100 rounded-full p-3 mb-2">
                     <Barcode className="text-blue-600" size={24} />
                   </div>
@@ -387,7 +404,7 @@ const LogMealPage = () => {
         </TabsContent>
       </Tabs>
 
-      <style jsx global>
+      <style>
         {`
         .no-scrollbar {
           -ms-overflow-style: none;  /* IE and Edge */
@@ -399,6 +416,12 @@ const LogMealPage = () => {
         }
         `}
       </style>
+      
+      <BarcodeScanner 
+        isOpen={showBarcodeScanner}
+        onClose={handleCloseBarcodeScanner}
+        onFoodFound={handleBarcodeResult}
+      />
     </div>
   );
 };
