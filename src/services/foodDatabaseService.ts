@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ExternalFood, FoodDatabaseItem, OpenFoodFactsProduct, BarcodeResponse } from "@/types/food";
 import { Recipe } from "@/data/mockData";
@@ -34,8 +33,6 @@ export const convertToMealFormat = (foodItem: any, quantity: number = 1): Recipe
     externalSource: true,
     externalId: foodItem.foodId,
     // Food-specific properties that we'll handle in UI rendering
-    servingSize: foodItem.servingSize,
-    servingUnit: '',
     brandName: foodItem.brand || ''
   };
 };
@@ -204,7 +201,13 @@ export const searchFoods = async (query: string, searchExternal: boolean = true)
     return combinedResults;
   } catch (error) {
     console.error("Error in searchFoods:", error);
-    return [...localResults, ...recentResults];
+    return [...commonFoods.filter(food => 
+      food.name.toLowerCase().includes(query.toLowerCase()) ||
+      (food.brand && food.brand.toLowerCase().includes(query.toLowerCase()))
+    ), ...getRecentFoods().filter(food => 
+      food.name.toLowerCase().includes(query.toLowerCase()) ||
+      (food.brand && food.brand.toLowerCase().includes(query.toLowerCase()))
+    )];
   }
 };
 
@@ -244,17 +247,17 @@ export const scanBarcode = async (barcode: string): Promise<FoodDatabaseItem | n
   try {
     console.log(`Looking up barcode: ${barcode}`);
     
-    // Call OpenFoodFacts API directly
-    const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
+    // Call our Supabase Edge Function for the lookup
+    const { data, error } = await supabase.functions.invoke("lookup-barcode", {
+      body: { barcode }
+    });
     
-    if (!response.ok) {
-      console.error(`Error fetching barcode data: ${response.status}`);
+    if (error) {
+      console.error(`Error calling lookup-barcode function: ${error.message}`);
       return null;
     }
     
-    const data: BarcodeResponse = await response.json();
-    
-    if (data.status !== 1 || !data.product) {
+    if (!data || data.error || !data.product) {
       console.log(`Product not found for barcode ${barcode}`);
       return null;
     }
@@ -279,6 +282,9 @@ export const scanBarcode = async (barcode: string): Promise<FoodDatabaseItem | n
       isCommon: false,
       type: 'snack'
     };
+    
+    // Add to recent foods
+    addToRecentFoods(foodItem);
     
     return foodItem;
   } catch (error) {
