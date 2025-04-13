@@ -2,25 +2,23 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { X, Search, Plus, Mic, Barcode, ArrowDown, Check } from 'lucide-react';
+import { X, Search, Plus, Mic, Barcode, ArrowDown, Check, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useRecipes } from '@/hooks/useRecipes';
 import { Recipe } from '@/data/mockData';
-import FoodSearchModal from '@/components/food-database/FoodSearchModal';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import RecentMealHistory from '@/components/food-database/RecentMealHistory';
 import { cn } from '@/lib/utils';
 import { searchFoods, foodItemToRecipe, addToRecentFoods } from '@/services/foodDatabaseService';
-import { FoodDatabaseItem } from '@/types/food';
+import { FoodDatabaseItem, LoggedMeal } from '@/types/food';
 
 const LogMealPage = () => {
   const { toast } = useToast();
   const { recipes } = useRecipes();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTab, setSelectedTab] = useState('all');
-  const [isExternalSearchOpen, setIsExternalSearchOpen] = useState(false);
-  const [recentMeals, setRecentMeals] = useState<any[]>([]);
+  const [recentMeals, setRecentMeals] = useState<LoggedMeal[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchResults, setSearchResults] = useState<FoodDatabaseItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -28,9 +26,9 @@ const LogMealPage = () => {
   // Get only meals logged from this screen
   useEffect(() => {
     const allLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
-    // Filter out default meal types (breakfast, lunch, dinner) unless they are custom recipes
-    const loggedFromThisScreen = allLoggedMeals.filter((meal: any) => 
-      meal.loggedFromScreen === 'log-meal' || meal.externalSource === true
+    // Only include meals explicitly logged from this screen
+    const loggedFromThisScreen = allLoggedMeals.filter((meal: LoggedMeal) => 
+      meal.loggedFromScreen === 'log-meal'
     );
     setRecentMeals(loggedFromThisScreen.slice(0, 10).reverse());
   }, []);
@@ -48,8 +46,8 @@ const LogMealPage = () => {
     
     setIsSearching(true);
     try {
-      // Search local database first (don't go to external API yet)
-      const results = await searchFoods(searchQuery, false);
+      // Always search external API
+      const results = await searchFoods(searchQuery, true);
       setSearchResults(results);
     } catch (error) {
       console.error("Error searching foods:", error);
@@ -65,6 +63,10 @@ const LogMealPage = () => {
 
   const handleSearchFocus = () => {
     setShowSuggestions(true);
+    // Automatically search when focusing if there's a query
+    if (searchQuery) {
+      handleSearch();
+    }
   };
 
   const handleSearchBlur = () => {
@@ -99,7 +101,7 @@ const LogMealPage = () => {
     // Calculate protein display value
     const proteinDisplay = recipe.macros?.protein ? `${recipe.macros.protein}g protein` : '';
     
-    const newMeal = {
+    const newMeal: LoggedMeal = {
       id: uniqueId,
       name: recipe.name,
       type: recipe.type || 'snack',
@@ -109,7 +111,7 @@ const LogMealPage = () => {
       loggedFromScreen: 'log-meal', // Mark as logged from this screen
       calories: recipe.macros.calories,
       protein: proteinDisplay,
-      brand: recipe.brand || '',
+      brand: (recipe as any).brandName || '',
       servingInfo: recipe.servings === 1 ? '1 serving' : `${recipe.servings} servings`,
       source: recipe.externalSource ? 'External' : 'Custom'
     };
@@ -267,8 +269,8 @@ const LogMealPage = () => {
               <div className="mt-4">
                 {isSearching ? (
                   <div className="text-center py-4">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="text-sm text-gray-500 mt-2">Searching...</p>
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
+                    <p className="text-sm text-gray-500 mt-2">Searching OpenFoodFacts...</p>
                   </div>
                 ) : searchResults.length > 0 ? (
                   <>
@@ -279,33 +281,38 @@ const LogMealPage = () => {
                           key={food.id} 
                           className="flex items-center justify-between bg-gray-50 p-3 rounded-lg"
                         >
-                          <div>
-                            <p className="font-medium">{food.name}</p>
-                            <p className="text-sm text-gray-500">
-                              {food.brand && <span>{food.brand} • </span>}
-                              <span className="font-medium">{food.macros.calories} cal</span>, 
-                              {food.servingSize && <span> {food.servingSize} {food.servingUnit}</span>}
-                              {food.macros.protein ? `, ${food.macros.protein}g protein` : ''}
-                            </p>
+                          <div className="flex items-center flex-1">
+                            {food.imageSrc ? (
+                              <img 
+                                src={food.imageSrc} 
+                                alt={food.name} 
+                                className="w-12 h-12 rounded object-cover mr-3"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded bg-gray-200 mr-3 flex items-center justify-center">
+                                <span className="text-xs text-gray-500">No img</span>
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-medium">{food.name}</p>
+                              <p className="text-sm text-gray-500">
+                                {food.brand && <span>{food.brand} • </span>}
+                                <span className="font-medium">{food.macros.calories} cal</span>
+                                {food.macros.protein > 0 && <span>, {food.macros.protein}g protein</span>}
+                                {food.servingSize && <span>, {food.servingSize}</span>}
+                              </p>
+                            </div>
                           </div>
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => handleLogDatabaseFood(food)}
-                            className="h-10 w-10 rounded-full bg-gray-200"
+                            className="h-10 w-10 rounded-full bg-gray-200 ml-2 shrink-0"
                           >
                             <Plus size={20} />
                           </Button>
                         </div>
                       ))}
-                      
-                      <Button 
-                        variant="outline" 
-                        className="w-full mt-2 border-blue-500 text-blue-600"
-                        onClick={() => setIsExternalSearchOpen(true)}
-                      >
-                        Advanced Food Search
-                      </Button>
                     </div>
                   </>
                 ) : (
@@ -326,14 +333,6 @@ const LogMealPage = () => {
                         </button>
                       ))}
                     </div>
-                    
-                    <Button 
-                      variant="outline" 
-                      className="w-full mt-4 border-blue-500 text-blue-600"
-                      onClick={() => setIsExternalSearchOpen(true)}
-                    >
-                      Advanced Food Search
-                    </Button>
                   </>
                 )}
               </div>
@@ -387,12 +386,6 @@ const LogMealPage = () => {
           </div>
         </TabsContent>
       </Tabs>
-
-      <FoodSearchModal
-        isOpen={isExternalSearchOpen}
-        onClose={() => setIsExternalSearchOpen(false)}
-        onSelectFood={handleLogMeal}
-      />
 
       <style jsx global>
         {`

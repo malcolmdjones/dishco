@@ -1,8 +1,9 @@
+
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalFood, FoodDatabaseItem } from "@/types/food";
+import { ExternalFood, FoodDatabaseItem, OpenFoodFactsProduct } from "@/types/food";
 import { Recipe } from "@/data/mockData";
 
-// Convert USDA API food item to our app's Recipe format
+// Convert OpenFoodFacts API food item to our app's Recipe format
 export const convertToMealFormat = (foodItem: any, quantity: number = 1): Recipe => {
   // Calculate macros based on quantity
   const calories = Math.round((foodItem.nutrients.ENERC_KCAL || 0) * quantity);
@@ -11,10 +12,10 @@ export const convertToMealFormat = (foodItem: any, quantity: number = 1): Recipe
   const fat = Math.round((foodItem.nutrients.FAT || 0) * quantity);
 
   return {
-    id: `usda-${foodItem.foodId}`,
+    id: `off-${foodItem.foodId}`,
     name: foodItem.label,
     type: 'snack', // Default type, can be changed by user
-    description: foodItem.brand ? `${foodItem.brand}` : '',
+    description: foodItem.servingSize ? `${foodItem.servingSize}` : '',
     imageSrc: foodItem.image || '',
     macros: {
       calories,
@@ -32,7 +33,10 @@ export const convertToMealFormat = (foodItem: any, quantity: number = 1): Recipe
     instructions: [],
     externalSource: true,
     externalId: foodItem.foodId,
-    brand: foodItem.brand || ''
+    // Food-specific properties that we'll handle in UI rendering
+    servingSize: foodItem.servingSize,
+    servingUnit: '',
+    brandName: foodItem.brand || ''
   };
 };
 
@@ -131,7 +135,7 @@ export const addToRecentFoods = (food: FoodDatabaseItem) => {
   }
 };
 
-// Search local database first, then external API if needed
+// Search OpenFoodFacts API
 export const searchFoods = async (query: string, searchExternal: boolean = true): Promise<FoodDatabaseItem[]> => {
   if (!query.trim()) return [];
   
@@ -174,10 +178,9 @@ export const searchFoods = async (query: string, searchExternal: boolean = true)
     if (data && Array.isArray(data)) {
       console.log(`Found ${data.length} external food items`);
       
-      // Make sure each item has brand and correct nutrient values
       const processedData = data.map(item => {
         const externalItem: FoodDatabaseItem = {
-          id: `usda-${item.foodId}`,
+          id: `off-${item.foodId}`,
           name: item.label,
           brand: item.brand || '',
           macros: {
@@ -186,6 +189,8 @@ export const searchFoods = async (query: string, searchExternal: boolean = true)
             carbs: Math.round(item.nutrients.CHOCDF || 0),
             fat: Math.round(item.nutrients.FAT || 0)
           },
+          servingSize: item.servingSize || '',
+          servingUnit: '',
           imageSrc: item.image || '',
           isCommon: false,
           type: 'snack'
@@ -232,6 +237,9 @@ export const foodItemToRecipe = (foodItem: FoodDatabaseItem, quantity: number = 
     instructions: [],
     externalSource: !foodItem.isCommon,
     externalId: foodItem.id,
-    brand: foodItem.brand || ''
+    // Food-specific properties that we'll handle in UI rendering
+    servingSize: foodItem.servingSize,
+    servingUnit: foodItem.servingUnit,
+    brandName: foodItem.brand || ''
   };
 };

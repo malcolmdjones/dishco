@@ -50,3 +50,27 @@ export interface FoodDatabaseItem {
   type?: string;
   isCommon: boolean;
 }
+
+// OpenFoodFacts specific types
+export interface OpenFoodFactsProduct {
+  code: string;
+  product_name: string;
+  brands?: string;
+  image_url?: string;
+  nutriments?: {
+    'energy-kcal_100g'?: number;
+    proteins_100g?: number;
+    carbohydrates_100g?: number;
+    fat_100g?: number;
+  };
+  quantity?: string;
+  serving_size?: string;
+}
+
+export interface OpenFoodFactsResponse {
+  count: number;
+  page: number;
+  page_count: number;
+  page_size: number;
+  products: OpenFoodFactsProduct[];
+}

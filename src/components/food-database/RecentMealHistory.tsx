@@ -3,9 +3,10 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Check } from 'lucide-react';
 import { Recipe } from '@/data/mockData';
+import { LoggedMeal } from '@/types/food';
 
 interface RecentMealHistoryProps {
-  recentMeals: any[];
+  recentMeals: LoggedMeal[];
   onAddMeal: (recipe: Recipe) => void;
 }
 
