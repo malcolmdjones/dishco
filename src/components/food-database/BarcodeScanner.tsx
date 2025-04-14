@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { scanBarcode } from '@/services/foodDatabaseService';
 import { Button } from '@/components/ui/button';
 import { Loader2, X, Camera, Barcode } from 'lucide-react';
@@ -79,11 +79,11 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
             height: { min: 240, ideal: isMobile ? 480 : 720, max: 1080 },
             aspectRatio: { min: 1, max: 2 }
           },
-          area: { // Define scan area for mobile
-            top: "30%",    
-            right: "10%",  
-            left: "10%",   
-            bottom: "50%"  
+          area: { // Define scan area based on device type
+            top: isMobile ? "30%" : "20%",    
+            right: isMobile ? "10%" : "20%",  
+            left: isMobile ? "10%" : "20%",   
+            bottom: isMobile ? "50%" : "60%"  
           },
         },
         locator: {
@@ -249,7 +249,10 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className={`${isMobile ? 'w-[95vw] max-w-[95vw]' : 'max-w-md'} p-0 rounded-xl mx-auto`}>
+      <DialogContent className="p-0 rounded-xl mx-auto" style={{
+        width: isMobile ? '95vw' : '500px',
+        maxWidth: isMobile ? '95vw' : '500px'
+      }}>
         <DialogHeader className="px-4 py-3 border-b relative">
           <Button
             variant="ghost" 
@@ -262,6 +265,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
           <DialogTitle className="text-xl text-blue-600 text-center">
             {showManualInput ? "Enter Barcode" : "Scan Barcode"}
           </DialogTitle>
+          <DialogDescription className="sr-only">Scan or manually enter a product barcode</DialogDescription>
         </DialogHeader>
         
         <div className="p-4 space-y-4">
@@ -278,11 +282,24 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
                 <div className="relative">
                   <div 
                     ref={scannerRef}
-                    className="w-full h-[40vh] max-h-[350px] bg-black rounded-lg overflow-hidden relative"
+                    className="w-full bg-black rounded-lg overflow-hidden relative"
+                    style={{
+                      height: isMobile ? '45vh' : '55vh',
+                      maxHeight: isMobile ? '350px' : '500px',
+                      minHeight: '250px'
+                    }}
                   >
                     {/* Quagga will insert the video here */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="w-4/5 h-16 border-2 border-blue-500 rounded-md relative top-[-10%]"></div>
+                      <div 
+                        className="border-2 border-blue-500 rounded-md"
+                        style={{
+                          width: '70%',
+                          height: '60px',
+                          position: 'relative',
+                          top: isMobile ? '-15%' : '-10%'
+                        }}
+                      ></div>
                     </div>
                   </div>
                   
