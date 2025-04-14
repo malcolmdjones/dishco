@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, X, Camera, Barcode, ZoomIn } from 'lucide-react';
 import { FoodDatabaseItem } from '@/types/food';
 import { useToast } from '@/hooks/use-toast';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats, Html5QrcodeResult } from 'html5-qrcode';
 
 interface BarcodeScannerProps {
   isOpen: boolean;
@@ -25,7 +25,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   const [lastScanTime, setLastScanTime] = useState<number>(0);
   const [selectedCamera, setSelectedCamera] = useState<string | null>(null);
   const [availableCameras, setAvailableCameras] = useState<Array<{id: string, label: string}>>([]);
-  const [torchEnabled, setTorchEnabled] = useState(false);
+  const [cameraPermissionState, setCameraPermissionState] = useState<'prompt'|'granted'|'denied'|'unknown'>('unknown');
   const [zoomLevel, setZoomLevel] = useState(1);
   
   const { toast } = useToast();
@@ -41,7 +41,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
       setCameraError(null);
       stopScanner();
     } else if (isOpen && !showManualInput) {
-      listCameras();
+      checkCameraPermission();
     }
     
     return () => {
@@ -49,16 +49,56 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     };
   }, [isOpen]);
   
+  // Check camera permission status
+  const checkCameraPermission = async () => {
+    try {
+      // First check if the browser supports permissions API
+      if (navigator.permissions && navigator.permissions.query) {
+        const permissionStatus = await navigator.permissions.query({ name: 'camera' as PermissionName });
+        setCameraPermissionState(permissionStatus.state as 'prompt'|'granted'|'denied');
+        
+        // Listen for permission changes
+        permissionStatus.onchange = () => {
+          setCameraPermissionState(permissionStatus.state as 'prompt'|'granted'|'denied');
+          
+          if (permissionStatus.state === 'granted') {
+            listCameras();
+          } else if (permissionStatus.state === 'denied') {
+            setCameraError("Camera permission denied. Please allow camera access in your browser settings.");
+            setShowManualInput(true);
+          }
+        };
+        
+        // If already granted, list cameras
+        if (permissionStatus.state === 'granted') {
+          listCameras();
+        }
+        // If denied, show error
+        else if (permissionStatus.state === 'denied') {
+          setCameraError("Camera permission denied. Please allow camera access in your browser settings.");
+          setShowManualInput(true);
+        }
+      } else {
+        // For browsers that don't support the permissions API, just try to list cameras directly
+        listCameras();
+      }
+    } catch (err) {
+      console.error("Error checking camera permissions:", err);
+      // Fallback to just trying to list cameras
+      listCameras();
+    }
+  };
+  
   // Handle switching between camera and manual input
   useEffect(() => {
     if (isOpen) {
       if (showManualInput) {
         stopScanner();
-      } else if (!scanningActive) {
-        startScanner();
+      } else if (!scanningActive && cameraPermissionState !== 'denied') {
+        listCameras();
       }
     }
-  }, [showManualInput, isOpen]);
+  }, [showManualInput, isOpen, cameraPermissionState]);
   
   useEffect(() => {
     if (selectedCamera && isOpen && !showManualInput) {
@@ -100,20 +140,22 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
       const qrCodeScanner = new Html5Qrcode(scannerRef.current.id);
       html5QrCodeRef.current = qrCodeScanner;
       
+      const formatsToSupport = [
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.CODE_93,
+        Html5QrcodeSupportedFormats.CODABAR
+      ];
+      
       const config = {
         fps: 20,
         qrbox: { width: 250, height: 150 },
         aspectRatio: 1.0,
-        formatsToSupport: [
-          Html5Qrcode.FORMATS.EAN_13,
-          Html5Qrcode.FORMATS.EAN_8,
-          Html5Qrcode.FORMATS.UPC_A,
-          Html5Qrcode.FORMATS.UPC_E,
-          Html5Qrcode.FORMATS.CODE_128,
-          Html5Qrcode.FORMATS.CODE_39,
-          Html5Qrcode.FORMATS.CODE_93,
-          Html5Qrcode.FORMATS.CODABAR
-        ]
+        formatsToSupport
       };
       
       await qrCodeScanner.start(
@@ -124,19 +166,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
       );
       
       setScanningActive(true);
-      
-      // Advanced camera controls (if available)
-      setTimeout(() => {
-        try {
-          qrCodeScanner.applyVideoConstraints({
-            advanced: [{
-              zoom: zoomLevel
-            }]
-          }).catch(err => console.log("Camera doesn't support advanced controls:", err));
-        } catch (e) {
-          // Ignore errors for unsupported features
-        }
-      }, 1000);
       
       console.log("Scanner started successfully");
     } catch (err) {
@@ -163,7 +192,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     }
   };
   
-  const onScanSuccess = (decodedText: string, result: any) => {
+  const onScanSuccess = (decodedText: string, result: Html5QrcodeResult) => {
     // Prevent multiple rapid scans of the same code (debounce)
     const now = Date.now();
     if (now - lastScanTime < 2000 && decodedText === lastDetectedCode) {
@@ -262,25 +291,30 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   const toggleTorch = () => {
     if (!html5QrCodeRef.current) return;
     
-    const newTorchState = !torchEnabled;
     try {
-      html5QrCodeRef.current.applyVideoConstraints({
-        advanced: [{
-          torch: newTorchState
-        }]
-      }).then(() => {
-        setTorchEnabled(newTorchState);
-        toast({
-          title: newTorchState ? "Torch enabled" : "Torch disabled",
-          duration: 1000,
-        });
-      }).catch(err => {
-        console.log("Torch not supported on this device:", err);
-        toast({
-          title: "Torch not supported",
-          description: "Your device doesn't support the torch feature",
-          variant: "destructive"
-        });
+      // Instead of using torch directly, we'll call a specific method to toggle torch
+      html5QrCodeRef.current.getRunningTrackCapabilities().then((capabilities) => {
+        // Check if torch is supported
+        if (capabilities && 'torch' in capabilities) {
+          html5QrCodeRef.current?.getRunningTrackSettings().then((settings) => {
+            // @ts-ignore - torch is not in the type definitions but may be available
+            const currentTorch = settings.torch || false;
+            html5QrCodeRef.current?.applyTorch(!currentTorch).then(() => {
+              toast({
+                title: !currentTorch ? "Torch enabled" : "Torch disabled",
+                duration: 1000,
+              });
+            }).catch(err => {
+              console.log("Failed to toggle torch:", err);
+            });
+          });
+        } else {
+          toast({
+            title: "Torch not supported",
+            description: "Your device doesn't support the torch feature",
+            variant: "destructive"
+          });
+        }
       });
     } catch (e) {
       console.log("Error toggling torch:", e);
@@ -292,12 +326,16 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     setZoomLevel(newZoom);
     
     try {
-      html5QrCodeRef.current.applyVideoConstraints({
-        advanced: [{
-          zoom: newZoom
-        }]
-      }).catch(err => {
-        console.log("Zoom not supported on this device:", err);
+      // Try using zoom parameter via specific method
+      html5QrCodeRef.current.getRunningTrackCapabilities().then((capabilities) => {
+        if (capabilities && 'zoom' in capabilities) {
+          const zoomCapability = capabilities.zoom as {min: number, max: number, step: number};
+          // Calculate zoom value within allowed range
+          const zoomValue = Math.min(zoomCapability.max, Math.max(zoomCapability.min, newZoom));
+          html5QrCodeRef.current?.applyZoom(zoomValue).catch(err => {
+            console.log("Failed to apply zoom:", err);
+          });
+        }
       });
     } catch (e) {
       console.log("Error changing zoom:", e);
@@ -312,7 +350,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   const retryCamera = () => {
     setCameraError(null);
     setShowManualInput(false);
-    listCameras();
+    checkCameraPermission();
   };
   
   return (
@@ -395,8 +433,8 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
                         className="rounded-full bg-black/50 border-white/30 text-white hover:bg-black/70"
                         onClick={toggleTorch}
                       >
-                        <span className={`i-lucide-flashlight ${torchEnabled ? 'text-yellow-400' : 'text-white'}`}>
-                          {torchEnabled ? '💡' : '🔦'}
+                        <span className="i-lucide-flashlight text-white">
+                          🔦
                         </span>
                       </Button>
                       
@@ -468,7 +506,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
                 </div>
               </form>
               
-              {!cameraError && (
+              {!cameraError && cameraPermissionState !== 'denied' && (
                 <Button 
                   variant="outline"
                   className="w-full"
