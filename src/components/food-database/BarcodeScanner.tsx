@@ -80,10 +80,10 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
             aspectRatio: { min: 1, max: 2 }
           },
           area: { // Define scan area for mobile
-            top: "0%",    
-            right: "0%",  
-            left: "0%",   
-            bottom: "0%"  
+            top: "30%",    
+            right: "10%",  
+            left: "10%",   
+            bottom: "50%"  
           },
         },
         locator: {
@@ -278,12 +278,11 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
                 <div className="relative">
                   <div 
                     ref={scannerRef}
-                    className="w-full h-[60vh] max-h-[400px] bg-black rounded-lg overflow-hidden relative"
-                    style={{ aspectRatio: isMobile ? '3/4' : '4/3' }}
+                    className="w-full h-[40vh] max-h-[350px] bg-black rounded-lg overflow-hidden relative"
                   >
                     {/* Quagga will insert the video here */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="w-4/5 h-16 border-2 border-blue-500 rounded-md"></div>
+                      <div className="w-4/5 h-16 border-2 border-blue-500 rounded-md relative top-[-10%]"></div>
                     </div>
                   </div>
                   
@@ -297,6 +296,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
                 <Button 
                   variant="outline" 
                   onClick={() => setShowManualInput(true)}
+                  className="w-full"
                 >
                   Enter barcode manually
                 </Button>
