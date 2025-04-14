@@ -24,10 +24,8 @@ const LogMealPage = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
 
-  // Get only meals logged from this screen
   useEffect(() => {
     const allLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
-    // Only include meals explicitly logged from this screen
     const loggedFromThisScreen = allLoggedMeals.filter((meal: LoggedMeal) => 
       meal.loggedFromScreen === 'log-meal'
     );
@@ -47,7 +45,6 @@ const LogMealPage = () => {
     
     setIsSearching(true);
     try {
-      // Always search external API
       const results = await searchFoods(searchQuery, true);
       setSearchResults(results);
     } catch (error) {
@@ -64,7 +61,6 @@ const LogMealPage = () => {
 
   const handleSearchFocus = () => {
     setShowSuggestions(true);
-    // Automatically search when focusing if there's a query
     if (searchQuery) {
       handleSearch();
     }
@@ -99,7 +95,6 @@ const LogMealPage = () => {
     const existingLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
     const uniqueId = `${recipe.id}-${Date.now()}`;
     
-    // Calculate protein display value
     const proteinDisplay = recipe.macros?.protein ? `${recipe.macros.protein}g protein` : '';
     
     const newMeal: LoggedMeal = {
@@ -109,7 +104,7 @@ const LogMealPage = () => {
       recipe: recipe,
       consumed: true,
       loggedAt: new Date().toISOString(),
-      loggedFromScreen: 'log-meal', // Mark as logged from this screen
+      loggedFromScreen: 'log-meal',
       calories: recipe.macros.calories,
       protein: proteinDisplay,
       brand: (recipe as any).brandName || '',
@@ -120,7 +115,6 @@ const LogMealPage = () => {
     const updatedLoggedMeals = [newMeal, ...existingLoggedMeals];
     localStorage.setItem('loggedMeals', JSON.stringify(updatedLoggedMeals));
     
-    // Update the recent meals for display
     setRecentMeals([newMeal, ...recentMeals].slice(0, 10));
     
     const currentNutrition = JSON.parse(localStorage.getItem('dailyNutrition') || '{}');
@@ -143,7 +137,6 @@ const LogMealPage = () => {
     const recipe = foodItemToRecipe(foodItem);
     handleLogMeal(recipe);
     
-    // Add to recent foods
     addToRecentFoods(foodItem);
   };
 
@@ -161,6 +154,7 @@ const LogMealPage = () => {
       title: "Product Found",
       description: `${foodItem.name} has been added to your log.`
     });
+    setShowBarcodeScanner(false);
   };
 
   const suggestedSearches = [
@@ -417,11 +411,13 @@ const LogMealPage = () => {
         `}
       </style>
       
-      <BarcodeScanner 
-        isOpen={showBarcodeScanner}
-        onClose={handleCloseBarcodeScanner}
-        onFoodFound={handleBarcodeResult}
-      />
+      {showBarcodeScanner && (
+        <BarcodeScanner 
+          isOpen={showBarcodeScanner}
+          onClose={handleCloseBarcodeScanner}
+          onFoodFound={handleBarcodeResult}
+        />
+      )}
     </div>
   );
 };

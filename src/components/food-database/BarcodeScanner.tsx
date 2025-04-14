@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { scanBarcode } from '@/services/foodDatabaseService';
@@ -40,6 +41,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   const { toast } = useToast();
   const scannerRef = useRef<HTMLDivElement>(null);
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
+  const scanHighlightRef = useRef<HTMLDivElement | null>(null);
   
   useEffect(() => {
     if (!isOpen) {
@@ -53,6 +55,17 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     }
     
     return () => {
+      // Clean up any scan highlight element that might exist
+      if (scanHighlightRef.current) {
+        try {
+          if (scanHighlightRef.current.parentNode) {
+            scanHighlightRef.current.parentNode.removeChild(scanHighlightRef.current);
+          }
+          scanHighlightRef.current = null;
+        } catch (e) {
+          console.log("Error removing scan highlight:", e);
+        }
+      }
       stopScanner();
     };
   }, [isOpen]);
@@ -135,7 +148,15 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     setCameraError(null);
     
     try {
-      const qrCodeScanner = new Html5Qrcode(scannerRef.current.id);
+      const containerId = scannerRef.current.id;
+      
+      // Make sure the container exists before creating a new scanner instance
+      if (!document.getElementById(containerId)) {
+        console.error("Scanner container not found");
+        return;
+      }
+      
+      const qrCodeScanner = new Html5Qrcode(containerId);
       html5QrCodeRef.current = qrCodeScanner;
       
       const formatsToSupport = [
@@ -179,11 +200,29 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     
     if (html5QrCodeRef.current) {
       try {
-        html5QrCodeRef.current.stop().catch(e => {
-          console.log("Error stopping scanner:", e);
-        });
-        html5QrCodeRef.current = null;
+        html5QrCodeRef.current.stop()
+          .then(() => {
+            console.log("Scanner stopped successfully");
+            html5QrCodeRef.current = null;
+          })
+          .catch(e => {
+            console.log("Error stopping scanner:", e);
+            // Don't set ref to null here, to prevent calling stop multiple times
+          });
       } catch (e) {
+        console.log("Exception stopping scanner:", e);
+      }
+    }
+    
+    // Clean up any scan highlight element that might exist
+    if (scanHighlightRef.current) {
+      try {
+        if (scanHighlightRef.current.parentNode) {
+          scanHighlightRef.current.parentNode.removeChild(scanHighlightRef.current);
+        }
+        scanHighlightRef.current = null;
+      } catch (e) {
+        console.log("Error removing scan highlight:", e);
       }
     }
   };
@@ -198,10 +237,36 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     setLastDetectedCode(decodedText);
     setScanFeedback({ code: decodedText });
     
-    const scanHighlight = document.createElement('div');
-    scanHighlight.className = 'scan-success';
-    scannerRef.current?.appendChild(scanHighlight);
-    setTimeout(() => scanHighlight.remove(), 800);
+    // Create and add scan highlight element safely
+    if (scannerRef.current) {
+      // Remove previous scan highlight if it exists
+      if (scanHighlightRef.current && scanHighlightRef.current.parentNode) {
+        try {
+          scanHighlightRef.current.parentNode.removeChild(scanHighlightRef.current);
+        } catch (e) {
+          console.log("Error removing previous scan highlight:", e);
+        }
+      }
+      
+      const scanHighlight = document.createElement('div');
+      scanHighlight.className = 'scan-success';
+      scannerRef.current.appendChild(scanHighlight);
+      scanHighlightRef.current = scanHighlight;
+      
+      // Set a timeout to safely remove the highlight
+      setTimeout(() => {
+        if (scanHighlight.parentNode === scannerRef.current) {
+          try {
+            scannerRef.current.removeChild(scanHighlight);
+            if (scanHighlightRef.current === scanHighlight) {
+              scanHighlightRef.current = null;
+            }
+          } catch (e) {
+            console.log("Error removing scan highlight in timeout:", e);
+          }
+        }
+      }, 800);
+    }
     
     stopScanner();
     
@@ -378,14 +443,23 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   };
   
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) {
+        // Clean up properly before closing
+        stopScanner();
+        onClose();
+      }
+    }}>
       <DialogContent className="max-w-md w-[95vw] sm:max-w-lg p-0 rounded-xl">
         <DialogHeader className="px-4 py-3 border-b relative">
           <Button
             variant="ghost" 
             size="icon" 
             className="absolute right-2 top-2"
-            onClick={onClose}
+            onClick={() => {
+              stopScanner();
+              onClose();
+            }}
           >
             <X size={18} />
           </Button>
