@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { scanBarcode } from '@/services/foodDatabaseService';
@@ -22,8 +21,10 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   const { toast } = useToast();
   const scannerRef = useRef<HTMLDivElement>(null);
   const quaggaInitialized = useRef<boolean>(false);
+  const lastScannedCode = useRef<string | null>(null);
+  const scanningEnabled = useRef<boolean>(true);
+  const validationBuffer = useRef<{code: string, count: number}[]>([]);
   
-  // Clean up when component unmounts or modal closes
   useEffect(() => {
     return () => {
       if (quaggaInitialized.current) {
@@ -37,14 +38,12 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     };
   }, []);
   
-  // Manage scanner state when modal opens/closes
   useEffect(() => {
     if (!isOpen) {
       stopScanner();
       setManualBarcode('');
       setCameraError(null);
     } else if (isOpen && !showManualInput) {
-      // Small delay to ensure DOM is ready
       const timer = setTimeout(() => {
         startScanner();
       }, 500);
@@ -53,7 +52,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     }
   }, [isOpen]);
   
-  // Handle switching between camera and manual input
   useEffect(() => {
     if (isOpen) {
       if (showManualInput) {
@@ -67,19 +65,23 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   const startScanner = () => {
     if (!scannerRef.current) return;
     
-    // Make sure scanner is stopped before starting again
     stopScanner();
     
     setCameraError(null);
+    scanningEnabled.current = true;
+    lastScannedCode.current = null;
+    validationBuffer.current = [];
     
-    // Configure Quagga with simple settings
     Quagga.init({
       inputStream: {
         name: "Live",
         type: "LiveStream",
         target: scannerRef.current,
         constraints: {
-          facingMode: "environment" // Use back camera
+          facingMode: "environment",
+          width: { min: 640 },
+          height: { min: 480 },
+          aspectRatio: { min: 1, max: 2 }
         },
       },
       locator: {
@@ -88,9 +90,11 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
       },
       numOfWorkers: 2,
       decoder: {
-        readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader"]
+        readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader"],
+        multiple: false
       },
-      locate: true
+      locate: true,
+      frequency: 10
     }, function(err) {
       if (err) {
         console.error("Error initializing Quagga:", err);
@@ -104,30 +108,51 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
       Quagga.start();
     });
     
-    // Set up detection handler
-    Quagga.onDetected((result) => {
-      if (!result || !result.codeResult || !result.codeResult.code) return;
+    Quagga.onDetected(handleBarcodeDetected);
+  };
+
+  const handleBarcodeDetected = (result: any) => {
+    if (!scanningEnabled.current || !result || !result.codeResult || !result.codeResult.code) return;
+    
+    const code = result.codeResult.code.toString();
+    
+    if (!/^\d{8,13}$/.test(code)) {
+      return;
+    }
+    
+    console.log(`Potential barcode detected: ${code}`);
+    
+    const existingEntry = validationBuffer.current.find(entry => entry.code === code);
+    
+    if (existingEntry) {
+      existingEntry.count++;
       
-      const code = result.codeResult.code;
-      console.log(`Barcode detected: ${code}`);
+      if (existingEntry.count >= 2) {
+        scanningEnabled.current = false;
+        lastScannedCode.current = code;
+        
+        stopScanner();
+        processBarcode(code);
+      }
+    } else {
+      validationBuffer.current.push({ code, count: 1 });
       
-      // Stop scanner and process the code
-      stopScanner();
-      processBarcode(code);
-    });
+      if (validationBuffer.current.length > 10) {
+        validationBuffer.current.shift();
+      }
+    }
   };
 
   const stopScanner = () => {
     try {
       if (quaggaInitialized.current) {
         console.log("Stopping scanner");
-        Quagga.offDetected();
+        Quagga.offDetected(handleBarcodeDetected);
         Quagga.stop();
         quaggaInitialized.current = false;
       }
     } catch (e) {
       console.info("Exception stopping scanner:", e);
-      // Ignore errors when stopping if Quagga wasn't started
     }
   };
 
@@ -168,9 +193,11 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
         });
         
         if (!showManualInput) {
-          // Restart scanner after a delay
           setTimeout(() => {
-            if (isOpen) startScanner();
+            if (isOpen) {
+              scanningEnabled.current = true;
+              startScanner();
+            }
           }, 1500);
         }
       }
@@ -184,9 +211,11 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
       setIsSearching(false);
       
       if (!showManualInput) {
-        // Restart scanner after a delay
         setTimeout(() => {
-          if (isOpen) startScanner();
+          if (isOpen) {
+            scanningEnabled.current = true;
+            startScanner();
+          }
         }, 1500);
       }
     }
@@ -231,15 +260,13 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
                     ref={scannerRef}
                     className="w-full aspect-[4/3] bg-black relative rounded-lg overflow-hidden"
                   >
-                    {/* Quagga will inject the video element here */}
-                    
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="w-4/5 h-16 border-2 border-blue-500 rounded-md"></div>
                     </div>
                   </div>
                   
                   <p className="text-center mt-4 text-sm text-gray-600">
-                    Center the barcode within the blue frame
+                    Center the barcode within the blue frame and hold steady
                   </p>
                 </div>
               )}
