@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, X, Camera, Barcode } from 'lucide-react';
 import { FoodDatabaseItem } from '@/types/food';
 import { useToast } from '@/hooks/use-toast';
-import Quagga from 'quagga';
+import { BrowserMultiFormatReader, DecodeHintType, BarcodeFormat } from '@zxing/library';
 
 interface BarcodeScannerProps {
   isOpen: boolean;
@@ -19,22 +19,15 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   const [showManualInput, setShowManualInput] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const { toast } = useToast();
-  const scannerRef = useRef<HTMLDivElement>(null);
-  const quaggaInitialized = useRef<boolean>(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const readerRef = useRef<BrowserMultiFormatReader | null>(null);
+  const scanning = useRef<boolean>(false);
   const lastScannedCode = useRef<string | null>(null);
-  const scanningEnabled = useRef<boolean>(true);
-  const validationBuffer = useRef<{code: string, count: number}[]>([]);
+  const validationBuffer = useRef<{code: string, timestamp: number}[]>([]);
   
   useEffect(() => {
     return () => {
-      if (quaggaInitialized.current) {
-        try {
-          Quagga.stop();
-          quaggaInitialized.current = false;
-        } catch (e) {
-          console.info("Error stopping scanner:", e);
-        }
-      }
+      stopScanner();
     };
   }, []);
   
@@ -62,95 +55,100 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     }
   }, [showManualInput, isOpen]);
 
-  const startScanner = () => {
-    if (!scannerRef.current) return;
+  const startScanner = async () => {
+    if (!videoRef.current) return;
     
     stopScanner();
     
     setCameraError(null);
-    scanningEnabled.current = true;
+    scanning.current = true;
     lastScannedCode.current = null;
     validationBuffer.current = [];
     
-    Quagga.init({
-      inputStream: {
-        name: "Live",
-        type: "LiveStream",
-        target: scannerRef.current,
-        constraints: {
-          facingMode: "environment",
-          width: { min: 640 },
-          height: { min: 480 },
-          aspectRatio: { min: 1, max: 2 }
-        },
-      },
-      locator: {
-        patchSize: "medium",
-        halfSample: true
-      },
-      numOfWorkers: 2,
-      decoder: {
-        readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader"],
-        multiple: false
-      },
-      locate: true,
-      frequency: 10
-    }, function(err) {
-      if (err) {
-        console.error("Error initializing Quagga:", err);
-        setCameraError("Couldn't access your camera. Please check permissions or use manual entry.");
+    try {
+      const hints = new Map();
+      
+      const formats = [
+        BarcodeFormat.EAN_13,
+        BarcodeFormat.EAN_8,
+        BarcodeFormat.UPC_A,
+        BarcodeFormat.UPC_E,
+      ];
+      
+      hints.set(DecodeHintType.POSSIBLE_FORMATS, formats);
+      hints.set(DecodeHintType.TRY_HARDER, true);
+      
+      const reader = new BrowserMultiFormatReader(hints);
+      readerRef.current = reader;
+      
+      const videoInputDevices = await BrowserMultiFormatReader.listVideoInputDevices();
+      
+      if (!videoInputDevices || videoInputDevices.length === 0) {
+        setCameraError("No camera detected. Please use manual entry instead.");
         setShowManualInput(true);
         return;
       }
       
-      console.log("Scanner started successfully");
-      quaggaInitialized.current = true;
-      Quagga.start();
-    });
-    
-    Quagga.onDetected(handleBarcodeDetected);
-  };
-
-  const handleBarcodeDetected = (result: any) => {
-    if (!scanningEnabled.current || !result || !result.codeResult || !result.codeResult.code) return;
-    
-    const code = result.codeResult.code.toString();
-    
-    if (!/^\d{8,13}$/.test(code)) {
-      return;
-    }
-    
-    console.log(`Potential barcode detected: ${code}`);
-    
-    const existingEntry = validationBuffer.current.find(entry => entry.code === code);
-    
-    if (existingEntry) {
-      existingEntry.count++;
+      const environmentCamera = videoInputDevices.find(device => 
+        device.label.toLowerCase().includes('back') || 
+        device.label.toLowerCase().includes('rear')
+      );
+      const deviceId = environmentCamera ? environmentCamera.deviceId : videoInputDevices[0].deviceId;
       
-      if (existingEntry.count >= 2) {
-        scanningEnabled.current = false;
-        lastScannedCode.current = code;
+      await reader.decodeFromVideoDevice(deviceId, videoRef.current, (result, error) => {
+        if (!scanning.current) return;
         
-        stopScanner();
-        processBarcode(code);
-      }
-    } else {
-      validationBuffer.current.push({ code, count: 1 });
+        if (error) {
+          return;
+        }
+        
+        if (result) {
+          const code = result.getText();
+          
+          if (!/^\d{8,13}$/.test(code)) {
+            return;
+          }
+          
+          console.log(`Detected barcode: ${code}`);
+          
+          validationBuffer.current.push({
+            code,
+            timestamp: Date.now()
+          });
+          
+          const now = Date.now();
+          validationBuffer.current = validationBuffer.current.filter(item => 
+            now - item.timestamp < 3000
+          );
+          
+          const occurrences = validationBuffer.current.filter(item => item.code === code).length;
+          
+          if (occurrences >= 2 && code !== lastScannedCode.current) {
+            lastScannedCode.current = code;
+            scanning.current = false;
+            
+            stopScanner();
+            processBarcode(code);
+          }
+        }
+      });
       
-      if (validationBuffer.current.length > 10) {
-        validationBuffer.current.shift();
-      }
+      console.log("Scanner started successfully");
+    } catch (err) {
+      console.error("Error starting scanner:", err);
+      setCameraError("Couldn't access your camera. Please check permissions or use manual entry.");
+      setShowManualInput(true);
     }
   };
 
   const stopScanner = () => {
     try {
-      if (quaggaInitialized.current) {
+      if (readerRef.current) {
         console.log("Stopping scanner");
-        Quagga.offDetected(handleBarcodeDetected);
-        Quagga.stop();
-        quaggaInitialized.current = false;
+        readerRef.current.reset();
+        readerRef.current = null;
       }
+      scanning.current = false;
     } catch (e) {
       console.info("Exception stopping scanner:", e);
     }
@@ -195,7 +193,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
         if (!showManualInput) {
           setTimeout(() => {
             if (isOpen) {
-              scanningEnabled.current = true;
+              scanning.current = true;
               startScanner();
             }
           }, 1500);
@@ -213,7 +211,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
       if (!showManualInput) {
         setTimeout(() => {
           if (isOpen) {
-            scanningEnabled.current = true;
+            scanning.current = true;
             startScanner();
           }
         }, 1500);
@@ -256,10 +254,11 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
                 </div>
               ) : (
                 <div className="relative">
-                  <div 
-                    ref={scannerRef}
-                    className="w-full aspect-[4/3] bg-black relative rounded-lg overflow-hidden"
-                  >
+                  <div className="w-full aspect-[4/3] bg-black rounded-lg overflow-hidden relative">
+                    <video
+                      ref={videoRef}
+                      className="w-full h-full object-cover"
+                    ></video>
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="w-4/5 h-16 border-2 border-blue-500 rounded-md"></div>
                     </div>
@@ -333,22 +332,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
           )}
         </div>
       </DialogContent>
-      
-      <style>{`
-        video {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        
-        canvas.drawingBuffer {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-        }
-      `}</style>
     </Dialog>
   );
 };
