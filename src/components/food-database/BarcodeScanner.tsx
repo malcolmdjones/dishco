@@ -3,10 +3,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { scanBarcode } from '@/services/foodDatabaseService';
 import { Button } from '@/components/ui/button';
-import { Loader2, X, Camera, Barcode } from 'lucide-react';
+import { Loader2, X, Camera, Barcode, ZoomIn } from 'lucide-react';
 import { FoodDatabaseItem } from '@/types/food';
 import { useToast } from '@/hooks/use-toast';
-import Quagga from 'quagga';
+import { Html5Qrcode } from 'html5-qrcode';
 
 interface BarcodeScannerProps {
   isOpen: boolean;
@@ -21,21 +21,27 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   const [showManualInput, setShowManualInput] = useState(false);
   const [lastDetectedCode, setLastDetectedCode] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [scanFeedback, setScanFeedback] = useState<{ code: string; confidence: number } | null>(null);
-  const [scanHistory, setScanHistory] = useState<string[]>([]);
+  const [scanFeedback, setScanFeedback] = useState<{ code: string; confidence?: number } | null>(null);
+  const [lastScanTime, setLastScanTime] = useState<number>(0);
+  const [selectedCamera, setSelectedCamera] = useState<string | null>(null);
+  const [availableCameras, setAvailableCameras] = useState<Array<{id: string, label: string}>>([]);
+  const [torchEnabled, setTorchEnabled] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  
   const { toast } = useToast();
   const scannerRef = useRef<HTMLDivElement>(null);
+  const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   
   // Reset state when modal opens/closes
   useEffect(() => {
     if (!isOpen) {
       setManualBarcode('');
       setScanFeedback(null);
-      setScanHistory([]);
       setLastDetectedCode(null);
       setCameraError(null);
+      stopScanner();
     } else if (isOpen && !showManualInput) {
-      setTimeout(() => startScanner(), 500); // Slight delay to ensure DOM is ready
+      listCameras();
     }
     
     return () => {
@@ -48,135 +54,147 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     if (isOpen) {
       if (showManualInput) {
         stopScanner();
-      } else {
+      } else if (!scanningActive) {
         startScanner();
       }
     }
   }, [showManualInput, isOpen]);
+  
+  useEffect(() => {
+    if (selectedCamera && isOpen && !showManualInput) {
+      startScanner();
+    }
+  }, [selectedCamera, isOpen, showManualInput]);
 
-  const startScanner = () => {
-    if (!scannerRef.current) return;
-    
-    setCameraError(null);
-    setScanningActive(true);
-    
-    // Configure Quagga with improved settings
-    Quagga.init({
-      inputStream: {
-        name: "Live",
-        type: "LiveStream",
-        target: scannerRef.current,
-        constraints: {
-          facingMode: "environment", // Use back camera
-          width: { min: 640 },
-          height: { min: 480 },
-          aspectRatio: { min: 1, max: 2 }
-        },
-      },
-      locator: {
-        patchSize: "medium",
-        halfSample: true
-      },
-      numOfWorkers: navigator.hardwareConcurrency || 4,
-      frequency: 10, // Scan every 10ms for better detection
-      decoder: {
-        readers: [
-          "ean_reader",
-          "ean_8_reader", 
-          "upc_reader",
-          "upc_e_reader",
-          "code_128_reader", 
-          "code_39_reader"
-        ],
-        debug: {
-          showCanvas: true,
-          showPatches: true,
-          showFoundPatches: true,
-          showSkeleton: true,
-          showLabels: true,
-          showPatchLabels: true,
-          showRemainingPatchLabels: true,
-          boxFromPatches: {
-            showTransformed: true,
-            showTransformedBox: true,
-            showBB: true
-          }
-        }
-      },
-      locate: true
-    }, function(err) {
-      if (err) {
-        console.error("Error initializing Quagga:", err);
-        setCameraError("Couldn't access your camera. Please check permissions or use manual entry.");
+  const listCameras = async () => {
+    try {
+      const devices = await Html5Qrcode.getCameras();
+      console.log("Available cameras:", devices);
+      
+      if (devices && devices.length > 0) {
+        setAvailableCameras(devices);
+        // By default select the back camera if available
+        const backCamera = devices.find(device => 
+          device.label.toLowerCase().includes('back') || 
+          device.label.toLowerCase().includes('rear')
+        );
+        setSelectedCamera(backCamera ? backCamera.id : devices[0].id);
+      } else {
+        setCameraError("No cameras found on this device");
         setShowManualInput(true);
-        return;
       }
+    } catch (err) {
+      console.error("Error listing cameras:", err);
+      setCameraError("Failed to access camera. Please check permissions.");
+      setShowManualInput(true);
+    }
+  };
+
+  const startScanner = async () => {
+    if (!scannerRef.current || !selectedCamera) return;
+    
+    stopScanner(); // Stop any existing scanner
+    setCameraError(null);
+    
+    try {
+      const qrCodeScanner = new Html5Qrcode(scannerRef.current.id);
+      html5QrCodeRef.current = qrCodeScanner;
       
-      console.log("Quagga initialized successfully");
-      Quagga.start();
+      const config = {
+        fps: 20,
+        qrbox: { width: 250, height: 150 },
+        aspectRatio: 1.0,
+        formatsToSupport: [
+          Html5Qrcode.FORMATS.EAN_13,
+          Html5Qrcode.FORMATS.EAN_8,
+          Html5Qrcode.FORMATS.UPC_A,
+          Html5Qrcode.FORMATS.UPC_E,
+          Html5Qrcode.FORMATS.CODE_128,
+          Html5Qrcode.FORMATS.CODE_39,
+          Html5Qrcode.FORMATS.CODE_93,
+          Html5Qrcode.FORMATS.CODABAR
+        ]
+      };
+      
+      await qrCodeScanner.start(
+        selectedCamera, 
+        config, 
+        onScanSuccess,
+        onScanFailure
+      );
+      
       setScanningActive(true);
-    });
-    
-    // Configure detected handler for codes with confidence threshold
-    Quagga.onProcessed((result) => {
-      if (!result) return;
       
-      // Show scan feedback even if not fully detected
-      if (result.boxes && result.boxes.length > 0) {
-        const hasHighlight = document.querySelector('.highlight-barcode');
-        if (!hasHighlight) {
-          const highlight = document.createElement('div');
-          highlight.className = 'highlight-barcode';
-          scannerRef.current?.appendChild(highlight);
+      // Advanced camera controls (if available)
+      setTimeout(() => {
+        try {
+          qrCodeScanner.applyVideoConstraints({
+            advanced: [{
+              zoom: zoomLevel
+            }]
+          }).catch(err => console.log("Camera doesn't support advanced controls:", err));
+        } catch (e) {
+          // Ignore errors for unsupported features
         }
-      }
-    });
-    
-    // Add more robust scan detection with confidence filtering
-    Quagga.onDetected((result) => {
-      if (!result.codeResult) return;
+      }, 1000);
       
-      const code = result.codeResult.code;
-      const confidence = result.codeResult.confidence;
-      
-      if (!code) return;
-      
-      // Update scan feedback
-      setScanFeedback({ code, confidence });
-      
-      // Only process codes with good confidence
-      if (confidence > 0.75) {
-        // Check if this code is new or was just scanned
-        if (!scanHistory.includes(code)) {
-          // Add to scan history
-          setScanHistory(prev => [...prev, code]);
-          setLastDetectedCode(code);
-          
-          // Visual confirmation
-          const scanHighlight = document.querySelector('.scan-success');
-          if (!scanHighlight) {
-            const highlight = document.createElement('div');
-            highlight.className = 'scan-success';
-            scannerRef.current?.appendChild(highlight);
-            setTimeout(() => highlight.remove(), 800);
-          }
-          
-          // Process the barcode
-          console.log(`High confidence barcode detected: ${code} (${confidence.toFixed(2)})`);
-          processBarcode(code);
-        }
-      }
-    });
+      console.log("Scanner started successfully");
+    } catch (err) {
+      console.error("Error starting scanner:", err);
+      setCameraError(`Failed to start scanner: ${err.message || "Unknown error"}`);
+      setShowManualInput(true);
+    }
   };
 
   const stopScanner = () => {
     setScanningActive(false);
     setScanFeedback(null);
     
-    try {
-      Quagga.stop();
-    } catch (e) {
-      // Ignore errors when stopping if Quagga wasn't started
+    if (html5QrCodeRef.current) {
+      try {
+        html5QrCodeRef.current.stop().catch(e => {
+          // Ignore errors when stopping
+          console.log("Error stopping scanner:", e);
+        });
+        html5QrCodeRef.current = null;
+      } catch (e) {
+        // Ignore errors when stopping
+      }
+    }
+  };
+  
+  const onScanSuccess = (decodedText: string, result: any) => {
+    // Prevent multiple rapid scans of the same code (debounce)
+    const now = Date.now();
+    if (now - lastScanTime < 2000 && decodedText === lastDetectedCode) {
+      return;
+    }
+    
+    setLastScanTime(now);
+    setLastDetectedCode(decodedText);
+    setScanFeedback({ code: decodedText });
+    
+    // Success feedback
+    const scanHighlight = document.createElement('div');
+    scanHighlight.className = 'scan-success';
+    scannerRef.current?.appendChild(scanHighlight);
+    setTimeout(() => scanHighlight.remove(), 800);
+    
+    // Disable scanning to prevent multiple scans
+    stopScanner();
+    
+    // Visual and audio feedback
+    navigator.vibrate && navigator.vibrate(200);
+    
+    // Process the barcode
+    console.log(`Barcode detected: ${decodedText}`);
+    processBarcode(decodedText);
+  };
+
+  const onScanFailure = (error: string) => {
+    // Only log critical errors, not normal "code not found in frame" messages
+    if (error.includes("exception") || error.includes("failed")) {
+      console.error("Scan error:", error);
     }
   };
 
@@ -188,7 +206,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   };
   
   const processBarcode = async (code: string) => {
-    stopScanner(); // Stop scanning to prevent multiple scans
     setIsSearching(true);
     
     toast({
@@ -242,10 +259,60 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     }
   };
   
+  const toggleTorch = () => {
+    if (!html5QrCodeRef.current) return;
+    
+    const newTorchState = !torchEnabled;
+    try {
+      html5QrCodeRef.current.applyVideoConstraints({
+        advanced: [{
+          torch: newTorchState
+        }]
+      }).then(() => {
+        setTorchEnabled(newTorchState);
+        toast({
+          title: newTorchState ? "Torch enabled" : "Torch disabled",
+          duration: 1000,
+        });
+      }).catch(err => {
+        console.log("Torch not supported on this device:", err);
+        toast({
+          title: "Torch not supported",
+          description: "Your device doesn't support the torch feature",
+          variant: "destructive"
+        });
+      });
+    } catch (e) {
+      console.log("Error toggling torch:", e);
+    }
+  };
+  
+  const changeZoom = (newZoom: number) => {
+    if (!html5QrCodeRef.current) return;
+    setZoomLevel(newZoom);
+    
+    try {
+      html5QrCodeRef.current.applyVideoConstraints({
+        advanced: [{
+          zoom: newZoom
+        }]
+      }).catch(err => {
+        console.log("Zoom not supported on this device:", err);
+      });
+    } catch (e) {
+      console.log("Error changing zoom:", e);
+    }
+  };
+  
+  const handleCameraChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newCameraId = e.target.value;
+    setSelectedCamera(newCameraId);
+  };
+  
   const retryCamera = () => {
     setCameraError(null);
     setShowManualInput(false);
-    setTimeout(() => startScanner(), 500);
+    listCameras();
   };
   
   return (
@@ -277,12 +344,35 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
                 </div>
               ) : (
                 <div className="relative">
+                  {availableCameras.length > 1 && (
+                    <select 
+                      className="w-full mb-2 p-2 rounded border border-gray-300"
+                      value={selectedCamera || ''}
+                      onChange={handleCameraChange}
+                    >
+                      {availableCameras.map(camera => (
+                        <option key={camera.id} value={camera.id}>
+                          {camera.label || `Camera ${camera.id}`}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  
                   <div 
+                    id="scanner-container"
                     ref={scannerRef}
                     className="w-full aspect-[3/4] bg-black relative rounded-lg overflow-hidden"
                   >
-                    {/* Quagga will inject the video element here */}
+                    {/* Scanner will be injected here */}
                     
+                    {!scanningActive && !cameraError && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-gray-900 text-white">
+                        <Loader2 className="w-8 h-8 animate-spin mr-2" />
+                        <p>Starting camera...</p>
+                      </div>
+                    )}
+                    
+                    {/* Scan guidelines */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="w-4/5 h-16 border-2 border-blue-500 rounded-md relative">
                         <div className="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-blue-500 -translate-x-2 -translate-y-2"></div>
@@ -292,17 +382,43 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
                       </div>
                     </div>
                     
+                    {/* Scan animation */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="w-4/5 h-1 bg-blue-500 absolute animate-scan"></div>
                     </div>
                     
+                    {/* Controls overlay */}
+                    <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+                      <Button 
+                        size="icon"
+                        variant="outline"
+                        className="rounded-full bg-black/50 border-white/30 text-white hover:bg-black/70"
+                        onClick={toggleTorch}
+                      >
+                        <span className={`i-lucide-flashlight ${torchEnabled ? 'text-yellow-400' : 'text-white'}`}>
+                          {torchEnabled ? '💡' : '🔦'}
+                        </span>
+                      </Button>
+                      
+                      <Button 
+                        size="icon"
+                        variant="outline"
+                        className="rounded-full bg-black/50 border-white/30 text-white hover:bg-black/70"
+                        onClick={() => changeZoom(zoomLevel === 1 ? 2 : 1)}
+                      >
+                        <ZoomIn className={zoomLevel > 1 ? 'text-blue-400' : 'text-white'} />
+                      </Button>
+                    </div>
+                    
                     {scanFeedback && (
-                      <div className="absolute bottom-4 left-0 right-0 bg-black/70 text-white text-center py-2 px-3">
+                      <div className="absolute bottom-16 left-0 right-0 bg-black/70 text-white text-center py-2 px-3">
                         <p className="text-sm">
                           <span className="font-medium">Detected:</span> {scanFeedback.code}
-                          <span className="ml-2 text-xs">
-                            ({Math.round(scanFeedback.confidence * 100)}% confidence)
-                          </span>
+                          {scanFeedback.confidence && (
+                            <span className="ml-2 text-xs">
+                              ({Math.round(scanFeedback.confidence * 100)}% confidence)
+                            </span>
+                          )}
                         </p>
                       </div>
                     )}
@@ -402,24 +518,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
           animation: scan 2s ease-in-out infinite;
         }
         
-        video {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        
-        .highlight-barcode {
-          position: absolute;
-          border: 2px solid yellow;
-          top: 40%;
-          left: 20%;
-          width: 60%;
-          height: 20%;
-          z-index: 10;
-          opacity: 0.5;
-          pointer-events: none;
-        }
-        
         .scan-success {
           position: absolute;
           top: 0;
@@ -435,17 +533,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
         @keyframes flash {
           0% { opacity: 0.8; }
           100% { opacity: 0; }
-        }
-        
-        .drawingBuffer {
-          position: absolute;
-          top: 0;
-          left: 0;
-        }
-        
-        canvas.drawingBuffer {
-          width: 100%;
-          height: 100%;
         }
       `}</style>
     </Dialog>
