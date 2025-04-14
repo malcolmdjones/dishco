@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { scanBarcode } from '@/services/foodDatabaseService';
@@ -81,21 +82,40 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
       const reader = new BrowserMultiFormatReader(hints);
       readerRef.current = reader;
       
-      const videoInputDevices = await BrowserMultiFormatReader.listVideoInputDevices();
+      // Use the navigator.mediaDevices API directly instead of BrowserMultiFormatReader.listVideoInputDevices
+      let deviceId = '';
       
-      if (!videoInputDevices || videoInputDevices.length === 0) {
-        setCameraError("No camera detected. Please use manual entry instead.");
-        setShowManualInput(true);
-        return;
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        
+        if (videoDevices.length === 0) {
+          setCameraError("No camera detected. Please use manual entry instead.");
+          setShowManualInput(true);
+          return;
+        }
+        
+        const environmentCamera = videoDevices.find(device => 
+          device.label.toLowerCase().includes('back') || 
+          device.label.toLowerCase().includes('rear')
+        );
+        
+        deviceId = environmentCamera ? environmentCamera.deviceId : videoDevices[0].deviceId;
+      } catch (err) {
+        console.error("Error accessing media devices:", err);
+        // Fall back to default camera if can't enumerate devices
       }
       
-      const environmentCamera = videoInputDevices.find(device => 
-        device.label.toLowerCase().includes('back') || 
-        device.label.toLowerCase().includes('rear')
-      );
-      const deviceId = environmentCamera ? environmentCamera.deviceId : videoInputDevices[0].deviceId;
+      const constraints = {
+        video: {
+          facingMode: { ideal: 'environment' },
+          ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
+          width: { min: 640, ideal: 1280, max: 1920 },
+          height: { min: 480, ideal: 720, max: 1080 },
+        }
+      };
       
-      await reader.decodeFromVideoDevice(deviceId, videoRef.current, (result, error) => {
+      await reader.decodeFromConstraints(constraints, videoRef.current, (result, error) => {
         if (!scanning.current) return;
         
         if (error) {
