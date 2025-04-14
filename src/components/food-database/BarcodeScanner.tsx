@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { scanBarcode } from '@/services/foodDatabaseService';
@@ -32,7 +31,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   const scannerRef = useRef<HTMLDivElement>(null);
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   
-  // Reset state when modal opens/closes
   useEffect(() => {
     if (!isOpen) {
       setManualBarcode('');
@@ -49,15 +47,12 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     };
   }, [isOpen]);
   
-  // Check camera permission status
   const checkCameraPermission = async () => {
     try {
-      // First check if the browser supports permissions API
       if (navigator.permissions && navigator.permissions.query) {
         const permissionStatus = await navigator.permissions.query({ name: 'camera' as PermissionName });
         setCameraPermissionState(permissionStatus.state as 'prompt'|'granted'|'denied');
         
-        // Listen for permission changes
         permissionStatus.onchange = () => {
           setCameraPermissionState(permissionStatus.state as 'prompt'|'granted'|'denied');
           
@@ -69,27 +64,21 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
           }
         };
         
-        // If already granted, list cameras
         if (permissionStatus.state === 'granted') {
           listCameras();
-        }
-        // If denied, show error
-        else if (permissionStatus.state === 'denied') {
+        } else if (permissionStatus.state === 'denied') {
           setCameraError("Camera permission denied. Please allow camera access in your browser settings.");
           setShowManualInput(true);
         }
       } else {
-        // For browsers that don't support the permissions API, just try to list cameras directly
         listCameras();
       }
     } catch (err) {
       console.error("Error checking camera permissions:", err);
-      // Fallback to just trying to list cameras
       listCameras();
     }
   };
   
-  // Handle switching between camera and manual input
   useEffect(() => {
     if (isOpen) {
       if (showManualInput) {
@@ -113,7 +102,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
       
       if (devices && devices.length > 0) {
         setAvailableCameras(devices);
-        // By default select the back camera if available
         const backCamera = devices.find(device => 
           device.label.toLowerCase().includes('back') || 
           device.label.toLowerCase().includes('rear')
@@ -133,7 +121,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   const startScanner = async () => {
     if (!scannerRef.current || !selectedCamera) return;
     
-    stopScanner(); // Stop any existing scanner
+    stopScanner();
     setCameraError(null);
     
     try {
@@ -182,18 +170,15 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     if (html5QrCodeRef.current) {
       try {
         html5QrCodeRef.current.stop().catch(e => {
-          // Ignore errors when stopping
           console.log("Error stopping scanner:", e);
         });
         html5QrCodeRef.current = null;
       } catch (e) {
-        // Ignore errors when stopping
       }
     }
   };
   
   const onScanSuccess = (decodedText: string, result: Html5QrcodeResult) => {
-    // Prevent multiple rapid scans of the same code (debounce)
     const now = Date.now();
     if (now - lastScanTime < 2000 && decodedText === lastDetectedCode) {
       return;
@@ -203,25 +188,20 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     setLastDetectedCode(decodedText);
     setScanFeedback({ code: decodedText });
     
-    // Success feedback
     const scanHighlight = document.createElement('div');
     scanHighlight.className = 'scan-success';
     scannerRef.current?.appendChild(scanHighlight);
     setTimeout(() => scanHighlight.remove(), 800);
     
-    // Disable scanning to prevent multiple scans
     stopScanner();
     
-    // Visual and audio feedback
     navigator.vibrate && navigator.vibrate(200);
     
-    // Process the barcode
     console.log(`Barcode detected: ${decodedText}`);
     processBarcode(decodedText);
   };
 
   const onScanFailure = (error: string) => {
-    // Only log critical errors, not normal "code not found in frame" messages
     if (error.includes("exception") || error.includes("failed")) {
       console.error("Scan error:", error);
     }
@@ -264,7 +244,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
         });
         
         if (!showManualInput) {
-          // Restart scanner after a delay
           setTimeout(() => {
             if (isOpen) startScanner();
           }, 1500);
@@ -280,7 +259,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
       setIsSearching(false);
       
       if (!showManualInput) {
-        // Restart scanner after a delay
         setTimeout(() => {
           if (isOpen) startScanner();
         }, 1500);
@@ -288,55 +266,54 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     }
   };
   
-  const toggleTorch = () => {
+  const toggleTorch = async () => {
     if (!html5QrCodeRef.current) return;
     
     try {
-      // Instead of using torch directly, we'll call a specific method to toggle torch
-      html5QrCodeRef.current.getRunningTrackCapabilities().then((capabilities) => {
-        // Check if torch is supported
-        if (capabilities && 'torch' in capabilities) {
-          html5QrCodeRef.current?.getRunningTrackSettings().then((settings) => {
-            // @ts-ignore - torch is not in the type definitions but may be available
-            const currentTorch = settings.torch || false;
-            html5QrCodeRef.current?.applyTorch(!currentTorch).then(() => {
-              toast({
-                title: !currentTorch ? "Torch enabled" : "Torch disabled",
-                duration: 1000,
-              });
-            }).catch(err => {
-              console.log("Failed to toggle torch:", err);
-            });
-          });
-        } else {
+      const capabilities = html5QrCodeRef.current.getRunningTrackCapabilities();
+      
+      if (capabilities && 'torch' in capabilities) {
+        const settings = html5QrCodeRef.current.getRunningTrackSettings();
+        const currentTorch = settings && settings.torch ? settings.torch : false;
+        
+        try {
+          await html5QrCodeRef.current.applyTorch(!currentTorch);
           toast({
-            title: "Torch not supported",
-            description: "Your device doesn't support the torch feature",
-            variant: "destructive"
+            title: !currentTorch ? "Torch enabled" : "Torch disabled",
+            duration: 1000,
           });
+        } catch (err) {
+          console.log("Failed to toggle torch:", err);
         }
-      });
+      } else {
+        toast({
+          title: "Torch not supported",
+          description: "Your device doesn't support the torch feature",
+          variant: "destructive"
+        });
+      }
     } catch (e) {
       console.log("Error toggling torch:", e);
     }
   };
   
-  const changeZoom = (newZoom: number) => {
+  const changeZoom = async (newZoom: number) => {
     if (!html5QrCodeRef.current) return;
     setZoomLevel(newZoom);
     
     try {
-      // Try using zoom parameter via specific method
-      html5QrCodeRef.current.getRunningTrackCapabilities().then((capabilities) => {
-        if (capabilities && 'zoom' in capabilities) {
-          const zoomCapability = capabilities.zoom as {min: number, max: number, step: number};
-          // Calculate zoom value within allowed range
-          const zoomValue = Math.min(zoomCapability.max, Math.max(zoomCapability.min, newZoom));
-          html5QrCodeRef.current?.applyZoom(zoomValue).catch(err => {
-            console.log("Failed to apply zoom:", err);
-          });
+      const capabilities = html5QrCodeRef.current.getRunningTrackCapabilities();
+      
+      if (capabilities && 'zoom' in capabilities) {
+        const zoomCapability = capabilities.zoom as {min: number, max: number, step: number};
+        const zoomValue = Math.min(zoomCapability.max, Math.max(zoomCapability.min, newZoom));
+        
+        try {
+          await html5QrCodeRef.current.applyZoom(zoomValue);
+        } catch (err) {
+          console.log("Failed to apply zoom:", err);
         }
-      });
+      }
     } catch (e) {
       console.log("Error changing zoom:", e);
     }
@@ -401,8 +378,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
                     ref={scannerRef}
                     className="w-full aspect-[3/4] bg-black relative rounded-lg overflow-hidden"
                   >
-                    {/* Scanner will be injected here */}
-                    
                     {!scanningActive && !cameraError && (
                       <div className="absolute inset-0 flex items-center justify-center bg-gray-900 text-white">
                         <Loader2 className="w-8 h-8 animate-spin mr-2" />
@@ -410,7 +385,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
                       </div>
                     )}
                     
-                    {/* Scan guidelines */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="w-4/5 h-16 border-2 border-blue-500 rounded-md relative">
                         <div className="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-blue-500 -translate-x-2 -translate-y-2"></div>
@@ -420,12 +394,10 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
                       </div>
                     </div>
                     
-                    {/* Scan animation */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="w-4/5 h-1 bg-blue-500 absolute animate-scan"></div>
                     </div>
                     
-                    {/* Controls overlay */}
                     <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
                       <Button 
                         size="icon"
