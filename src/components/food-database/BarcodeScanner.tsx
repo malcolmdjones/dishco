@@ -3,20 +3,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { scanBarcode } from '@/services/foodDatabaseService';
 import { Button } from '@/components/ui/button';
-import { Loader2, X, Camera, Barcode, ZoomIn } from 'lucide-react';
+import { Loader2, X, Camera } from 'lucide-react';
 import { FoodDatabaseItem } from '@/types/food';
 import { useToast } from '@/hooks/use-toast';
-import { Html5Qrcode, Html5QrcodeSupportedFormats, Html5QrcodeResult } from 'html5-qrcode';
-
-interface ExtendedMediaTrackSettings extends MediaTrackSettings {
-  torch?: boolean;
-  zoom?: number;
-}
-
-interface ExtendedMediaTrackConstraintSet extends MediaTrackConstraintSet {
-  torch?: boolean;
-  zoom?: number;
-}
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 
 interface BarcodeScannerProps {
   isOpen: boolean;
@@ -31,119 +21,42 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   const [showManualInput, setShowManualInput] = useState(false);
   const [lastDetectedCode, setLastDetectedCode] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [scanFeedback, setScanFeedback] = useState<{ code: string; confidence?: number } | null>(null);
-  const [lastScanTime, setLastScanTime] = useState<number>(0);
-  const [selectedCamera, setSelectedCamera] = useState<string | null>(null);
-  const [availableCameras, setAvailableCameras] = useState<Array<{id: string, label: string}>>([]);
-  const [cameraPermissionState, setCameraPermissionState] = useState<'prompt'|'granted'|'denied'|'unknown'>('unknown');
-  const [zoomLevel, setZoomLevel] = useState(1);
   
   const { toast } = useToast();
   const scannerRef = useRef<HTMLDivElement | null>(null);
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
-  const scanHighlightRef = useRef<HTMLDivElement | null>(null);
-  const containerExistsRef = useRef<boolean>(false);
   
   // Safety cleanup on unmount
   useEffect(() => {
     return () => {
       stopScanner();
-      removeHighlightElement();
     };
   }, []);
   
   useEffect(() => {
     if (!isOpen) {
       setManualBarcode('');
-      setScanFeedback(null);
       setLastDetectedCode(null);
       setCameraError(null);
       stopScanner();
-      removeHighlightElement();
     } else if (isOpen && !showManualInput) {
-      checkCameraPermission();
+      initializeCamera();
     }
     
     return () => {
-      removeHighlightElement();
       stopScanner();
     };
-  }, [isOpen]);
+  }, [isOpen, showManualInput]);
   
-  const removeHighlightElement = () => {
-    if (scanHighlightRef.current) {
-      try {
-        const element = scanHighlightRef.current;
-        if (element.parentNode) {
-          element.parentNode.removeChild(element);
-        }
-        scanHighlightRef.current = null;
-      } catch (e) {
-        console.log("Error removing scan highlight:", e);
-      }
-    }
-  };
-  
-  const checkCameraPermission = async () => {
-    try {
-      if (navigator.permissions && navigator.permissions.query) {
-        const permissionStatus = await navigator.permissions.query({ name: 'camera' as PermissionName });
-        setCameraPermissionState(permissionStatus.state as 'prompt'|'granted'|'denied');
-        
-        permissionStatus.onchange = () => {
-          setCameraPermissionState(permissionStatus.state as 'prompt'|'granted'|'denied');
-          
-          if (permissionStatus.state === 'granted') {
-            listCameras();
-          } else if (permissionStatus.state === 'denied') {
-            setCameraError("Camera permission denied. Please allow camera access in your browser settings.");
-            setShowManualInput(true);
-          }
-        };
-        
-        if (permissionStatus.state === 'granted') {
-          listCameras();
-        } else if (permissionStatus.state === 'denied') {
-          setCameraError("Camera permission denied. Please allow camera access in your browser settings.");
-          setShowManualInput(true);
-        }
-      } else {
-        listCameras();
-      }
-    } catch (err) {
-      console.error("Error checking camera permissions:", err);
-      listCameras();
-    }
-  };
-  
-  useEffect(() => {
-    if (isOpen) {
-      if (showManualInput) {
-        stopScanner();
-      } else if (!scanningActive && cameraPermissionState !== 'denied') {
-        listCameras();
-      }
-    }
-  }, [showManualInput, isOpen, cameraPermissionState]);
-  
-  useEffect(() => {
-    if (selectedCamera && isOpen && !showManualInput) {
-      startScanner();
-    }
-  }, [selectedCamera, isOpen, showManualInput]);
-
-  const listCameras = async () => {
+  const initializeCamera = async () => {
     try {
       const devices = await Html5Qrcode.getCameras();
       console.log("Available cameras:", devices);
       
       if (devices && devices.length > 0) {
-        setAvailableCameras(devices);
-        const backCamera = devices.find(device => 
-          device.label.toLowerCase().includes('back') || 
-          device.label.toLowerCase().includes('rear')
-        );
-        setSelectedCamera(backCamera ? backCamera.id : devices[0].id);
+        // Select the first available camera and start scanning
+        const cameraId = devices[0].id;
+        setTimeout(() => startScanner(cameraId), 500);
       } else {
         setCameraError("No cameras found on this device");
         setShowManualInput(true);
@@ -155,14 +68,14 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     }
   };
 
-  const startScanner = async () => {
-    if (!scannerRef.current || !selectedCamera) return;
+  const startScanner = async (cameraId: string) => {
+    if (!scannerRef.current) return;
     
     stopScanner();
     setCameraError(null);
     
     try {
-      const containerId = scannerRef.current.id;
+      const containerId = "scanner-container";
       
       // Double check the container exists
       const containerElement = document.getElementById(containerId);
@@ -170,8 +83,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
         console.error("Scanner container not found");
         return;
       }
-      
-      containerExistsRef.current = true;
       
       const qrCodeScanner = new Html5Qrcode(containerId);
       html5QrCodeRef.current = qrCodeScanner;
@@ -188,21 +99,19 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
       ];
       
       const config = {
-        fps: 20,
+        fps: 10,
         qrbox: { width: 250, height: 150 },
-        aspectRatio: 1.0,
         formatsToSupport
       };
       
       await qrCodeScanner.start(
-        selectedCamera, 
+        cameraId, 
         config, 
         onScanSuccess,
         onScanFailure
       );
       
       setScanningActive(true);
-      
       console.log("Scanner started successfully");
     } catch (err) {
       console.error("Error starting scanner:", err);
@@ -213,7 +122,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
 
   const stopScanner = () => {
     setScanningActive(false);
-    setScanFeedback(null);
     
     if (html5QrCodeRef.current) {
       try {
@@ -231,50 +139,21 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
         html5QrCodeRef.current = null;
       }
     }
-    
-    removeHighlightElement();
   };
   
-  const onScanSuccess = (decodedText: string, result: Html5QrcodeResult) => {
-    const now = Date.now();
-    if (now - lastScanTime < 2000 && decodedText === lastDetectedCode) {
-      return;
-    }
-    
-    setLastScanTime(now);
+  const onScanSuccess = (decodedText: string, result: any) => {
     setLastDetectedCode(decodedText);
-    setScanFeedback({ code: decodedText });
     
-    // Safe handling of scan highlight
-    if (scannerRef.current) {
-      // Remove previous highlight safely
-      removeHighlightElement();
-      
-      // Create new highlight element
-      try {
-        const scanHighlight = document.createElement('div');
-        scanHighlight.className = 'scan-success';
-        scannerRef.current.appendChild(scanHighlight);
-        scanHighlightRef.current = scanHighlight;
-        
-        // Set a timeout to safely remove the highlight
-        setTimeout(() => {
-          removeHighlightElement();
-        }, 800);
-      } catch (e) {
-        console.log("Error adding scan highlight:", e);
-      }
-    }
-    
-    stopScanner();
-    
+    // Simple vibration feedback
     navigator.vibrate && navigator.vibrate(200);
     
     console.log(`Barcode detected: ${decodedText}`);
+    stopScanner();
     processBarcode(decodedText);
   };
 
   const onScanFailure = (error: string) => {
+    // Only log critical errors
     if (error.includes("exception") || error.includes("failed")) {
       console.error("Scan error:", error);
     }
@@ -318,7 +197,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
         
         if (!showManualInput) {
           setTimeout(() => {
-            if (isOpen) startScanner();
+            if (isOpen) initializeCamera();
           }, 1500);
         }
       }
@@ -333,98 +212,16 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
       
       if (!showManualInput) {
         setTimeout(() => {
-          if (isOpen) startScanner();
+          if (isOpen) initializeCamera();
         }, 1500);
       }
     }
   };
   
-  const toggleTorch = async () => {
-    if (!html5QrCodeRef.current || !selectedCamera) return;
-    
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId: selectedCamera }
-      });
-      
-      const track = stream.getVideoTracks()[0];
-      if (!track) {
-        console.log("No video track available");
-        return;
-      }
-      
-      const settings = track.getSettings() as ExtendedMediaTrackSettings;
-      const currentTorchState = settings.torch || false;
-      
-      const newTorchState = !currentTorchState;
-      
-      try {
-        await track.applyConstraints({ 
-          advanced: [{ torch: newTorchState } as unknown as MediaTrackConstraintSet] 
-        });
-        
-        toast({
-          title: newTorchState ? "Torch enabled" : "Torch disabled",
-          duration: 1000,
-        });
-      } catch (err) {
-        console.log("Failed to toggle torch:", err);
-        toast({
-          title: "Torch control failed",
-          description: "Your device doesn't support torch control",
-          variant: "destructive"
-        });
-      }
-      
-      stream.getTracks().forEach(track => track.stop());
-    } catch (e) {
-      console.log("Error toggling torch:", e);
-      toast({
-        title: "Torch not available",
-        description: "Cannot access torch on this device",
-        variant: "destructive"
-      });
-    }
-  };
-  
-  const changeZoom = async (newZoom: number) => {
-    if (!html5QrCodeRef.current || !selectedCamera) return;
-    setZoomLevel(newZoom);
-    
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId: selectedCamera }
-      });
-      
-      const track = stream.getVideoTracks()[0];
-      if (!track) {
-        console.log("No video track available");
-        return;
-      }
-      
-      try {
-        await track.applyConstraints({ 
-          advanced: [{ zoom: newZoom } as unknown as MediaTrackConstraintSet] 
-        });
-      } catch (err) {
-        console.log("Failed to apply zoom:", err);
-      }
-      
-      stream.getTracks().forEach(track => track.stop());
-    } catch (e) {
-      console.log("Error changing zoom:", e);
-    }
-  };
-  
-  const handleCameraChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newCameraId = e.target.value;
-    setSelectedCamera(newCameraId);
-  };
-  
   const retryCamera = () => {
     setCameraError(null);
     setShowManualInput(false);
-    checkCameraPermission();
+    initializeCamera();
   };
   
   return (
@@ -465,20 +262,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
                 </div>
               ) : (
                 <div className="relative">
-                  {availableCameras.length > 1 && (
-                    <select 
-                      className="w-full mb-2 p-2 rounded border border-gray-300"
-                      value={selectedCamera || ''}
-                      onChange={handleCameraChange}
-                    >
-                      {availableCameras.map(camera => (
-                        <option key={camera.id} value={camera.id}>
-                          {camera.label || `Camera ${camera.id}`}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                  
                   <div 
                     id="scanner-container"
                     ref={scannerRef}
@@ -503,41 +286,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="w-4/5 h-1 bg-blue-500 absolute animate-scan"></div>
                     </div>
-                    
-                    <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
-                      <Button 
-                        size="icon"
-                        variant="outline"
-                        className="rounded-full bg-black/50 border-white/30 text-white hover:bg-black/70"
-                        onClick={toggleTorch}
-                      >
-                        <span className="i-lucide-flashlight text-white">
-                          🔦
-                        </span>
-                      </Button>
-                      
-                      <Button 
-                        size="icon"
-                        variant="outline"
-                        className="rounded-full bg-black/50 border-white/30 text-white hover:bg-black/70"
-                        onClick={() => changeZoom(zoomLevel === 1 ? 2 : 1)}
-                      >
-                        <ZoomIn className={zoomLevel > 1 ? 'text-blue-400' : 'text-white'} />
-                      </Button>
-                    </div>
-                    
-                    {scanFeedback && (
-                      <div className="absolute bottom-16 left-0 right-0 bg-black/70 text-white text-center py-2 px-3">
-                        <p className="text-sm">
-                          <span className="font-medium">Detected:</span> {scanFeedback.code}
-                          {scanFeedback.confidence && (
-                            <span className="ml-2 text-xs">
-                              ({Math.round(scanFeedback.confidence * 100)}% confidence)
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                    )}
                   </div>
                   
                   <p className="text-center mt-4 text-sm text-gray-600">
@@ -584,7 +332,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
                 </div>
               </form>
               
-              {!cameraError && cameraPermissionState !== 'denied' && (
+              {!cameraError && (
                 <Button 
                   variant="outline"
                   className="w-full"
@@ -598,9 +346,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
               <div className="mt-4">
                 <p className="text-sm text-gray-500">
                   Common barcode formats: EAN-13, UPC-A, UPC-E
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Try entering the code manually if scanning isn't working
                 </p>
               </div>
             </div>
@@ -632,23 +377,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
         
         .animate-scan {
           animation: scan 2s ease-in-out infinite;
-        }
-        
-        .scan-success {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: rgba(0, 255, 0, 0.15);
-          z-index: 20;
-          animation: flash 0.8s ease-out;
-          pointer-events: none;
-        }
-        
-        @keyframes flash {
-          0% { opacity: 0.8; }
-          100% { opacity: 0; }
         }
       `}</style>
     </Dialog>

@@ -1,13 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { X, Search, Plus, Mic, Barcode, ArrowDown, Check, Loader2 } from 'lucide-react';
+import { X, Search, Plus, Mic, Barcode, ArrowDown, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useRecipes } from '@/hooks/useRecipes';
 import { Recipe } from '@/data/mockData';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import RecentMealHistory from '@/components/food-database/RecentMealHistory';
 import { cn } from '@/lib/utils';
 import { searchFoods, foodItemToRecipe, addToRecentFoods } from '@/services/foodDatabaseService';
@@ -25,7 +23,6 @@ const LogMealPage = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
 
-  // Load recent meals
   useEffect(() => {
     try {
       const allLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
@@ -427,7 +424,6 @@ const LogMealPage = () => {
         `}
       </style>
       
-      {/* Only render BarcodeScanner when showBarcodeScanner is true */}
       {showBarcodeScanner && (
         <BarcodeScanner 
           isOpen={showBarcodeScanner}
