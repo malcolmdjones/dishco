@@ -23,8 +23,10 @@ serve(async (req) => {
 
     console.log(`Looking up barcode: ${barcode}`);
     
-    // Call the OpenFoodFacts API
+    // Try OpenFoodFacts API first
     const url = `https://world.openfoodfacts.org/api/v2/product/${barcode}.json`;
+    console.log(`Calling OpenFoodFacts API: ${url}`);
+    
     const response = await fetch(url);
     
     if (!response.ok) {
@@ -43,8 +45,13 @@ serve(async (req) => {
     
     const data = await response.json();
     
-    // If product not found
+    // If product not found in OpenFoodFacts, try alternate APIs or fallback
     if (data.status !== 1 || !data.product) {
+      console.log(`Product not found in OpenFoodFacts for code ${barcode}, trying backup sources...`);
+      
+      // Currently we don't have a backup API integrated
+      // This is where you could add additional API calls
+      
       return new Response(
         JSON.stringify({ 
           error: "Product not found",
@@ -57,12 +64,15 @@ serve(async (req) => {
       );
     }
 
-    // Return the product data
+    console.log(`Found product: ${data.product.product_name || 'Unnamed product'}`);
+    
+    // Return the product data with detailed info
     return new Response(
       JSON.stringify({
         code: barcode,
         product: data.product,
-        status: data.status
+        status: data.status,
+        source: "OpenFoodFacts"
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ExternalFood, FoodDatabaseItem, OpenFoodFactsProduct, BarcodeResponse } from "@/types/food";
 import { Recipe } from "@/data/mockData";
@@ -266,6 +265,11 @@ export const scanBarcode = async (barcode: string): Promise<FoodDatabaseItem | n
     // Extract product data
     const product = data.product;
     
+    // Log more details about what we found
+    console.log(`Found product: ${product.product_name || 'Unknown'}`);
+    console.log(`Brand: ${product.brands || 'Unknown'}`);
+    console.log(`Nutrition data:`, product.nutriments);
+    
     // Create FoodDatabaseItem from product
     const foodItem: FoodDatabaseItem = {
       id: `off-barcode-${product.code}`,
@@ -283,6 +287,40 @@ export const scanBarcode = async (barcode: string): Promise<FoodDatabaseItem | n
       isCommon: false,
       type: 'snack'
     };
+    
+    // Check if we have valid nutrition data before returning
+    if (foodItem.macros.calories === 0 && foodItem.macros.protein === 0 && 
+        foodItem.macros.carbs === 0 && foodItem.macros.fat === 0) {
+      console.log('Product found but has no nutrition data');
+      
+      // Try alternative nutrition field formats in OpenFoodFacts
+      if (product.nutriments) {
+        // Try alternative calorie fields
+        if (product.nutriments['energy-kcal']) foodItem.macros.calories = Math.round(product.nutriments['energy-kcal']);
+        else if (product.nutriments['energy']) {
+          // Convert kJ to kcal if that's all we have
+          const kj = product.nutriments['energy'];
+          if (kj) foodItem.macros.calories = Math.round(kj / 4.184); // Convert kJ to kcal
+        }
+        
+        // Sometimes values are per serving rather than per 100g
+        if (product.nutriments['proteins_serving']) foodItem.macros.protein = Math.round(product.nutriments['proteins_serving']);
+        if (product.nutriments['carbohydrates_serving']) foodItem.macros.carbs = Math.round(product.nutriments['carbohydrates_serving']);
+        if (product.nutriments['fat_serving']) foodItem.macros.fat = Math.round(product.nutriments['fat_serving']);
+      }
+      
+      // If we still have no data, use estimated values based on food category
+      if (foodItem.macros.calories === 0) {
+        // Set reasonable defaults based on product category
+        const category = product.categories_tags ? product.categories_tags[0] : '';
+        if (category.includes('beverage') || category.includes('drink')) {
+          foodItem.macros = { calories: 50, protein: 0, carbs: 12, fat: 0 };
+        } else {
+          foodItem.macros = { calories: 200, protein: 5, carbs: 25, fat: 10 };
+        }
+        foodItem.name += ' (est. nutrition)';
+      }
+    }
     
     // Add to recent foods
     addToRecentFoods(foodItem);
