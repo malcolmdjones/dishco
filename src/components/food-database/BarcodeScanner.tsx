@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, X, Camera, Barcode } from 'lucide-react';
 import { FoodDatabaseItem } from '@/types/food';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 import Quagga from 'quagga';
 
 interface BarcodeScannerProps {
@@ -20,6 +21,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   const [showManualInput, setShowManualInput] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const scannerRef = useRef<HTMLDivElement>(null);
   const scanActive = useRef<boolean>(false);
   const lastScannedCode = useRef<string | null>(null);
@@ -73,16 +75,24 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
           target: scannerRef.current,
           constraints: {
             facingMode: "environment",
-            width: { min: 640, ideal: 1280, max: 1920 },
-            height: { min: 480, ideal: 720, max: 1080 },
+            width: { min: 320, ideal: isMobile ? 640 : 1280, max: 1920 },
+            height: { min: 240, ideal: isMobile ? 480 : 720, max: 1080 },
             aspectRatio: { min: 1, max: 2 }
+          },
+          area: { // Define scan area for mobile
+            top: "0%",    
+            right: "0%",  
+            left: "0%",   
+            bottom: "0%"  
           },
         },
         locator: {
-          patchSize: "medium",
+          patchSize: isMobile ? "medium" : "large",
           halfSample: true
         },
-        numOfWorkers: navigator.hardwareConcurrency || 4,
+        numOfWorkers: navigator.hardwareConcurrency ? 
+          Math.max(2, Math.min(navigator.hardwareConcurrency - 1, 4)) : 
+          2,
         decoder: {
           readers: [
             "ean_reader",
@@ -239,7 +249,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md w-[95vw] sm:max-w-lg p-0 rounded-xl">
+      <DialogContent className={`${isMobile ? 'w-[95vw] max-w-[95vw]' : 'max-w-md'} p-0 rounded-xl mx-auto`}>
         <DialogHeader className="px-4 py-3 border-b relative">
           <Button
             variant="ghost" 
@@ -268,7 +278,8 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
                 <div className="relative">
                   <div 
                     ref={scannerRef}
-                    className="w-full aspect-[4/3] bg-black rounded-lg overflow-hidden relative"
+                    className="w-full h-[60vh] max-h-[400px] bg-black rounded-lg overflow-hidden relative"
+                    style={{ aspectRatio: isMobile ? '3/4' : '4/3' }}
                   >
                     {/* Quagga will insert the video here */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
