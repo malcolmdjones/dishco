@@ -7,6 +7,16 @@ import { FoodDatabaseItem } from '@/types/food';
 import { useToast } from '@/hooks/use-toast';
 import { Html5Qrcode, Html5QrcodeSupportedFormats, Html5QrcodeResult } from 'html5-qrcode';
 
+interface ExtendedMediaTrackSettings extends MediaTrackSettings {
+  torch?: boolean;
+  zoom?: number;
+}
+
+interface ExtendedMediaTrackConstraintSet extends MediaTrackConstraintSet {
+  torch?: boolean;
+  zoom?: number;
+}
+
 interface BarcodeScannerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -282,13 +292,14 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
         });
         
         const track = stream.getVideoTracks()[0];
-        const currentTorchState = track.getSettings().torch;
+        const settings = track.getSettings() as ExtendedMediaTrackSettings;
+        const currentTorchState = settings.torch || false;
         
         const newTorchState = !currentTorchState;
         
         try {
           await track.applyConstraints({ 
-            advanced: [{ torch: newTorchState }] 
+            advanced: [{ torch: newTorchState } as ExtendedMediaTrackConstraintSet] 
           });
           
           toast({
@@ -342,7 +353,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
         
         try {
           await track.applyConstraints({ 
-            advanced: [{ zoom: newZoom }] 
+            advanced: [{ zoom: newZoom } as ExtendedMediaTrackConstraintSet] 
           });
         } catch (err) {
           console.log("Failed to apply zoom:", err);
