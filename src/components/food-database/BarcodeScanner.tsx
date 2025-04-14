@@ -270,21 +270,41 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     if (!html5QrCodeRef.current) return;
     
     try {
-      const capabilities = html5QrCodeRef.current.getRunningTrackCapabilities();
+      const videoTrack = html5QrCodeRef.current.getRunningTrackCameraCapabilities();
+      if (!videoTrack) {
+        console.log("No video track available");
+        return;
+      }
       
-      if (capabilities && 'torch' in capabilities) {
-        const settings = html5QrCodeRef.current.getRunningTrackSettings();
-        const currentTorch = settings && settings.torch ? settings.torch : false;
+      if ('torch' in videoTrack) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: selectedCamera || undefined }
+        });
+        
+        const track = stream.getVideoTracks()[0];
+        const currentTorchState = track.getSettings().torch;
+        
+        const newTorchState = !currentTorchState;
         
         try {
-          await html5QrCodeRef.current.applyTorch(!currentTorch);
+          await track.applyConstraints({ 
+            advanced: [{ torch: newTorchState }] 
+          });
+          
           toast({
-            title: !currentTorch ? "Torch enabled" : "Torch disabled",
+            title: newTorchState ? "Torch enabled" : "Torch disabled",
             duration: 1000,
           });
         } catch (err) {
           console.log("Failed to toggle torch:", err);
+          toast({
+            title: "Torch control failed",
+            description: "Your device doesn't support torch control",
+            variant: "destructive"
+          });
         }
+        
+        stream.getTracks().forEach(track => track.stop());
       } else {
         toast({
           title: "Torch not supported",
@@ -294,6 +314,11 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
       }
     } catch (e) {
       console.log("Error toggling torch:", e);
+      toast({
+        title: "Torch not available",
+        description: "Cannot access torch on this device",
+        variant: "destructive"
+      });
     }
   };
   
@@ -302,17 +327,28 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     setZoomLevel(newZoom);
     
     try {
-      const capabilities = html5QrCodeRef.current.getRunningTrackCapabilities();
+      const videoTrack = html5QrCodeRef.current.getRunningTrackCameraCapabilities();
+      if (!videoTrack) {
+        console.log("No video track available");
+        return;
+      }
       
-      if (capabilities && 'zoom' in capabilities) {
-        const zoomCapability = capabilities.zoom as {min: number, max: number, step: number};
-        const zoomValue = Math.min(zoomCapability.max, Math.max(zoomCapability.min, newZoom));
+      if ('zoom' in videoTrack) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: selectedCamera || undefined }
+        });
+        
+        const track = stream.getVideoTracks()[0];
         
         try {
-          await html5QrCodeRef.current.applyZoom(zoomValue);
+          await track.applyConstraints({ 
+            advanced: [{ zoom: newZoom }] 
+          });
         } catch (err) {
           console.log("Failed to apply zoom:", err);
         }
+        
+        stream.getTracks().forEach(track => track.stop());
       }
     } catch (e) {
       console.log("Error changing zoom:", e);
