@@ -39,9 +39,18 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   const [zoomLevel, setZoomLevel] = useState(1);
   
   const { toast } = useToast();
-  const scannerRef = useRef<HTMLDivElement>(null);
+  const scannerRef = useRef<HTMLDivElement | null>(null);
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const scanHighlightRef = useRef<HTMLDivElement | null>(null);
+  const containerExistsRef = useRef<boolean>(false);
+  
+  // Safety cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopScanner();
+      removeHighlightElement();
+    };
+  }, []);
   
   useEffect(() => {
     if (!isOpen) {
@@ -50,25 +59,30 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
       setLastDetectedCode(null);
       setCameraError(null);
       stopScanner();
+      removeHighlightElement();
     } else if (isOpen && !showManualInput) {
       checkCameraPermission();
     }
     
     return () => {
-      // Clean up any scan highlight element that might exist
-      if (scanHighlightRef.current) {
-        try {
-          if (scanHighlightRef.current.parentNode) {
-            scanHighlightRef.current.parentNode.removeChild(scanHighlightRef.current);
-          }
-          scanHighlightRef.current = null;
-        } catch (e) {
-          console.log("Error removing scan highlight:", e);
-        }
-      }
+      removeHighlightElement();
       stopScanner();
     };
   }, [isOpen]);
+  
+  const removeHighlightElement = () => {
+    if (scanHighlightRef.current) {
+      try {
+        const element = scanHighlightRef.current;
+        if (element.parentNode) {
+          element.parentNode.removeChild(element);
+        }
+        scanHighlightRef.current = null;
+      } catch (e) {
+        console.log("Error removing scan highlight:", e);
+      }
+    }
+  };
   
   const checkCameraPermission = async () => {
     try {
@@ -150,11 +164,14 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     try {
       const containerId = scannerRef.current.id;
       
-      // Make sure the container exists before creating a new scanner instance
-      if (!document.getElementById(containerId)) {
+      // Double check the container exists
+      const containerElement = document.getElementById(containerId);
+      if (!containerElement) {
         console.error("Scanner container not found");
         return;
       }
+      
+      containerExistsRef.current = true;
       
       const qrCodeScanner = new Html5Qrcode(containerId);
       html5QrCodeRef.current = qrCodeScanner;
@@ -207,24 +224,15 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
           })
           .catch(e => {
             console.log("Error stopping scanner:", e);
-            // Don't set ref to null here, to prevent calling stop multiple times
+            html5QrCodeRef.current = null;
           });
       } catch (e) {
         console.log("Exception stopping scanner:", e);
+        html5QrCodeRef.current = null;
       }
     }
     
-    // Clean up any scan highlight element that might exist
-    if (scanHighlightRef.current) {
-      try {
-        if (scanHighlightRef.current.parentNode) {
-          scanHighlightRef.current.parentNode.removeChild(scanHighlightRef.current);
-        }
-        scanHighlightRef.current = null;
-      } catch (e) {
-        console.log("Error removing scan highlight:", e);
-      }
-    }
+    removeHighlightElement();
   };
   
   const onScanSuccess = (decodedText: string, result: Html5QrcodeResult) => {
@@ -237,35 +245,25 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     setLastDetectedCode(decodedText);
     setScanFeedback({ code: decodedText });
     
-    // Create and add scan highlight element safely
+    // Safe handling of scan highlight
     if (scannerRef.current) {
-      // Remove previous scan highlight if it exists
-      if (scanHighlightRef.current && scanHighlightRef.current.parentNode) {
-        try {
-          scanHighlightRef.current.parentNode.removeChild(scanHighlightRef.current);
-        } catch (e) {
-          console.log("Error removing previous scan highlight:", e);
-        }
+      // Remove previous highlight safely
+      removeHighlightElement();
+      
+      // Create new highlight element
+      try {
+        const scanHighlight = document.createElement('div');
+        scanHighlight.className = 'scan-success';
+        scannerRef.current.appendChild(scanHighlight);
+        scanHighlightRef.current = scanHighlight;
+        
+        // Set a timeout to safely remove the highlight
+        setTimeout(() => {
+          removeHighlightElement();
+        }, 800);
+      } catch (e) {
+        console.log("Error adding scan highlight:", e);
       }
-      
-      const scanHighlight = document.createElement('div');
-      scanHighlight.className = 'scan-success';
-      scannerRef.current.appendChild(scanHighlight);
-      scanHighlightRef.current = scanHighlight;
-      
-      // Set a timeout to safely remove the highlight
-      setTimeout(() => {
-        if (scanHighlight.parentNode === scannerRef.current) {
-          try {
-            scannerRef.current.removeChild(scanHighlight);
-            if (scanHighlightRef.current === scanHighlight) {
-              scanHighlightRef.current = null;
-            }
-          } catch (e) {
-            console.log("Error removing scan highlight in timeout:", e);
-          }
-        }
-      }, 800);
     }
     
     stopScanner();
@@ -342,52 +340,43 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   };
   
   const toggleTorch = async () => {
-    if (!html5QrCodeRef.current) return;
+    if (!html5QrCodeRef.current || !selectedCamera) return;
     
     try {
-      const videoTrack = html5QrCodeRef.current.getRunningTrackCameraCapabilities();
-      if (!videoTrack) {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: selectedCamera }
+      });
+      
+      const track = stream.getVideoTracks()[0];
+      if (!track) {
         console.log("No video track available");
         return;
       }
       
-      if ('torch' in videoTrack) {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { deviceId: selectedCamera || undefined }
+      const settings = track.getSettings() as ExtendedMediaTrackSettings;
+      const currentTorchState = settings.torch || false;
+      
+      const newTorchState = !currentTorchState;
+      
+      try {
+        await track.applyConstraints({ 
+          advanced: [{ torch: newTorchState } as unknown as MediaTrackConstraintSet] 
         });
         
-        const track = stream.getVideoTracks()[0];
-        const settings = track.getSettings() as ExtendedMediaTrackSettings;
-        const currentTorchState = settings.torch || false;
-        
-        const newTorchState = !currentTorchState;
-        
-        try {
-          await track.applyConstraints({ 
-            advanced: [{ torch: newTorchState } as ExtendedMediaTrackConstraintSet] 
-          });
-          
-          toast({
-            title: newTorchState ? "Torch enabled" : "Torch disabled",
-            duration: 1000,
-          });
-        } catch (err) {
-          console.log("Failed to toggle torch:", err);
-          toast({
-            title: "Torch control failed",
-            description: "Your device doesn't support torch control",
-            variant: "destructive"
-          });
-        }
-        
-        stream.getTracks().forEach(track => track.stop());
-      } else {
         toast({
-          title: "Torch not supported",
-          description: "Your device doesn't support the torch feature",
+          title: newTorchState ? "Torch enabled" : "Torch disabled",
+          duration: 1000,
+        });
+      } catch (err) {
+        console.log("Failed to toggle torch:", err);
+        toast({
+          title: "Torch control failed",
+          description: "Your device doesn't support torch control",
           variant: "destructive"
         });
       }
+      
+      stream.getTracks().forEach(track => track.stop());
     } catch (e) {
       console.log("Error toggling torch:", e);
       toast({
@@ -399,33 +388,29 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   };
   
   const changeZoom = async (newZoom: number) => {
-    if (!html5QrCodeRef.current) return;
+    if (!html5QrCodeRef.current || !selectedCamera) return;
     setZoomLevel(newZoom);
     
     try {
-      const videoTrack = html5QrCodeRef.current.getRunningTrackCameraCapabilities();
-      if (!videoTrack) {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: selectedCamera }
+      });
+      
+      const track = stream.getVideoTracks()[0];
+      if (!track) {
         console.log("No video track available");
         return;
       }
       
-      if ('zoom' in videoTrack) {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { deviceId: selectedCamera || undefined }
+      try {
+        await track.applyConstraints({ 
+          advanced: [{ zoom: newZoom } as unknown as MediaTrackConstraintSet] 
         });
-        
-        const track = stream.getVideoTracks()[0];
-        
-        try {
-          await track.applyConstraints({ 
-            advanced: [{ zoom: newZoom } as ExtendedMediaTrackConstraintSet] 
-          });
-        } catch (err) {
-          console.log("Failed to apply zoom:", err);
-        }
-        
-        stream.getTracks().forEach(track => track.stop());
+      } catch (err) {
+        console.log("Failed to apply zoom:", err);
       }
+      
+      stream.getTracks().forEach(track => track.stop());
     } catch (e) {
       console.log("Error changing zoom:", e);
     }

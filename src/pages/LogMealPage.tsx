@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -24,12 +25,18 @@ const LogMealPage = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
 
+  // Load recent meals
   useEffect(() => {
-    const allLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
-    const loggedFromThisScreen = allLoggedMeals.filter((meal: LoggedMeal) => 
-      meal.loggedFromScreen === 'log-meal'
-    );
-    setRecentMeals(loggedFromThisScreen.slice(0, 10).reverse());
+    try {
+      const allLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
+      const loggedFromThisScreen = allLoggedMeals.filter((meal: LoggedMeal) => 
+        meal.loggedFromScreen === 'log-meal'
+      );
+      setRecentMeals(loggedFromThisScreen.slice(0, 10).reverse());
+    } catch (error) {
+      console.error("Error loading recent meals:", error);
+      setRecentMeals([]);
+    }
   }, []);
 
   const handleClearSearch = () => {
@@ -92,45 +99,54 @@ const LogMealPage = () => {
   });
 
   const handleLogMeal = (recipe: Recipe) => {
-    const existingLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
-    const uniqueId = `${recipe.id}-${Date.now()}`;
-    
-    const proteinDisplay = recipe.macros?.protein ? `${recipe.macros.protein}g protein` : '';
-    
-    const newMeal: LoggedMeal = {
-      id: uniqueId,
-      name: recipe.name,
-      type: recipe.type || 'snack',
-      recipe: recipe,
-      consumed: true,
-      loggedAt: new Date().toISOString(),
-      loggedFromScreen: 'log-meal',
-      calories: recipe.macros.calories,
-      protein: proteinDisplay,
-      brand: (recipe as any).brandName || '',
-      servingInfo: recipe.servings === 1 ? '1 serving' : `${recipe.servings} servings`,
-      source: recipe.externalSource ? 'External' : 'Custom'
-    };
-    
-    const updatedLoggedMeals = [newMeal, ...existingLoggedMeals];
-    localStorage.setItem('loggedMeals', JSON.stringify(updatedLoggedMeals));
-    
-    setRecentMeals([newMeal, ...recentMeals].slice(0, 10));
-    
-    const currentNutrition = JSON.parse(localStorage.getItem('dailyNutrition') || '{}');
-    const updatedNutrition = {
-      calories: (currentNutrition.calories || 0) + recipe.macros.calories,
-      protein: (currentNutrition.protein || 0) + (recipe.macros.protein || 0),
-      carbs: (currentNutrition.carbs || 0) + (recipe.macros.carbs || 0),
-      fat: (currentNutrition.fat || 0) + (recipe.macros.fat || 0)
-    };
-    
-    localStorage.setItem('dailyNutrition', JSON.stringify(updatedNutrition));
-    
-    toast({
-      title: "Meal Logged",
-      description: `${recipe.name} has been added to your daily log.`,
-    });
+    try {
+      const existingLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
+      const uniqueId = `${recipe.id}-${Date.now()}`;
+      
+      const proteinDisplay = recipe.macros?.protein ? `${recipe.macros.protein}g protein` : '';
+      
+      const newMeal: LoggedMeal = {
+        id: uniqueId,
+        name: recipe.name,
+        type: recipe.type || 'snack',
+        recipe: recipe,
+        consumed: true,
+        loggedAt: new Date().toISOString(),
+        loggedFromScreen: 'log-meal',
+        calories: recipe.macros.calories,
+        protein: proteinDisplay,
+        brand: (recipe as any).brandName || '',
+        servingInfo: recipe.servings === 1 ? '1 serving' : `${recipe.servings} servings`,
+        source: recipe.externalSource ? 'External' : 'Custom'
+      };
+      
+      const updatedLoggedMeals = [newMeal, ...existingLoggedMeals];
+      localStorage.setItem('loggedMeals', JSON.stringify(updatedLoggedMeals));
+      
+      setRecentMeals([newMeal, ...recentMeals].slice(0, 10));
+      
+      const currentNutrition = JSON.parse(localStorage.getItem('dailyNutrition') || '{}');
+      const updatedNutrition = {
+        calories: (currentNutrition.calories || 0) + recipe.macros.calories,
+        protein: (currentNutrition.protein || 0) + (recipe.macros.protein || 0),
+        carbs: (currentNutrition.carbs || 0) + (recipe.macros.carbs || 0),
+        fat: (currentNutrition.fat || 0) + (recipe.macros.fat || 0)
+      };
+      
+      localStorage.setItem('dailyNutrition', JSON.stringify(updatedNutrition));
+      
+      toast({
+        title: "Meal Logged",
+        description: `${recipe.name} has been added to your daily log.`,
+      });
+    } catch (error) {
+      console.error("Error logging meal:", error);
+      toast({
+        title: "Error",
+        description: "Failed to log meal. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleLogDatabaseFood = (foodItem: FoodDatabaseItem) => {
@@ -411,6 +427,7 @@ const LogMealPage = () => {
         `}
       </style>
       
+      {/* Only render BarcodeScanner when showBarcodeScanner is true */}
       {showBarcodeScanner && (
         <BarcodeScanner 
           isOpen={showBarcodeScanner}
