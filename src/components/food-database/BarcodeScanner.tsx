@@ -3,10 +3,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { scanBarcode } from '@/services/foodDatabaseService';
 import { Button } from '@/components/ui/button';
-import { Loader2, X, Camera, Barcode } from 'lucide-react';
+import { Loader2, X, Camera, Barcode, Plus, Minus, ArrowRight } from 'lucide-react';
 import { FoodDatabaseItem } from '@/types/food';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Quagga from 'quagga';
 
 interface BarcodeScannerProps {
@@ -20,6 +23,11 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   const [isSearching, setIsSearching] = useState(false);
   const [showManualInput, setShowManualInput] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [foundFood, setFoundFood] = useState<FoodDatabaseItem | null>(null);
+  const [servingQuantity, setServingQuantity] = useState(1);
+  const [servingUnit, setServingUnit] = useState('serving');
+  
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const scannerRef = useRef<HTMLDivElement>(null);
@@ -38,7 +46,9 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
       stopScanner();
       setManualBarcode('');
       setCameraError(null);
-    } else if (isOpen && !showManualInput) {
+      setShowConfirmation(false);
+      setFoundFood(null);
+    } else if (isOpen && !showManualInput && !showConfirmation) {
       const timer = setTimeout(() => {
         startScanner();
       }, 500);
@@ -49,13 +59,13 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   
   useEffect(() => {
     if (isOpen) {
-      if (showManualInput) {
+      if (showManualInput || showConfirmation) {
         stopScanner();
       } else {
         startScanner();
       }
     }
-  }, [showManualInput, isOpen]);
+  }, [showManualInput, isOpen, showConfirmation]);
 
   const startScanner = async () => {
     if (!scannerRef.current) return;
@@ -202,8 +212,18 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
           title: "Product Found",
           description: `${food.name} identified successfully.`,
         });
-        onFoodFound(food);
-        onClose();
+        
+        // Instead of immediately calling onFoodFound, show the confirmation screen
+        setFoundFood(food);
+        setShowConfirmation(true);
+        
+        // Reset serving information
+        setServingQuantity(1);
+        if (food.servingUnit) {
+          setServingUnit(food.servingUnit);
+        } else {
+          setServingUnit('serving');
+        }
       } else {
         console.log(`No product found for barcode: ${code}`);
         toast({
@@ -247,6 +267,188 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     setTimeout(() => startScanner(), 500);
   };
   
+  const handleQuantityChange = (value: string) => {
+    const quantity = parseFloat(value);
+    if (!isNaN(quantity) && quantity > 0) {
+      setServingQuantity(quantity);
+    }
+  };
+  
+  const incrementQuantity = () => {
+    setServingQuantity(prev => Math.min(prev + 0.5, 100));
+  };
+  
+  const decrementQuantity = () => {
+    setServingQuantity(prev => Math.max(prev - 0.5, 0.5));
+  };
+  
+  const calculateAdjustedNutrition = () => {
+    if (!foundFood) return null;
+    
+    return {
+      calories: Math.round(foundFood.macros.calories * servingQuantity),
+      protein: Math.round(foundFood.macros.protein * servingQuantity * 10) / 10,
+      carbs: Math.round(foundFood.macros.carbs * servingQuantity * 10) / 10,
+      fat: Math.round(foundFood.macros.fat * servingQuantity * 10) / 10
+    };
+  };
+  
+  const handleAddToLog = () => {
+    if (!foundFood) return;
+    
+    // Create an adjusted copy of the food item with updated macros
+    const adjustedFood: FoodDatabaseItem = {
+      ...foundFood,
+      servingSize: `${servingQuantity}`,
+      servingUnit: servingUnit,
+      macros: calculateAdjustedNutrition() || foundFood.macros
+    };
+    
+    onFoodFound(adjustedFood);
+    onClose();
+  };
+  
+  const getServingUnitOptions = () => {
+    // Start with common serving units
+    const options = ['serving', 'g', 'ml', 'oz', 'cup', 'tbsp', 'tsp', 'piece'];
+    
+    // Add original serving unit if it exists and isn't already in the list
+    if (foundFood?.servingUnit && !options.includes(foundFood.servingUnit)) {
+      options.unshift(foundFood.servingUnit);
+    }
+    
+    return options;
+  };
+  
+  const renderConfirmationScreen = () => {
+    if (!foundFood) return null;
+    
+    const adjustedNutrition = calculateAdjustedNutrition();
+    const servingUnitOptions = getServingUnitOptions();
+    
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center space-x-3">
+          {foundFood.imageSrc ? (
+            <img 
+              src={foundFood.imageSrc} 
+              alt={foundFood.name}
+              className="h-20 w-20 object-contain rounded-md"
+            />
+          ) : (
+            <div className="h-20 w-20 bg-gray-200 rounded-md flex items-center justify-center">
+              <span className="text-gray-500">No Image</span>
+            </div>
+          )}
+          
+          <div className="flex-1">
+            <h3 className="font-medium text-lg">{foundFood.name}</h3>
+            {foundFood.brand && (
+              <p className="text-sm text-gray-500">{foundFood.brand}</p>
+            )}
+          </div>
+        </div>
+        
+        <div className="bg-gray-50 p-3 rounded-lg">
+          <h4 className="font-medium mb-2">Nutrition</h4>
+          <div className="grid grid-cols-4 gap-2 text-center">
+            <div>
+              <p className="font-semibold text-blue-600">{adjustedNutrition?.calories}</p>
+              <p className="text-xs">Calories</p>
+            </div>
+            <div>
+              <p className="font-semibold">{adjustedNutrition?.protein}g</p>
+              <p className="text-xs">Protein</p>
+            </div>
+            <div>
+              <p className="font-semibold">{adjustedNutrition?.carbs}g</p>
+              <p className="text-xs">Carbs</p>
+            </div>
+            <div>
+              <p className="font-semibold">{adjustedNutrition?.fat}g</p>
+              <p className="text-xs">Fat</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="quantity" className="mb-2 block">Quantity</Label>
+            <div className="flex items-center">
+              <Button 
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={decrementQuantity}
+                disabled={servingQuantity <= 0.5}
+                className="h-10 w-10 rounded-r-none"
+              >
+                <Minus size={16} />
+              </Button>
+              <Input
+                id="quantity"
+                type="number"
+                min="0.1"
+                step="0.1"
+                value={servingQuantity}
+                onChange={(e) => handleQuantityChange(e.target.value)}
+                className="rounded-none text-center w-20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <Button 
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={incrementQuantity}
+                className="h-10 w-10 rounded-l-none"
+              >
+                <Plus size={16} />
+              </Button>
+            </div>
+          </div>
+          
+          <div>
+            <Label htmlFor="unit" className="mb-2 block">Unit</Label>
+            <Select value={servingUnit} onValueChange={setServingUnit}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select unit" />
+              </SelectTrigger>
+              <SelectContent>
+                {servingUnitOptions.map((unit) => (
+                  <SelectItem key={unit} value={unit}>
+                    {unit}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        <div className="flex flex-col gap-2 mt-6">
+          <Button 
+            onClick={handleAddToLog}
+            className="w-full bg-blue-600 hover:bg-blue-700"
+          >
+            Add to Log
+            <ArrowRight size={16} className="ml-2" />
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => {
+              setShowConfirmation(false);
+              setFoundFood(null);
+              if (!showManualInput) {
+                startScanner();
+              }
+            }}
+            className="w-full"
+          >
+            Scan Another Product
+          </Button>
+        </div>
+      </div>
+    );
+  };
+  
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="p-0 rounded-xl mx-auto" style={{
@@ -263,13 +465,19 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
             <X size={18} />
           </Button>
           <DialogTitle className="text-xl text-blue-600 text-center">
-            {showManualInput ? "Enter Barcode" : "Scan Barcode"}
+            {showConfirmation 
+              ? "Confirm Product" 
+              : showManualInput 
+                ? "Enter Barcode" 
+                : "Scan Barcode"}
           </DialogTitle>
           <DialogDescription className="sr-only">Scan or manually enter a product barcode</DialogDescription>
         </DialogHeader>
         
         <div className="p-4 space-y-4">
-          {!showManualInput ? (
+          {showConfirmation ? (
+            renderConfirmationScreen()
+          ) : !showManualInput ? (
             <>
               {cameraError ? (
                 <div className="text-center py-4">
