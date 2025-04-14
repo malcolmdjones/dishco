@@ -12,7 +12,6 @@ serve(async (req) => {
     const { barcode } = await req.json();
     
     if (!barcode) {
-      console.error("Missing barcode parameter");
       return new Response(
         JSON.stringify({ error: "Barcode is required" }),
         {
@@ -22,37 +21,20 @@ serve(async (req) => {
       );
     }
 
-    // Normalize barcode input (remove spaces, non-numeric chars for some formats)
-    const normalizedBarcode = barcode.toString().replace(/\s+/g, '');
-    console.log(`Looking up barcode: ${normalizedBarcode}`);
+    console.log(`Looking up barcode: ${barcode}`);
     
     // Try OpenFoodFacts API first
-    const url = `https://world.openfoodfacts.org/api/v2/product/${normalizedBarcode}.json`;
+    const url = `https://world.openfoodfacts.org/api/v2/product/${barcode}.json`;
     console.log(`Calling OpenFoodFacts API: ${url}`);
     
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'MealPlanner/1.0 (https://planprovisions.lovable.app)'
-      }
-    });
+    const response = await fetch(url);
     
     if (!response.ok) {
       console.error(`OpenFoodFacts API error: ${response.status} ${response.statusText}`);
-      
-      // Enhanced logging for debugging
-      let responseBody = "";
-      try {
-        responseBody = await response.text();
-        console.error(`Response body: ${responseBody}`);
-      } catch (e) {
-        console.error(`Could not read response body: ${e}`);
-      }
-      
       return new Response(
         JSON.stringify({ 
           error: "Error calling external API", 
-          status: response.status,
-          details: responseBody || "No details available"
+          status: response.status 
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -62,28 +44,18 @@ serve(async (req) => {
     }
     
     const data = await response.json();
-    console.log(`OpenFoodFacts response status: ${data.status}`);
-    
-    // Log the entire product data in development for debugging
-    console.log(`Raw product data:`, JSON.stringify(data).substring(0, 500) + "...");
     
     // If product not found in OpenFoodFacts, try alternate APIs or fallback
     if (data.status !== 1 || !data.product) {
-      console.log(`Product not found in OpenFoodFacts for code ${normalizedBarcode}, trying backup sources...`);
+      console.log(`Product not found in OpenFoodFacts for code ${barcode}, trying backup sources...`);
       
-      // Example log to help debug why products aren't being found
-      if (data.status === 0) {
-        console.log(`OpenFoodFacts returned status 0. Reason: ${data.status_verbose || 'Unknown'}`);
-      }
-      
-      // Try UPC database API as fallback (currently just a placeholder)
-      // Add your backup API implementation here
+      // Currently we don't have a backup API integrated
+      // This is where you could add additional API calls
       
       return new Response(
         JSON.stringify({ 
           error: "Product not found",
-          code: normalizedBarcode,
-          apiResponse: data
+          code: barcode
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -93,13 +65,11 @@ serve(async (req) => {
     }
 
     console.log(`Found product: ${data.product.product_name || 'Unnamed product'}`);
-    console.log(`Product brand: ${data.product.brands || 'Unknown brand'}`);
-    console.log(`Nutrient data available: ${data.product.nutriments ? 'Yes' : 'No'}`);
     
     // Return the product data with detailed info
     return new Response(
       JSON.stringify({
-        code: normalizedBarcode,
+        code: barcode,
         product: data.product,
         status: data.status,
         source: "OpenFoodFacts"
