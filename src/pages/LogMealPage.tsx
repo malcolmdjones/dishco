@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,13 @@ import { searchFoods, foodItemToRecipe, addToRecentFoods } from '@/services/food
 import { FoodDatabaseItem, LoggedMeal } from '@/types/food';
 import BarcodeScanner from '@/components/food-database/BarcodeScanner';
 import { CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
 
 const LogMealPage = () => {
   const { toast } = useToast();
@@ -37,7 +43,6 @@ const LogMealPage = () => {
     );
     setRecentMeals(loggedFromThisScreen.slice(0, 10).reverse());
     
-    // Auto-focus the search input when the page loads
     if (searchInputRef.current) {
       setTimeout(() => {
         searchInputRef.current?.focus();
@@ -98,7 +103,7 @@ const LogMealPage = () => {
       const results = await searchFoods(searchQuery, true);
       console.log("Search results:", results);
       setSearchResults(results);
-      setOpenCommandDialog(false); // Close the command dialog after search
+      setOpenCommandDialog(false);
     } catch (error) {
       console.error("Error searching foods:", error);
       toast({
@@ -338,7 +343,6 @@ const LogMealPage = () => {
             </div>
           )}
 
-          {/* Selected food details */}
           {selectedFood && (
             <div className="p-4 space-y-4">
               <div className="flex items-center p-3 bg-blue-50 rounded-lg">
