@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -33,29 +32,24 @@ const LogMealSearchPage = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [recentMeals, setRecentMeals] = useState<LoggedMeal[]>([]);
 
-  // Load recent searches and meals on component mount
   useEffect(() => {
-    // Load recent searches
     const savedRecentSearches = localStorage.getItem('recentSearches');
     if (savedRecentSearches) {
       setRecentSearches(JSON.parse(savedRecentSearches).slice(0, 5));
     }
 
-    // Load recent meals
     const allLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
     const loggedFromSearchScreen = allLoggedMeals.filter((meal: LoggedMeal) => 
       meal.loggedFromScreen === 'log-meal-search'
     );
     setRecentMeals(loggedFromSearchScreen.slice(0, 10).reverse());
     
-    // Autofocus search input
     if (searchInputRef.current) {
       setTimeout(() => {
         searchInputRef.current?.focus();
       }, 100);
     }
     
-    // If there's an initial query, search for it
     if (initialQuery) {
       handleSearch(initialQuery);
     }
@@ -80,7 +74,6 @@ const LogMealSearchPage = () => {
       const results = await searchFoods(query, true);
       setSearchResults(results);
       
-      // Save to recent searches
       if (!recentSearches.includes(query)) {
         const updatedSearches = [query, ...recentSearches].slice(0, 10);
         setRecentSearches(updatedSearches);
@@ -139,7 +132,6 @@ const LogMealSearchPage = () => {
     
     setRecentMeals([newMeal, ...recentMeals].slice(0, 10));
     
-    // Update daily nutrition
     const currentNutrition = JSON.parse(localStorage.getItem('dailyNutrition') || '{}');
     const updatedNutrition = {
       calories: (currentNutrition.calories || 0) + recipe.macros.calories,
@@ -150,7 +142,6 @@ const LogMealSearchPage = () => {
     
     localStorage.setItem('dailyNutrition', JSON.stringify(updatedNutrition));
     
-    // Add to recent foods
     addToRecentFoods(selectedFood);
     
     toast({
@@ -158,7 +149,6 @@ const LogMealSearchPage = () => {
       description: `${recipe.name} has been logged successfully.`
     });
     
-    // Go back to log meal page
     navigate('/log-meal');
   };
 
@@ -175,7 +165,7 @@ const LogMealSearchPage = () => {
         <h1 className="text-lg font-semibold">
           {selectedFood ? 'Add Food' : 'Search Foods'}
         </h1>
-        <div className="w-10"></div> {/* Spacer for centering */}
+        <div className="w-10"></div>
       </div>
 
       <AnimatePresence mode="wait">

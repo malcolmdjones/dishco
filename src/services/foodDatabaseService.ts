@@ -1,8 +1,9 @@
+
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalFood, FoodDatabaseItem, OpenFoodFactsProduct, BarcodeResponse } from "@/types/food";
+import { ExternalFood, FoodDatabaseItem, BarcodeResponse } from "@/types/food";
 import { Recipe } from "@/data/mockData";
 
-// Convert OpenFoodFacts API food item to our app's Recipe format
+// Convert FatSecret API food item to our app's Recipe format
 export const convertToMealFormat = (foodItem: any, quantity: number = 1): Recipe => {
   // Calculate macros based on quantity
   const calories = Math.round((foodItem.nutrients.ENERC_KCAL || 0) * quantity);
@@ -11,7 +12,7 @@ export const convertToMealFormat = (foodItem: any, quantity: number = 1): Recipe
   const fat = Math.round((foodItem.nutrients.FAT || 0) * quantity);
 
   return {
-    id: `fs-${foodItem.foodId}`, // Changed prefix from off- to fs- for FatSecret
+    id: `fs-${foodItem.foodId}`,
     name: foodItem.label,
     type: 'snack', // Default type, can be changed by user
     description: foodItem.servingSize ? `${foodItem.servingSize}` : '',
@@ -130,7 +131,7 @@ export const addToRecentFoods = (food: FoodDatabaseItem) => {
   }
 };
 
-// Search foods using FatSecret API (replacing OpenFoodFacts)
+// Search foods using FatSecret API
 export const searchFoods = async (query: string, searchExternal: boolean = true): Promise<FoodDatabaseItem[]> => {
   if (!query.trim()) return [];
   
@@ -181,7 +182,13 @@ export const searchFoods = async (query: string, searchExternal: boolean = true)
             calories: Math.round(item.nutrients.ENERC_KCAL || 0),
             protein: Math.round(item.nutrients.PROCNT || 0),
             carbs: Math.round(item.nutrients.CHOCDF || 0),
-            fat: Math.round(item.nutrients.FAT || 0)
+            fat: Math.round(item.nutrients.FAT || 0),
+            fiber: item.nutrients.FIBTG || undefined,
+            sugar: item.nutrients.SUGAR || undefined,
+            sodium: item.nutrients.NA || undefined,
+            cholesterol: item.nutrients.CHOLE || undefined,
+            saturatedFat: item.nutrients.FASAT || undefined,
+            transFat: item.nutrients.FATRN || undefined
           },
           servingSize: item.servingSize || '',
           servingUnit: '',
@@ -239,7 +246,7 @@ export const foodItemToRecipe = (foodItem: FoodDatabaseItem, quantity: number = 
   };
 };
 
-// Scan barcode using OpenFoodFacts API
+// Scan barcode using FatSecret API
 export const scanBarcode = async (barcode: string): Promise<FoodDatabaseItem | null> => {
   try {
     console.log(`Looking up barcode: ${barcode}`);
@@ -259,65 +266,73 @@ export const scanBarcode = async (barcode: string): Promise<FoodDatabaseItem | n
       return null;
     }
     
-    // Extract product data
+    // Extract product data from FatSecret response
     const product = data.product;
     
     // Log more details about what we found
-    console.log(`Found product: ${product.product_name || 'Unknown'}`);
-    console.log(`Brand: ${product.brands || 'Unknown'}`);
-    console.log(`Nutrition data:`, product.nutriments);
+    console.log(`Found product: ${product.food_name || 'Unknown'}`);
+    console.log(`Brand: ${product.brand_name || 'Unknown'}`);
+    
+    // Get serving and nutrition info
+    let calories = 0;
+    let protein = 0;
+    let carbs = 0;
+    let fat = 0;
+    let fiber = 0;
+    let sugar = 0;
+    let sodium = 0;
+    let cholesterol = 0;
+    let saturatedFat = 0;
+    let transFat = 0;
+    let servingSize = "1 serving";
+    
+    // Parse nutrition info from servings
+    if (product.servings && product.servings.serving) {
+      // FatSecret can return either an array of servings or a single serving object
+      const servings = Array.isArray(product.servings.serving) 
+        ? product.servings.serving 
+        : [product.servings.serving];
+      
+      // Use the first serving (usually the default)
+      if (servings.length > 0) {
+        const serving = servings[0];
+        calories = parseFloat(serving.calories) || 0;
+        protein = parseFloat(serving.protein) || 0;
+        carbs = parseFloat(serving.carbohydrate) || 0;
+        fat = parseFloat(serving.fat) || 0;
+        fiber = parseFloat(serving.fiber) || 0;
+        sugar = parseFloat(serving.sugar) || 0;
+        sodium = parseFloat(serving.sodium) || 0;
+        cholesterol = parseFloat(serving.cholesterol) || 0;
+        saturatedFat = parseFloat(serving.saturated_fat) || 0;
+        transFat = parseFloat(serving.trans_fat) || 0;
+        servingSize = serving.serving_description || "1 serving";
+      }
+    }
     
     // Create FoodDatabaseItem from product
     const foodItem: FoodDatabaseItem = {
-      id: `off-barcode-${product.code}`,
-      name: product.product_name || `Product ${product.code}`,
-      brand: product.brands || '',
+      id: `fs-barcode-${product.food_id}`,
+      name: product.food_name || `Product ${barcode}`,
+      brand: product.brand_name || '',
       macros: {
-        calories: Math.round(product.nutriments?.['energy-kcal_100g'] || 0),
-        protein: Math.round(product.nutriments?.proteins_100g || 0),
-        carbs: Math.round(product.nutriments?.carbohydrates_100g || 0),
-        fat: Math.round(product.nutriments?.fat_100g || 0)
+        calories: Math.round(calories),
+        protein: Math.round(protein),
+        carbs: Math.round(carbs),
+        fat: Math.round(fat),
+        fiber: Math.round(fiber),
+        sugar: Math.round(sugar),
+        sodium: Math.round(sodium),
+        cholesterol: Math.round(cholesterol),
+        saturatedFat: Math.round(saturatedFat),
+        transFat: Math.round(transFat)
       },
-      servingSize: product.serving_size || product.quantity || '100g',
+      servingSize: servingSize,
       servingUnit: '',
-      imageSrc: product.image_url || '',
+      imageSrc: product.food_image || '',
       isCommon: false,
       type: 'snack'
     };
-    
-    // Check if we have valid nutrition data before returning
-    if (foodItem.macros.calories === 0 && foodItem.macros.protein === 0 && 
-        foodItem.macros.carbs === 0 && foodItem.macros.fat === 0) {
-      console.log('Product found but has no nutrition data');
-      
-      // Try alternative nutrition field formats in OpenFoodFacts
-      if (product.nutriments) {
-        // Try alternative calorie fields
-        if (product.nutriments['energy-kcal']) foodItem.macros.calories = Math.round(product.nutriments['energy-kcal']);
-        else if (product.nutriments['energy']) {
-          // Convert kJ to kcal if that's all we have
-          const kj = product.nutriments['energy'];
-          if (kj) foodItem.macros.calories = Math.round(kj / 4.184); // Convert kJ to kcal
-        }
-        
-        // Sometimes values are per serving rather than per 100g
-        if (product.nutriments['proteins_serving']) foodItem.macros.protein = Math.round(product.nutriments['proteins_serving']);
-        if (product.nutriments['carbohydrates_serving']) foodItem.macros.carbs = Math.round(product.nutriments['carbohydrates_serving']);
-        if (product.nutriments['fat_serving']) foodItem.macros.fat = Math.round(product.nutriments['fat_serving']);
-      }
-      
-      // If we still have no data, use estimated values based on food category
-      if (foodItem.macros.calories === 0) {
-        // Set reasonable defaults based on product category
-        const category = product.categories_tags ? product.categories_tags[0] : '';
-        if (category.includes('beverage') || category.includes('drink')) {
-          foodItem.macros = { calories: 50, protein: 0, carbs: 12, fat: 0 };
-        } else {
-          foodItem.macros = { calories: 200, protein: 5, carbs: 25, fat: 10 };
-        }
-        foodItem.name += ' (est. nutrition)';
-      }
-    }
     
     // Add to recent foods
     addToRecentFoods(foodItem);

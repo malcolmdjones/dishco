@@ -50,7 +50,7 @@ serve(async (req) => {
       },
       body: new URLSearchParams({
         "grant_type": "client_credentials",
-        "scope": "basic"
+        "scope": "basic premier"
       })
     });
     
@@ -76,10 +76,11 @@ serve(async (req) => {
     
     // Step 2: Use the access token to search for foods
     const searchParams = new URLSearchParams({
-      method: "foods.search",
+      method: "foods.search.v2",
       format: "json",
       search_expression: query,
-      max_results: "20"
+      max_results: "20",
+      page_number: "0"
     });
     
     const searchResponse = await fetch(`https://platform.fatsecret.com/rest/server.api?${searchParams}`, {
@@ -116,52 +117,64 @@ serve(async (req) => {
       // FatSecret can return either an array of foods or a single food object
       const foods = Array.isArray(data.foods.food) ? data.foods.food : [data.foods.food];
       
-      foods.forEach((food) => {
-        // Extract the nutrition info
-        let calories = 0;
-        let protein = 0;
-        let carbs = 0;
-        let fat = 0;
-        
-        // Parse nutrition info from description
-        if (food.food_description) {
-          const caloriesMatch = food.food_description.match(/Cal:\s*(\d+)/i);
-          if (caloriesMatch) calories = parseInt(caloriesMatch[1], 10);
+      for (const food of foods) {
+        try {
+          // Get the detailed food information for this result
+          const foodParams = new URLSearchParams({
+            method: "food.get.v2",
+            format: "json",
+            food_id: food.food_id
+          });
           
-          const proteinMatch = food.food_description.match(/Prot:\s*(\d+)g/i);
-          if (proteinMatch) protein = parseInt(proteinMatch[1], 10);
+          const foodResponse = await fetch(`https://platform.fatsecret.com/rest/server.api?${foodParams}`, {
+            headers: {
+              "Authorization": `Bearer ${accessToken}`
+            }
+          });
           
-          const carbsMatch = food.food_description.match(/Carbs:\s*(\d+)g/i);
-          if (carbsMatch) carbs = parseInt(carbsMatch[1], 10);
+          if (!foodResponse.ok) continue;
           
-          const fatMatch = food.food_description.match(/Fat:\s*(\d+)g/i);
-          if (fatMatch) fat = parseInt(fatMatch[1], 10);
+          const foodData = await foodResponse.json();
+          const foodDetails = foodData.food;
+          
+          if (!foodDetails || !foodDetails.servings || !foodDetails.servings.serving) continue;
+          
+          // Get servings information
+          const servings = Array.isArray(foodDetails.servings.serving) 
+            ? foodDetails.servings.serving 
+            : [foodDetails.servings.serving];
+          
+          // Use the first serving (usually the default)
+          if (servings.length > 0) {
+            const serving = servings[0];
+            
+            processedResults.push({
+              foodId: foodDetails.food_id,
+              label: foodDetails.food_name,
+              brand: foodDetails.brand_name || "",
+              nutrients: {
+                ENERC_KCAL: parseFloat(serving.calories) || 0,
+                PROCNT: parseFloat(serving.protein) || 0,
+                CHOCDF: parseFloat(serving.carbohydrate) || 0,
+                FAT: parseFloat(serving.fat) || 0,
+                FIBTG: parseFloat(serving.fiber) || 0,
+                SUGAR: parseFloat(serving.sugar) || 0,
+                NA: parseFloat(serving.sodium) || 0,
+                CHOLE: parseFloat(serving.cholesterol) || 0,
+                FASAT: parseFloat(serving.saturated_fat) || 0,
+                FATRN: parseFloat(serving.trans_fat) || 0
+              },
+              image: foodDetails.food_image || "",
+              servingSize: serving.serving_description || "",
+              description: food.food_description || ""
+            });
+          }
+        } catch (error) {
+          console.error(`Error processing food item ${food.food_id}:`, error);
+          // Continue to the next item if this one fails
+          continue;
         }
-        
-        // Some foods have more detailed nutrition info
-        if (food.food_nutrition) {
-          calories = parseFloat(food.food_nutrition.calories) || calories;
-          protein = parseFloat(food.food_nutrition.protein) || protein;
-          carbs = parseFloat(food.food_nutrition.carbohydrate) || carbs;
-          fat = parseFloat(food.food_nutrition.fat) || fat;
-        }
-        
-        // Create a standardized format similar to what we had with OpenFoodFacts
-        processedResults.push({
-          foodId: food.food_id,
-          label: food.food_name,
-          brand: food.brand_name || "",
-          nutrients: {
-            ENERC_KCAL: calories,
-            PROCNT: protein,
-            FAT: fat,
-            CHOCDF: carbs
-          },
-          image: food.food_image || "",
-          servingSize: food.serving_description || "",
-          description: food.food_description || ""
-        });
-      });
+      }
     }
 
     return new Response(JSON.stringify(processedResults), {

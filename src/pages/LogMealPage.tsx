@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import HighlightedText from '@/components/HighlightedText';
 
 // Method option interface
 interface LogMethod {
@@ -27,23 +27,6 @@ interface SearchResult {
   serving: string;
   brand?: string;
 }
-
-// Component to highlight matching text in search results
-const HighlightedText = ({ text, query }: { text: string, query: string }) => {
-  if (!query.trim()) return <span>{text}</span>;
-  
-  const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'i'));
-  
-  return (
-    <span>
-      {parts.map((part, index) => 
-        part.toLowerCase() === query.toLowerCase() ? 
-          <strong key={index} className="font-semibold">{part}</strong> : 
-          <span key={index}>{part}</span>
-      )}
-    </span>
-  );
-};
 
 const LogMealPage = () => {
   const navigate = useNavigate();

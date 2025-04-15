@@ -23,18 +23,46 @@ serve(async (req) => {
 
     console.log(`Looking up barcode: ${barcode}`);
     
-    // Try OpenFoodFacts API first
-    const url = `https://world.openfoodfacts.org/api/v2/product/${barcode}.json`;
-    console.log(`Calling OpenFoodFacts API: ${url}`);
+    // Get FatSecret API credentials from environment
+    const clientId = Deno.env.get("FATSECRET_CLIENT_ID");
+    const clientSecret = Deno.env.get("FATSECRET_CLIENT_SECRET");
     
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      console.error(`OpenFoodFacts API error: ${response.status} ${response.statusText}`);
+    if (!clientId || !clientSecret) {
+      console.error("FatSecret API credentials not found in environment variables");
       return new Response(
         JSON.stringify({ 
-          error: "Error calling external API", 
-          status: response.status 
+          error: "API configuration error", 
+          details: "Missing credentials"
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        }
+      );
+    }
+    
+    // Step 1: Get access token using client credentials
+    const tokenResponse = await fetch("https://oauth.fatsecret.com/connect/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Authorization": `Basic ${btoa(`${clientId}:${clientSecret}`)}`
+      },
+      body: new URLSearchParams({
+        "grant_type": "client_credentials",
+        "scope": "barcode premier"
+      })
+    });
+    
+    if (!tokenResponse.ok) {
+      console.error(`Error getting FatSecret access token: ${tokenResponse.status} ${tokenResponse.statusText}`);
+      const errorText = await tokenResponse.text();
+      console.error(`Error details: ${errorText}`);
+      return new Response(
+        JSON.stringify({ 
+          error: "Authentication error", 
+          status: tokenResponse.status,
+          details: errorText 
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -43,15 +71,44 @@ serve(async (req) => {
       );
     }
     
-    const data = await response.json();
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
     
-    // If product not found in OpenFoodFacts, try alternate APIs or fallback
-    if (data.status !== 1 || !data.product) {
-      console.log(`Product not found in OpenFoodFacts for code ${barcode}, trying backup sources...`);
-      
-      // Currently we don't have a backup API integrated
-      // This is where you could add additional API calls
-      
+    // Step 2: Use the access token to look up the barcode
+    const searchParams = new URLSearchParams({
+      method: "food.find_id_for_barcode",
+      format: "json",
+      barcode: barcode
+    });
+    
+    const barcodeResponse = await fetch(`https://platform.fatsecret.com/rest/server.api?${searchParams}`, {
+      headers: {
+        "Authorization": `Bearer ${accessToken}`
+      }
+    });
+    
+    if (!barcodeResponse.ok) {
+      console.error(`FatSecret API error: ${barcodeResponse.status} ${barcodeResponse.statusText}`);
+      const errorText = await barcodeResponse.text();
+      console.error(`Error details: ${errorText}`);
+      return new Response(
+        JSON.stringify({ 
+          error: "Error calling external API", 
+          status: barcodeResponse.status,
+          details: errorText
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 502,
+        }
+      );
+    }
+    
+    const barcodeData = await barcodeResponse.json();
+    
+    // Check if a food was found
+    if (!barcodeData.food_id) {
+      console.log(`No product found for barcode: ${barcode}`);
       return new Response(
         JSON.stringify({ 
           error: "Product not found",
@@ -63,16 +120,42 @@ serve(async (req) => {
         }
       );
     }
-
-    console.log(`Found product: ${data.product.product_name || 'Unnamed product'}`);
     
-    // Return the product data with detailed info
+    // Step 3: Get the food details using the food_id
+    const foodParams = new URLSearchParams({
+      method: "food.get.v2",
+      format: "json",
+      food_id: barcodeData.food_id
+    });
+    
+    const foodResponse = await fetch(`https://platform.fatsecret.com/rest/server.api?${foodParams}`, {
+      headers: {
+        "Authorization": `Bearer ${accessToken}`
+      }
+    });
+    
+    if (!foodResponse.ok) {
+      console.error(`FatSecret API error getting food details: ${foodResponse.status} ${foodResponse.statusText}`);
+      return new Response(
+        JSON.stringify({ 
+          error: "Error fetching product details", 
+          status: foodResponse.status
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 502,
+        }
+      );
+    }
+    
+    const foodData = await foodResponse.json();
+    console.log(`Found product: ${foodData.food?.food_name || 'Unnamed product'}`);
+    
     return new Response(
       JSON.stringify({
         code: barcode,
-        product: data.product,
-        status: data.status,
-        source: "OpenFoodFacts"
+        product: foodData.food,
+        source: "FatSecret"
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
