@@ -72,6 +72,7 @@ export interface CustomFood {
   servingUnit?: string;
   createdAt: string;
   userId?: string;
+  imageSrc?: string;
 }
 
 // OpenFoodFacts specific types
@@ -121,6 +122,9 @@ export interface NutritionLabelData {
   fiber?: number;
   sugar?: number;
   sodium?: number;
+  cholesterol?: number;
+  saturatedFat?: number;
+  transFat?: number;
   servingSize?: string;
 }
 
