@@ -1,3 +1,4 @@
+
 // src/types/food.ts
 export interface ExternalFood {
   id: string;
@@ -50,6 +51,29 @@ export interface FoodDatabaseItem {
   isCommon: boolean;
 }
 
+export interface CustomFood {
+  id: string;
+  name: string;
+  brand?: string;
+  barcode?: string;
+  macros: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber?: number;
+    sugar?: number;
+    sodium?: number;
+    cholesterol?: number;
+    saturatedFat?: number;
+    transFat?: number;
+  };
+  servingSize?: number;
+  servingUnit?: string;
+  createdAt: string;
+  userId?: string;
+}
+
 // OpenFoodFacts specific types
 export interface OpenFoodFactsProduct {
   code: string;
@@ -86,4 +110,32 @@ export interface BarcodeResponse {
   product: OpenFoodFactsProduct;
   status: number;
   status_verbose: string;
+}
+
+// Add nutrition label scanning types
+export interface NutritionLabelData {
+  calories: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  fiber?: number;
+  sugar?: number;
+  sodium?: number;
+  servingSize?: string;
+}
+
+// Add quick add types
+export interface QuickAddData {
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  mealType: string;
+}
+
+// Add multi-add selection type
+export interface MultiAddSelection {
+  items: FoodDatabaseItem[];
+  quantities: Record<string, number>;
 }
