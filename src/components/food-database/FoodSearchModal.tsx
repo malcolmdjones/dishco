@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -16,7 +15,6 @@ import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FoodDatabaseItem } from '@/types/food';
 import { Recipe } from '@/data/mockData';
-import { CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 
 interface FoodSearchModalProps {
   isOpen: boolean;
@@ -32,8 +30,6 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [selectedFood, setSelectedFood] = useState<FoodDatabaseItem | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const { toast } = useToast();
 
   const searchInputRef = React.useRef<HTMLInputElement>(null);
@@ -46,53 +42,15 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
     }
   }, [isOpen]);
 
-  // Update suggestions based on search query
-  useEffect(() => {
-    if (searchQuery) {
-      // Generate suggestions based on the search query
-      const defaultSuggestions = [
-        'chicken breast',
-        'greek yogurt',
-        'apple',
-        'banana',
-        'oatmeal'
-      ];
-      
-      // Filter suggestions that start with or contain the search query
-      let filteredSuggestions = defaultSuggestions.filter(
-        suggestion => suggestion.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      
-      // Add prefix suggestion if we don't have many matches
-      if (filteredSuggestions.length < 3) {
-        filteredSuggestions = [
-          ...filteredSuggestions,
-          `${searchQuery} salad`,
-          `${searchQuery} protein`,
-          `${searchQuery} smoothie`,
-          `organic ${searchQuery}`
-        ].slice(0, 5);
-      }
-      
-      setSearchSuggestions(filteredSuggestions);
-    } else {
-      setSearchSuggestions([
-        'chicken breast',
-        'greek yogurt',
-        'apple',
-        'banana',
-        'oatmeal'
-      ]);
-    }
-  }, [searchQuery]);
-
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     
     setIsSearching(true);
     setError(null);
     try {
+      console.log(`Searching for: ${searchQuery}`);
       const results = await searchFoods(searchQuery);
+      console.log(`Search results:`, results);
       setSearchResults(results);
       if (results.length === 0) {
         console.log('No results found for query:', searchQuery);
@@ -113,7 +71,6 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
-      setShowSuggestions(false);
     }
   };
 
@@ -141,11 +98,15 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
     setSearchQuery('');
   };
 
-  const handleSelectSuggestion = (suggestion: string) => {
-    setSearchQuery(suggestion);
-    setShowSuggestions(false);
-    handleSearch();
-  };
+  // Automatically search when the search query changes
+  useEffect(() => {
+    if (searchQuery.trim().length >= 2) {
+      const timer = setTimeout(() => {
+        handleSearch();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [searchQuery]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -162,8 +123,6 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyPress}
-              onFocus={() => setShowSuggestions(true)}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               ref={searchInputRef}
               className="pl-10 pr-10 py-2 border-0 bg-gray-100 rounded-full focus:ring-0 focus-visible:ring-0"
             />
@@ -176,32 +135,6 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
               </button>
             )}
           </div>
-          
-          {/* Search Suggestions */}
-          {showSuggestions && searchQuery && (
-            <div className="bg-white shadow-lg rounded-lg absolute z-20 left-4 right-4 mt-2">
-              <div className="p-2 border rounded-lg">
-                <div 
-                  className="flex items-center gap-2 p-3 hover:bg-gray-100 rounded-lg cursor-pointer"
-                  onClick={() => handleSearch()}
-                >
-                  <Search className="h-5 w-5 text-blue-500" />
-                  <span>Search all foods for: "{searchQuery}"</span>
-                </div>
-                
-                {searchSuggestions.map((suggestion, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-2 p-3 hover:bg-gray-100 rounded-lg cursor-pointer"
-                    onClick={() => handleSelectSuggestion(suggestion)}
-                  >
-                    <Search className="h-4 w-4 text-gray-400" />
-                    <span>{suggestion}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
           
           {error && (
             <div className="p-3 bg-red-50 text-red-600 rounded-md text-sm">
@@ -354,47 +287,12 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
                   <p className="text-center text-gray-500 py-4">
                     No results found. Try another search term.
                   </p>
-                  
-                  <div className="mt-2">
-                    <p className="text-sm font-medium mb-2">Suggested searches:</p>
-                    <div className="space-y-2">
-                      {searchSuggestions.map((term, index) => (
-                        <button
-                          key={index}
-                          className="flex items-center w-full p-3 hover:bg-gray-100 rounded-lg"
-                          onClick={() => {
-                            setSearchQuery(term);
-                            handleSearch();
-                          }}
-                        >
-                          <Search size={18} className="mr-2 text-gray-400" />
-                          <span>{term}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <p className="text-center text-gray-500">
                     Search for foods in our database
                   </p>
-                  
-                  <div className="mt-2">
-                    <p className="text-sm font-medium mb-2">Suggested searches:</p>
-                    <div className="space-y-2">
-                      {searchSuggestions.map((term, index) => (
-                        <button
-                          key={index}
-                          className="flex items-center w-full p-3 hover:bg-gray-100 rounded-lg"
-                          onClick={() => setSearchQuery(term)}
-                        >
-                          <Search size={18} className="mr-2 text-gray-400" />
-                          <span>{term}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
