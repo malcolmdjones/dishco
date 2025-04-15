@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -145,11 +144,7 @@ const CustomRecipePage = () => {
         servings: parseInt(servings) || 1,
         prepTime: 0,
         cookTime: 0,
-        ingredients: ingredients.map(ing => ({
-          name: ing.name,
-          amount: ing.amount,
-          unit: ing.unit
-        })),
+        ingredients: ingredients.map(ing => `${ing.amount} ${ing.unit} ${ing.name}`),
         instructions: instructions.split('\n').filter(line => line.trim()),
         macros: {
           calories: nutrition.caloriesPerServing,
