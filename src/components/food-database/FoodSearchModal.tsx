@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -88,11 +87,11 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
   };
 
   const suggestedSearches = [
-    'chicken',
-    'rice',
-    'eggs',
-    'milk',
-    'apple'
+    'chicken breast',
+    'greek yogurt',
+    'apple',
+    'banana',
+    'oatmeal'
   ];
 
   return (
@@ -145,7 +144,7 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
                     className="flex items-center justify-between p-3 hover:bg-gray-100 rounded-lg cursor-pointer"
                     onClick={() => handleSelectFood(food)}
                   >
-                    <div className="flex items-center">
+                    <div className="flex items-center flex-1">
                       {food.imageSrc ? (
                         <img 
                           src={food.imageSrc} 
@@ -154,7 +153,7 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
                         />
                       ) : (
                         <div className="w-12 h-12 rounded bg-gray-200 mr-3 flex items-center justify-center">
-                          <span className="text-xs text-gray-500">No img</span>
+                          <span className="text-xs text-gray-500">{food.id.startsWith('fs-') ? 'FS' : 'No img'}</span>
                         </div>
                       )}
                       <div>
@@ -163,13 +162,14 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
                           {food.brand ? `${food.brand} • ` : ''}
                           <span className="font-medium">{food.macros.calories} cal</span>
                           {food.macros.protein ? `, ${food.macros.protein}g protein` : ''}
+                          {food.servingSize ? `, ${food.servingSize}` : ''}
                         </p>
                       </div>
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 w-8 rounded-full"
+                      className="h-8 w-8 rounded-full shrink-0"
                     >
                       <Plus size={18} />
                     </Button>

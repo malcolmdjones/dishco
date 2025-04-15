@@ -11,7 +11,7 @@ export const convertToMealFormat = (foodItem: any, quantity: number = 1): Recipe
   const fat = Math.round((foodItem.nutrients.FAT || 0) * quantity);
 
   return {
-    id: `off-${foodItem.foodId}`,
+    id: `fs-${foodItem.foodId}`, // Changed prefix from off- to fs- for FatSecret
     name: foodItem.label,
     type: 'snack', // Default type, can be changed by user
     description: foodItem.servingSize ? `${foodItem.servingSize}` : '',
@@ -32,8 +32,6 @@ export const convertToMealFormat = (foodItem: any, quantity: number = 1): Recipe
     instructions: [],
     externalSource: true,
     externalId: foodItem.foodId,
-    // Store brand name in description if available
-    // Remove brandName property as it's not in the Recipe type
   };
 };
 
@@ -132,7 +130,7 @@ export const addToRecentFoods = (food: FoodDatabaseItem) => {
   }
 };
 
-// Search OpenFoodFacts API
+// Search foods using FatSecret API (replacing OpenFoodFacts)
 export const searchFoods = async (query: string, searchExternal: boolean = true): Promise<FoodDatabaseItem[]> => {
   if (!query.trim()) return [];
   
@@ -160,9 +158,8 @@ export const searchFoods = async (query: string, searchExternal: boolean = true)
       return combinedResults;
     }
     
-    // Otherwise, also search in external API
-    // We'll use a Supabase Edge Function to proxy our API calls
-    const { data, error } = await supabase.functions.invoke("search-foods", {
+    // Search using FatSecret API through our Supabase Edge Function
+    const { data, error } = await supabase.functions.invoke("search-fatsecret", {
       body: { query }
     });
 
@@ -173,11 +170,11 @@ export const searchFoods = async (query: string, searchExternal: boolean = true)
 
     // Process and return the data
     if (data && Array.isArray(data)) {
-      console.log(`Found ${data.length} external food items`);
+      console.log(`Found ${data.length} external food items from FatSecret`);
       
       const processedData = data.map(item => {
         const externalItem: FoodDatabaseItem = {
-          id: `off-${item.foodId}`,
+          id: `fs-${item.foodId}`,  // Using fs- prefix for FatSecret foods
           name: item.label,
           brand: item.brand || '',
           macros: {

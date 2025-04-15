@@ -2,6 +2,8 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
+// NOTE: This function is now primarily used for barcode scanning.
+// Food searching is now handled by search-fatsecret function.
 serve(async (req) => {
   // Handle CORS
   if (req.method === "OPTIONS") {
