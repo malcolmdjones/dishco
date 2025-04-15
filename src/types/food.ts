@@ -1,4 +1,3 @@
-
 // src/types/food.ts
 export interface ExternalFood {
   id: string;
@@ -87,58 +86,4 @@ export interface BarcodeResponse {
   product: OpenFoodFactsProduct;
   status: number;
   status_verbose: string;
-}
-
-// Add custom food types
-export interface CustomFood {
-  id: string;
-  name: string;
-  brand?: string;
-  barcode?: string;
-  macros: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-    saturatedFat?: number;
-    transFat?: number;
-    cholesterol?: number;
-    sodium?: number;
-    fiber?: number;
-    sugar?: number;
-  };
-  servingSize: string;
-  servingUnit: string;
-  isUserCreated: boolean;
-  createdAt: string;
-}
-
-// Add quick-add food type
-export interface QuickAddFood {
-  id: string;
-  name: string;
-  macros: {
-    calories: number;
-    protein?: number;
-    carbs?: number;
-    fat?: number;
-  };
-  mealType: string;
-  createdAt: string;
-}
-
-// Add nutrition label scanning types
-export interface NutritionLabelData {
-  calories: number;
-  totalFat: number;
-  saturatedFat?: number;
-  transFat?: number;
-  cholesterol?: number;
-  sodium?: number;
-  totalCarbs: number;
-  fiber?: number;
-  sugar?: number;
-  protein: number;
-  servingSize?: string;
-  servingUnit?: string;
 }
