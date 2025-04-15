@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { X, Search, Plus, Mic, Barcode, ArrowDown, Loader2 } from 'lucide-react';
@@ -12,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { searchFoods, foodItemToRecipe, addToRecentFoods } from '@/services/foodDatabaseService';
 import { FoodDatabaseItem, LoggedMeal } from '@/types/food';
 import BarcodeScanner from '@/components/food-database/BarcodeScanner';
+import { CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 
 const LogMealPage = () => {
   const { toast } = useToast();
@@ -23,6 +23,9 @@ const LogMealPage = () => {
   const [searchResults, setSearchResults] = useState<FoodDatabaseItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [openCommandDialog, setOpenCommandDialog] = useState(false);
 
   useEffect(() => {
     const allLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
@@ -30,7 +33,49 @@ const LogMealPage = () => {
       meal.loggedFromScreen === 'log-meal'
     );
     setRecentMeals(loggedFromThisScreen.slice(0, 10).reverse());
+    
+    if (searchInputRef.current) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
+    }
   }, []);
+
+  useEffect(() => {
+    if (searchQuery) {
+      const defaultSuggestions = [
+        'chicken breast',
+        'greek yogurt',
+        'apple',
+        'banana',
+        'oatmeal'
+      ];
+      
+      let filteredSuggestions = defaultSuggestions.filter(
+        suggestion => suggestion.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      
+      if (filteredSuggestions.length < 3) {
+        filteredSuggestions = [
+          ...filteredSuggestions,
+          `${searchQuery} salad`,
+          `${searchQuery} protein`,
+          `${searchQuery} smoothie`,
+          `organic ${searchQuery}`
+        ].slice(0, 5);
+      }
+      
+      setSearchSuggestions(filteredSuggestions);
+    } else {
+      setSearchSuggestions([
+        'chicken breast',
+        'yogurt',
+        'salad',
+        'protein shake',
+        'banana'
+      ]);
+    }
+  }, [searchQuery]);
 
   const handleClearSearch = () => {
     setSearchQuery('');
@@ -61,19 +106,29 @@ const LogMealPage = () => {
 
   const handleSearchFocus = () => {
     setShowSuggestions(true);
+    setOpenCommandDialog(true);
     if (searchQuery) {
       handleSearch();
     }
   };
 
   const handleSearchBlur = () => {
-    setTimeout(() => setShowSuggestions(false), 200);
+    setTimeout(() => {
+      setShowSuggestions(false);
+    }, 200);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
+      setOpenCommandDialog(false);
     }
+  };
+
+  const handleSelectSuggestion = (suggestion: string) => {
+    setSearchQuery(suggestion);
+    setOpenCommandDialog(false);
+    handleSearch();
   };
 
   const filteredRecipes = recipes.filter(recipe => {
@@ -156,14 +211,6 @@ const LogMealPage = () => {
     });
   };
 
-  const suggestedSearches = [
-    'chicken breast',
-    'yogurt',
-    'salad',
-    'protein shake',
-    'banana'
-  ];
-
   return (
     <div className="animate-fade-in pb-16">
       <div className="flex justify-center items-center py-3 border-b sticky top-0 bg-white z-10">
@@ -179,6 +226,7 @@ const LogMealPage = () => {
         <div className="relative flex items-center bg-gray-100 rounded-full">
           <Search className="absolute left-3 text-blue-600" size={20} />
           <Input
+            ref={searchInputRef}
             placeholder="Search for a food"
             className="pl-10 pr-10 py-2 border-0 bg-gray-100 rounded-full focus:ring-0 focus-visible:ring-0"
             value={searchQuery}
@@ -280,7 +328,7 @@ const LogMealPage = () => {
                 {isSearching ? (
                   <div className="text-center py-4">
                     <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
-                    <p className="text-sm text-gray-500 mt-2">Searching OpenFoodFacts...</p>
+                    <p className="text-sm text-gray-500 mt-2">Searching...</p>
                   </div>
                 ) : searchResults.length > 0 ? (
                   <>
@@ -326,24 +374,28 @@ const LogMealPage = () => {
                     </div>
                   </>
                 ) : (
-                  <>
-                    <h3 className="text-lg font-medium mb-2">Suggested Searches</h3>
-                    <div className="space-y-2">
-                      {suggestedSearches.map((term, index) => (
-                        <button
-                          key={index}
-                          className="flex items-center w-full p-3 hover:bg-gray-100 rounded-lg"
-                          onClick={() => {
-                            setSearchQuery(term);
-                            handleSearch();
-                          }}
-                        >
-                          <Search size={18} className="mr-2 text-gray-400" />
-                          <span>{term}</span>
-                        </button>
-                      ))}
+                  <div className="mt-4">
+                    <h3 className="text-lg font-medium mb-2">No results found</h3>
+                    <p className="text-sm text-gray-500">Try another search term or one of the suggestions below.</p>
+                    <div className="mt-4">
+                      <h4 className="text-sm font-medium mb-2">Try searching for:</h4>
+                      <div className="space-y-2">
+                        {searchSuggestions.map((term, index) => (
+                          <button
+                            key={index}
+                            className="flex items-center w-full p-3 hover:bg-gray-100 rounded-lg"
+                            onClick={() => {
+                              setSearchQuery(term);
+                              handleSearch();
+                            }}
+                          >
+                            <Search size={18} className="mr-2 text-gray-400" />
+                            <span>{term}</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
             )}
@@ -396,6 +448,39 @@ const LogMealPage = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      <CommandDialog open={openCommandDialog && searchQuery.length > 0} onOpenChange={setOpenCommandDialog}>
+        <CommandInput 
+          placeholder="Search for foods..." 
+          value={searchQuery}
+          onValueChange={setSearchQuery}
+        />
+        <CommandList>
+          <CommandEmpty>No results found.</CommandEmpty>
+          <CommandGroup heading="Suggested Searches">
+            <CommandItem
+              onSelect={() => handleSelectSuggestion(searchQuery)}
+              className="flex items-center gap-2 py-3"
+            >
+              <Search className="h-5 w-5 text-blue-500" />
+              <span>Search all foods for: "{searchQuery}"</span>
+            </CommandItem>
+            
+            {searchSuggestions.map((suggestion, index) => (
+              <CommandItem 
+                key={index}
+                onSelect={() => handleSelectSuggestion(suggestion)}
+                className="py-3"
+              >
+                <div className="flex items-center gap-2">
+                  <Search className="h-4 w-4 text-gray-400" />
+                  <span>{suggestion}</span>
+                </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
 
       <style>
         {`
