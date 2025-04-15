@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { X, Search, Plus, Mic, Barcode, ArrowDown, Loader2 } from 'lucide-react';
+import { X, Search, Plus, Mic, Barcode, ArrowDown, Loader2, History, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useRecipes } from '@/hooks/useRecipes';
 import { Recipe } from '@/data/mockData';
@@ -19,6 +19,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
+import { Command } from '@/components/ui/command';
 
 const LogMealPage = () => {
   const { toast } = useToast();
@@ -35,6 +36,7 @@ const LogMealPage = () => {
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [selectedMealType, setSelectedMealType] = useState('snack');
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
   useEffect(() => {
     const allLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
@@ -43,6 +45,12 @@ const LogMealPage = () => {
     );
     setRecentMeals(loggedFromThisScreen.slice(0, 10).reverse());
     
+    // Load recent searches
+    const savedRecentSearches = localStorage.getItem('recentSearches');
+    if (savedRecentSearches) {
+      setRecentSearches(JSON.parse(savedRecentSearches).slice(0, 5));
+    }
+    
     if (searchInputRef.current) {
       setTimeout(() => {
         searchInputRef.current?.focus();
@@ -50,41 +58,58 @@ const LogMealPage = () => {
     }
   }, []);
 
+  // Generate search suggestions based on input and history
   useEffect(() => {
     if (searchQuery) {
-      const defaultSuggestions = [
-        'chicken breast',
-        'greek yogurt',
-        'apple',
-        'banana',
-        'oatmeal'
-      ];
-      
-      let filteredSuggestions = defaultSuggestions.filter(
-        suggestion => suggestion.toLowerCase().includes(searchQuery.toLowerCase())
+      // Filter recent searches first
+      const matchedRecents = recentSearches.filter(
+        term => term.toLowerCase().includes(searchQuery.toLowerCase())
       );
       
-      if (filteredSuggestions.length < 3) {
-        filteredSuggestions = [
-          ...filteredSuggestions,
-          `${searchQuery} salad`,
+      // Filter recent meals by name
+      const matchedMealNames = recentMeals
+        .map(meal => meal.name)
+        .filter(name => name.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      // Combine and deduplicate
+      const combinedSuggestions = Array.from(new Set([
+        ...matchedRecents,
+        ...matchedMealNames
+      ]));
+      
+      // Add common food items if we don't have enough matches
+      if (combinedSuggestions.length < 5) {
+        const commonFoods = [
+          'chicken breast',
+          'greek yogurt',
+          'eggs',
+          'rice',
+          'bread',
+          'banana',
+          'protein shake',
+          'oatmeal',
+          'apple',
+          'coffee',
+          'salad'
+        ].filter(food => food.includes(searchQuery.toLowerCase()));
+        
+        // Add branded versions of the search term
+        const brandedSuggestions = [
           `${searchQuery} protein`,
-          `${searchQuery} smoothie`,
-          `organic ${searchQuery}`
-        ].slice(0, 5);
+          `organic ${searchQuery}`,
+          `${searchQuery} light`,
+          `${searchQuery} homemade`
+        ];
+        
+        combinedSuggestions.push(...commonFoods, ...brandedSuggestions);
       }
       
-      setSearchSuggestions(filteredSuggestions);
+      // Take only unique suggestions
+      setSearchSuggestions(Array.from(new Set(combinedSuggestions)).slice(0, 5));
     } else {
-      setSearchSuggestions([
-        'chicken breast',
-        'yogurt',
-        'salad',
-        'protein shake',
-        'banana'
-      ]);
+      setSearchSuggestions([]);
     }
-  }, [searchQuery]);
+  }, [searchQuery, recentMeals, recentSearches]);
 
   const handleClearSearch = () => {
     setSearchQuery('');
@@ -92,8 +117,8 @@ const LogMealPage = () => {
     setShowSuggestions(false);
   };
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
+  const handleSearch = async (query = searchQuery) => {
+    if (!query.trim()) {
       setSearchResults([]);
       return;
     }
@@ -101,10 +126,17 @@ const LogMealPage = () => {
     setIsSearching(true);
     setShowSuggestions(false);
     try {
-      console.log("Searching for:", searchQuery);
-      const results = await searchFoods(searchQuery, true);
+      console.log("Searching for:", query);
+      const results = await searchFoods(query, true);
       console.log("Search results:", results);
       setSearchResults(results);
+      
+      // Save to recent searches
+      if (!recentSearches.includes(query)) {
+        const updatedSearches = [query, ...recentSearches].slice(0, 10);
+        setRecentSearches(updatedSearches);
+        localStorage.setItem('recentSearches', JSON.stringify(updatedSearches));
+      }
     } catch (error) {
       console.error("Error searching foods:", error);
       toast({
@@ -125,7 +157,7 @@ const LogMealPage = () => {
 
   const handleSelectSuggestion = (suggestion: string) => {
     setSearchQuery(suggestion);
-    handleSearch();
+    handleSearch(suggestion);
   };
 
   const filteredRecipes = recipes.filter(recipe => {
@@ -215,6 +247,69 @@ const LogMealPage = () => {
     });
   };
 
+  const renderSuggestedSearches = () => {
+    if (!showSuggestions || !searchQuery || searchSuggestions.length === 0) return null;
+    
+    return (
+      <div className="absolute left-0 right-0 bg-white shadow-lg rounded-lg mt-1 z-20 max-h-[70vh] overflow-auto">
+        <div className="p-2">
+          <div className="mb-4">
+            {searchSuggestions.map((suggestion, index) => (
+              <button
+                key={`suggestion-${index}`}
+                className="flex items-center w-full p-3 hover:bg-gray-100 rounded-lg text-left"
+                onClick={() => handleSelectSuggestion(suggestion)}
+              >
+                <Search size={18} className="mr-2 text-gray-400" />
+                <div className="flex-1">
+                  <span className="font-medium">{suggestion}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {recentSearches.length > 0 && (
+            <div className="border-t pt-2">
+              <div className="flex items-center px-3 py-1">
+                <History size={16} className="text-gray-500 mr-2" />
+                <span className="text-sm text-gray-500 font-medium">Recent Searches</span>
+              </div>
+              {recentSearches.slice(0, 3).map((term, index) => (
+                <button
+                  key={`recent-${index}`}
+                  className="flex items-center w-full p-3 hover:bg-gray-100 rounded-lg text-left"
+                  onClick={() => handleSelectSuggestion(term)}
+                >
+                  <History size={18} className="mr-2 text-gray-400" />
+                  <span>{term}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          
+          <div className="p-2 flex justify-center">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full" 
+              onClick={handleSearch}
+            >
+              <Search size={16} className="mr-1" /> Search for "{searchQuery}"
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Filter recent meals based on search query
+  const filteredRecentMeals = searchQuery 
+    ? recentMeals.filter(meal => 
+        meal.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (meal.brand && meal.brand.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : recentMeals;
+
   return (
     <div className="animate-fade-in pb-16">
       <div className="flex justify-center items-center py-3 border-b sticky top-0 bg-white z-10">
@@ -226,12 +321,12 @@ const LogMealPage = () => {
         </h1>
       </div>
 
-      <div className="px-4 py-3 sticky top-14 bg-white z-10">
+      <div className="px-4 pt-3 pb-1 sticky top-14 bg-white z-10">
         <div className="relative flex items-center bg-gray-100 rounded-full">
           <Search className="absolute left-3 text-blue-600" size={20} />
           <Input
             ref={searchInputRef}
-            placeholder="Search for a food"
+            placeholder="Search for food"
             className="pl-10 pr-10 py-2 border-0 bg-gray-100 rounded-full focus:ring-0 focus-visible:ring-0"
             value={searchQuery}
             onChange={(e) => {
@@ -244,9 +339,13 @@ const LogMealPage = () => {
             }}
             onKeyDown={handleKeyPress}
             onFocus={() => {
-              if (searchQuery.length > 0) {
+              if (searchQuery) {
                 setShowSuggestions(true);
               }
+            }}
+            onBlur={() => {
+              // Delay hiding suggestions to allow clicking on them
+              setTimeout(() => setShowSuggestions(false), 200);
             }}
           />
           {searchQuery && (
@@ -258,36 +357,31 @@ const LogMealPage = () => {
             </button>
           )}
         </div>
+
+        <div className="flex overflow-x-auto gap-2 py-2 no-scrollbar">
+          <button 
+            onClick={handleOpenBarcodeScanner}
+            className="flex items-center px-3 py-1.5 rounded-full bg-gray-100 whitespace-nowrap text-sm"
+          >
+            <Barcode size={14} className="mr-1" />
+            Scan
+          </button>
+          {["Breakfast", "Lunch", "Dinner", "Snack", "Protein", "Fruits", "Vegetables"].map(category => (
+            <button 
+              key={category}
+              onClick={() => handleSelectSuggestion(category.toLowerCase())}
+              className="px-3 py-1.5 rounded-full bg-gray-100 whitespace-nowrap text-sm"
+            >
+              {category}
+            </button>
+          ))}
+        </div>
         
-        {showSuggestions && searchQuery.length > 0 && (
-          <div className="absolute left-0 right-0 bg-white shadow-lg rounded-b-lg mt-1 z-20 px-4 py-2">
-            <div className="text-sm text-gray-500 mb-2 pl-2">Suggested Searches</div>
-            <div className="space-y-1">
-              <button 
-                onClick={handleSearch}
-                className="flex items-center w-full p-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
-              >
-                <Search size={18} className="mr-2" />
-                <span>Search all foods for: "{searchQuery}"</span>
-              </button>
-              
-              {searchSuggestions.map((suggestion, index) => (
-                <button
-                  key={index}
-                  className="flex items-center w-full p-3 hover:bg-gray-100 rounded-lg text-left"
-                  onClick={() => handleSelectSuggestion(suggestion)}
-                >
-                  <Search size={18} className="mr-2 text-gray-400" />
-                  <span>{suggestion}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        {renderSuggestedSearches()}
       </div>
 
       <Tabs defaultValue="all" value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList className="w-full justify-start px-2 bg-white border-b overflow-x-auto flex-nowrap whitespace-nowrap no-scrollbar sticky top-[7.5rem] z-10">
+        <TabsList className="w-full justify-start px-2 bg-white border-b overflow-x-auto flex-nowrap whitespace-nowrap no-scrollbar sticky top-[8.5rem] z-10">
           <TabsTrigger 
             value="all" 
             className={cn(
@@ -327,28 +421,6 @@ const LogMealPage = () => {
         </TabsList>
 
         <TabsContent value="all" className="mt-0">
-          {!searchQuery && (
-            <div className="bg-blue-50 p-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div onClick={() => toast({ title: "Coming Soon", description: "Voice logging will be available in a future update" })} 
-                     className="bg-white p-4 rounded-lg shadow flex flex-col items-center justify-center">
-                  <div className="bg-blue-100 rounded-full p-3 mb-2">
-                    <Mic className="text-blue-600" size={24} />
-                  </div>
-                  <span className="text-blue-600 font-medium">Voice Log</span>
-                  <span className="bg-blue-100 text-xs text-blue-800 px-2 py-0.5 rounded mt-1">NEW</span>
-                </div>
-                <div onClick={handleOpenBarcodeScanner}
-                     className="bg-white p-4 rounded-lg shadow flex flex-col items-center justify-center cursor-pointer">
-                  <div className="bg-blue-100 rounded-full p-3 mb-2">
-                    <Barcode className="text-blue-600" size={24} />
-                  </div>
-                  <span className="text-blue-600 font-medium">Scan a Barcode</span>
-                </div>
-              </div>
-            </div>
-          )}
-
           {selectedFood && (
             <div className="p-4 space-y-4">
               <div className="flex items-center p-3 bg-blue-50 rounded-lg">
@@ -437,122 +509,159 @@ const LogMealPage = () => {
 
           {!selectedFood && (
             <div className="p-4">
-              <div className="flex justify-between items-center mb-0">
-                <h2 className="text-xl font-bold">History</h2>
-                <div className="flex items-center border rounded-full px-3 py-1 text-sm">
-                  <span>Most Recent</span>
-                  <ArrowDown size={14} className="ml-1" />
-                </div>
-              </div>
-
-              <RecentMealHistory 
-                recentMeals={recentMeals} 
-                onAddMeal={handleLogMeal}
-              />
-
-              {searchQuery && (
-                <div className="mt-4">
-                  {isSearching ? (
-                    <div className="text-center py-4">
-                      <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
-                      <p className="text-sm text-gray-500 mt-2">Searching...</p>
+              {!searchQuery ? (
+                <>
+                  <div className="flex justify-between items-center mb-2">
+                    <h2 className="text-lg font-semibold">History</h2>
+                    <div className="flex items-center text-sm text-gray-500">
+                      <span>Most Recent</span>
+                      <ArrowDown size={14} className="ml-1" />
                     </div>
-                  ) : searchResults.length > 0 ? (
-                    <>
-                      <h3 className="text-lg font-medium mb-2">Search Results</h3>
-                      <div className="space-y-2">
-                        {searchResults.map(food => (
-                          <div 
-                            key={food.id} 
-                            className="flex items-center justify-between bg-gray-50 p-3 rounded-lg"
-                          >
-                            <div className="flex items-center flex-1 cursor-pointer" onClick={() => handleSelectFood(food)}>
-                              {food.imageSrc ? (
-                                <img 
-                                  src={food.imageSrc} 
-                                  alt={food.name} 
-                                  className="w-12 h-12 rounded object-cover mr-3"
-                                />
-                              ) : (
-                                <div className="w-12 h-12 rounded bg-gray-200 mr-3 flex items-center justify-center">
-                                  <span className="text-xs text-gray-500">No img</span>
-                                </div>
-                              )}
-                              <div>
-                                <p className="font-medium">{food.name}</p>
-                                <p className="text-sm text-gray-500">
-                                  {food.brand && <span>{food.brand} • </span>}
-                                  <span className="font-medium">{food.macros.calories} cal</span>
-                                  {food.macros.protein > 0 && <span>, {food.macros.protein}g protein</span>}
-                                  {food.servingSize && <span>, {food.servingSize}</span>}
-                                </p>
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleSelectFood(food)}
-                              className="h-10 w-10 rounded-full bg-gray-200 ml-2 shrink-0"
-                            >
-                              <Plus size={20} />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="mt-4">
-                      <h3 className="text-lg font-medium mb-2">No results found</h3>
-                      <p className="text-sm text-gray-500">Try another search term or one of the suggestions below.</p>
-                      <div className="mt-4">
-                        <h4 className="text-sm font-medium mb-2">Try searching for:</h4>
-                        <div className="space-y-2">
-                          {searchSuggestions.map((term, index) => (
-                            <button
-                              key={index}
-                              className="flex items-center w-full p-3 hover:bg-gray-100 rounded-lg"
-                              onClick={() => {
-                                setSearchQuery(term);
-                                handleSearch();
-                              }}
-                            >
-                              <Search size={18} className="mr-2 text-gray-400" />
-                              <span>{term}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {searchQuery && filteredRecipes.length > 0 && (
-                <div className="mt-4">
-                  <h3 className="text-lg font-medium mb-2">My Recipes</h3>
-                  <div className="space-y-2">
-                    {filteredRecipes.map(recipe => (
-                      <div key={recipe.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                        <div>
-                          <p className="font-medium">{recipe.name}</p>
-                          <p className="text-sm text-gray-500">
-                            <span className="font-medium">{recipe.macros.calories} cal</span>, 
-                            {recipe.servings === 1 ? '1 serving' : `${recipe.servings} servings`}
-                            {recipe.macros.protein ? `, ${recipe.macros.protein}g protein` : ''}
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleLogMeal(recipe)}
-                          className="h-10 w-10 rounded-full bg-gray-200"
-                        >
-                          <Plus size={20} />
-                        </Button>
-                      </div>
-                    ))}
                   </div>
-                </div>
+
+                  <RecentMealHistory 
+                    recentMeals={recentMeals} 
+                    onAddMeal={handleLogMeal}
+                  />
+                </>
+              ) : (
+                <>
+                  {isSearching ? (
+                    <div className="text-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
+                      <p className="text-gray-500 mt-2">Searching for "{searchQuery}"</p>
+                    </div>
+                  ) : (
+                    <>
+                      {filteredRecentMeals.length > 0 && (
+                        <div className="mb-6">
+                          <div className="flex items-center mb-2">
+                            <History size={16} className="text-gray-500 mr-2" />
+                            <h3 className="text-sm font-semibold text-gray-500">FROM HISTORY</h3>
+                          </div>
+                          <div className="space-y-2">
+                            {filteredRecentMeals.slice(0, 3).map((meal) => (
+                              <div 
+                                key={meal.id}
+                                className="flex items-center justify-between bg-gray-50 p-3 rounded-lg"
+                              >
+                                <div className="flex-1">
+                                  <p className="font-medium">{meal.name}</p>
+                                  <p className="text-sm text-gray-500">
+                                    {meal.brand && <span>{meal.brand} • </span>}
+                                    <span className="font-medium">{meal.calories} cal</span>
+                                    {meal.protein && <span>, {meal.protein}</span>}
+                                  </p>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleLogMeal(meal.recipe)}
+                                  className="h-10 w-10 rounded-full bg-gray-200"
+                                >
+                                  <Plus size={20} />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {searchResults.length > 0 && (
+                        <div className="mb-6">
+                          <div className="flex items-center mb-2">
+                            <Sparkles size={16} className="text-gray-500 mr-2" />
+                            <h3 className="text-sm font-semibold text-gray-500">SEARCH RESULTS</h3>
+                          </div>
+                          <div className="space-y-2">
+                            {searchResults.map(food => (
+                              <div 
+                                key={food.id} 
+                                className="flex items-center justify-between bg-gray-50 p-3 rounded-lg"
+                                onClick={() => handleSelectFood(food)}
+                              >
+                                <div className="flex items-center flex-1 cursor-pointer">
+                                  {food.imageSrc ? (
+                                    <img 
+                                      src={food.imageSrc} 
+                                      alt={food.name} 
+                                      className="w-12 h-12 rounded object-cover mr-3"
+                                    />
+                                  ) : (
+                                    <div className="w-12 h-12 rounded bg-gray-200 mr-3 flex items-center justify-center">
+                                      <span className="text-xs text-gray-500">No img</span>
+                                    </div>
+                                  )}
+                                  <div>
+                                    <p className="font-medium">{food.name}</p>
+                                    <p className="text-sm text-gray-500">
+                                      {food.brand && <span>{food.brand} • </span>}
+                                      <span className="font-medium">{food.macros.calories} cal</span>
+                                      {food.macros.protein > 0 && <span>, {food.macros.protein}g protein</span>}
+                                      {food.servingSize && <span>, {food.servingSize}</span>}
+                                    </p>
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSelectFood(food);
+                                  }}
+                                  className="h-10 w-10 rounded-full bg-gray-200 ml-2 shrink-0"
+                                >
+                                  <Plus size={20} />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {filteredRecipes.length > 0 && (
+                        <div className="mb-6">
+                          <div className="flex items-center mb-2">
+                            <History size={16} className="text-gray-500 mr-2" />
+                            <h3 className="text-sm font-semibold text-gray-500">MY RECIPES</h3>
+                          </div>
+                          <div className="space-y-2">
+                            {filteredRecipes.slice(0, 5).map(recipe => (
+                              <div 
+                                key={recipe.id} 
+                                className="flex items-center justify-between bg-gray-50 p-3 rounded-lg"
+                              >
+                                <div>
+                                  <p className="font-medium">{recipe.name}</p>
+                                  <p className="text-sm text-gray-500">
+                                    <span className="font-medium">{recipe.macros.calories} cal</span>, 
+                                    {recipe.servings === 1 ? '1 serving' : `${recipe.servings} servings`}
+                                    {recipe.macros.protein ? `, ${recipe.macros.protein}g protein` : ''}
+                                  </p>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleLogMeal(recipe)}
+                                  className="h-10 w-10 rounded-full bg-gray-200"
+                                >
+                                  <Plus size={20} />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {searchResults.length === 0 && filteredRecentMeals.length === 0 && filteredRecipes.length === 0 && (
+                        <div className="text-center py-8">
+                          <p className="text-gray-500">No results found for "{searchQuery}"</p>
+                          <p className="text-sm text-gray-400 mt-2">Try another search term</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
               )}
             </div>
           )}
