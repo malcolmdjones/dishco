@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,6 @@ import { cn } from '@/lib/utils';
 import { searchFoods, foodItemToRecipe, addToRecentFoods } from '@/services/foodDatabaseService';
 import { FoodDatabaseItem, LoggedMeal } from '@/types/food';
 import BarcodeScanner from '@/components/food-database/BarcodeScanner';
-import { CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 import { 
   Select, 
   SelectContent, 
@@ -31,10 +31,10 @@ const LogMealPage = () => {
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [openCommandDialog, setOpenCommandDialog] = useState(false);
   const [selectedFood, setSelectedFood] = useState<FoodDatabaseItem | null>(null);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [selectedMealType, setSelectedMealType] = useState('snack');
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
     const allLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
@@ -89,6 +89,7 @@ const LogMealPage = () => {
   const handleClearSearch = () => {
     setSearchQuery('');
     setSearchResults([]);
+    setShowSuggestions(false);
   };
 
   const handleSearch = async () => {
@@ -98,12 +99,12 @@ const LogMealPage = () => {
     }
     
     setIsSearching(true);
+    setShowSuggestions(false);
     try {
       console.log("Searching for:", searchQuery);
       const results = await searchFoods(searchQuery, true);
       console.log("Search results:", results);
       setSearchResults(results);
-      setOpenCommandDialog(false);
     } catch (error) {
       console.error("Error searching foods:", error);
       toast({
@@ -195,6 +196,7 @@ const LogMealPage = () => {
 
   const handleSelectFood = (food: FoodDatabaseItem) => {
     setSelectedFood(food);
+    setShowSuggestions(false);
   };
 
   const handleOpenBarcodeScanner = () => {
@@ -232,9 +234,20 @@ const LogMealPage = () => {
             placeholder="Search for a food"
             className="pl-10 pr-10 py-2 border-0 bg-gray-100 rounded-full focus:ring-0 focus-visible:ring-0"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              if (e.target.value.length > 0) {
+                setShowSuggestions(true);
+              } else {
+                setShowSuggestions(false);
+              }
+            }}
             onKeyDown={handleKeyPress}
-            onFocus={() => setOpenCommandDialog(true)}
+            onFocus={() => {
+              if (searchQuery.length > 0) {
+                setShowSuggestions(true);
+              }
+            }}
           />
           {searchQuery && (
             <button 
@@ -245,40 +258,33 @@ const LogMealPage = () => {
             </button>
           )}
         </div>
-      </div>
-
-      <CommandDialog open={openCommandDialog && searchQuery.length > 0} onOpenChange={setOpenCommandDialog}>
-        <CommandInput 
-          placeholder="Search for foods..." 
-          value={searchQuery}
-          onValueChange={setSearchQuery}
-        />
-        <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup heading="Suggested Searches">
-            <CommandItem
-              onSelect={() => handleSearch()}
-              className="flex items-center gap-2 py-3 cursor-pointer"
-            >
-              <Search className="h-5 w-5 text-blue-500" />
-              <span>Search all foods for: "{searchQuery}"</span>
-            </CommandItem>
-            
-            {searchSuggestions.map((suggestion, index) => (
-              <CommandItem 
-                key={index}
-                onSelect={() => handleSelectSuggestion(suggestion)}
-                className="py-3 cursor-pointer"
+        
+        {showSuggestions && searchQuery.length > 0 && (
+          <div className="absolute left-0 right-0 bg-white shadow-lg rounded-b-lg mt-1 z-20 px-4 py-2">
+            <div className="text-sm text-gray-500 mb-2 pl-2">Suggested Searches</div>
+            <div className="space-y-1">
+              <button 
+                onClick={handleSearch}
+                className="flex items-center w-full p-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
               >
-                <div className="flex items-center gap-2">
-                  <Search className="h-4 w-4 text-gray-400" />
+                <Search size={18} className="mr-2" />
+                <span>Search all foods for: "{searchQuery}"</span>
+              </button>
+              
+              {searchSuggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  className="flex items-center w-full p-3 hover:bg-gray-100 rounded-lg text-left"
+                  onClick={() => handleSelectSuggestion(suggestion)}
+                >
+                  <Search size={18} className="mr-2 text-gray-400" />
                   <span>{suggestion}</span>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        </CommandList>
-      </CommandDialog>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       <Tabs defaultValue="all" value={selectedTab} onValueChange={setSelectedTab}>
         <TabsList className="w-full justify-start px-2 bg-white border-b overflow-x-auto flex-nowrap whitespace-nowrap no-scrollbar sticky top-[7.5rem] z-10">
