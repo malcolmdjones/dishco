@@ -1,4 +1,3 @@
-
 // src/types/food.ts
 export interface ExternalFood {
   id: string;
@@ -11,6 +10,12 @@ export interface ExternalFood {
     protein: number;
     carbs: number;
     fat: number;
+    fiber?: number;
+    sugar?: number;
+    sodium?: number;
+    cholesterol?: number;
+    saturatedFat?: number;
+    transFat?: number;
   };
   servingSize?: string;
   servingUnit?: string;
@@ -43,6 +48,12 @@ export interface FoodDatabaseItem {
     protein: number;
     carbs: number;
     fat: number;
+    fiber?: number;
+    sugar?: number;
+    sodium?: number;
+    cholesterol?: number;
+    saturatedFat?: number;
+    transFat?: number;
   };
   servingSize?: string;
   servingUnit?: string;
@@ -113,7 +124,7 @@ export interface BarcodeResponse {
   status_verbose: string;
 }
 
-// Add nutrition label scanning types
+// Update nutrition label scanning types
 export interface NutritionLabelData {
   calories: number;
   protein?: number;
