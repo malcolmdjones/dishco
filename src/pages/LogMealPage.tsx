@@ -19,7 +19,6 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { Command } from '@/components/ui/command';
 
 const LogMealPage = () => {
   const { toast } = useToast();
@@ -247,6 +246,11 @@ const LogMealPage = () => {
     });
   };
 
+  // Fix the incorrect event handler type
+  const handleSearchButtonClick = () => {
+    handleSearch();
+  };
+
   const renderSuggestedSearches = () => {
     if (!showSuggestions || !searchQuery || searchSuggestions.length === 0) return null;
     
@@ -286,17 +290,6 @@ const LogMealPage = () => {
               ))}
             </div>
           )}
-          
-          <div className="p-2 flex justify-center">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full" 
-              onClick={handleSearch}
-            >
-              <Search size={16} className="mr-1" /> Search for "{searchQuery}"
-            </Button>
-          </div>
         </div>
       </div>
     );
