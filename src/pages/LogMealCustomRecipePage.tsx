@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -145,12 +144,10 @@ const LogMealCustomRecipePage = () => {
     
     setIsSaving(true);
     
-    // Convert ingredients to string format for storage
     const ingredientsStrings = formData.ingredients.map(ing => 
       `${ing.amount} ${ing.unit} ${ing.name}`.trim()
     );
     
-    // Create a recipe object
     const recipe: Recipe = {
       id: formData.id,
       name: formData.name,
@@ -163,20 +160,21 @@ const LogMealCustomRecipePage = () => {
         fat: 0
       },
       servings: formData.servings,
-      prep_time_minutes: formData.prepTimeMinutes,
+      prepTime: formData.prepTimeMinutes,
+      cookTime: 0,
       ingredients: ingredientsStrings,
       instructions: formData.steps.map(step => step.text),
+      imageSrc: '',
+      requiresBlender: false,
+      requiresCooking: true,
       externalSource: false,
-      image_url: '',
-      cuisine: ''
+      externalId: undefined
     };
     
-    // Save the custom recipe
     const existingCustomRecipes = JSON.parse(localStorage.getItem('customRecipes') || '[]');
     const updatedCustomRecipes = [recipe, ...existingCustomRecipes];
     localStorage.setItem('customRecipes', JSON.stringify(updatedCustomRecipes));
     
-    // Log the meal
     const existingLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
     
     const newMeal: LoggedMeal = {
@@ -187,7 +185,7 @@ const LogMealCustomRecipePage = () => {
       consumed: true,
       loggedAt: new Date().toISOString(),
       loggedFromScreen: 'custom-recipe',
-      calories: 0, // Default since we don't calculate calories
+      calories: 0,
       servingInfo: `1 of ${formData.servings} servings`,
       source: 'Custom Recipe'
     };
@@ -216,7 +214,7 @@ const LogMealCustomRecipePage = () => {
           <ArrowLeft size={20} />
         </button>
         <h1 className="text-lg font-semibold">Create Recipe</h1>
-        <div className="w-10"></div> {/* Spacer for centering */}
+        <div className="w-10"></div>
       </div>
       
       <form onSubmit={handleSubmit} className="p-4 space-y-5">
@@ -453,7 +451,7 @@ const LogMealCustomRecipePage = () => {
           )}
         </motion.div>
         
-        <div className="h-16"></div> {/* Spacer for fixed button */}
+        <div className="h-16"></div>
         
         <div className="fixed bottom-0 left-0 right-0 border-t bg-white p-4">
           <Button 
