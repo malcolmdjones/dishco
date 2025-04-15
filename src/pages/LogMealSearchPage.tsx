@@ -15,6 +15,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
+import HighlightedText from '@/components/HighlightedText';
 
 const LogMealSearchPage = () => {
   const navigate = useNavigate();
@@ -326,9 +327,15 @@ const LogMealSearchPage = () => {
                           </div>
                         )}
                         <div>
-                          <p className="font-medium">{food.name}</p>
+                          <p className="font-medium">
+                            <HighlightedText text={food.name} query={searchQuery} />
+                          </p>
                           <p className="text-sm text-gray-500">
-                            {food.brand && <span>{food.brand} • </span>}
+                            {food.brand && (
+                              <span>
+                                <HighlightedText text={food.brand} query={searchQuery} /> • 
+                              </span>
+                            )}
                             <span className="font-medium">{food.macros.calories} cal</span>
                             {food.macros.protein > 0 && <span>, {food.macros.protein}g protein</span>}
                             {food.servingSize && <span>, {food.servingSize}</span>}
