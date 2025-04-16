@@ -19,9 +19,6 @@ const MacroBarChart: React.FC<MacroBarChartProps> = ({
   // Calculate percentage based on goal value (max at 150%)
   const percentage = Math.min((value / goalValue) * 100, 150);
   
-  // Determine if the value exceeds the goal
-  const exceedsGoal = value > goalValue;
-  
   return (
     <div className="flex-1 flex items-end justify-center h-full relative">
       {/* Goal line - black line at 100% goal */}
@@ -35,12 +32,7 @@ const MacroBarChart: React.FC<MacroBarChartProps> = ({
             height: `${Math.max((percentage * 2/3), 4)}%`, 
             maxHeight: '100%'
           }}
-        >
-          {/* Show goal indicator when exceeding goal */}
-          {exceedsGoal && (
-            <div className="absolute top-[66.7%] left-0 right-0 h-0.5 bg-black z-10" />
-          )}
-        </div>
+        />
       )}
       {value === 0 && (
         <div className={`${color} w-5 h-1 rounded-full`} />
