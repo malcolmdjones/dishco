@@ -3,7 +3,8 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useWeeklyNutrition } from '@/hooks/useWeeklyNutrition';
 import { Flame } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
+import MacroRow from './weekly-targets/MacroRow';
+import DayLabels from './weekly-targets/DayLabels';
 
 interface WeeklyTargetsProps {
   selectedDate: Date;
@@ -11,9 +12,6 @@ interface WeeklyTargetsProps {
 
 const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
   const { weeklyNutrition, userGoals } = useWeeklyNutrition(selectedDate);
-  
-  // Day labels (single letters)
-  const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   
   // Color classes for different macros - using pastel colors
   const macroColors = {
@@ -39,156 +37,45 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
         
         <div className="space-y-8">
           {/* Calories */}
-          <div className="flex items-center gap-4">
-            <div className="w-20 flex-none text-left">
-              <div className="flex items-center">
-                <span className="text-2xl font-bold">1220</span>
-                <Flame className="ml-1 text-[#000000]" size={20} />
-              </div>
-            </div>
-            
-            <div className="flex-1">
-              {/* Horizontal goal line */}
-              <div className="relative h-16 w-full">
-                <div className="absolute top-[50%] w-full h-[1px] bg-gray-300"></div>
-                
-                {/* Bars container */}
-                <div className="absolute bottom-0 w-full flex justify-between">
-                  {weeklyNutrition.calories.map((day, index) => (
-                    <div 
-                      key={`cal-${index}`} 
-                      className={`flex flex-col items-center relative ${index === todayIndex ? 'bg-[#F1F1F1]' : ''}`}
-                      style={{ width: '14%', height: '100%' }}
-                    >
-                      <div 
-                        className={`${macroColors.calories} w-4 rounded-t-md mt-auto`}
-                        style={{ 
-                          height: day > 0 ? `${Math.max(Math.min((day / userGoals.calories) * 100, 100), 5)}%` : '4px' 
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Bottom separator */}
-              <Separator className="mt-1" />
-            </div>
-          </div>
+          <MacroRow 
+            label="1220"
+            icon={<Flame className="ml-1 text-[#000000]" size={20} />}
+            values={weeklyNutrition.calories}
+            goalValue={userGoals.calories}
+            color={macroColors.calories}
+            todayIndex={todayIndex}
+          />
           
           {/* Protein */}
-          <div className="flex items-center gap-4">
-            <div className="w-20 flex-none text-left">
-              <div className="text-2xl font-bold">95P</div>
-            </div>
-            
-            <div className="flex-1">
-              {/* Horizontal goal line */}
-              <div className="relative h-16 w-full">
-                <div className="absolute top-[50%] w-full h-[1px] bg-gray-300"></div>
-                
-                {/* Bars container */}
-                <div className="absolute bottom-0 w-full flex justify-between">
-                  {weeklyNutrition.protein.map((day, index) => (
-                    <div 
-                      key={`prot-${index}`} 
-                      className={`flex flex-col items-center relative ${index === todayIndex ? 'bg-[#F1F1F1]' : ''}`}
-                      style={{ width: '14%', height: '100%' }}
-                    >
-                      <div 
-                        className={`${macroColors.protein} w-4 rounded-t-md mt-auto`}
-                        style={{ 
-                          height: day > 0 ? `${Math.max(Math.min((day / userGoals.protein) * 100, 100), 5)}%` : '4px' 
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Bottom separator */}
-              <Separator className="mt-1" />
-            </div>
-          </div>
+          <MacroRow 
+            label="95P"
+            values={weeklyNutrition.protein}
+            goalValue={userGoals.protein}
+            color={macroColors.protein}
+            todayIndex={todayIndex}
+          />
           
           {/* Fat */}
-          <div className="flex items-center gap-4">
-            <div className="w-20 flex-none text-left">
-              <div className="text-2xl font-bold">58F</div>
-            </div>
-            
-            <div className="flex-1">
-              {/* Horizontal goal line */}
-              <div className="relative h-16 w-full">
-                <div className="absolute top-[50%] w-full h-[1px] bg-gray-300"></div>
-                
-                {/* Bars container */}
-                <div className="absolute bottom-0 w-full flex justify-between">
-                  {weeklyNutrition.fat.map((day, index) => (
-                    <div 
-                      key={`fat-${index}`} 
-                      className={`flex flex-col items-center relative ${index === todayIndex ? 'bg-[#F1F1F1]' : ''}`}
-                      style={{ width: '14%', height: '100%' }}
-                    >
-                      <div 
-                        className={`${macroColors.fat} w-4 rounded-t-md mt-auto`}
-                        style={{ 
-                          height: day > 0 ? `${Math.max(Math.min((day / userGoals.fat) * 100, 100), 5)}%` : '4px' 
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Bottom separator */}
-              <Separator className="mt-1" />
-            </div>
-          </div>
+          <MacroRow 
+            label="58F"
+            values={weeklyNutrition.fat}
+            goalValue={userGoals.fat}
+            color={macroColors.fat}
+            todayIndex={todayIndex}
+          />
           
           {/* Carbs */}
-          <div className="flex items-center gap-4">
-            <div className="w-20 flex-none text-left">
-              <div className="text-2xl font-bold">87C</div>
-            </div>
-            
-            <div className="flex-1 relative">
-              {/* Horizontal goal line */}
-              <div className="relative h-16 w-full">
-                <div className="absolute top-[50%] w-full h-[1px] bg-gray-300"></div>
-                
-                {/* Bars container */}
-                <div className="absolute bottom-0 w-full flex justify-between">
-                  {weeklyNutrition.carbs.map((day, index) => (
-                    <div 
-                      key={`carb-${index}`} 
-                      className={`flex flex-col items-center relative ${index === todayIndex ? 'bg-[#F1F1F1]' : ''}`}
-                      style={{ width: '14%', height: '100%' }}
-                    >
-                      <div 
-                        className={`${macroColors.carbs} w-4 rounded-t-md mt-auto`}
-                        style={{ 
-                          height: day > 0 ? `${Math.max(Math.min((day / userGoals.carbs) * 100, 100), 5)}%` : '4px' 
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+          <MacroRow 
+            label="87C"
+            values={weeklyNutrition.carbs}
+            goalValue={userGoals.carbs}
+            color={macroColors.carbs}
+            todayIndex={todayIndex}
+            isLastRow={true}
+          />
           
           {/* Day labels at the bottom of the section */}
-          <div className="flex justify-between px-24">
-            {dayLabels.map((day, index) => (
-              <div 
-                key={`day-label-${index}`}
-                className={`text-sm ${index === todayIndex ? 'text-gray-600 font-medium' : 'text-gray-400'}`}
-              >
-                {day}
-              </div>
-            ))}
-          </div>
+          <DayLabels todayIndex={todayIndex} />
         </div>
       </CardContent>
     </Card>
