@@ -38,7 +38,7 @@ const MacroRow: React.FC<MacroRowProps> = ({
           <div className="absolute top-[50%] w-full h-[1px] bg-gray-300"></div>
           
           {/* Bars container */}
-          <div className="absolute bottom-0 w-full flex justify-between">
+          <div className="absolute bottom-0 w-full flex">
             {values.map((value, index) => (
               <MacroBarChart 
                 key={`${label}-${index}`}
