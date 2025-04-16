@@ -38,7 +38,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
         <div>
           {/* Calories */}
           <MacroRow 
-            label="1220"
+            label={userGoals.calories.toString()}
             icon={<Flame className="ml-1 text-red-500" size={20} />}
             values={weeklyNutrition.calories}
             goalValue={userGoals.calories}
@@ -48,7 +48,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
           
           {/* Protein */}
           <MacroRow 
-            label="95P"
+            label={`${userGoals.protein}P`}
             values={weeklyNutrition.protein}
             goalValue={userGoals.protein}
             color={macroColors.protein}
@@ -57,7 +57,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
           
           {/* Fat */}
           <MacroRow 
-            label="58F"
+            label={`${userGoals.fat}F`}
             values={weeklyNutrition.fat}
             goalValue={userGoals.fat}
             color={macroColors.fat}
@@ -66,7 +66,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
           
           {/* Carbs */}
           <MacroRow 
-            label="87C"
+            label={`${userGoals.carbs}C`}
             values={weeklyNutrition.carbs}
             goalValue={userGoals.carbs}
             color={macroColors.carbs}
