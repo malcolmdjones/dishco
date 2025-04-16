@@ -13,7 +13,7 @@ interface WeeklyTargetsProps {
 const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
   const { weeklyNutrition, userGoals } = useWeeklyNutrition(selectedDate);
   
-  // Color classes for different macros - using pastel colors
+  // Color classes for different macros - using pastel colors matching the reference
   const macroColors = {
     calories: 'bg-blue-300',
     protein: 'bg-orange-200',
@@ -33,13 +33,13 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
   return (
     <Card className="mb-6 overflow-hidden rounded-3xl bg-white shadow-lg">
       <CardContent className="p-6">
-        <h3 className="text-2xl font-bold mb-8">Weekly Targets</h3>
+        <h2 className="text-3xl font-bold mb-10">Weekly Targets</h2>
         
-        <div className="space-y-6">
+        <div>
           {/* Calories */}
           <MacroRow 
-            label={`${userGoals.calories}`}
-            icon={<Flame className="ml-1 text-[#000000]" size={20} />}
+            label="1220"
+            icon={<Flame className="ml-1 text-red-500" size={20} />}
             values={weeklyNutrition.calories}
             goalValue={userGoals.calories}
             color={macroColors.calories}
@@ -48,7 +48,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
           
           {/* Protein */}
           <MacroRow 
-            label={`${userGoals.protein}P`}
+            label="95P"
             values={weeklyNutrition.protein}
             goalValue={userGoals.protein}
             color={macroColors.protein}
@@ -57,7 +57,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
           
           {/* Fat */}
           <MacroRow 
-            label={`${userGoals.fat}F`}
+            label="58F"
             values={weeklyNutrition.fat}
             goalValue={userGoals.fat}
             color={macroColors.fat}
@@ -66,7 +66,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
           
           {/* Carbs */}
           <MacroRow 
-            label={`${userGoals.carbs}C`}
+            label="87C"
             values={weeklyNutrition.carbs}
             goalValue={userGoals.carbs}
             color={macroColors.carbs}
@@ -74,7 +74,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
             isLastRow={true}
           />
           
-          {/* Day labels at the bottom of the section */}
+          {/* Day labels at the bottom */}
           <DayLabels todayIndex={todayIndex} />
         </div>
       </CardContent>

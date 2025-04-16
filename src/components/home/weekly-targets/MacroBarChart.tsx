@@ -20,16 +20,19 @@ const MacroBarChart: React.FC<MacroBarChartProps> = ({
   const percentage = Math.min((value / goalValue) * 100, 100);
   
   return (
-    <div 
-      className={`flex flex-col items-center justify-end relative flex-1 h-full ${dayIndex === todayIndex ? 'bg-[#F1F1F1]' : ''}`}
-    >
-      <div 
-        className={`${color} w-10 rounded-full transition-all duration-300 ease-in-out`}
-        style={{ 
-          height: value > 0 ? `${Math.max(percentage, 5)}%` : '4px',
-          maxHeight: '85%'
-        }}
-      />
+    <div className="flex-1 flex items-end justify-center h-full">
+      {value > 0 && (
+        <div 
+          className={`${color} rounded-t-full w-8 transition-all duration-300 ease-in-out`}
+          style={{ 
+            height: `${Math.max(percentage, 4)}%`, 
+            maxHeight: '80%'
+          }}
+        />
+      )}
+      {value === 0 && (
+        <div className={`${color} w-8 h-1 rounded-full`} />
+      )}
     </div>
   );
 };
