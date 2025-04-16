@@ -3,7 +3,6 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useWeeklyNutrition } from '@/hooks/useWeeklyNutrition';
 import { Flame } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
 
 interface WeeklyTargetsProps {
   selectedDate: Date;
@@ -15,163 +14,154 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
   // Day labels at the bottom (single letters)
   const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   
-  // Color classes for different macros - using pastel colors
+  // Color classes for different macros - using lighter pastel colors
   const macroColors = {
-    calories: 'bg-blue-300',
-    protein: 'bg-orange-200',
-    fat: 'bg-yellow-300',
-    carbs: 'bg-green-300'
+    calories: 'bg-blue-200',
+    protein: 'bg-orange-100',
+    fat: 'bg-yellow-200',
+    carbs: 'bg-green-200'
   };
-  
-  // Get day index (0-6) from date
-  const getTodayIndex = (): number => {
-    const today = new Date();
-    const index = today.getDay() - 1; // Monday is 0
-    return index < 0 ? 6 : index; // Sunday becomes 6
-  };
-  
-  const todayIndex = getTodayIndex();
   
   return (
     <Card className="mb-6 overflow-hidden rounded-2xl bg-white shadow-lg">
       <CardContent className="p-6">
         <h3 className="text-lg font-medium mb-8">Weekly Targets</h3>
         
-        <div className="space-y-8">
-          {/* Calories */}
-          <div className="flex items-center gap-4">
-            <div className="w-20 flex-none">
-              <div className="flex items-center">
-                <span className="text-2xl font-bold">1220</span>
-                <Flame className="ml-1 text-[#000000]" size={20} />
+        {/* Calories Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            {/* Empty div for spacing on the left */}
+            <div className="w-24"></div>
+            
+            {/* Bar chart container */}
+            <div className="flex-1 px-2">
+              <div className="flex justify-between items-end h-10">
+                {weeklyNutrition.calories.map((day, index) => (
+                  <div key={`cal-${index}`} className="flex justify-center w-full">
+                    <div 
+                      className={`${macroColors.calories} w-6 rounded-2xl`}
+                      style={{ 
+                        height: day > 0 ? `${Math.min((day / userGoals.calories) * 80, 100)}%` : '4px' 
+                      }}
+                    />
+                  </div>
+                ))}
               </div>
             </div>
             
-            <div className="flex-1">
-              {/* Horizontal goal line */}
-              <div className="relative h-16 w-full">
-                <div className="absolute top-[30%] w-full h-[1px] bg-gray-300"></div>
-                
-                {/* Bars container */}
-                <div className="absolute bottom-0 w-full flex justify-between">
-                  {weeklyNutrition.calories.map((day, index) => (
-                    <div key={`cal-${index}`} className="h-16 flex items-end">
-                      <div 
-                        className={`${macroColors.calories} w-4 rounded-t-md`} // Made bar slimmer (w-4 instead of w-8)
-                        style={{ 
-                          height: day > 0 ? `${Math.max(Math.min((day / userGoals.calories) * 100, 100), 5)}%` : '4px' 
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Bottom separator */}
-              <Separator className="mt-1" />
+            {/* Target value on the right */}
+            <div className="flex items-center w-24 justify-end text-right">
+              <span className="text-2xl font-bold">1220</span>
+              <Flame className="ml-1" size={20} />
             </div>
           </div>
           
-          {/* Protein */}
-          <div className="flex items-center gap-4">
-            <div className="w-20 flex-none">
-              <div className="text-2xl font-bold">95P</div>
+          {/* Separator */}
+          <div className="h-px bg-gray-200 mt-3 mb-8"></div>
+        </div>
+        
+        {/* Protein Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            {/* Empty div for spacing on the left */}
+            <div className="w-24"></div>
+            
+            {/* Bar chart container */}
+            <div className="flex-1 px-2">
+              <div className="flex justify-between items-end h-10">
+                {weeklyNutrition.protein.map((day, index) => (
+                  <div key={`prot-${index}`} className="flex justify-center w-full">
+                    <div 
+                      className={`${macroColors.protein} w-6 rounded-2xl`}
+                      style={{ 
+                        height: day > 0 ? `${Math.min((day / userGoals.protein) * 80, 100)}%` : '4px' 
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
             
-            <div className="flex-1">
-              {/* Horizontal goal line */}
-              <div className="relative h-16 w-full">
-                <div className="absolute top-[30%] w-full h-[1px] bg-gray-300"></div>
-                
-                {/* Bars container */}
-                <div className="absolute bottom-0 w-full flex justify-between">
-                  {weeklyNutrition.protein.map((day, index) => (
-                    <div key={`prot-${index}`} className="h-16 flex items-end">
-                      <div 
-                        className={`${macroColors.protein} w-4 rounded-t-md`} // Made bar slimmer
-                        style={{ 
-                          height: day > 0 ? `${Math.max(Math.min((day / userGoals.protein) * 100, 100), 5)}%` : '4px' 
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Bottom separator */}
-              <Separator className="mt-1" />
+            {/* Target value on the right */}
+            <div className="w-24 justify-end text-right">
+              <span className="text-2xl font-bold">95P</span>
             </div>
           </div>
           
-          {/* Fat */}
-          <div className="flex items-center gap-4">
-            <div className="w-20 flex-none">
-              <div className="text-2xl font-bold">58F</div>
+          {/* Separator */}
+          <div className="h-px bg-gray-200 mt-3 mb-8"></div>
+        </div>
+        
+        {/* Fat Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            {/* Empty div for spacing on the left */}
+            <div className="w-24"></div>
+            
+            {/* Bar chart container */}
+            <div className="flex-1 px-2">
+              <div className="flex justify-between items-end h-10">
+                {weeklyNutrition.fat.map((day, index) => (
+                  <div key={`fat-${index}`} className="flex justify-center w-full">
+                    <div 
+                      className={`${macroColors.fat} w-6 rounded-2xl`}
+                      style={{ 
+                        height: day > 0 ? `${Math.min((day / userGoals.fat) * 80, 100)}%` : '4px' 
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
             
-            <div className="flex-1">
-              {/* Horizontal goal line */}
-              <div className="relative h-16 w-full">
-                <div className="absolute top-[30%] w-full h-[1px] bg-gray-300"></div>
-                
-                {/* Bars container */}
-                <div className="absolute bottom-0 w-full flex justify-between">
-                  {weeklyNutrition.fat.map((day, index) => (
-                    <div key={`fat-${index}`} className="h-16 flex items-end">
-                      <div 
-                        className={`${macroColors.fat} w-4 rounded-t-md`} // Made bar slimmer
-                        style={{ 
-                          height: day > 0 ? `${Math.max(Math.min((day / userGoals.fat) * 100, 100), 5)}%` : '4px' 
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Bottom separator */}
-              <Separator className="mt-1" />
+            {/* Target value on the right */}
+            <div className="w-24 justify-end text-right">
+              <span className="text-2xl font-bold">58F</span>
             </div>
           </div>
           
-          {/* Carbs */}
-          <div className="flex items-center gap-4">
-            <div className="w-20 flex-none">
-              <div className="text-2xl font-bold">87C</div>
+          {/* Separator */}
+          <div className="h-px bg-gray-200 mt-3 mb-8"></div>
+        </div>
+        
+        {/* Carbs Section */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between">
+            {/* Empty div for spacing on the left */}
+            <div className="w-24"></div>
+            
+            {/* Bar chart container */}
+            <div className="flex-1 px-2">
+              <div className="flex justify-between items-end h-10">
+                {weeklyNutrition.carbs.map((day, index) => (
+                  <div key={`carb-${index}`} className="flex justify-center w-full">
+                    <div 
+                      className={`${macroColors.carbs} w-6 rounded-2xl`}
+                      style={{ 
+                        height: day > 0 ? `${Math.min((day / userGoals.carbs) * 80, 100)}%` : '4px' 
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
             
-            <div className="flex-1">
-              {/* Horizontal goal line */}
-              <div className="relative h-16 w-full">
-                <div className="absolute top-[30%] w-full h-[1px] bg-gray-300"></div>
-                
-                {/* Bars container */}
-                <div className="absolute bottom-0 w-full flex justify-between">
-                  {weeklyNutrition.carbs.map((day, index) => (
-                    <div key={`carb-${index}`} className="h-16 flex items-end">
-                      <div 
-                        className={`${macroColors.carbs} w-4 rounded-t-md`} // Made bar slimmer
-                        style={{ 
-                          height: day > 0 ? `${Math.max(Math.min((day / userGoals.carbs) * 100, 100), 5)}%` : '4px' 
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Bottom separator */}
-              <Separator className="mt-1" />
+            {/* Target value on the right */}
+            <div className="w-24 justify-end text-right">
+              <span className="text-2xl font-bold">87C</span>
             </div>
           </div>
+          
+          {/* Separator */}
+          <div className="h-px bg-gray-200 mt-3 mb-4"></div>
         </div>
         
         {/* Day labels */}
-        <div className="flex mt-2 justify-between">
+        <div className="flex justify-between px-6 mt-2">
           {dayLabels.map((day, index) => (
             <div 
               key={`day-${index}`}
-              className={`text-center text-sm w-4 ${index === todayIndex ? 'text-gray-500 font-medium' : 'text-gray-400'}`}
+              className="text-center text-sm text-gray-400"
             >
               {day}
             </div>
