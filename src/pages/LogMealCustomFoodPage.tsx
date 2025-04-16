@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Minus, Camera, X, Check, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, Camera, X, Check, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,7 +15,9 @@ const LogMealCustomFoodPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const [productImage, setProductImage] = useState<string | null>(null);
+  const [imageSource, setImageSource] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   const defaultFormData: CustomFood = {
     id: uuidv4(),
@@ -24,10 +26,7 @@ const LogMealCustomFoodPage = () => {
       calories: 0,
       protein: 0,
       carbs: 0,
-      fat: 0,
-      fiber: 0,
-      sugar: 0,
-      sodium: 0
+      fat: 0
     },
     servingSize: 1,
     servingUnit: 'serving',
@@ -35,7 +34,6 @@ const LogMealCustomFoodPage = () => {
   };
   
   const [formData, setFormData] = useState<CustomFood>(defaultFormData);
-  const [isSaving, setIsSaving] = useState(false);
   
   // Get nutrition data from location state if it exists (from label scan)
   const nutritionFromScan = location.state?.nutritionData as NutritionLabelData | undefined;
@@ -70,10 +68,7 @@ const LogMealCustomFoodPage = () => {
           calories: nutritionFromScan.calories || 0,
           protein: nutritionFromScan.protein || 0,
           carbs: nutritionFromScan.carbs || 0,
-          fat: nutritionFromScan.fat || 0,
-          fiber: nutritionFromScan.fiber || 0,
-          sugar: nutritionFromScan.sugar || 0,
-          sodium: nutritionFromScan.sodium || 0
+          fat: nutritionFromScan.fat || 0
         },
         servingSize: servingSize,
         servingUnit: servingUnit
@@ -94,10 +89,7 @@ const LogMealCustomFoodPage = () => {
       name === 'calories' || 
       name === 'protein' || 
       name === 'carbs' || 
-      name === 'fat' ||
-      name === 'fiber' || 
-      name === 'sugar' || 
-      name === 'sodium'
+      name === 'fat'
     ) {
       setFormData({
         ...formData,
@@ -126,7 +118,7 @@ const LogMealCustomFoodPage = () => {
     });
   };
   
-  const increment = (field: 'calories' | 'protein' | 'carbs' | 'fat' | 'fiber' | 'sugar' | 'sodium' | 'servingSize') => {
+  const increment = (field: 'calories' | 'protein' | 'carbs' | 'fat' | 'servingSize') => {
     if (field === 'servingSize') {
       setFormData({
         ...formData,
@@ -143,7 +135,7 @@ const LogMealCustomFoodPage = () => {
     }
   };
   
-  const decrement = (field: 'calories' | 'protein' | 'carbs' | 'fat' | 'fiber' | 'sugar' | 'sodium' | 'servingSize') => {
+  const decrement = (field: 'calories' | 'protein' | 'carbs' | 'fat' | 'servingSize') => {
     if (field === 'servingSize') {
       setFormData({
         ...formData,
@@ -160,21 +152,39 @@ const LogMealCustomFoodPage = () => {
     }
   };
   
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setProductImage(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setImageSource(result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
   
-  const removeImage = () => {
-    setProductImage(null);
+  const handleCameraCapture = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = "image/*";
+      fileInputRef.current.capture = "environment";
+      fileInputRef.current.click();
+    }
+  };
+  
+  const handleGallerySelect = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = "image/*";
+      fileInputRef.current.removeAttribute('capture');
+      fileInputRef.current.click();
+    }
+  };
+  
+  const handleRemoveImage = () => {
+    setImageSource(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
   
   const handleSubmit = (e: React.FormEvent) => {
@@ -194,7 +204,7 @@ const LogMealCustomFoodPage = () => {
     // Save to custom foods
     const customFoodToSave = {
       ...formData,
-      imageSrc: productImage
+      imageSrc: imageSource
     };
     
     const existingCustomFoods = JSON.parse(localStorage.getItem('customFoods') || '[]');
@@ -211,7 +221,8 @@ const LogMealCustomFoodPage = () => {
       loggedFromScreen: 'custom-food',
       calories: formData.macros.calories,
       servingInfo: `${formData.servingSize} ${formData.servingUnit}`,
-      source: 'Custom Food'
+      source: 'Custom Food',
+      imageSrc: imageSource
     };
     
     const existingLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
@@ -258,6 +269,54 @@ const LogMealCustomFoodPage = () => {
               className="mt-1"
               required
             />
+          </div>
+          
+          <div>
+            <label className="text-sm font-medium">Image (optional)</label>
+            <input 
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            
+            {imageSource ? (
+              <div className="relative mt-2">
+                <img 
+                  src={imageSource} 
+                  alt="Food" 
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="absolute top-2 right-2 bg-black bg-opacity-50 text-white rounded-full p-1"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex items-center justify-center h-12"
+                  onClick={handleCameraCapture}
+                >
+                  <Camera size={18} className="mr-2" />
+                  Take Photo
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex items-center justify-center h-12"
+                  onClick={handleGallerySelect}
+                >
+                  <Image size={18} className="mr-2" />
+                  Upload Image
+                </Button>
+              </div>
+            )}
           </div>
           
           <div className="grid grid-cols-2 gap-4">
@@ -462,161 +521,7 @@ const LogMealCustomFoodPage = () => {
                 </div>
               </div>
             </div>
-            
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="fiber">Fiber (g)</Label>
-                <div className="flex mt-1">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => decrement('fiber')}
-                    className="rounded-r-none"
-                  >
-                    <Minus size={16} />
-                  </Button>
-                  <Input
-                    id="fiber"
-                    name="fiber"
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={formData.macros.fiber || 0}
-                    onChange={handleInputChange}
-                    className="rounded-none text-center w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => increment('fiber')}
-                    className="rounded-l-none"
-                  >
-                    <Plus size={16} />
-                  </Button>
-                </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="sugar">Sugar (g)</Label>
-                <div className="flex mt-1">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => decrement('sugar')}
-                    className="rounded-r-none"
-                  >
-                    <Minus size={16} />
-                  </Button>
-                  <Input
-                    id="sugar"
-                    name="sugar"
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={formData.macros.sugar || 0}
-                    onChange={handleInputChange}
-                    className="rounded-none text-center w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => increment('sugar')}
-                    className="rounded-l-none"
-                  >
-                    <Plus size={16} />
-                  </Button>
-                </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="sodium">Sodium (mg)</Label>
-                <div className="flex mt-1">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => decrement('sodium')}
-                    className="rounded-r-none"
-                  >
-                    <Minus size={16} />
-                  </Button>
-                  <Input
-                    id="sodium"
-                    name="sodium"
-                    type="number"
-                    min="0"
-                    step="10"
-                    value={formData.macros.sodium || 0}
-                    onChange={handleInputChange}
-                    className="rounded-none text-center w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => increment('sodium')}
-                    className="rounded-l-none"
-                  >
-                    <Plus size={16} />
-                  </Button>
-                </div>
-              </div>
-            </div>
           </div>
-        </motion.div>
-        
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="space-y-4"
-        >
-          <h2 className="text-lg font-semibold border-b pb-2">Product Image (optional)</h2>
-          
-          {productImage ? (
-            <div className="flex items-center justify-center mb-4 relative">
-              <img 
-                src={productImage} 
-                alt="Food product" 
-                className="h-48 w-48 rounded-lg object-cover" 
-              />
-              <Button
-                type="button"
-                variant="destructive"
-                size="icon"
-                className="absolute top-2 right-2 h-8 w-8 rounded-full"
-                onClick={removeImage}
-              >
-                <X size={16} />
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-gray-300 rounded-lg">
-              <Camera size={36} className="text-gray-400 mb-2" />
-              <p className="text-gray-500 mb-2">No image selected</p>
-              <Button 
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  document.getElementById('product-image')?.click();
-                }}
-              >
-                <FileText size={16} className="mr-2" />
-                Add Image
-              </Button>
-              <input
-                id="product-image"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageUpload}
-              />
-            </div>
-          )}
         </motion.div>
         
         <div className="h-16"></div>

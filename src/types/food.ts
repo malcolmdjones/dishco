@@ -1,3 +1,4 @@
+
 // src/types/food.ts
 export interface ExternalFood {
   id: string;
@@ -10,12 +11,6 @@ export interface ExternalFood {
     protein: number;
     carbs: number;
     fat: number;
-    fiber?: number;
-    sugar?: number;
-    sodium?: number;
-    cholesterol?: number;
-    saturatedFat?: number;
-    transFat?: number;
   };
   servingSize?: string;
   servingUnit?: string;
@@ -49,12 +44,6 @@ export interface FoodDatabaseItem {
     protein: number;
     carbs: number;
     fat: number;
-    fiber?: number;
-    sugar?: number;
-    sodium?: number;
-    cholesterol?: number;
-    saturatedFat?: number;
-    transFat?: number;
   };
   servingSize?: string;
   servingUnit?: string;
@@ -73,12 +62,6 @@ export interface CustomFood {
     protein: number;
     carbs: number;
     fat: number;
-    fiber?: number;
-    sugar?: number;
-    sodium?: number;
-    cholesterol?: number;
-    saturatedFat?: number;
-    transFat?: number;
   };
   servingSize?: number;
   servingUnit?: string;
@@ -131,12 +114,6 @@ export interface NutritionLabelData {
   protein?: number;
   carbs?: number;
   fat?: number;
-  fiber?: number;
-  sugar?: number;
-  sodium?: number;
-  cholesterol?: number;
-  saturatedFat?: number;
-  transFat?: number;
   servingSize?: string;
 }
 

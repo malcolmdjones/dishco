@@ -1,9 +1,11 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ChefHat, ChevronDown, ChevronUp, Plus, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ChefHat, ChevronDown, ChevronUp, Plus, Trash2, X, Camera, Image, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { LoggedMeal } from '@/types/food';
 import { Recipe } from '@/data/mockData';
@@ -23,6 +25,8 @@ interface Step {
 const LogMealCustomRecipePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [imageSource, setImageSource] = useState<string | null>(null);
   
   const [formData, setFormData] = useState<{
     id: string;
@@ -32,6 +36,12 @@ const LogMealCustomRecipePage = () => {
     prepTimeMinutes: number;
     ingredients: Ingredient[];
     steps: Step[];
+    macros: {
+      calories: number;
+      protein: number;
+      carbs: number;
+      fat: number;
+    };
   }>({
     id: uuidv4(),
     name: '',
@@ -39,12 +49,19 @@ const LogMealCustomRecipePage = () => {
     servings: 1,
     prepTimeMinutes: 10,
     ingredients: [{ name: '', amount: '', unit: 'g' }],
-    steps: [{ text: '' }]
+    steps: [{ text: '' }],
+    macros: {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0
+    }
   });
   
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [showIngredients, setShowIngredients] = useState<boolean>(true);
   const [showInstructions, setShowInstructions] = useState<boolean>(true);
+  const [showNutrition, setShowNutrition] = useState<boolean>(true);
   
   const mealTypes = [
     { value: 'breakfast', label: 'Breakfast' },
@@ -70,6 +87,14 @@ const LogMealCustomRecipePage = () => {
       setFormData(prev => ({
         ...prev,
         [name]: parseInt(value, 10) || 0
+      }));
+    } else if (name === 'calories' || name === 'protein' || name === 'carbs' || name === 'fat') {
+      setFormData(prev => ({
+        ...prev,
+        macros: {
+          ...prev.macros,
+          [name]: parseFloat(value) || 0
+        }
       }));
     } else {
       setFormData(prev => ({
@@ -120,6 +145,61 @@ const LogMealCustomRecipePage = () => {
       setFormData(prev => ({ ...prev, steps: newSteps }));
     }
   };
+  
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setImageSource(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
+  const handleCameraCapture = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = "image/*";
+      fileInputRef.current.capture = "environment";
+      fileInputRef.current.click();
+    }
+  };
+  
+  const handleGallerySelect = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = "image/*";
+      fileInputRef.current.removeAttribute('capture');
+      fileInputRef.current.click();
+    }
+  };
+  
+  const handleRemoveImage = () => {
+    setImageSource(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+  
+  const increment = (field: 'calories' | 'protein' | 'carbs' | 'fat') => {
+    setFormData(prev => ({
+      ...prev,
+      macros: {
+        ...prev.macros,
+        [field]: (prev.macros[field] || 0) + (field === 'calories' ? 10 : 1)
+      }
+    }));
+  };
+  
+  const decrement = (field: 'calories' | 'protein' | 'carbs' | 'fat') => {
+    setFormData(prev => ({
+      ...prev,
+      macros: {
+        ...prev.macros,
+        [field]: Math.max((prev.macros[field] || 0) - (field === 'calories' ? 10 : 1), 0)
+      }
+    }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,17 +234,17 @@ const LogMealCustomRecipePage = () => {
       type: formData.mealType,
       description: '',
       macros: {
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0
+        calories: formData.macros.calories,
+        protein: formData.macros.protein,
+        carbs: formData.macros.carbs,
+        fat: formData.macros.fat
       },
       servings: formData.servings,
       prepTime: formData.prepTimeMinutes,
       cookTime: 0,
       ingredients: ingredientsStrings,
       instructions: formData.steps.map(step => step.text),
-      imageSrc: '',
+      imageSrc: imageSource || '',
       requiresBlender: false,
       requiresCooking: true,
       externalSource: false,
@@ -185,9 +265,10 @@ const LogMealCustomRecipePage = () => {
       consumed: true,
       loggedAt: new Date().toISOString(),
       loggedFromScreen: 'custom-recipe',
-      calories: 0,
+      calories: formData.macros.calories,
       servingInfo: `1 of ${formData.servings} servings`,
-      source: 'Custom Recipe'
+      source: 'Custom Recipe',
+      imageSrc: imageSource
     };
     
     const updatedLoggedMeals = [newMeal, ...existingLoggedMeals];
@@ -232,6 +313,7 @@ const LogMealCustomRecipePage = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
+          className="space-y-2"
         >
           <label className="text-sm font-medium">Recipe Name*</label>
           <Input
@@ -242,6 +324,58 @@ const LogMealCustomRecipePage = () => {
             className="border-gray-300 mt-1"
             required
           />
+        </motion.div>
+        
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <label className="text-sm font-medium">Image (optional)</label>
+          <input 
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          
+          {imageSource ? (
+            <div className="relative mt-2">
+              <img 
+                src={imageSource} 
+                alt="Recipe" 
+                className="w-full h-48 object-cover rounded-lg"
+              />
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                className="absolute top-2 right-2 bg-black bg-opacity-50 text-white rounded-full p-1"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 mt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex items-center justify-center h-12"
+                onClick={handleCameraCapture}
+              >
+                <Camera size={18} className="mr-2" />
+                Take Photo
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex items-center justify-center h-12"
+                onClick={handleGallerySelect}
+              >
+                <Image size={18} className="mr-2" />
+                Upload Image
+              </Button>
+            </div>
+          )}
         </motion.div>
         
         <div className="grid grid-cols-3 gap-4">
@@ -300,6 +434,175 @@ const LogMealCustomRecipePage = () => {
             />
           </motion.div>
         </div>
+        
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+        >
+          <div className="flex items-center justify-between py-2">
+            <h3 className="text-base font-semibold">Nutrition</h3>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setShowNutrition(!showNutrition)}
+            >
+              {showNutrition ? 
+                <ChevronUp size={20} /> : 
+                <ChevronDown size={20} />
+              }
+            </Button>
+          </div>
+          
+          {showNutrition && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-4"
+            >
+              <div>
+                <Label htmlFor="calories">Calories</Label>
+                <div className="flex mt-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => decrement('calories')}
+                    className="rounded-r-none"
+                  >
+                    <Minus size={16} />
+                  </Button>
+                  <Input
+                    id="calories"
+                    name="calories"
+                    type="number"
+                    min="0"
+                    step="10"
+                    value={formData.macros.calories}
+                    onChange={handleInputChange}
+                    className="rounded-none text-center w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => increment('calories')}
+                    className="rounded-l-none"
+                  >
+                    <Plus size={16} />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="protein">Protein (g)</Label>
+                  <div className="flex mt-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => decrement('protein')}
+                      className="rounded-r-none"
+                    >
+                      <Minus size={16} />
+                    </Button>
+                    <Input
+                      id="protein"
+                      name="protein"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={formData.macros.protein}
+                      onChange={handleInputChange}
+                      className="rounded-none text-center w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => increment('protein')}
+                      className="rounded-l-none"
+                    >
+                      <Plus size={16} />
+                    </Button>
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="carbs">Carbs (g)</Label>
+                  <div className="flex mt-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => decrement('carbs')}
+                      className="rounded-r-none"
+                    >
+                      <Minus size={16} />
+                    </Button>
+                    <Input
+                      id="carbs"
+                      name="carbs"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={formData.macros.carbs}
+                      onChange={handleInputChange}
+                      className="rounded-none text-center w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => increment('carbs')}
+                      className="rounded-l-none"
+                    >
+                      <Plus size={16} />
+                    </Button>
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="fat">Fat (g)</Label>
+                  <div className="flex mt-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => decrement('fat')}
+                      className="rounded-r-none"
+                    >
+                      <Minus size={16} />
+                    </Button>
+                    <Input
+                      id="fat"
+                      name="fat"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={formData.macros.fat}
+                      onChange={handleInputChange}
+                      className="rounded-none text-center w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => increment('fat')}
+                      className="rounded-l-none"
+                    >
+                      <Plus size={16} />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </motion.div>
         
         <motion.div
           initial={{ opacity: 0, y: 10 }}
