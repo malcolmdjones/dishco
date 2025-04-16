@@ -192,7 +192,7 @@ const LogMealPage = () => {
         </div>
         
         {/* Show search all foods button immediately when typing */}
-        {searchQuery.trim().length > 0 && !isSearching && (
+        {searchQuery.trim().length > 0 && (
           <div 
             className="flex items-center p-3 mb-4 bg-blue-50 rounded-lg cursor-pointer text-blue-600 border border-blue-100"
             onClick={handleFullSearch}
@@ -311,6 +311,15 @@ const LogMealPage = () => {
                   </div>
                 ) : searchQuery ? (
                   <div className="py-16 flex flex-col items-center justify-center text-center">
+                    {/* Search all foods button at the top */}
+                    <div 
+                      className="flex items-center p-3 mb-6 bg-blue-50 rounded-lg cursor-pointer text-blue-600 border border-blue-100 w-full"
+                      onClick={handleFullSearch}
+                    >
+                      <Search size={18} className="mr-3" />
+                      <span>Search all foods for: "{searchQuery}"</span>
+                    </div>
+                    
                     <p className="text-gray-500 mb-4">No results found for "{searchQuery}"</p>
                     <Button 
                       variant="outline" 
@@ -320,13 +329,6 @@ const LogMealPage = () => {
                       <PlusCircle size={18} className="mr-2" />
                       Quick Add Instead
                     </Button>
-                    <div 
-                      className="flex items-center p-3 mt-6 bg-blue-50 rounded-lg cursor-pointer text-blue-600 border border-blue-100 w-full"
-                      onClick={handleFullSearch}
-                    >
-                      <Search size={18} className="mr-3" />
-                      <span>Search all foods for: "{searchQuery}"</span>
-                    </div>
                   </div>
                 ) : null}
               </TabsContent>

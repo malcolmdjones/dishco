@@ -7,13 +7,9 @@ import { useHomePageUtils } from '@/hooks/useHomePageUtils';
 import DateSelector from '@/components/home/DateSelector';
 import DailyNutritionSummary from '@/components/home/DailyNutritionSummary';
 import MealsList from '@/components/home/MealsList';
-import WeeklyOverview from '@/components/home/WeeklyOverview';
-import { useSavedMealPlans } from '@/hooks/useSavedMealPlans';
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const { activePlans, getMealsForDate } = useSavedMealPlans();
-  
   const {
     selectedDate,
     selectedRecipe,
@@ -59,11 +55,6 @@ const HomePage = () => {
         handleOpenRecipe={handleOpenRecipe}
         handleToggleConsumed={handleToggleConsumed}
         formatMealType={formatMealType}
-      />
-      
-      <WeeklyOverview 
-        activePlans={activePlans} 
-        getMealsForDate={getMealsForDate} 
       />
       
       {selectedRecipe && (
