@@ -25,12 +25,12 @@ const MacroBarChart: React.FC<MacroBarChartProps> = ({
   return (
     <div className="flex-1 flex items-end justify-center h-full relative">
       {/* Goal line - always visible at exactly 66.7% of container height */}
-      <div className="absolute w-8 h-[1px] bg-gray-300 bottom-[66.7%] left-1/2 transform -translate-x-1/2" /> {/* Reduced width from w-10 to w-8 */}
+      <div className="absolute w-8 h-[1px] bg-gray-300 bottom-[66.7%] left-1/2 transform -translate-x-1/2" />
       
       {/* Bar */}
       {value > 0 && (
         <div 
-          className={`${color} rounded-t-full w-5 transition-all duration-300 ease-in-out relative`} {/* Reduced width from w-8 to w-5 */}
+          className={`${color} rounded-t-full w-5 transition-all duration-300 ease-in-out relative`}
           style={{ 
             height: `${Math.max((percentage * 2/3), 4)}%`, 
             maxHeight: '100%'
@@ -43,7 +43,7 @@ const MacroBarChart: React.FC<MacroBarChartProps> = ({
         </div>
       )}
       {value === 0 && (
-        <div className={`${color} w-5 h-1 rounded-full`} /> {/* Reduced width from w-8 to w-5 */}
+        <div className={`${color} w-5 h-1 rounded-full`} />
       )}
     </div>
   );
