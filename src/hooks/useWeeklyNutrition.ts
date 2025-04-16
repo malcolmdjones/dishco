@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { addDays, format, isEqual, parseISO, startOfDay, startOfWeek, subDays } from 'date-fns';
 import { defaultGoals } from '@/data/mockData';
+import { supabase } from '@/integrations/supabase/client';
 
 interface WeeklyNutritionData {
   calories: number[];
@@ -35,11 +36,38 @@ export const useWeeklyNutrition = (selectedDate: Date) => {
   
   const [userGoals, setUserGoals] = useState<UserGoals>(defaultGoals);
   
+  // Fetch user's goals from Supabase
   useEffect(() => {
-    // Get user's nutrition goals from localStorage or API
-    const storedGoals = JSON.parse(localStorage.getItem('nutritionGoals') || JSON.stringify(defaultGoals));
-    setUserGoals(storedGoals);
+    const fetchUserGoals = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('nutrition_goals')
+          .select('*')
+          .limit(1)
+          .single();
+          
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching nutrition goals:', error);
+          return;
+        }
+        
+        if (data) {
+          setUserGoals({
+            calories: data.calories,
+            protein: data.protein,
+            carbs: data.carbs,
+            fat: data.fat
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching nutrition goals:', error);
+      }
+    };
     
+    fetchUserGoals();
+  }, [selectedDate]);
+  
+  useEffect(() => {
     // Calculate the start of the week (Monday)
     const monday = startOfWeek(selectedDate, { weekStartsOn: 1 });
     
@@ -94,7 +122,7 @@ export const useWeeklyNutrition = (selectedDate: Date) => {
       totalCarbs,
       totalFat
     });
-  }, [selectedDate]);
+  }, [selectedDate, userGoals]); // Also re-run when userGoals changes
   
   return {
     weeklyNutrition,

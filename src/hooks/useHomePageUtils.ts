@@ -1,9 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { format, addDays, subDays, isToday, isEqual, parseISO, startOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Recipe, defaultGoals } from '@/data/mockData';
 import { useSavedMealPlans } from '@/hooks/useSavedMealPlans';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Meal {
   id: string;
@@ -35,6 +35,37 @@ export const useHomePageUtils = () => {
   });
   
   const [todaysMeals, setTodaysMeals] = useState<Meal[]>([]);
+
+  useEffect(() => {
+    const fetchUserNutritionGoals = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('nutrition_goals')
+          .select('*')
+          .limit(1)
+          .single();
+        
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching nutrition goals:', error);
+          return;
+        }
+        
+        if (data) {
+          setDailyNutrition(prev => ({
+            ...prev,
+            totalCalories: data.calories,
+            totalProtein: data.protein,
+            totalCarbs: data.carbs,
+            totalFat: data.fat
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching nutrition goals:', error);
+      }
+    };
+    
+    fetchUserNutritionGoals();
+  }, [selectedDate]);
 
   useEffect(() => {
     const loadMealsForSelectedDate = () => {

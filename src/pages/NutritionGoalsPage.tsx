@@ -78,7 +78,7 @@ const NutritionGoalsPage = () => {
             protein: goals.protein,
             carbs: goals.carbs,
             fat: goals.fat,
-            updated_at: new Date().toISOString() // Fixed: Convert Date to ISO string
+            updated_at: new Date().toISOString()
           })
           .eq('id', recordId);
       } else {
@@ -93,13 +93,18 @@ const NutritionGoalsPage = () => {
           }]);
       }
       
+      // Also update in localStorage for immediate use in the app
+      localStorage.setItem('nutritionGoals', JSON.stringify(goals));
+      
       toast({
         title: "Goals Updated",
         description: "Your nutrition goals have been saved successfully.",
       });
       
-      // Navigate back to More page
-      navigate('/more');
+      // Force a reload to reflect changes across the app
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1000);
     } catch (error) {
       console.error('Error saving nutrition goals:', error);
       toast({
