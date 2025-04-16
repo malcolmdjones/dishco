@@ -37,12 +37,12 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
     .map(item => item.calories)
     .filter(value => value !== null) as number[];
   
-  const minDataValue = Math.min(...allValues, targetCalories * 0.7);
-  const maxDataValue = Math.max(...allValues, targetCalories * 1.3);
+  const minDataValue = Math.min(...(allValues.length > 0 ? allValues : [0]), targetCalories * 0.7);
+  const maxDataValue = Math.max(...(allValues.length > 0 ? allValues : [0]), targetCalories * 1.3);
   
   // Ensure there's always at least 30% padding around the target line
-  const yAxisMin = Math.floor(minDataValue * 0.9);
-  const yAxisMax = Math.ceil(maxDataValue * 1.1);
+  const yAxisMin = Math.floor(Math.min(minDataValue, targetCalories) * 0.9);
+  const yAxisMax = Math.ceil(Math.max(maxDataValue, targetCalories) * 1.1);
   
   const formatXAxis = (dateStr: string) => {
     if (!dateStr) return '';
@@ -102,7 +102,7 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
           <ResponsiveContainer width="100%" height="100%">
             <LineChart 
               data={weeklyData} 
-              margin={{ top: 5, right: 10, left: -15, bottom: 5 }}
+              margin={{ top: 5, right: 10, left: 40, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff33" vertical={false} />
               <XAxis 
@@ -119,7 +119,7 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
                 axisLine={{ stroke: '#ffffff33' }}
                 tickLine={false}
                 tick={{ fill: 'white', fontSize: 12 }}
-                width={45}
+                width={60}
               />
               <ReferenceLine 
                 y={targetCalories} 
