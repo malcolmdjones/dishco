@@ -26,7 +26,7 @@ const MacroBarChart: React.FC<MacroBarChartProps> = ({
       
       {/* Target value on the right side of the line */}
       {dayIndex === 6 && (
-        <div className="absolute right-[-25px] bottom-[64%] text-[10px] text-gray-600">
+        <div className="absolute right-[-25px] bottom-[67%] text-xs text-gray-600 transform translate-y-[50%]">
           {goalValue}
         </div>
       )}
@@ -49,4 +49,3 @@ const MacroBarChart: React.FC<MacroBarChartProps> = ({
 };
 
 export default MacroBarChart;
-
