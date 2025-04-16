@@ -44,13 +44,13 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
           {/* Calories */}
           <div className="flex items-center">
             <div className="w-full flex items-center">
-              <div className="flex-1 relative">
+              <div className="flex-1 relative pr-6">
                 {/* Bars */}
                 <div className="flex justify-between">
                   {weeklyNutrition.calories.map((day, index) => (
                     <div key={`cal-${index}`} className="flex-1 flex justify-center">
                       <div 
-                        className={`${macroColors.calories} w-5 rounded-t-lg`}
+                        className={`${macroColors.calories} w-3 rounded-t-lg`}
                         style={{ 
                           height: day > 0 ? `${Math.max(Math.min((day / userGoals.calories) * 100, 100), 4)}%` : '4px',
                           maxHeight: '40px'
@@ -60,11 +60,11 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                   ))}
                 </div>
 
-                {/* Line below bars */}
+                {/* Line below bars - shorter */}
                 <div className="absolute w-full h-[1px] bg-gray-200 bottom-0"></div>
               </div>
               
-              <div className="flex items-center ml-4">
+              <div className="flex items-center">
                 <span className="text-2xl font-bold">1220</span>
                 <Flame className="ml-1 text-black" size={20} />
               </div>
@@ -77,13 +77,13 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
           {/* Protein */}
           <div className="flex items-center">
             <div className="w-full flex items-center">
-              <div className="flex-1 relative">
+              <div className="flex-1 relative pr-6">
                 {/* Bars */}
                 <div className="flex justify-between">
                   {weeklyNutrition.protein.map((day, index) => (
                     <div key={`prot-${index}`} className="flex-1 flex justify-center">
                       <div 
-                        className={`${macroColors.protein} w-5 rounded-t-lg`}
+                        className={`${macroColors.protein} w-3 rounded-t-lg`}
                         style={{ 
                           height: day > 0 ? `${Math.max(Math.min((day / userGoals.protein) * 100, 100), 4)}%` : '4px',
                           maxHeight: '40px'
@@ -93,11 +93,11 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                   ))}
                 </div>
 
-                {/* Line below bars */}
+                {/* Line below bars - shorter */}
                 <div className="absolute w-full h-[1px] bg-gray-200 bottom-0"></div>
               </div>
               
-              <div className="ml-4">
+              <div>
                 <span className="text-2xl font-bold">95P</span>
               </div>
             </div>
@@ -109,13 +109,13 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
           {/* Fat */}
           <div className="flex items-center">
             <div className="w-full flex items-center">
-              <div className="flex-1 relative">
+              <div className="flex-1 relative pr-6">
                 {/* Bars */}
                 <div className="flex justify-between">
                   {weeklyNutrition.fat.map((day, index) => (
                     <div key={`fat-${index}`} className="flex-1 flex justify-center">
                       <div 
-                        className={`${macroColors.fat} w-5 rounded-t-lg`}
+                        className={`${macroColors.fat} w-3 rounded-t-lg`}
                         style={{ 
                           height: day > 0 ? `${Math.max(Math.min((day / userGoals.fat) * 100, 100), 4)}%` : '4px',
                           maxHeight: '40px'
@@ -125,11 +125,11 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                   ))}
                 </div>
 
-                {/* Line below bars */}
+                {/* Line below bars - shorter */}
                 <div className="absolute w-full h-[1px] bg-gray-200 bottom-0"></div>
               </div>
               
-              <div className="ml-4">
+              <div>
                 <span className="text-2xl font-bold">58F</span>
               </div>
             </div>
@@ -141,13 +141,13 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
           {/* Carbs */}
           <div className="flex items-center">
             <div className="w-full flex items-center">
-              <div className="flex-1 relative">
+              <div className="flex-1 relative pr-6">
                 {/* Bars */}
                 <div className="flex justify-between">
                   {weeklyNutrition.carbs.map((day, index) => (
                     <div key={`carb-${index}`} className="flex-1 flex justify-center">
                       <div 
-                        className={`${macroColors.carbs} w-5 rounded-t-lg`}
+                        className={`${macroColors.carbs} w-3 rounded-t-lg`}
                         style={{ 
                           height: day > 0 ? `${Math.max(Math.min((day / userGoals.carbs) * 100, 100), 4)}%` : '4px',
                           maxHeight: '40px'
@@ -157,18 +157,18 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                   ))}
                 </div>
 
-                {/* Line below bars */}
+                {/* Line below bars - shorter */}
                 <div className="absolute w-full h-[1px] bg-gray-200 bottom-0"></div>
               </div>
               
-              <div className="ml-4">
+              <div>
                 <span className="text-2xl font-bold">87C</span>
               </div>
             </div>
           </div>
           
           {/* Day labels - Only under the bar charts */}
-          <div className="flex pr-20"> {/* Add right padding to leave space for the values */}
+          <div className="flex pr-6 pl-1">
             {dayLabels.map((day, index) => (
               <div 
                 key={`day-${index}`}
