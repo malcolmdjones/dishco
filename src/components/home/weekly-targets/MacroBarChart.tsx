@@ -24,8 +24,8 @@ const MacroBarChart: React.FC<MacroBarChartProps> = ({
   
   return (
     <div className="flex-1 flex items-end justify-center h-full relative">
-      {/* Goal line - always visible at exactly 66.7% of container height */}
-      <div className="absolute w-8 h-[1px] bg-gray-300 bottom-[66.7%] left-1/2 transform -translate-x-1/2" />
+      {/* Goal line now at exactly 66.7% */}
+      <div className="absolute w-full h-[1px] bg-gray-200 bottom-[66.7%] left-0" />
       
       {/* Bar */}
       {value > 0 && (
