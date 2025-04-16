@@ -41,8 +41,8 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
   const maxDataValue = Math.max(...(allValues.length > 0 ? allValues : [0]), targetCalories * 1.3);
   
   // Ensure there's always at least 30% padding around the target line
-  const yAxisMin = Math.floor(Math.min(minDataValue, targetCalories) * 0.9);
-  const yAxisMax = Math.ceil(Math.max(maxDataValue, targetCalories) * 1.1);
+  const yAxisMin = Math.floor(Math.min(minDataValue, targetCalories) * 0.9 / 100) * 100;
+  const yAxisMax = Math.ceil(Math.max(maxDataValue, targetCalories) * 1.1 / 100) * 100;
   
   const formatXAxis = (dateStr: string) => {
     if (!dateStr) return '';
@@ -51,13 +51,17 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
     return dayAbbreviations[dayIndex];
   };
 
-  // Custom formatter for Y-axis to show the target calories value
+  // Custom formatter for Y-axis to show whole numbers
   const formatYAxis = (value: number) => {
-    // Show the actual value for the target calories and round other values
-    if (Math.abs(value - targetCalories) < 5) {
-      return `${targetCalories} cal`;
+    // Round to nearest hundred
+    const roundedValue = Math.round(value / 100) * 100;
+    
+    // Only show thousands separator for values over 1000
+    if (roundedValue >= 1000) {
+      return `${Math.round(roundedValue / 1000)}k`;
     }
-    return Math.round(value).toString();
+    
+    return roundedValue.toString();
   };
 
   return (
@@ -74,7 +78,7 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
         </div>
         
         <div className="flex items-baseline">
-          <div className="text-3xl font-bold">{averageCalories}</div>
+          <div className="text-3xl font-bold">{Math.round(averageCalories)}</div>
           <span className="ml-1 text-sm font-normal opacity-80">cal</span>
         </div>
         
@@ -83,14 +87,14 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
             <>
               <ArrowDown className="mr-1 h-4 w-4" />
               <span>
-                {Math.abs(dailyDifference)} deficit · ~{weightChangePerWeek}lb/week
+                {Math.abs(Math.round(dailyDifference))} deficit · ~{weightChangePerWeek}lb/week
               </span>
             </>
           ) : isSurplus ? (
             <>
               <ArrowUp className="mr-1 h-4 w-4" />
               <span>
-                {dailyDifference} surplus · ~{weightChangePerWeek}lb/week
+                {Math.round(dailyDifference)} surplus · ~{weightChangePerWeek}lb/week
               </span>
             </>
           ) : (
@@ -102,7 +106,7 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
           <ResponsiveContainer width="100%" height="100%">
             <LineChart 
               data={weeklyData} 
-              margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+              margin={{ top: 5, right: 30, left: 15, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff33" vertical={false} />
               <XAxis 
@@ -119,7 +123,8 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
                 axisLine={{ stroke: '#ffffff33' }}
                 tickLine={false}
                 tick={{ fill: 'white', fontSize: 12 }}
-                width={50}
+                width={40}
+                ticks={[yAxisMin, targetCalories, yAxisMax]}
               />
               <ReferenceLine 
                 y={targetCalories} 
@@ -132,7 +137,7 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
                   fill: 'white', 
                   fontSize: 10,
                   opacity: 0.8,
-                  offset: 0
+                  offset: 15
                 }} 
               />
               <Line
