@@ -21,15 +21,8 @@ const MacroBarChart: React.FC<MacroBarChartProps> = ({
   
   return (
     <div className="flex-1 flex items-end justify-center h-full relative">
-      {/* Goal line with value on the side */}
+      {/* Goal line - black line at 100% goal */}
       <div className="absolute w-full h-[1px] bg-black bottom-[66.7%] left-0" />
-      
-      {/* Target value on the right side of the line */}
-      {dayIndex === 6 && (
-        <div className="absolute right-[-25px] bottom-[67%] text-xs text-gray-600 transform translate-y-[50%]">
-          {goalValue}
-        </div>
-      )}
       
       {/* Bar */}
       {value > 0 && (
