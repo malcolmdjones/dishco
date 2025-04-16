@@ -1,3 +1,4 @@
+
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
@@ -184,6 +185,28 @@ export const useGroceryListUtils = () => {
     // Default to 1 decimal place
     return quantity.toFixed(1);
   };
+
+  // Normalize ingredient name for comparison
+  const normalizeIngredientName = (name: string): string => {
+    // Convert to lowercase, trim spaces
+    let normalized = name.toLowerCase().trim();
+    
+    // Remove pluralization
+    if (normalized.endsWith('s') && normalized.length > 2) {
+      normalized = normalized.slice(0, -1);
+    }
+    
+    // Handle common synonyms
+    const synonymMap: Record<string, string> = {
+      'banana': 'banana',
+      'bananas': 'banana',
+      'bell pepper': 'bell pepper',
+      'bell peppers': 'bell pepper',
+      // Add more synonym mappings as needed
+    };
+    
+    return synonymMap[normalized] || normalized;
+  };
   
   // Helper function to process a single ingredient
   const processIngredient = (ingredient: any, map: Map<string, Ingredient>) => {
@@ -226,7 +249,7 @@ export const useGroceryListUtils = () => {
     // Skip if we couldn't determine a name
     if (!name) return;
     
-    const normalizedName = name.toLowerCase().trim();
+    const normalizedName = normalizeIngredientName(name);
     const quantity = parseQuantity(quantityStr || "1");
     
     if (map.has(normalizedName)) {
@@ -273,21 +296,25 @@ export const useGroceryListUtils = () => {
       // Get existing grocery items
       const existingItems = JSON.parse(localStorage.getItem('groceryItems') || '[]');
       
-      // Create a map of existing items by name for quick lookup
+      // Create a map of existing items by normalized name for quick lookup
       const existingItemsMap = new Map();
       existingItems.forEach((item: any) => {
         if (item && item.name) {
-          existingItemsMap.set(item.name.toLowerCase().trim(), item);
+          existingItemsMap.set(normalizeIngredientName(item.name), item);
         }
       });
       
       // Add new ingredients, combining with existing items if needed
       const newItems = [...existingItems];
+      const processedItems = new Set<string>();
       
       ingredients.forEach(ingredient => {
         if (!ingredient || !ingredient.name) return;
         
-        const normalizedName = ingredient.name.toLowerCase().trim();
+        const normalizedName = normalizeIngredientName(ingredient.name);
+        
+        // Skip if we've already processed an ingredient with this normalized name
+        if (processedItems.has(normalizedName)) return;
         
         if (existingItemsMap.has(normalizedName)) {
           // Update existing item quantity
@@ -312,6 +339,8 @@ export const useGroceryListUtils = () => {
             checked: false
           });
         }
+        
+        processedItems.add(normalizedName);
       });
       
       // Save back to localStorage

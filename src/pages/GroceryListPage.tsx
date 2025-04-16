@@ -11,11 +11,58 @@ import { Link } from 'react-router-dom';
 // Generate initial grocery list
 const initialGroceryItems = generateGroceryList();
 
+// Helper function to normalize ingredient names for comparison
+const normalizeIngredientName = (name: string): string => {
+  // Convert to lowercase, trim spaces
+  let normalized = name.toLowerCase().trim();
+  
+  // Remove pluralization
+  if (normalized.endsWith('s') && normalized.length > 2) {
+    normalized = normalized.slice(0, -1);
+  }
+  
+  return normalized;
+};
+
+// Helper function to deduplicate grocery items
+const deduplicateGroceryItems = (items: GroceryItem[]): GroceryItem[] => {
+  const uniqueItems = new Map<string, GroceryItem>();
+  
+  items.forEach(item => {
+    const normalizedName = normalizeIngredientName(item.name);
+    
+    if (uniqueItems.has(normalizedName)) {
+      // Combine quantities if this item already exists
+      const existingItem = uniqueItems.get(normalizedName)!;
+      
+      // Try to parse quantities as numbers when possible
+      let existingQty = parseFloat(existingItem.quantity) || 0;
+      let newQty = parseFloat(item.quantity) || 0;
+      
+      // If either parsing failed, just keep the existing item
+      if (isNaN(existingQty) || isNaN(newQty)) {
+        // Keep the existing item, don't modify it
+        return;
+      }
+      
+      // Add quantities
+      existingItem.quantity = String(existingQty + newQty);
+    } else {
+      // Add new item
+      uniqueItems.set(normalizedName, {...item});
+    }
+  });
+  
+  return Array.from(uniqueItems.values());
+};
+
 const GroceryListPage = () => {
   const { toast } = useToast();
   const [groceryItems, setGroceryItems] = useState<GroceryItem[]>(() => {
     const savedItems = localStorage.getItem('groceryItems');
-    return savedItems ? JSON.parse(savedItems) : initialGroceryItems;
+    const items = savedItems ? JSON.parse(savedItems) : initialGroceryItems;
+    // Deduplicate items when loading from localStorage
+    return deduplicateGroceryItems(items);
   });
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -65,22 +112,52 @@ const GroceryListPage = () => {
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (newItem.trim()) {
-      setGroceryItems(prev => [
-        ...prev,
-        { 
-          id: `item-${Date.now()}`,
-          name: newItem.trim(), 
-          category: 'Other',
-          quantity: "1",
-          unit: 'item(s)',
-          checked: false 
-        }
-      ]);
+      // Check if the item already exists (case insensitive)
+      const normalizedNewItem = normalizeIngredientName(newItem);
+      const existingItem = groceryItems.find(item => 
+        normalizeIngredientName(item.name) === normalizedNewItem
+      );
+      
+      if (existingItem) {
+        // Update existing item quantity
+        setGroceryItems(prev => 
+          prev.map(item => 
+            normalizeIngredientName(item.name) === normalizedNewItem
+              ? { 
+                  ...item, 
+                  quantity: String(
+                    (parseFloat(item.quantity) || 1) + 1
+                  )
+                }
+              : item
+          )
+        );
+        
+        toast({
+          title: "Item Updated",
+          description: `The quantity of ${newItem} has been updated in your grocery list.`,
+        });
+      } else {
+        // Add new item
+        setGroceryItems(prev => [
+          ...prev,
+          { 
+            id: `item-${Date.now()}`,
+            name: newItem.trim(), 
+            category: 'Other',
+            quantity: "1",
+            unit: 'item(s)',
+            checked: false 
+          }
+        ]);
+        
+        toast({
+          title: "Item Added",
+          description: `${newItem} has been added to your grocery list.`,
+        });
+      }
+      
       setNewItem('');
-      toast({
-        title: "Item Added",
-        description: `${newItem} has been added to your grocery list.`,
-      });
     }
   };
 

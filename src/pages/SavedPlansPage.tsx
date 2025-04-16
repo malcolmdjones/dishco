@@ -303,6 +303,17 @@ const SavedPlansPage = () => {
     );
   };
 
+  const handleConfirmGroceryAddition = () => {
+    if (currentMealPlan) {
+      handleConfirmGroceryAddition();
+      
+      toast({
+        title: "Success",
+        description: `Ingredients from ${currentMealPlan.name || 'your meal plan'} have been added to your grocery list.`,
+      });
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 animate-fade-in">
       <SavedPlansHeader title="Saved Plans" />
