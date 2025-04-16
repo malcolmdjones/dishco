@@ -35,12 +35,14 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
   const lastScannedCode = useRef<string | null>(null);
   const validationBuffer = useRef<{code: string, timestamp: number}[]>([]);
   
+  // Clean up on component unmount
   useEffect(() => {
     return () => {
       stopScanner();
     };
   }, []);
   
+  // Handle dialog open/close
   useEffect(() => {
     if (!isOpen) {
       stopScanner();
@@ -57,6 +59,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
     }
   }, [isOpen]);
   
+  // Handle mode changes
   useEffect(() => {
     if (isOpen) {
       if (showManualInput || showConfirmation) {
@@ -304,6 +307,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ isOpen, onClose, onFood
       macros: calculateAdjustedNutrition() || foundFood.macros
     };
     
+    // Pass the adjusted food to the parent component
     onFoodFound(adjustedFood);
     onClose();
   };
