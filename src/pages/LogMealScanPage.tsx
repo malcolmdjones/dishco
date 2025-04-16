@@ -419,17 +419,19 @@ const LogMealScanPage = () => {
           )}
         </div>
         
-        <div className="mt-6 flex justify-end">
+        <div className="mt-6 flex justify-end space-x-4 z-50 relative">
           <Button 
+            type="button"
             onClick={rescanItem}
             variant="outline"
-            className="mr-2"
+            className="px-5 py-2 z-50"
           >
             Rescan
           </Button>
           <Button 
+            type="button"
             onClick={continueToDetails}
-            className="bg-black hover:bg-gray-800 text-white rounded-full px-5 py-2"
+            className="bg-black hover:bg-gray-800 text-white rounded-full px-5 py-2 z-50"
           >
             Done <ArrowRight size={18} className="ml-1" />
           </Button>
