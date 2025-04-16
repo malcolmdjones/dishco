@@ -37,130 +37,142 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
       <CardContent className="p-6">
         <h3 className="text-xl font-semibold mb-6">Weekly Targets</h3>
         
-        <div className="space-y-6">
+        {/* Separator */}
+        <Separator className="mb-6" />
+        
+        <div className="space-y-8">
           {/* Calories */}
           <div className="flex items-center">
-            <div className="flex-1 relative">
-              {/* Goal line */}
-              <div className="absolute w-full h-[1px] top-1/2 bg-gray-200"></div>
-              
-              {/* Bars */}
-              <div className="flex justify-between items-end">
-                {weeklyNutrition.calories.map((day, index) => (
-                  <div key={`cal-${index}`} className="flex-1 flex justify-center">
-                    <div 
-                      className={`${macroColors.calories} w-5 rounded-t-lg`}
-                      style={{ 
-                        height: day > 0 ? `${Math.max(Math.min((day / userGoals.calories) * 100, 100), 4)}%` : '4px',
-                        maxHeight: '40px'
-                      }}
-                    />
-                  </div>
-                ))}
+            <div className="w-full flex items-center">
+              <div className="flex-1 relative">
+                {/* Bars */}
+                <div className="flex justify-between">
+                  {weeklyNutrition.calories.map((day, index) => (
+                    <div key={`cal-${index}`} className="flex-1 flex justify-center">
+                      <div 
+                        className={`${macroColors.calories} w-5 rounded-t-lg`}
+                        style={{ 
+                          height: day > 0 ? `${Math.max(Math.min((day / userGoals.calories) * 100, 100), 4)}%` : '4px',
+                          maxHeight: '40px'
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Line below bars */}
+                <div className="absolute w-full h-[1px] bg-gray-200 bottom-0"></div>
               </div>
-            </div>
-            
-            <div className="ml-6 flex items-center justify-end w-20">
-              <span className="text-2xl font-bold">1220</span>
-              <Flame className="ml-1 text-black" size={20} />
+              
+              <div className="flex items-center ml-4">
+                <span className="text-2xl font-bold">1220</span>
+                <Flame className="ml-1 text-black" size={20} />
+              </div>
             </div>
           </div>
           
+          {/* Separator */}
           <Separator />
           
           {/* Protein */}
           <div className="flex items-center">
-            <div className="flex-1 relative">
-              {/* Goal line */}
-              <div className="absolute w-full h-[1px] top-1/2 bg-gray-200"></div>
-              
-              {/* Bars */}
-              <div className="flex justify-between items-end">
-                {weeklyNutrition.protein.map((day, index) => (
-                  <div key={`prot-${index}`} className="flex-1 flex justify-center">
-                    <div 
-                      className={`${macroColors.protein} w-5 rounded-t-lg`}
-                      style={{ 
-                        height: day > 0 ? `${Math.max(Math.min((day / userGoals.protein) * 100, 100), 4)}%` : '4px',
-                        maxHeight: '40px'
-                      }}
-                    />
-                  </div>
-                ))}
+            <div className="w-full flex items-center">
+              <div className="flex-1 relative">
+                {/* Bars */}
+                <div className="flex justify-between">
+                  {weeklyNutrition.protein.map((day, index) => (
+                    <div key={`prot-${index}`} className="flex-1 flex justify-center">
+                      <div 
+                        className={`${macroColors.protein} w-5 rounded-t-lg`}
+                        style={{ 
+                          height: day > 0 ? `${Math.max(Math.min((day / userGoals.protein) * 100, 100), 4)}%` : '4px',
+                          maxHeight: '40px'
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Line below bars */}
+                <div className="absolute w-full h-[1px] bg-gray-200 bottom-0"></div>
               </div>
-            </div>
-            
-            <div className="ml-6 text-right w-20">
-              <span className="text-2xl font-bold">95P</span>
+              
+              <div className="ml-4">
+                <span className="text-2xl font-bold">95P</span>
+              </div>
             </div>
           </div>
           
+          {/* Separator */}
           <Separator />
           
           {/* Fat */}
           <div className="flex items-center">
-            <div className="flex-1 relative">
-              {/* Goal line */}
-              <div className="absolute w-full h-[1px] top-1/2 bg-gray-200"></div>
-              
-              {/* Bars */}
-              <div className="flex justify-between items-end">
-                {weeklyNutrition.fat.map((day, index) => (
-                  <div key={`fat-${index}`} className="flex-1 flex justify-center">
-                    <div 
-                      className={`${macroColors.fat} w-5 rounded-t-lg`}
-                      style={{ 
-                        height: day > 0 ? `${Math.max(Math.min((day / userGoals.fat) * 100, 100), 4)}%` : '4px',
-                        maxHeight: '40px'
-                      }}
-                    />
-                  </div>
-                ))}
+            <div className="w-full flex items-center">
+              <div className="flex-1 relative">
+                {/* Bars */}
+                <div className="flex justify-between">
+                  {weeklyNutrition.fat.map((day, index) => (
+                    <div key={`fat-${index}`} className="flex-1 flex justify-center">
+                      <div 
+                        className={`${macroColors.fat} w-5 rounded-t-lg`}
+                        style={{ 
+                          height: day > 0 ? `${Math.max(Math.min((day / userGoals.fat) * 100, 100), 4)}%` : '4px',
+                          maxHeight: '40px'
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Line below bars */}
+                <div className="absolute w-full h-[1px] bg-gray-200 bottom-0"></div>
               </div>
-            </div>
-            
-            <div className="ml-6 text-right w-20">
-              <span className="text-2xl font-bold">58F</span>
+              
+              <div className="ml-4">
+                <span className="text-2xl font-bold">58F</span>
+              </div>
             </div>
           </div>
           
+          {/* Separator */}
           <Separator />
           
           {/* Carbs */}
           <div className="flex items-center">
-            <div className="flex-1 relative">
-              {/* Goal line */}
-              <div className="absolute w-full h-[1px] top-1/2 bg-gray-200"></div>
-              
-              {/* Bars */}
-              <div className="flex justify-between items-end">
-                {weeklyNutrition.carbs.map((day, index) => (
-                  <div key={`carb-${index}`} className="flex-1 flex justify-center">
-                    <div 
-                      className={`${macroColors.carbs} w-5 rounded-t-lg`}
-                      style={{ 
-                        height: day > 0 ? `${Math.max(Math.min((day / userGoals.carbs) * 100, 100), 4)}%` : '4px',
-                        maxHeight: '40px'
-                      }}
-                    />
-                  </div>
-                ))}
+            <div className="w-full flex items-center">
+              <div className="flex-1 relative">
+                {/* Bars */}
+                <div className="flex justify-between">
+                  {weeklyNutrition.carbs.map((day, index) => (
+                    <div key={`carb-${index}`} className="flex-1 flex justify-center">
+                      <div 
+                        className={`${macroColors.carbs} w-5 rounded-t-lg`}
+                        style={{ 
+                          height: day > 0 ? `${Math.max(Math.min((day / userGoals.carbs) * 100, 100), 4)}%` : '4px',
+                          maxHeight: '40px'
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Line below bars */}
+                <div className="absolute w-full h-[1px] bg-gray-200 bottom-0"></div>
               </div>
-            </div>
-            
-            <div className="ml-6 text-right w-20">
-              <span className="text-2xl font-bold">87C</span>
+              
+              <div className="ml-4">
+                <span className="text-2xl font-bold">87C</span>
+              </div>
             </div>
           </div>
           
-          <Separator />
-          
-          {/* Day labels - Only under the bar charts, not extending to macro values */}
-          <div className="flex pr-[104px]"> {/* Add right padding to compensate for macro values width + margin */}
+          {/* Day labels - Only under the bar charts */}
+          <div className="flex pr-20"> {/* Add right padding to leave space for the values */}
             {dayLabels.map((day, index) => (
               <div 
                 key={`day-${index}`}
-                className={`flex-1 text-center text-base ${index === todayIndex ? 'text-gray-800' : 'text-gray-500'}`}
+                className={`flex-1 text-center text-base ${index === todayIndex ? 'text-gray-800' : 'text-gray-400'}`}
               >
                 {day}
               </div>
