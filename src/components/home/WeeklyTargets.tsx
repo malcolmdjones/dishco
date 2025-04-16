@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useWeeklyNutrition } from '@/hooks/useWeeklyNutrition';
@@ -57,7 +58,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                     <div 
                       key={`cal-${index}`} 
                       className={`flex flex-col items-center relative ${index === todayIndex ? 'bg-[#F1F1F1]' : ''}`}
-                      style={{ width: '14%' }}
+                      style={{ width: '14%', height: '100%' }}
                     >
                       <div 
                         className={`${macroColors.calories} w-4 rounded-t-md mt-auto`}
@@ -65,11 +66,6 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                           height: day > 0 ? `${Math.max(Math.min((day / userGoals.calories) * 100, 100), 5)}%` : '4px' 
                         }}
                       />
-                      
-                      {/* Day label directly below each bar */}
-                      <div className={`mt-2 text-sm ${index === todayIndex ? 'text-gray-600 font-medium' : 'text-gray-400'}`}>
-                        {dayLabels[index]}
-                      </div>
                     </div>
                   ))}
                 </div>
@@ -97,7 +93,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                     <div 
                       key={`prot-${index}`} 
                       className={`flex flex-col items-center relative ${index === todayIndex ? 'bg-[#F1F1F1]' : ''}`}
-                      style={{ width: '14%' }}
+                      style={{ width: '14%', height: '100%' }}
                     >
                       <div 
                         className={`${macroColors.protein} w-4 rounded-t-md mt-auto`}
@@ -105,11 +101,6 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                           height: day > 0 ? `${Math.max(Math.min((day / userGoals.protein) * 100, 100), 5)}%` : '4px' 
                         }}
                       />
-                      
-                      {/* Day label directly below each bar */}
-                      <div className={`mt-2 text-sm ${index === todayIndex ? 'text-gray-600 font-medium' : 'text-gray-400'}`}>
-                        {dayLabels[index]}
-                      </div>
                     </div>
                   ))}
                 </div>
@@ -137,7 +128,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                     <div 
                       key={`fat-${index}`} 
                       className={`flex flex-col items-center relative ${index === todayIndex ? 'bg-[#F1F1F1]' : ''}`}
-                      style={{ width: '14%' }}
+                      style={{ width: '14%', height: '100%' }}
                     >
                       <div 
                         className={`${macroColors.fat} w-4 rounded-t-md mt-auto`}
@@ -145,11 +136,6 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                           height: day > 0 ? `${Math.max(Math.min((day / userGoals.fat) * 100, 100), 5)}%` : '4px' 
                         }}
                       />
-                      
-                      {/* Day label directly below each bar */}
-                      <div className={`mt-2 text-sm ${index === todayIndex ? 'text-gray-600 font-medium' : 'text-gray-400'}`}>
-                        {dayLabels[index]}
-                      </div>
                     </div>
                   ))}
                 </div>
@@ -177,7 +163,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                     <div 
                       key={`carb-${index}`} 
                       className={`flex flex-col items-center relative ${index === todayIndex ? 'bg-[#F1F1F1]' : ''}`}
-                      style={{ width: '14%' }}
+                      style={{ width: '14%', height: '100%' }}
                     >
                       <div 
                         className={`${macroColors.carbs} w-4 rounded-t-md mt-auto`}
@@ -185,16 +171,23 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                           height: day > 0 ? `${Math.max(Math.min((day / userGoals.carbs) * 100, 100), 5)}%` : '4px' 
                         }}
                       />
-                      
-                      {/* Day label directly below each bar */}
-                      <div className={`mt-2 text-sm ${index === todayIndex ? 'text-gray-600 font-medium' : 'text-gray-400'}`}>
-                        {dayLabels[index]}
-                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
+          </div>
+          
+          {/* Day labels at the bottom of the section */}
+          <div className="flex justify-between px-24">
+            {dayLabels.map((day, index) => (
+              <div 
+                key={`day-label-${index}`}
+                className={`text-sm ${index === todayIndex ? 'text-gray-600 font-medium' : 'text-gray-400'}`}
+              >
+                {day}
+              </div>
+            ))}
           </div>
         </div>
       </CardContent>

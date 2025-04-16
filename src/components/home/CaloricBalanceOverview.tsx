@@ -44,7 +44,7 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
     >
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">Caloric Balance</h3>
+          <h3 className="text-lg font-medium">Average Daily Calories – Last 7 Days</h3>
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20">
             <ChevronRight className="h-4 w-4 text-white" />
           </div>
@@ -125,7 +125,7 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
         
         {missingLogDays > 0 && (
           <div className="mt-1 rounded-lg bg-white/10 px-3 py-2 text-xs">
-            <strong>Note:</strong> Add logs for {missingLogDays} missing {missingLogDays === 1 ? 'day' : 'days'} for a more accurate average.
+            <strong>Note:</strong> Add entries for {missingLogDays} missing {missingLogDays === 1 ? 'day' : 'days'} to get a more accurate trend.
           </div>
         )}
       </CardContent>
