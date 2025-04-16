@@ -271,9 +271,6 @@ const LogMealScanPage = () => {
         protein: 7,
         carbs: 42,
         fat: 1,
-        fiber: 2,
-        sugar: 2,
-        sodium: 0,
         servingSize: "2/3 cup (56g)"
       };
       

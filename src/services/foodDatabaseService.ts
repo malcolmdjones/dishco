@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ExternalFood, FoodDatabaseItem, BarcodeResponse } from "@/types/food";
 import { Recipe } from "@/data/mockData";

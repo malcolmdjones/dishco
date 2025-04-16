@@ -44,6 +44,12 @@ export interface FoodDatabaseItem {
     protein: number;
     carbs: number;
     fat: number;
+    fiber?: number;
+    sugar?: number;
+    sodium?: number;
+    cholesterol?: number;
+    saturatedFat?: number;
+    transFat?: number;
   };
   servingSize?: string;
   servingUnit?: string;
@@ -114,7 +120,13 @@ export interface NutritionLabelData {
   protein?: number;
   carbs?: number;
   fat?: number;
+  fiber?: number;
+  sugar?: number;
+  sodium?: number;
   servingSize?: string;
+  saturatedFat?: number;
+  transFat?: number;
+  cholesterol?: number;
 }
 
 // Add quick add types
