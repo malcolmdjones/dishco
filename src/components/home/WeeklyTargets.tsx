@@ -12,7 +12,7 @@ interface WeeklyTargetsProps {
 const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
   const { weeklyNutrition, userGoals } = useWeeklyNutrition(selectedDate);
   
-  // Day labels at the bottom (single letters)
+  // Day labels (single letters)
   const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   
   // Color classes for different macros - using pastel colors
@@ -140,7 +140,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
               <div className="text-2xl font-bold">87C</div>
             </div>
             
-            <div className="flex-1">
+            <div className="flex-1 relative">
               {/* Horizontal goal line */}
               <div className="relative h-16 w-full">
                 <div className="absolute top-[30%] w-full h-[1px] bg-gray-300"></div>
@@ -155,27 +155,17 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                           height: day > 0 ? `${Math.max(Math.min((day / userGoals.carbs) * 100, 100), 5)}%` : '4px' 
                         }}
                       />
+                      
+                      {/* Day label directly below each bar */}
+                      <div className="mt-2 text-gray-400 text-sm">
+                        {dayLabels[index]}
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
-              
-              {/* Bottom separator */}
-              <Separator className="mt-1" />
             </div>
           </div>
-        </div>
-        
-        {/* Day labels */}
-        <div className="flex mt-2 justify-between">
-          {dayLabels.map((day, index) => (
-            <div 
-              key={`day-${index}`}
-              className={`text-center text-sm w-4 ${index === todayIndex ? 'text-gray-500 font-medium' : 'text-gray-400'}`}
-            >
-              {day}
-            </div>
-          ))}
         </div>
       </CardContent>
     </Card>
@@ -183,4 +173,3 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
 };
 
 export default WeeklyTargets;
-
