@@ -26,12 +26,17 @@ const MacroBarChart: React.FC<MacroBarChartProps> = ({
     <div className="flex-1 flex items-end justify-center h-full">
       {value > 0 && (
         <div 
-          className={`${color} rounded-t-full w-8 transition-all duration-300 ease-in-out`}
+          className={`${color} rounded-t-full w-8 transition-all duration-300 ease-in-out relative`}
           style={{ 
             height: `${Math.max(percentage, 4)}%`, 
             maxHeight: '100%'
           }}
-        />
+        >
+          {/* Add indicator when exceeding goal */}
+          {exceedsGoal && (
+            <div className="absolute -top-1 left-0 right-0 h-1 bg-red-400 rounded-full" />
+          )}
+        </div>
       )}
       {value === 0 && (
         <div className={`${color} w-8 h-1 rounded-full`} />

@@ -34,7 +34,7 @@ const MacroRow: React.FC<MacroRowProps> = ({
       
       {/* Chart container */}
       <div className="relative h-16 w-full">
-        {/* Horizontal goal lines - dotted line across at 100% */}
+        {/* Horizontal goal line at 100% */}
         <div className="absolute top-0 w-full h-full">
           <div className="absolute top-0 w-full h-full border-t border-gray-200 border-dashed z-0"></div>
         </div>
