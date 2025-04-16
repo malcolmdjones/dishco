@@ -74,9 +74,10 @@ const LogMealPage = () => {
     }
   ];
   
-  // Mock search results based on the query
+  // Process search query when typing
   useEffect(() => {
-    if (searchQuery.length > 0) {
+    // Show search UI when user types anything
+    if (searchQuery.trim().length > 0) {
       setIsSearching(true);
       
       // Generate mock suggested searches
@@ -189,6 +190,17 @@ const LogMealPage = () => {
             </button>
           )}
         </div>
+        
+        {/* Show search all foods button immediately when typing */}
+        {searchQuery.trim().length > 0 && !isSearching && (
+          <div 
+            className="flex items-center p-3 mb-4 bg-blue-50 rounded-lg cursor-pointer text-blue-600 border border-blue-100"
+            onClick={handleFullSearch}
+          >
+            <Search size={18} className="mr-3" />
+            <span>Search all foods for: "{searchQuery}"</span>
+          </div>
+        )}
       </div>
 
       <AnimatePresence mode="wait">
