@@ -156,6 +156,11 @@ const LogMealSearchPage = () => {
     navigate(`/log-meal/quick-add?name=${encodeURIComponent(searchQuery)}`);
   };
 
+  const handleFullSearch = (e: React.MouseEvent) => {
+    e.preventDefault();
+    handleSearch();
+  };
+
   return (
     <div className="h-full bg-white">
       <div className="flex items-center justify-between p-3 border-b sticky top-0 bg-white z-10">
@@ -365,7 +370,7 @@ const LogMealSearchPage = () => {
                     
                     <div 
                       className="flex items-center p-3 bg-blue-50 rounded-lg cursor-pointer text-blue-600 border border-blue-100 w-full"
-                      onClick={handleSearch}
+                      onClick={handleFullSearch}
                     >
                       <Search size={18} className="mr-3" />
                       <span>Search all foods for: "{searchQuery}"</span>

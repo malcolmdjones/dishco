@@ -135,7 +135,7 @@ const LogMealQuickAddPage = () => {
       prep_time_minutes: 0,
       externalSource: false,
       instructions: [],
-      image: imageSource
+      imageSrc: imageSource
     };
     
     // Log the meal
@@ -153,7 +153,7 @@ const LogMealQuickAddPage = () => {
       protein: formData.protein > 0 ? `${formData.protein}g protein` : '',
       servingInfo: '1 serving',
       source: 'Quick Add',
-      image: imageSource
+      imageSrc: imageSource
     };
     
     const updatedLoggedMeals = [newMeal, ...existingLoggedMeals];

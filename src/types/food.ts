@@ -37,6 +37,7 @@ export interface LoggedMeal {
   brand?: string;
   servingInfo?: string;
   source?: string;
+  imageSrc?: string;
 }
 
 export interface FoodDatabaseItem {
