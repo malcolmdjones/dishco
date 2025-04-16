@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -301,17 +302,6 @@ const SavedPlansPage = () => {
         ))}
       </>
     );
-  };
-
-  const handleConfirmGroceryAddition = () => {
-    if (currentMealPlan) {
-      handleConfirmGroceryAddition();
-      
-      toast({
-        title: "Success",
-        description: `Ingredients from ${currentMealPlan.name || 'your meal plan'} have been added to your grocery list.`,
-      });
-    }
   };
 
   return (
