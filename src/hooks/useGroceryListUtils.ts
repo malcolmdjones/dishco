@@ -1,4 +1,3 @@
-
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
@@ -109,40 +108,118 @@ export const useGroceryListUtils = () => {
     });
   };
   
+  // Parse a quantity string to a number if possible
+  const parseQuantity = (quantityStr: string): number => {
+    // Try to parse the quantity - handle fractions, decimals, etc.
+    if (!quantityStr) return 1;
+    
+    // Handle common fractions
+    if (quantityStr.includes('/')) {
+      const parts = quantityStr.split('/');
+      if (parts.length === 2) {
+        const numerator = parseFloat(parts[0]);
+        const denominator = parseFloat(parts[1]);
+        if (!isNaN(numerator) && !isNaN(denominator) && denominator !== 0) {
+          return numerator / denominator;
+        }
+      }
+    }
+    
+    // Handle mixed numbers (like "1 1/2")
+    const mixedMatch = quantityStr.match(/(\d+)\s+(\d+)\/(\d+)/);
+    if (mixedMatch) {
+      const whole = parseFloat(mixedMatch[1]);
+      const numerator = parseFloat(mixedMatch[2]);
+      const denominator = parseFloat(mixedMatch[3]);
+      if (!isNaN(whole) && !isNaN(numerator) && !isNaN(denominator) && denominator !== 0) {
+        return whole + (numerator / denominator);
+      }
+    }
+    
+    // Try simple number parsing
+    const parsed = parseFloat(quantityStr);
+    return isNaN(parsed) ? 1 : parsed;
+  };
+  
+  // Format quantity for display
+  const formatQuantity = (quantity: number): string => {
+    // If it's a whole number, display as integer
+    if (Number.isInteger(quantity)) {
+      return quantity.toString();
+    }
+    
+    // Check if it's a simple fraction
+    const fractions: Record<number, string> = {
+      0.25: '1/4',
+      0.5: '1/2',
+      0.75: '3/4',
+      0.33: '1/3',
+      0.67: '2/3',
+      0.2: '1/5',
+      0.4: '2/5',
+      0.6: '3/5',
+      0.8: '4/5'
+    };
+    
+    // Try to match with common fractions
+    for (const [decimal, fraction] of Object.entries(fractions)) {
+      if (Math.abs(quantity - parseFloat(decimal)) < 0.01) {
+        return fraction;
+      }
+    }
+    
+    // For mixed numbers
+    if (quantity > 1) {
+      const whole = Math.floor(quantity);
+      const decimal = quantity - whole;
+      
+      // Try to match the decimal part with common fractions
+      for (const [dec, fraction] of Object.entries(fractions)) {
+        if (Math.abs(decimal - parseFloat(dec)) < 0.01) {
+          return `${whole} ${fraction}`;
+        }
+      }
+    }
+    
+    // Default to 1 decimal place
+    return quantity.toFixed(1);
+  };
+  
   // Helper function to process a single ingredient
   const processIngredient = (ingredient: any, map: Map<string, Ingredient>) => {
     // Handle different ingredient formats
-    let name, quantity, unit;
+    let name, quantityStr, unit;
     
     if (typeof ingredient === 'string') {
       // Parse string format like "1 cup flour"
       const parts = ingredient.trim().split(/\s+/);
       if (parts.length >= 2) {
-        quantity = parts[0];
+        quantityStr = parts[0];
         name = parts.slice(1).join(' ');
         
         // Try to extract unit if present
         if (parts.length >= 3) {
           const commonUnits = ['cup', 'cups', 'tbsp', 'tsp', 'oz', 'g', 'kg', 'lb', 'ml', 'l'];
           if (commonUnits.includes(parts[1].toLowerCase())) {
-            quantity = parts[0];
+            quantityStr = parts[0];
             unit = parts[1];
             name = parts.slice(2).join(' ');
           }
         }
       } else {
         name = ingredient;
-        quantity = "1";
+        quantityStr = "1";
       }
     } else if (typeof ingredient === 'object' && ingredient !== null) {
       // Handle object format
       if ('name' in ingredient) {
         name = ingredient.name;
-        quantity = ingredient.quantity || "1";
+        quantityStr = ingredient.quantity || "1";
         unit = ingredient.unit;
       } else if ('ingredient' in ingredient) {
         name = ingredient.ingredient;
-        quantity = ingredient.quantity || "1";
+        quantityStr = ingredient.quantity || "1";
+        unit = ingredient.unit;
       }
     }
     
@@ -150,31 +227,30 @@ export const useGroceryListUtils = () => {
     if (!name) return;
     
     const normalizedName = name.toLowerCase().trim();
+    const quantity = parseQuantity(quantityStr || "1");
     
     if (map.has(normalizedName)) {
-      // If ingredient already exists, try to combine quantities
+      // If ingredient already exists, combine quantities
       const existingIngredient = map.get(normalizedName)!;
       
-      let newQty = 1;
-      // Handle both numeric quantities and string quantities
-      try {
-        const existingQty = parseInt(existingIngredient.quantity || "1");
-        const ingredientQty = parseInt(quantity || "1");
-        newQty = existingQty + ingredientQty;
-      } catch (e) {
-        console.warn('Error parsing quantities, defaulting to incremental:', e);
-        newQty = parseInt(existingIngredient.quantity || "1") + 1;
-      }
+      // Parse existing quantity
+      const existingQuantity = parseQuantity(existingIngredient.quantity);
       
-      existingIngredient.quantity = newQty.toString();
+      // Add the quantities
+      const newQuantity = existingQuantity + quantity;
+      
+      // Update with the combined quantity and keep the unit if available
+      existingIngredient.quantity = formatQuantity(newQuantity);
+      if (!existingIngredient.unit && unit) {
+        existingIngredient.unit = unit;
+      }
     } else {
       // Add new ingredient to map
       map.set(normalizedName, {
         name,
         checked: false,
-        // Ensure quantity is a string
-        quantity: quantity || "1",
-        unit: unit
+        quantity: formatQuantity(quantity),
+        unit: unit || ''
       });
     }
   };
@@ -216,12 +292,14 @@ export const useGroceryListUtils = () => {
         if (existingItemsMap.has(normalizedName)) {
           // Update existing item quantity
           const existingItem = existingItemsMap.get(normalizedName);
-          try {
-            const newQty = parseInt(existingItem.quantity) + parseInt(ingredient.quantity || "1");
-            existingItem.quantity = newQty.toString();
-          } catch (e) {
-            console.warn('Error updating quantity, incrementing by 1:', e);
-            existingItem.quantity = (parseInt(existingItem.quantity) + 1).toString();
+          const existingQuantity = parseQuantity(existingItem.quantity);
+          const ingredientQuantity = parseQuantity(ingredient.quantity);
+          const newQuantity = existingQuantity + ingredientQuantity;
+          
+          existingItem.quantity = formatQuantity(newQuantity);
+          // Keep the unit if it exists
+          if (!existingItem.unit && ingredient.unit) {
+            existingItem.unit = ingredient.unit;
           }
         } else {
           // Add as new item
@@ -229,8 +307,8 @@ export const useGroceryListUtils = () => {
             id: `ingredient-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             name: ingredient.name,
             category: ingredient.category || 'Other',
-            quantity: ingredient.quantity || "1",
-            unit: ingredient.unit || 'item(s)',
+            quantity: ingredient.quantity,
+            unit: ingredient.unit || '',
             checked: false
           });
         }

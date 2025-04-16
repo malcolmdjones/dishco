@@ -298,7 +298,16 @@ const GroceryItem: React.FC<GroceryItemProps> = ({
   onUndo,
   isBeingAnimated = false 
 }) => {
-  const quantityNum = parseInt(item.quantity) || 1;
+  const formatQuantityWithUnit = () => {
+    if (!item.quantity && !item.unit) return '';
+    
+    let displayQuantity = item.quantity || '';
+    const displayUnit = item.unit || '';
+    
+    return `${displayQuantity} ${displayUnit}`.trim();
+  };
+  
+  const quantityDisplay = formatQuantityWithUnit();
   
   return (
     <div 
@@ -326,9 +335,9 @@ const GroceryItem: React.FC<GroceryItemProps> = ({
         </p>
       </div>
       
-      {quantityNum > 1 && (
+      {quantityDisplay && (
         <div className="bg-gray-100 rounded-full px-2 py-0.5 mr-2">
-          <span className="text-xs font-medium">x{item.quantity}</span>
+          <span className="text-xs font-medium">{quantityDisplay}</span>
         </div>
       )}
       
