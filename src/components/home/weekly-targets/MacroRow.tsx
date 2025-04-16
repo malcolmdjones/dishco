@@ -25,7 +25,7 @@ const MacroRow: React.FC<MacroRowProps> = ({
   const hasExceededGoal = values.some(value => value > goalValue);
   
   return (
-    <div className="flex flex-col mb-4">
+    <div className="flex flex-col mb-2"> {/* Reduced margin bottom */}
       {/* Label */}
       <div className="flex items-center mb-1">
         <span className="text-xl font-bold text-gray-900">{label}</span>
@@ -33,7 +33,7 @@ const MacroRow: React.FC<MacroRowProps> = ({
       </div>
       
       {/* Chart container */}
-      <div className="relative h-12 w-full">
+      <div className="relative h-10 w-full"> {/* Reduced height */}
         {/* Bars container */}
         <div className="absolute bottom-0 w-full h-full flex z-10">
           {values.map((value, index) => (
