@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Area, AreaChart, ResponsiveContainer, XAxis, Line, LineChart, ReferenceLine, Dot, CartesianGrid } from 'recharts';
-import { ArrowDown, ArrowRight, ArrowUp, ChevronRight } from 'lucide-react';
+import { Line, LineChart, XAxis, YAxis, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
+import { ArrowDown, ArrowUp, ChevronRight } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
@@ -28,11 +28,13 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
   const isDeficit = dailyDifference < 0;
   const isSurplus = dailyDifference > 0;
   
-  // Estimate weight change per week (3500 kcal ≈ 1 lb)
   const weightChangePerWeek = Math.abs(dailyDifference * 7 / 3500).toFixed(1);
   
-  const formatDay = (dateStr: string) => {
-    return format(parseISO(dateStr), 'd');
+  const dayAbbreviations = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  
+  const formatXAxis = (dateStr: string) => {
+    const date = parseISO(dateStr);
+    return dayAbbreviations[date.getDay()];
   };
 
   return (
@@ -77,16 +79,23 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
           <ResponsiveContainer width="100%" height="100%">
             <LineChart 
               data={weeklyData} 
-              margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
+              margin={{ top: 5, right: 10, left: -15, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff33" vertical={false} />
               <XAxis 
                 dataKey="date"
-                tickFormatter={formatDay}
+                tickFormatter={formatXAxis}
                 axisLine={{ stroke: '#ffffff33' }}
                 tickLine={false}
                 tick={{ fill: 'white', fontSize: 12 }}
                 dy={5}
+              />
+              <YAxis 
+                tickFormatter={(value) => Math.round(value).toString()}
+                axisLine={{ stroke: '#ffffff33' }}
+                tickLine={false}
+                tick={{ fill: 'white', fontSize: 12 }}
+                width={30}
               />
               <ReferenceLine 
                 y={targetCalories} 
