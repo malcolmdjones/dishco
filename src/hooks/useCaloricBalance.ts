@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { addDays, format, isEqual, parseISO, startOfDay, subDays } from 'date-fns';
+import { addDays, format, isEqual, parseISO, startOfDay, startOfWeek, subDays } from 'date-fns';
 import { defaultGoals } from '@/data/mockData';
 
 export const useCaloricBalance = (selectedDate: Date) => {
@@ -14,8 +14,8 @@ export const useCaloricBalance = (selectedDate: Date) => {
   const [missingLogDays, setMissingLogDays] = useState(0);
 
   useEffect(() => {
-    // Calculate the start date (6 days ago) to show a 7-day period including today
-    const startDate = subDays(selectedDate, 6);
+    // Calculate the start of the week (Monday)
+    const monday = startOfWeek(selectedDate, { weekStartsOn: 1 });
     
     // Get the user's target calories from storage or use default
     const userGoals = JSON.parse(localStorage.getItem('nutritionGoals') || JSON.stringify(defaultGoals));
@@ -28,10 +28,11 @@ export const useCaloricBalance = (selectedDate: Date) => {
     let totalCalories = 0;
     let daysWithLogs = 0;
     let missingDays = 0;
+    const today = startOfDay(new Date());
     
-    // Generate data for each day in the week
+    // Generate data for each day in the week (Monday to Sunday)
     for (let i = 0; i < 7; i++) {
-      const currentDate = addDays(startDate, i);
+      const currentDate = addDays(monday, i);
       const formattedDate = format(currentDate, 'yyyy-MM-dd');
       const currentDateStart = startOfDay(currentDate);
       
@@ -50,21 +51,23 @@ export const useCaloricBalance = (selectedDate: Date) => {
         }
       });
       
-      // Only count days with some logged calories for the average
-      if (dayCalories > 0) {
-        totalCalories += dayCalories;
-        daysWithLogs++;
-      } else {
-        // If the day has passed and no calories logged, count as missing
-        const today = startOfDay(new Date());
-        if (currentDateStart <= today) {
+      // Only include days up to today in the statistics
+      if (currentDateStart <= today) {
+        // Only count days with some logged calories for the average
+        if (dayCalories > 0) {
+          totalCalories += dayCalories;
+          daysWithLogs++;
+        } else {
           missingDays++;
         }
       }
       
+      // For future days or today with no logs, set calories to null for the chart
+      const caloriesValue = currentDateStart > today ? null : dayCalories;
+      
       weekData.push({
         date: formattedDate,
-        calories: dayCalories,
+        calories: caloriesValue,
         target: userGoals.calories
       });
     }

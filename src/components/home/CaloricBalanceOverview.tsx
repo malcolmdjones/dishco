@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 interface CaloricBalanceOverviewProps {
   weeklyData: {
     date: string;
-    calories: number;
+    calories: number | null;
     target: number;
   }[];
   averageCalories: number;
@@ -30,11 +30,25 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
   
   const weightChangePerWeek = Math.abs(dailyDifference * 7 / 3500).toFixed(1);
   
-  const dayAbbreviations = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const dayAbbreviations = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  
+  // Calculate dynamic Y-axis domain based on data and target
+  const allValues = weeklyData
+    .map(item => item.calories)
+    .filter(value => value !== null) as number[];
+  
+  const minDataValue = Math.min(...allValues, targetCalories * 0.7);
+  const maxDataValue = Math.max(...allValues, targetCalories * 1.3);
+  
+  // Ensure there's always at least 30% padding around the target line
+  const yAxisMin = Math.floor(minDataValue * 0.9);
+  const yAxisMax = Math.ceil(maxDataValue * 1.1);
   
   const formatXAxis = (dateStr: string) => {
+    if (!dateStr) return '';
     const date = parseISO(dateStr);
-    return dayAbbreviations[date.getDay()];
+    const dayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1; // Convert to 0 = Monday, 6 = Sunday
+    return dayAbbreviations[dayIndex];
   };
 
   return (
@@ -91,6 +105,7 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
                 dy={5}
               />
               <YAxis 
+                domain={[yAxisMin, yAxisMax]}
                 tickFormatter={(value) => Math.round(value).toString()}
                 axisLine={{ stroke: '#ffffff33' }}
                 tickLine={false}

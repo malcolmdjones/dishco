@@ -6,7 +6,7 @@ interface DayLabelsProps {
 }
 
 const DayLabels: React.FC<DayLabelsProps> = ({ todayIndex }) => {
-  // Day labels (single letters)
+  // Day labels (Monday to Sunday)
   const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   
   return (

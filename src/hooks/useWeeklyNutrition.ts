@@ -59,23 +59,21 @@ export const useWeeklyNutrition = (selectedDate: Date) => {
       if (!meal.loggedAt || !meal.consumed) return;
       
       const mealDate = startOfDay(parseISO(meal.loggedAt));
-      const dayOfWeek = mealDate.getDay() - 1; // 0 = Monday, -1 = Sunday
-      const dayIndex = dayOfWeek === -1 ? 6 : dayOfWeek; // Adjust Sunday to be index 6
       
       // Check if meal is within current week
       const mealDay = new Date(mealDate);
-      let isInCurrentWeek = false;
+      let dayIndex = -1;
       
-      // Check each day of the week
+      // Check each day of the week (0 = Monday, 6 = Sunday)
       for (let i = 0; i < 7; i++) {
         const currentWeekDay = addDays(monday, i);
         if (isEqual(startOfDay(currentWeekDay), startOfDay(mealDay))) {
-          isInCurrentWeek = true;
+          dayIndex = i;
           break;
         }
       }
       
-      if (isInCurrentWeek && meal.recipe && meal.recipe.macros) {
+      if (dayIndex >= 0 && meal.recipe && meal.recipe.macros) {
         weekData.calories[dayIndex] += meal.recipe.macros.calories || 0;
         weekData.protein[dayIndex] += meal.recipe.macros.protein || 0;
         weekData.carbs[dayIndex] += meal.recipe.macros.carbs || 0;
