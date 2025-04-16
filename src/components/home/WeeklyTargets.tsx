@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useWeeklyNutrition } from '@/hooks/useWeeklyNutrition';
+import { Flame } from 'lucide-react';
 
 interface WeeklyTargetsProps {
   selectedDate: Date;
@@ -11,7 +12,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
   const { weeklyNutrition, userGoals } = useWeeklyNutrition(selectedDate);
   
   // Day labels at the bottom
-  const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   
   // Color classes for different macros
   const macroColors = {
@@ -59,14 +60,14 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
         <div className="space-y-6">
           {/* Calories */}
           <div className="flex items-center gap-4">
-            <div className="w-24 flex-none">
+            <div className="w-24 flex-none flex items-center">
               <div className="text-xl font-bold">{weeklyNutrition.totalCalories}</div>
-              <div className="text-xs text-gray-500">{userGoals.calories * 7}</div>
+              <Flame className="ml-1 text-[#ea384c]" size={18} />
             </div>
             
             <div className="flex-1 flex items-end space-x-1 px-1 relative">
-              {/* Goal line for calories */}
-              <div className="absolute w-full h-[1px] bg-gray-300 z-10" style={{ bottom: `${100}%` }}></div>
+              {/* Goal line for calories - positioned at 90% from the bottom for headroom */}
+              <div className="absolute w-full h-[1px] bg-gray-300 z-10" style={{ bottom: `${90}%` }}></div>
               
               {weeklyNutrition.calories.map((day, index) => (
                 <div 
@@ -88,12 +89,11 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
           <div className="flex items-center gap-4">
             <div className="w-24 flex-none">
               <div className="text-xl font-bold">{weeklyNutrition.totalProtein}P</div>
-              <div className="text-xs text-gray-500">{userGoals.protein * 7}</div>
             </div>
             
             <div className="flex-1 flex items-end space-x-1 px-1 relative">
-              {/* Goal line for protein */}
-              <div className="absolute w-full h-[1px] bg-gray-300 z-10" style={{ bottom: `${100}%` }}></div>
+              {/* Goal line for protein - positioned at 90% from the bottom for headroom */}
+              <div className="absolute w-full h-[1px] bg-gray-300 z-10" style={{ bottom: `${90}%` }}></div>
               
               {weeklyNutrition.protein.map((day, index) => (
                 <div 
@@ -115,12 +115,11 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
           <div className="flex items-center gap-4">
             <div className="w-24 flex-none">
               <div className="text-xl font-bold">{weeklyNutrition.totalFat}F</div>
-              <div className="text-xs text-gray-500">{userGoals.fat * 7}</div>
             </div>
             
             <div className="flex-1 flex items-end space-x-1 px-1 relative">
-              {/* Goal line for fat */}
-              <div className="absolute w-full h-[1px] bg-gray-300 z-10" style={{ bottom: `${100}%` }}></div>
+              {/* Goal line for fat - positioned at 90% from the bottom for headroom */}
+              <div className="absolute w-full h-[1px] bg-gray-300 z-10" style={{ bottom: `${90}%` }}></div>
               
               {weeklyNutrition.fat.map((day, index) => (
                 <div 
@@ -142,12 +141,11 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
           <div className="flex items-center gap-4">
             <div className="w-24 flex-none">
               <div className="text-xl font-bold">{weeklyNutrition.totalCarbs}C</div>
-              <div className="text-xs text-gray-500">{userGoals.carbs * 7}</div>
             </div>
             
             <div className="flex-1 flex items-end space-x-1 px-1 relative">
-              {/* Goal line for carbs */}
-              <div className="absolute w-full h-[1px] bg-gray-300 z-10" style={{ bottom: `${100}%` }}></div>
+              {/* Goal line for carbs - positioned at 90% from the bottom for headroom */}
+              <div className="absolute w-full h-[1px] bg-gray-300 z-10" style={{ bottom: `${90}%` }}></div>
               
               {weeklyNutrition.carbs.map((day, index) => (
                 <div 
@@ -171,7 +169,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
           {dayLabels.map((day, index) => (
             <div 
               key={`day-${index}`}
-              className={`flex-1 text-center text-sm ${index === todayIndex ? 'text-black font-medium' : 'text-gray-400'}`}
+              className={`flex-1 text-center text-xs ${index === todayIndex ? 'text-black font-medium' : 'text-gray-400'}`}
             >
               {day}
             </div>
