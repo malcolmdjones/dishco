@@ -8,7 +8,6 @@ import DateSelector from '@/components/home/DateSelector';
 import DailyNutritionSummary from '@/components/home/DailyNutritionSummary';
 import MealsList from '@/components/home/MealsList';
 import CaloricBalanceOverview from '@/components/home/CaloricBalanceOverview';
-import StreakCounter from '@/components/home/StreakCounter';
 import WeeklyTargets from '@/components/home/WeeklyTargets';
 import { useCaloricBalance } from '@/hooks/useCaloricBalance';
 import { useStreakData } from '@/hooks/useStreakData';
@@ -44,8 +43,6 @@ const HomePage = () => {
         <h1 className="text-2xl font-bold">Hi there 👋</h1>
         <p className="text-dishco-text-light">Track your meals and plan for the week</p>
       </header>
-      
-      <StreakCounter streak={streak} todayLogged={todayLogged} />
       
       <DateSelector 
         selectedDate={selectedDate}
