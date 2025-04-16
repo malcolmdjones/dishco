@@ -5,6 +5,7 @@ export interface GroceryItem {
   category: string;
   quantity: string;
   checked: boolean;
+  unit?: string; // Added unit property as optional
 }
 
 export interface Recipe {
