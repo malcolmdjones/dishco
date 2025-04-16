@@ -57,7 +57,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                   {weeklyNutrition.calories.map((day, index) => (
                     <div key={`cal-${index}`} className="h-16 flex items-end">
                       <div 
-                        className={`${macroColors.calories} w-8 rounded-t-md`}
+                        className={`${macroColors.calories} w-4 rounded-t-md`} // Made bar slimmer (w-4 instead of w-8)
                         style={{ 
                           height: day > 0 ? `${Math.max(Math.min((day / userGoals.calories) * 100, 100), 5)}%` : '4px' 
                         }}
@@ -88,7 +88,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                   {weeklyNutrition.protein.map((day, index) => (
                     <div key={`prot-${index}`} className="h-16 flex items-end">
                       <div 
-                        className={`${macroColors.protein} w-8 rounded-t-md`}
+                        className={`${macroColors.protein} w-4 rounded-t-md`} // Made bar slimmer
                         style={{ 
                           height: day > 0 ? `${Math.max(Math.min((day / userGoals.protein) * 100, 100), 5)}%` : '4px' 
                         }}
@@ -119,7 +119,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                   {weeklyNutrition.fat.map((day, index) => (
                     <div key={`fat-${index}`} className="h-16 flex items-end">
                       <div 
-                        className={`${macroColors.fat} w-8 rounded-t-md`}
+                        className={`${macroColors.fat} w-4 rounded-t-md`} // Made bar slimmer
                         style={{ 
                           height: day > 0 ? `${Math.max(Math.min((day / userGoals.fat) * 100, 100), 5)}%` : '4px' 
                         }}
@@ -150,7 +150,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                   {weeklyNutrition.carbs.map((day, index) => (
                     <div key={`carb-${index}`} className="h-16 flex items-end">
                       <div 
-                        className={`${macroColors.carbs} w-8 rounded-t-md`}
+                        className={`${macroColors.carbs} w-4 rounded-t-md`} // Made bar slimmer
                         style={{ 
                           height: day > 0 ? `${Math.max(Math.min((day / userGoals.carbs) * 100, 100), 5)}%` : '4px' 
                         }}
@@ -167,11 +167,11 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
         </div>
         
         {/* Day labels */}
-        <div className="flex mt-2 px-4 justify-between">
+        <div className="flex mt-2 justify-between">
           {dayLabels.map((day, index) => (
             <div 
               key={`day-${index}`}
-              className={`text-center text-sm ${index === todayIndex ? 'text-gray-500 font-medium' : 'text-gray-400'}`}
+              className={`text-center text-sm w-4 ${index === todayIndex ? 'text-gray-500 font-medium' : 'text-gray-400'}`}
             >
               {day}
             </div>
