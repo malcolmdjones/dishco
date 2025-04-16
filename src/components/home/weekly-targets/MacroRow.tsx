@@ -24,21 +24,22 @@ const MacroRow: React.FC<MacroRowProps> = ({
   isLastRow = false
 }) => {
   return (
-    <div className="flex items-center gap-4">
-      <div className="w-20 flex-none text-left">
+    <div className="flex items-center gap-4 mb-2">
+      <div className="w-24 flex-none text-left">
         <div className="flex items-center">
-          <span className="text-2xl font-bold">{label}</span>
+          <span className="text-3xl font-bold">{label}</span>
           {icon}
         </div>
       </div>
       
       <div className="flex-1">
+        {/* Separator above the charts */}
+        <Separator className="mb-4" />
+        
         {/* Horizontal goal line */}
-        <div className="relative h-16 w-full">
-          <div className="absolute top-[50%] w-full h-[1px] bg-gray-300"></div>
-          
+        <div className="relative h-16 w-full mb-2">
           {/* Bars container */}
-          <div className="absolute bottom-0 w-full flex">
+          <div className="absolute bottom-0 w-full h-full flex">
             {values.map((value, index) => (
               <MacroBarChart 
                 key={`${label}-${index}`}
@@ -51,9 +52,6 @@ const MacroRow: React.FC<MacroRowProps> = ({
             ))}
           </div>
         </div>
-        
-        {/* Bottom separator - only if not the last row */}
-        {!isLastRow && <Separator className="mt-1" />}
       </div>
     </div>
   );

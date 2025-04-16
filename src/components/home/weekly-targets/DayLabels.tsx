@@ -10,11 +10,11 @@ const DayLabels: React.FC<DayLabelsProps> = ({ todayIndex }) => {
   const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   
   return (
-    <div className="flex justify-between w-full">
+    <div className="flex w-full mt-2">
       {dayLabels.map((day, index) => (
         <div 
           key={`day-label-${index}`}
-          className={`text-sm flex-1 text-center ${index === todayIndex ? 'text-gray-600 font-medium' : 'text-gray-400'}`}
+          className={`flex-1 text-center text-sm ${index === todayIndex ? 'text-gray-800 font-medium' : 'text-gray-400'}`}
         >
           {day}
         </div>

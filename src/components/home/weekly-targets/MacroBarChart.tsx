@@ -21,13 +21,13 @@ const MacroBarChart: React.FC<MacroBarChartProps> = ({
   
   return (
     <div 
-      className={`flex flex-col items-center relative ${dayIndex === todayIndex ? 'bg-[#F1F1F1]' : ''}`}
-      style={{ width: '14%', height: '100%' }}
+      className={`flex flex-col items-center justify-end relative flex-1 h-full ${dayIndex === todayIndex ? 'bg-[#F1F1F1]' : ''}`}
     >
       <div 
-        className={`${color} w-4 rounded-t-md mt-auto transition-all duration-300 ease-in-out`}
+        className={`${color} w-10 rounded-full transition-all duration-300 ease-in-out`}
         style={{ 
-          height: value > 0 ? `${Math.max(percentage, 5)}%` : '4px' 
+          height: value > 0 ? `${Math.max(percentage, 5)}%` : '4px',
+          maxHeight: '85%'
         }}
       />
     </div>
