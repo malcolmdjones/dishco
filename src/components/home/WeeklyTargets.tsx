@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useWeeklyNutrition } from '@/hooks/useWeeklyNutrition';
@@ -40,8 +39,8 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
         <div className="space-y-8">
           {/* Calories */}
           <div className="flex items-center gap-4">
-            <div className="w-20 flex-none text-right">
-              <div className="flex items-center justify-end">
+            <div className="w-20 flex-none text-left">
+              <div className="flex items-center">
                 <span className="text-2xl font-bold">1220</span>
                 <Flame className="ml-1 text-[#000000]" size={20} />
               </div>
@@ -83,7 +82,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
           
           {/* Protein */}
           <div className="flex items-center gap-4">
-            <div className="w-20 flex-none text-right">
+            <div className="w-20 flex-none text-left">
               <div className="text-2xl font-bold">95P</div>
             </div>
             
@@ -123,7 +122,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
           
           {/* Fat */}
           <div className="flex items-center gap-4">
-            <div className="w-20 flex-none text-right">
+            <div className="w-20 flex-none text-left">
               <div className="text-2xl font-bold">58F</div>
             </div>
             
@@ -163,7 +162,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
           
           {/* Carbs */}
           <div className="flex items-center gap-4">
-            <div className="w-20 flex-none text-right">
+            <div className="w-20 flex-none text-left">
               <div className="text-2xl font-bold">87C</div>
             </div>
             
