@@ -57,7 +57,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                   {weeklyNutrition.calories.map((day, index) => (
                     <div 
                       key={`cal-${index}`} 
-                      className={`flex flex-col items-center ${index === todayIndex ? 'bg-gray-100 rounded-lg' : ''}`}
+                      className={`flex flex-col items-center relative ${index === todayIndex ? 'bg-[#F1F1F1]' : ''}`}
                       style={{ width: '14%' }}
                     >
                       <div 
@@ -66,6 +66,11 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                           height: day > 0 ? `${Math.max(Math.min((day / userGoals.calories) * 100, 100), 5)}%` : '4px' 
                         }}
                       />
+                      
+                      {/* Day label directly below each bar */}
+                      <div className={`mt-2 text-sm ${index === todayIndex ? 'text-gray-600 font-medium' : 'text-gray-400'}`}>
+                        {dayLabels[index]}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -92,7 +97,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                   {weeklyNutrition.protein.map((day, index) => (
                     <div 
                       key={`prot-${index}`} 
-                      className={`flex flex-col items-center ${index === todayIndex ? 'bg-gray-100 rounded-lg' : ''}`}
+                      className={`flex flex-col items-center relative ${index === todayIndex ? 'bg-[#F1F1F1]' : ''}`}
                       style={{ width: '14%' }}
                     >
                       <div 
@@ -101,6 +106,11 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                           height: day > 0 ? `${Math.max(Math.min((day / userGoals.protein) * 100, 100), 5)}%` : '4px' 
                         }}
                       />
+                      
+                      {/* Day label directly below each bar */}
+                      <div className={`mt-2 text-sm ${index === todayIndex ? 'text-gray-600 font-medium' : 'text-gray-400'}`}>
+                        {dayLabels[index]}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -127,7 +137,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                   {weeklyNutrition.fat.map((day, index) => (
                     <div 
                       key={`fat-${index}`} 
-                      className={`flex flex-col items-center ${index === todayIndex ? 'bg-gray-100 rounded-lg' : ''}`}
+                      className={`flex flex-col items-center relative ${index === todayIndex ? 'bg-[#F1F1F1]' : ''}`}
                       style={{ width: '14%' }}
                     >
                       <div 
@@ -136,6 +146,11 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                           height: day > 0 ? `${Math.max(Math.min((day / userGoals.fat) * 100, 100), 5)}%` : '4px' 
                         }}
                       />
+                      
+                      {/* Day label directly below each bar */}
+                      <div className={`mt-2 text-sm ${index === todayIndex ? 'text-gray-600 font-medium' : 'text-gray-400'}`}>
+                        {dayLabels[index]}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -162,7 +177,7 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
                   {weeklyNutrition.carbs.map((day, index) => (
                     <div 
                       key={`carb-${index}`} 
-                      className={`flex flex-col items-center ${index === todayIndex ? 'bg-gray-100 rounded-lg' : ''}`}
+                      className={`flex flex-col items-center relative ${index === todayIndex ? 'bg-[#F1F1F1]' : ''}`}
                       style={{ width: '14%' }}
                     >
                       <div 
