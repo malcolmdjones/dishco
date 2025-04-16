@@ -7,6 +7,8 @@ import { useHomePageUtils } from '@/hooks/useHomePageUtils';
 import DateSelector from '@/components/home/DateSelector';
 import DailyNutritionSummary from '@/components/home/DailyNutritionSummary';
 import MealsList from '@/components/home/MealsList';
+import CaloricBalanceOverview from '@/components/home/CaloricBalanceOverview';
+import { useCaloricBalance } from '@/hooks/useCaloricBalance';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -29,6 +31,8 @@ const HomePage = () => {
     setIsRecipeViewerOpen,
     setSelectedRecipe
   } = useHomePageUtils();
+  
+  const caloricBalance = useCaloricBalance(selectedDate);
 
   return (
     <div className="animate-fade-in">
@@ -47,6 +51,13 @@ const HomePage = () => {
       <DailyNutritionSummary 
         dailyNutrition={dailyNutrition}
         getMacroStatus={getMacroStatus}
+      />
+      
+      <CaloricBalanceOverview
+        weeklyData={caloricBalance.weeklyData}
+        averageCalories={caloricBalance.averageCalories}
+        targetCalories={caloricBalance.targetCalories}
+        missingLogDays={caloricBalance.missingLogDays}
       />
       
       <MealsList 
