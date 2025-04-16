@@ -51,6 +51,15 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
     return dayAbbreviations[dayIndex];
   };
 
+  // Custom formatter for Y-axis to show the target calories value
+  const formatYAxis = (value: number) => {
+    // Show the actual value for the target calories and round other values
+    if (Math.abs(value - targetCalories) < 5) {
+      return `${targetCalories} cal`;
+    }
+    return Math.round(value).toString();
+  };
+
   return (
     <Card 
       className="mb-6 overflow-hidden rounded-2xl bg-gradient-to-r from-[#FF9966] to-[#FF5733] text-white shadow-lg cursor-pointer"
@@ -106,11 +115,11 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
               />
               <YAxis 
                 domain={[yAxisMin, yAxisMax]}
-                tickFormatter={(value) => Math.round(value).toString()}
+                tickFormatter={formatYAxis}
                 axisLine={{ stroke: '#ffffff33' }}
                 tickLine={false}
                 tick={{ fill: 'white', fontSize: 12 }}
-                width={30}
+                width={45}
               />
               <ReferenceLine 
                 y={targetCalories} 
