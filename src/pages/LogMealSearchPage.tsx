@@ -152,6 +152,10 @@ const LogMealSearchPage = () => {
     navigate('/log-meal');
   };
 
+  const handleQuickAddInstead = () => {
+    navigate(`/log-meal/quick-add?name=${encodeURIComponent(searchQuery)}`);
+  };
+
   return (
     <div className="h-full bg-white">
       <div className="flex items-center justify-between p-3 border-b sticky top-0 bg-white z-10">
@@ -349,13 +353,24 @@ const LogMealSearchPage = () => {
               ) : searchQuery ? (
                 <div className="text-center py-12">
                   <p className="text-gray-500">No results found for "{searchQuery}"</p>
-                  <Button 
-                    variant="outline" 
-                    className="mt-4"
-                    onClick={() => navigate('/log-meal/quick-add')}
-                  >
-                    <Plus size={16} className="mr-2" /> Quick Add Instead
-                  </Button>
+                  
+                  <div className="mt-6 flex flex-col space-y-4 items-center">
+                    <Button 
+                      variant="outline" 
+                      className="flex items-center"
+                      onClick={handleQuickAddInstead}
+                    >
+                      <Plus size={16} className="mr-2" /> Quick Add Instead
+                    </Button>
+                    
+                    <div 
+                      className="flex items-center p-3 bg-blue-50 rounded-lg cursor-pointer text-blue-600 border border-blue-100 w-full"
+                      onClick={handleSearch}
+                    >
+                      <Search size={18} className="mr-3" />
+                      <span>Search all foods for: "{searchQuery}"</span>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <>
@@ -410,6 +425,18 @@ const LogMealSearchPage = () => {
                             {term}
                           </Button>
                         ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {recentSearches.length > 0 && (
+                    <div className="mb-6">
+                      <div 
+                        className="flex items-center p-3 mt-4 bg-blue-50 rounded-lg cursor-pointer text-blue-600 border border-blue-100"
+                        onClick={() => searchQuery && handleSearch()}
+                      >
+                        <Search size={18} className="mr-3" />
+                        <span>Search all foods</span>
                       </div>
                     </div>
                   )}

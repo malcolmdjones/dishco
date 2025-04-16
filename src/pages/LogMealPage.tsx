@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -152,6 +153,10 @@ const LogMealPage = () => {
       });
     }
   };
+  
+  const handleQuickAddInstead = () => {
+    navigate(`/log-meal/quick-add?name=${encodeURIComponent(searchQuery.trim())}`);
+  };
 
   return (
     <div className="h-full pb-16 bg-white">
@@ -256,7 +261,7 @@ const LogMealPage = () => {
                       ))}
                       
                       <div 
-                        className="flex items-center p-3 bg-blue-50 rounded-lg cursor-pointer text-blue-600"
+                        className="flex items-center p-3 bg-blue-50 rounded-lg cursor-pointer text-blue-600 border border-blue-100"
                         onClick={handleSearch}
                       >
                         <Search size={18} className="mr-3" />
@@ -266,9 +271,9 @@ const LogMealPage = () => {
                   </div>
                 )}
 
-                {searchResults.length > 0 && (
+                {searchResults.length > 0 ? (
                   <div>
-                    <h3 className="text-lg font-medium mb-3">{searchResults.length > 0 ? 'History' : ''}</h3>
+                    <h3 className="text-lg font-medium mb-3">History</h3>
                     <div className="space-y-3">
                       {searchResults.map((result) => (
                         <div 
@@ -294,7 +299,26 @@ const LogMealPage = () => {
                       ))}
                     </div>
                   </div>
-                )}
+                ) : searchQuery ? (
+                  <div className="py-16 flex flex-col items-center justify-center text-center">
+                    <p className="text-gray-500 mb-4">No results found for "{searchQuery}"</p>
+                    <Button 
+                      variant="outline" 
+                      className="flex items-center"
+                      onClick={handleQuickAddInstead}
+                    >
+                      <PlusCircle size={18} className="mr-2" />
+                      Quick Add Instead
+                    </Button>
+                    <div 
+                      className="flex items-center p-3 mt-6 bg-blue-50 rounded-lg cursor-pointer text-blue-600 border border-blue-100 w-full"
+                      onClick={handleSearch}
+                    >
+                      <Search size={18} className="mr-3" />
+                      <span>Search all foods for: "{searchQuery}"</span>
+                    </div>
+                  </div>
+                ) : null}
               </TabsContent>
               
               <TabsContent value="my-meals" className="mt-4">
@@ -358,7 +382,7 @@ const LogMealPage = () => {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="methods" className="pt-0 px-4 pb-4 mt-0">
+              <TabsContent value="methods" className="pt-5 px-4 pb-4 mt-0">
                 <AnimatePresence>
                   <motion.div 
                     initial={{ opacity: 0, y: 10 }}

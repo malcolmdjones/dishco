@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Check } from 'lucide-react';
+import { ArrowLeft, Check, Camera, Image, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -18,9 +18,11 @@ import {
 const LogMealQuickAddPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const initialName = searchParams.get('name') || '';
   
   const [formData, setFormData] = useState<QuickAddData>({
-    name: '',
+    name: initialName,
     calories: 0,
     protein: 0,
     carbs: 0,
@@ -29,7 +31,16 @@ const LogMealQuickAddPage = () => {
   });
   
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [imageSource, setImageSource] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      name: initialName
+    }));
+  }, [initialName]);
+  
   const handleGoBack = () => {
     navigate('/log-meal');
   };
@@ -49,6 +60,41 @@ const LogMealQuickAddPage = () => {
       ...prev,
       mealType: value
     }));
+  };
+  
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setImageSource(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCameraCapture = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = "image/*";
+      fileInputRef.current.capture = "environment";
+      fileInputRef.current.click();
+    }
+  };
+  
+  const handleGallerySelect = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = "image/*";
+      fileInputRef.current.removeAttribute('capture');
+      fileInputRef.current.click();
+    }
+  };
+  
+  const handleRemoveImage = () => {
+    setImageSource(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -89,7 +135,8 @@ const LogMealQuickAddPage = () => {
       ingredients: [],
       prep_time_minutes: 0,
       externalSource: false,
-      instructions: []
+      instructions: [],
+      imageSrc: imageSource
     };
     
     // Log the meal
@@ -106,7 +153,8 @@ const LogMealQuickAddPage = () => {
       calories: formData.calories,
       protein: formData.protein > 0 ? `${formData.protein}g protein` : '',
       servingInfo: '1 serving',
-      source: 'Quick Add'
+      source: 'Quick Add',
+      imageSrc: imageSource
     };
     
     const updatedLoggedMeals = [newMeal, ...existingLoggedMeals];
@@ -167,6 +215,59 @@ const LogMealQuickAddPage = () => {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="space-y-2"
+        >
+          <label className="text-sm font-medium">Image (optional)</label>
+          <input 
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          
+          {imageSource ? (
+            <div className="relative">
+              <img 
+                src={imageSource} 
+                alt="Food" 
+                className="w-full h-48 object-cover rounded-lg"
+              />
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                className="absolute top-2 right-2 bg-black bg-opacity-50 text-white rounded-full p-1"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex items-center justify-center h-12"
+                onClick={handleCameraCapture}
+              >
+                <Camera size={18} className="mr-2" />
+                Take Photo
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex items-center justify-center h-12"
+                onClick={handleGallerySelect}
+              >
+                <Image size={18} className="mr-2" />
+                Upload Image
+              </Button>
+            </div>
+          )}
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="space-y-2"
         >
@@ -187,7 +288,7 @@ const LogMealQuickAddPage = () => {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.15 }}
             className="space-y-2"
           >
             <label className="text-sm font-medium">Protein (g)</label>
@@ -206,7 +307,7 @@ const LogMealQuickAddPage = () => {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.2 }}
             className="space-y-2"
           >
             <label className="text-sm font-medium">Carbs (g)</label>
@@ -225,7 +326,7 @@ const LogMealQuickAddPage = () => {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.25 }}
             className="space-y-2"
           >
             <label className="text-sm font-medium">Fat (g)</label>
@@ -245,7 +346,7 @@ const LogMealQuickAddPage = () => {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.3 }}
           className="space-y-2"
         >
           <label className="text-sm font-medium">Meal Type</label>
