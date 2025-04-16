@@ -8,7 +8,9 @@ import DateSelector from '@/components/home/DateSelector';
 import DailyNutritionSummary from '@/components/home/DailyNutritionSummary';
 import MealsList from '@/components/home/MealsList';
 import CaloricBalanceOverview from '@/components/home/CaloricBalanceOverview';
+import StreakCounter from '@/components/home/StreakCounter';
 import { useCaloricBalance } from '@/hooks/useCaloricBalance';
+import { useStreakData } from '@/hooks/useStreakData';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -33,6 +35,7 @@ const HomePage = () => {
   } = useHomePageUtils();
   
   const caloricBalance = useCaloricBalance(selectedDate);
+  const { streak, todayLogged } = useStreakData();
 
   return (
     <div className="animate-fade-in">
@@ -40,6 +43,8 @@ const HomePage = () => {
         <h1 className="text-2xl font-bold">Hi there 👋</h1>
         <p className="text-dishco-text-light">Track your meals and plan for the week</p>
       </header>
+      
+      <StreakCounter streak={streak} todayLogged={todayLogged} />
       
       <DateSelector 
         selectedDate={selectedDate}
