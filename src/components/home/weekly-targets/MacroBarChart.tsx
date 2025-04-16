@@ -38,7 +38,7 @@ const MacroBarChart: React.FC<MacroBarChartProps> = ({
         >
           {/* Show goal indicator when exceeding goal */}
           {exceedsGoal && (
-            <div className="absolute top-[66.7%] left-0 right-0 h-0.5 bg-gray-500 z-10" />
+            <div className="absolute top-[66.7%] left-0 right-0 h-0.5 bg-black z-10" />
           )}
         </div>
       )}
