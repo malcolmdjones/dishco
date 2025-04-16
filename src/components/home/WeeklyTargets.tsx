@@ -32,14 +32,14 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
   
   return (
     <Card className="mb-6 overflow-hidden rounded-3xl bg-white shadow-lg">
-      <CardContent className="p-6">
-        <h2 className="text-3xl font-bold mb-10">Weekly Targets</h2>
+      <CardContent className="p-4"> {/* Reduced padding from p-6 to p-4 */}
+        <h2 className="text-2xl font-bold mb-4">Weekly Targets</h2> {/* Reduced text size from text-3xl to text-2xl and margin from mb-10 to mb-4 */}
         
         <div>
           {/* Calories */}
           <MacroRow 
             label={userGoals.calories.toString()}
-            icon={<Flame className="ml-1 text-red-500" size={20} />}
+            icon={<Flame className="ml-1 text-red-500" size={16} />} {/* Reduced icon size from 20 to 16 */}
             values={weeklyNutrition.calories}
             goalValue={userGoals.calories}
             color={macroColors.calories}
