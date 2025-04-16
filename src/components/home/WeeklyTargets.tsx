@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { format, parseISO, startOfDay, subDays } from 'date-fns';
 import { useWeeklyNutrition } from '@/hooks/useWeeklyNutrition';
 
 interface WeeklyTargetsProps {
@@ -53,28 +52,30 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
   const todayIndex = getTodayIndex();
   
   return (
-    <Card className="mb-6 overflow-hidden rounded-2xl bg-[#1A1F2C] text-white shadow-lg">
+    <Card className="mb-6 overflow-hidden rounded-2xl bg-white shadow-lg">
       <CardContent className="p-4">
         <h3 className="text-lg font-medium mb-4">Weekly Targets</h3>
         
         <div className="space-y-6">
           {/* Calories */}
-          <div className="flex items-center">
-            <div className="w-12">
+          <div className="flex items-center gap-4">
+            <div className="w-24 flex-none">
               <div className="text-xl font-bold">{weeklyNutrition.totalCalories}</div>
-              <div className="text-xs text-gray-400">of {userGoals.calories * 7}</div>
+              <div className="text-xs text-gray-500">{userGoals.calories * 7}</div>
             </div>
             
-            <div className="flex-1 flex items-end space-x-1 px-1">
+            <div className="flex-1 flex items-end space-x-1 px-1 relative">
+              {/* Goal line for calories */}
+              <div className="absolute w-full h-[1px] bg-gray-300 z-10" style={{ bottom: `${100}%` }}></div>
+              
               {weeklyNutrition.calories.map((day, index) => (
                 <div 
                   key={`cal-${index}`} 
-                  className={`w-full relative ${index === todayIndex ? 'bg-white bg-opacity-10 rounded-sm' : ''}`}
+                  className={`w-full relative ${index === todayIndex ? 'bg-gray-100 rounded-sm' : ''}`}
                 >
-                  <div className="absolute top-0 left-0 w-full border-t border-gray-500 opacity-30 z-10" />
-                  <div className="h-14 flex items-end">
+                  <div className="h-16 flex items-end">
                     <div 
-                      className={`${getBarColor(day, userGoals.calories, macroColors.calories)} w-full rounded-sm`}
+                      className={`${getBarColor(day, userGoals.calories, macroColors.calories)} w-full rounded-t-sm`}
                       style={{ height: `${getBarHeight(day, userGoals.calories)}%` }}
                     />
                   </div>
@@ -84,22 +85,24 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
           </div>
           
           {/* Protein */}
-          <div className="flex items-center">
-            <div className="w-12">
+          <div className="flex items-center gap-4">
+            <div className="w-24 flex-none">
               <div className="text-xl font-bold">{weeklyNutrition.totalProtein}P</div>
-              <div className="text-xs text-gray-400">of {userGoals.protein * 7}</div>
+              <div className="text-xs text-gray-500">{userGoals.protein * 7}</div>
             </div>
             
-            <div className="flex-1 flex items-end space-x-1 px-1">
+            <div className="flex-1 flex items-end space-x-1 px-1 relative">
+              {/* Goal line for protein */}
+              <div className="absolute w-full h-[1px] bg-gray-300 z-10" style={{ bottom: `${100}%` }}></div>
+              
               {weeklyNutrition.protein.map((day, index) => (
                 <div 
                   key={`prot-${index}`} 
-                  className={`w-full relative ${index === todayIndex ? 'bg-white bg-opacity-10 rounded-sm' : ''}`}
+                  className={`w-full relative ${index === todayIndex ? 'bg-gray-100 rounded-sm' : ''}`}
                 >
-                  <div className="absolute top-0 left-0 w-full border-t border-gray-500 opacity-30 z-10" />
-                  <div className="h-14 flex items-end">
+                  <div className="h-16 flex items-end">
                     <div 
-                      className={`${getBarColor(day, userGoals.protein, macroColors.protein)} w-full rounded-sm`}
+                      className={`${getBarColor(day, userGoals.protein, macroColors.protein)} w-full rounded-t-sm`}
                       style={{ height: `${getBarHeight(day, userGoals.protein)}%` }}
                     />
                   </div>
@@ -109,22 +112,24 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
           </div>
           
           {/* Fat */}
-          <div className="flex items-center">
-            <div className="w-12">
+          <div className="flex items-center gap-4">
+            <div className="w-24 flex-none">
               <div className="text-xl font-bold">{weeklyNutrition.totalFat}F</div>
-              <div className="text-xs text-gray-400">of {userGoals.fat * 7}</div>
+              <div className="text-xs text-gray-500">{userGoals.fat * 7}</div>
             </div>
             
-            <div className="flex-1 flex items-end space-x-1 px-1">
+            <div className="flex-1 flex items-end space-x-1 px-1 relative">
+              {/* Goal line for fat */}
+              <div className="absolute w-full h-[1px] bg-gray-300 z-10" style={{ bottom: `${100}%` }}></div>
+              
               {weeklyNutrition.fat.map((day, index) => (
                 <div 
                   key={`fat-${index}`} 
-                  className={`w-full relative ${index === todayIndex ? 'bg-white bg-opacity-10 rounded-sm' : ''}`}
+                  className={`w-full relative ${index === todayIndex ? 'bg-gray-100 rounded-sm' : ''}`}
                 >
-                  <div className="absolute top-0 left-0 w-full border-t border-gray-500 opacity-30 z-10" />
-                  <div className="h-14 flex items-end">
+                  <div className="h-16 flex items-end">
                     <div 
-                      className={`${getBarColor(day, userGoals.fat, macroColors.fat)} w-full rounded-sm`}
+                      className={`${getBarColor(day, userGoals.fat, macroColors.fat)} w-full rounded-t-sm`}
                       style={{ height: `${getBarHeight(day, userGoals.fat)}%` }}
                     />
                   </div>
@@ -134,22 +139,24 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
           </div>
           
           {/* Carbs */}
-          <div className="flex items-center">
-            <div className="w-12">
+          <div className="flex items-center gap-4">
+            <div className="w-24 flex-none">
               <div className="text-xl font-bold">{weeklyNutrition.totalCarbs}C</div>
-              <div className="text-xs text-gray-400">of {userGoals.carbs * 7}</div>
+              <div className="text-xs text-gray-500">{userGoals.carbs * 7}</div>
             </div>
             
-            <div className="flex-1 flex items-end space-x-1 px-1">
+            <div className="flex-1 flex items-end space-x-1 px-1 relative">
+              {/* Goal line for carbs */}
+              <div className="absolute w-full h-[1px] bg-gray-300 z-10" style={{ bottom: `${100}%` }}></div>
+              
               {weeklyNutrition.carbs.map((day, index) => (
                 <div 
                   key={`carb-${index}`} 
-                  className={`w-full relative ${index === todayIndex ? 'bg-white bg-opacity-10 rounded-sm' : ''}`}
+                  className={`w-full relative ${index === todayIndex ? 'bg-gray-100 rounded-sm' : ''}`}
                 >
-                  <div className="absolute top-0 left-0 w-full border-t border-gray-500 opacity-30 z-10" />
-                  <div className="h-14 flex items-end">
+                  <div className="h-16 flex items-end">
                     <div 
-                      className={`${getBarColor(day, userGoals.carbs, macroColors.carbs)} w-full rounded-sm`}
+                      className={`${getBarColor(day, userGoals.carbs, macroColors.carbs)} w-full rounded-t-sm`}
                       style={{ height: `${getBarHeight(day, userGoals.carbs)}%` }}
                     />
                   </div>
@@ -160,11 +167,11 @@ const WeeklyTargets: React.FC<WeeklyTargetsProps> = ({ selectedDate }) => {
         </div>
         
         {/* Day labels */}
-        <div className="flex mt-2 px-12">
+        <div className="flex mt-2 px-24">
           {dayLabels.map((day, index) => (
             <div 
               key={`day-${index}`}
-              className={`flex-1 text-center text-sm ${index === todayIndex ? 'text-white' : 'text-gray-400'}`}
+              className={`flex-1 text-center text-sm ${index === todayIndex ? 'text-black font-medium' : 'text-gray-400'}`}
             >
               {day}
             </div>
