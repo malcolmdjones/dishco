@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, ChevronDown, ChevronUp, Plus, RotateCcw, Search, ShoppingBag, Trash2, ArrowLeft } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Plus, RotateCcw, Search, ShoppingBag, Trash2, ArrowLeft, Scan, Barcode } from 'lucide-react';
 import { generateGroceryList } from '../data/mockData';
 import type { GroceryItem } from '../data/mockData';
 import { useToast } from '@/hooks/use-toast';
@@ -7,9 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Link } from 'react-router-dom';
-
-// Generate initial grocery list
-const initialGroceryItems = generateGroceryList();
+import BarcodeScanner from '@/components/food-database/BarcodeScanner';
 
 // Helper function to normalize ingredient names for comparison
 const normalizeIngredientName = (name: string): string => {
@@ -70,6 +68,10 @@ const GroceryListPage = () => {
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeTab, setActiveTab] = useState('active');
   const [itemBeingAnimated, setItemBeingAnimated] = useState<string | null>(null);
+  
+  // Barcode scanner state
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [itemToScan, setItemToScan] = useState<GroceryItem | null>(null);
 
   useEffect(() => {
     localStorage.setItem('groceryItems', JSON.stringify(groceryItems));
@@ -181,6 +183,44 @@ const GroceryListPage = () => {
     });
   };
 
+  const handleScanItem = (item: GroceryItem) => {
+    setItemToScan(item);
+    setIsScannerOpen(true);
+  };
+
+  const handleFoodFound = (food: any) => {
+    if (!itemToScan) return;
+    
+    // Add the item to "My Shelf" with the scanned product info
+    const myShelfItems = JSON.parse(localStorage.getItem('myShelfItems') || '[]');
+    
+    // Create shelf item using grocery item details and scanned food info
+    const shelfItem = {
+      id: `shelf-${Date.now()}`,
+      name: itemToScan.name,
+      quantity: itemToScan.quantity,
+      unit: itemToScan.unit,
+      productInfo: {
+        ...food,
+        scanDate: new Date().toISOString()
+      }
+    };
+    
+    // Add to shelf and save
+    myShelfItems.push(shelfItem);
+    localStorage.setItem('myShelfItems', JSON.stringify(myShelfItems));
+    
+    // Show success notification
+    toast({
+      title: "Item Added to Shelf",
+      description: `${itemToScan.name} has been added to your shelf.`,
+    });
+    
+    // Close scanner and reset
+    setIsScannerOpen(false);
+    setItemToScan(null);
+  };
+
   const activeItemsCount = activeItems.length;
   const completedItemsCount = completedItems.length;
   const completionPercentage = Math.round((completedItemsCount / (activeItemsCount + completedItemsCount)) * 100) || 0;
@@ -284,6 +324,7 @@ const GroceryListPage = () => {
                       onToggle={() => handleToggleItem(item.name)}
                       showUndoButton={false}
                       isBeingAnimated={itemBeingAnimated === item.name}
+                      onScan={() => handleScanItem(item)}
                     />
                   ))}
                 </div>
@@ -356,6 +397,12 @@ const GroceryListPage = () => {
           )}
         </TabsContent>
       </Tabs>
+      
+      <BarcodeScanner
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onFoodFound={handleFoodFound}
+      />
     </div>
   );
 };
@@ -366,6 +413,7 @@ interface GroceryItemProps {
   showUndoButton: boolean;
   onUndo?: () => void;
   isBeingAnimated?: boolean;
+  onScan: () => void;
 }
 
 const GroceryItem: React.FC<GroceryItemProps> = ({ 
@@ -373,7 +421,8 @@ const GroceryItem: React.FC<GroceryItemProps> = ({
   onToggle, 
   showUndoButton, 
   onUndo,
-  isBeingAnimated = false 
+  isBeingAnimated = false,
+  onScan 
 }) => {
   const formatQuantityWithUnit = () => {
     if (!item.quantity && !item.unit) return '';
@@ -412,24 +461,39 @@ const GroceryItem: React.FC<GroceryItemProps> = ({
         </p>
       </div>
       
-      {quantityDisplay && (
-        <div className="bg-gray-100 rounded-full px-2 py-0.5 mr-2">
-          <span className="text-xs font-medium">{quantityDisplay}</span>
-        </div>
-      )}
-      
-      {showUndoButton && onUndo && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onUndo();
-          }}
-          className="p-1.5 text-gray-500 hover:text-dishco-primary rounded-full hover:bg-gray-100 transition-colors"
-          title="Restore item"
-        >
-          <RotateCcw size={14} />
-        </button>
-      )}
+      <div className="flex items-center gap-2">
+        {quantityDisplay && (
+          <div className="bg-gray-100 rounded-full px-2 py-0.5">
+            <span className="text-xs font-medium">{quantityDisplay}</span>
+          </div>
+        )}
+        
+        {!showUndoButton && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onScan();
+            }}
+            className="p-1.5 text-gray-500 hover:text-blue-600 rounded-full hover:bg-gray-100 transition-colors"
+            title="Scan this item"
+          >
+            <Barcode size={16} />
+          </button>
+        )}
+        
+        {showUndoButton && onUndo && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onUndo();
+            }}
+            className="p-1.5 text-gray-500 hover:text-dishco-primary rounded-full hover:bg-gray-100 transition-colors"
+            title="Restore item"
+          >
+            <RotateCcw size={14} />
+          </button>
+        )}
+      </div>
     </div>
   );
 };

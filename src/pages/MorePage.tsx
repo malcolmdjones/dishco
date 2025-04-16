@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronRight, Heart, Settings, User, Utensils, LogOut, Calendar, AlertTriangle, Cookie, ShieldCheck, ShoppingCart, Cake } from 'lucide-react';
+import { ChevronRight, Heart, Settings, User, Utensils, LogOut, Calendar, AlertTriangle, Cookie, ShieldCheck, ShoppingCart, Cake, ShoppingBag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,7 +17,6 @@ const MorePage = () => {
   });
   
   useEffect(() => {
-    // If not authenticated, redirect to auth page
     if (!isAuthenticated) {
       navigate('/auth');
     } else {
@@ -28,7 +26,6 @@ const MorePage = () => {
 
   const fetchNutritionGoals = async () => {
     try {
-      // For now, we're not authenticating users, so we'll get the first nutrition goals record
       const { data, error } = await supabase
         .from('nutrition_goals')
         .select('*')
@@ -122,7 +119,6 @@ const MorePage = () => {
     }
   ];
   
-  // Add admin panel menu item for admin users
   if (isAdmin) {
     menuItems.push({
       name: 'Admin Panel',
@@ -132,7 +128,6 @@ const MorePage = () => {
     });
   }
 
-  // If not authenticated, show a login prompt
   if (!isAuthenticated) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -149,47 +144,71 @@ const MorePage = () => {
   }
 
   return (
-    <div className="animate-fade-in">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold">More</h1>
-        <p className="text-dishco-text-light">Account, recipes and settings</p>
-      </header>
-
-      {/* User Profile Card */}
-      <div className="bg-white rounded-xl shadow-md p-4 mb-6 flex items-center">
-        <div className="w-14 h-14 rounded-full bg-dishco-primary flex items-center justify-center mr-4">
-          <User size={24} className="text-white" />
+    <div className="container mx-auto py-8 px-4 animate-fade-in">
+      <h1 className="text-2xl font-bold mb-6">More</h1>
+      
+      <div className="space-y-4">
+        <div className="mb-8">
+          <h2 className="text-lg font-medium mb-4">Shopping</h2>
+          <div className="space-y-2">
+            <Link to="/grocery" className="flex items-center p-3 bg-white rounded-lg shadow-sm">
+              <ShoppingCart size={20} className="mr-3 text-dishco-primary" />
+              <span>Grocery List</span>
+            </Link>
+            <Link to="/my-shelf" className="flex items-center p-3 bg-white rounded-lg shadow-sm">
+              <ShoppingBag size={20} className="mr-3 text-dishco-primary" />
+              <span>My Shelf</span>
+            </Link>
+          </div>
         </div>
-        <div>
-          <h2 className="font-bold">{user?.user_metadata?.name || user?.email}</h2>
-          <p className="text-sm text-dishco-text-light">{user?.email}</p>
+        
+        <div className="mb-6">
+          <h2 className="text-lg font-medium mb-4">Account</h2>
+          <div className="space-y-2">
+            <Link to="/saved-recipes" className="flex items-center p-3 bg-white rounded-lg shadow-sm">
+              <Heart size={20} className="mr-3 text-dishco-primary" />
+              <span>Saved Recipes</span>
+            </Link>
+            <Link to="/saved-snacks" className="flex items-center p-3 bg-white rounded-lg shadow-sm">
+              <Cookie size={20} className="mr-3 text-dishco-primary" />
+              <span>Saved Snacks</span>
+            </Link>
+            <Link to="/saved-desserts" className="flex items-center p-3 bg-white rounded-lg shadow-sm">
+              <Cake size={20} className="mr-3 text-dishco-primary" />
+              <span>Saved Desserts</span>
+            </Link>
+            <Link to="/saved-plans" className="flex items-center p-3 bg-white rounded-lg shadow-sm">
+              <Calendar size={20} className="mr-3 text-dishco-primary" />
+              <span>Saved Meal Plans</span>
+            </Link>
+          </div>
+        </div>
+        
+        <div className="mb-6">
+          <h2 className="text-lg font-medium mb-4">Recipes</h2>
+          <div className="space-y-2">
+            <Link to="/custom-recipes" className="flex items-center p-3 bg-white rounded-lg shadow-sm">
+              <Utensils size={20} className="mr-3 text-dishco-primary" />
+              <span>Custom Recipes</span>
+            </Link>
+          </div>
+        </div>
+        
+        <div className="mb-6">
+          <h2 className="text-lg font-medium mb-4">Settings</h2>
+          <div className="space-y-2">
+            <Link to="/dietary-restrictions" className="flex items-center p-3 bg-white rounded-lg shadow-sm">
+              <AlertTriangle size={20} className="mr-3 text-dishco-primary" />
+              <span>Dietary Restrictions</span>
+            </Link>
+            <Link to="/settings" className="flex items-center p-3 bg-white rounded-lg shadow-sm">
+              <Settings size={20} className="mr-3 text-dishco-primary" />
+              <span>Account Settings</span>
+            </Link>
+          </div>
         </div>
       </div>
-
-      {/* Menu Items */}
-      <div className="space-y-3 mb-6">
-        {menuItems.map((item, index) => (
-          <Link 
-            key={index} 
-            to={item.path}
-            className="bg-white rounded-xl shadow-sm p-4 flex items-center justify-between transition-all duration-200 hover:shadow-md animate-fade-in"
-            style={{ animationDelay: `${index * 0.1}s` }}
-          >
-            <div className="flex items-center">
-              <div className="mr-4">
-                {item.icon}
-              </div>
-              <div>
-                <h3 className="font-medium">{item.name}</h3>
-                <p className="text-sm text-dishco-text-light">{item.description}</p>
-              </div>
-            </div>
-            <ChevronRight size={20} className="text-gray-400" />
-          </Link>
-        ))}
-      </div>
-
-      {/* Nutrition Goals Summary */}
+      
       <div className="bg-white rounded-xl shadow-md p-4 mb-6">
         <h2 className="text-lg font-semibold mb-3">Current Nutrition Goals</h2>
         <div className="grid grid-cols-2 gap-4">
@@ -218,7 +237,6 @@ const MorePage = () => {
         </button>
       </div>
 
-      {/* Logout Button */}
       <button 
         className="w-full py-3 border border-gray-300 rounded-xl text-dishco-text-light font-medium flex items-center justify-center"
         onClick={handleLogout}
