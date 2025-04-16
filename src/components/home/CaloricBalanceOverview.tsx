@@ -102,7 +102,7 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
           <ResponsiveContainer width="100%" height="100%">
             <LineChart 
               data={weeklyData} 
-              margin={{ top: 5, right: 30, left: 45, bottom: 5 }}
+              margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff33" vertical={false} />
               <XAxis 
@@ -119,7 +119,7 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
                 axisLine={{ stroke: '#ffffff33' }}
                 tickLine={false}
                 tick={{ fill: 'white', fontSize: 12 }}
-                width={70}
+                width={50}
               />
               <ReferenceLine 
                 y={targetCalories} 
@@ -127,12 +127,12 @@ const CaloricBalanceOverview: React.FC<CaloricBalanceOverviewProps> = ({
                 strokeWidth={1.5} 
                 strokeDasharray="3 3" 
                 label={{ 
-                  value: 'Goal', 
+                  value: `Goal: ${targetCalories}cal`, 
                   position: 'insideTopRight', 
                   fill: 'white', 
                   fontSize: 10,
-                  opacity: 0.7,
-                  offset: -10
+                  opacity: 0.8,
+                  offset: 0
                 }} 
               />
               <Line
