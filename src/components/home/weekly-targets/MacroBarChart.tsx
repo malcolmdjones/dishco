@@ -23,16 +23,20 @@ const MacroBarChart: React.FC<MacroBarChartProps> = ({
   const exceedsGoal = value > goalValue;
   
   return (
-    <div className="flex-1 flex items-end justify-center h-full">
+    <div className="flex-1 flex items-end justify-center h-full relative">
+      {/* Goal line - always visible at exactly 66.7% of container height */}
+      <div className="absolute w-10 h-[1px] bg-gray-300 bottom-[66.7%] left-1/2 transform -translate-x-1/2" />
+      
+      {/* Bar */}
       {value > 0 && (
         <div 
           className={`${color} rounded-t-full w-8 transition-all duration-300 ease-in-out relative`}
           style={{ 
-            height: `${Math.max(percentage, 4)}%`, 
+            height: `${Math.max((percentage * 2/3), 4)}%`, 
             maxHeight: '100%'
           }}
         >
-          {/* Show goal line when exceeding goal */}
+          {/* Show goal indicator when exceeding goal */}
           {exceedsGoal && (
             <div className="absolute top-[66.7%] left-0 right-0 h-0.5 bg-gray-500 z-10" />
           )}

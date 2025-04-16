@@ -34,11 +34,6 @@ const MacroRow: React.FC<MacroRowProps> = ({
       
       {/* Chart container */}
       <div className="relative h-16 w-full">
-        {/* Horizontal goal line at 100% */}
-        <div className="absolute top-0 w-full h-full">
-          <div className="absolute top-0 left-0 right-0 w-full border-t border-gray-200 border-dashed z-0"></div>
-        </div>
-        
         {/* Bars container */}
         <div className="absolute bottom-0 w-full h-full flex z-10">
           {values.map((value, index) => (
