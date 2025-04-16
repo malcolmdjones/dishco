@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -136,7 +135,7 @@ const LogMealQuickAddPage = () => {
       prep_time_minutes: 0,
       externalSource: false,
       instructions: [],
-      imageSrc: imageSource
+      image: imageSource
     };
     
     // Log the meal
@@ -154,7 +153,7 @@ const LogMealQuickAddPage = () => {
       protein: formData.protein > 0 ? `${formData.protein}g protein` : '',
       servingInfo: '1 serving',
       source: 'Quick Add',
-      imageSrc: imageSource
+      image: imageSource
     };
     
     const updatedLoggedMeals = [newMeal, ...existingLoggedMeals];

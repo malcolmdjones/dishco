@@ -38,16 +38,8 @@ const LogMealPage = () => {
   const [suggestedSearches, setSuggestedSearches] = useState<string[]>([]);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
 
-  // Define the logging methods
+  // Define the logging methods (removing the search button)
   const loggingMethods: LogMethod[] = [
-    {
-      id: 'search',
-      name: 'Search',
-      icon: Search,
-      description: 'Find foods in our database',
-      route: '/log-meal/search',
-      color: 'bg-blue-100 text-blue-600'
-    },
     {
       id: 'scan',
       name: 'Scan',
@@ -158,6 +150,12 @@ const LogMealPage = () => {
     navigate(`/log-meal/quick-add?name=${encodeURIComponent(searchQuery.trim())}`);
   };
 
+  const handleFullSearch = () => {
+    if (searchQuery.trim()) {
+      navigate(`/log-meal/search?query=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
   return (
     <div className="h-full pb-16 bg-white">
       <div className="flex justify-center items-center py-3 border-b sticky top-0 bg-white z-10">
@@ -262,7 +260,7 @@ const LogMealPage = () => {
                       
                       <div 
                         className="flex items-center p-3 bg-blue-50 rounded-lg cursor-pointer text-blue-600 border border-blue-100"
-                        onClick={handleSearch}
+                        onClick={handleFullSearch}
                       >
                         <Search size={18} className="mr-3" />
                         <span>Search all foods for: "{searchQuery}"</span>
@@ -312,7 +310,7 @@ const LogMealPage = () => {
                     </Button>
                     <div 
                       className="flex items-center p-3 mt-6 bg-blue-50 rounded-lg cursor-pointer text-blue-600 border border-blue-100 w-full"
-                      onClick={handleSearch}
+                      onClick={handleFullSearch}
                     >
                       <Search size={18} className="mr-3" />
                       <span>Search all foods for: "{searchQuery}"</span>
@@ -382,7 +380,7 @@ const LogMealPage = () => {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="methods" className="pt-5 px-4 pb-4 mt-0">
+              <TabsContent value="methods" className="pt-8 px-4 pb-4 mt-0"> {/* Added more padding to the top (pt-8) */}
                 <AnimatePresence>
                   <motion.div 
                     initial={{ opacity: 0, y: 10 }}
