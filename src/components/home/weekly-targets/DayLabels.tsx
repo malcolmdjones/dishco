@@ -14,7 +14,7 @@ const DayLabels: React.FC<DayLabelsProps> = ({ todayIndex }) => {
       {dayLabels.map((day, index) => (
         <div 
           key={`day-label-${index}`}
-          className={`flex-1 text-center text-sm ${index === todayIndex ? 'text-gray-600 font-medium' : 'text-gray-400'}`}
+          className={`flex-1 text-center text-sm ${index === todayIndex ? 'text-gray-800 font-bold' : 'text-gray-400'}`}
         >
           {day}
         </div>

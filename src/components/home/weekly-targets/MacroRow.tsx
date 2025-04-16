@@ -21,6 +21,9 @@ const MacroRow: React.FC<MacroRowProps> = ({
   todayIndex,
   isLastRow = false
 }) => {
+  // Calculate if any day has exceeded the goal
+  const hasExceededGoal = values.some(value => value > goalValue);
+  
   return (
     <div className="flex flex-col mb-6">
       {/* Label */}
@@ -31,8 +34,10 @@ const MacroRow: React.FC<MacroRowProps> = ({
       
       {/* Chart container */}
       <div className="relative h-16 w-full">
-        {/* Horizontal goal lines - dotted line across */}
-        <div className="absolute top-[50%] w-full border-t border-gray-200 border-dashed z-0"></div>
+        {/* Horizontal goal lines - dotted line across at 100% */}
+        <div className="absolute top-0 w-full h-full">
+          <div className="absolute top-0 w-full h-full border-t border-gray-200 border-dashed z-0"></div>
+        </div>
         
         {/* Bars container */}
         <div className="absolute bottom-0 w-full h-full flex z-10">
