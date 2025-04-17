@@ -43,12 +43,10 @@ import AdminEditRecipePage from '@/pages/admin/AdminEditRecipePage';
 import AdminViewRecipePage from '@/pages/admin/AdminViewRecipePage';
 import CreateMealPlanPage from '@/pages/CreateMealPlanPage';
 import { ThemeProvider } from './components/theme-provider';
-import { useTheme } from 'next-themes';
 
 function App() {
-  const { authState } = useAuth();
-  const { theme } = useTheme();
-
+  const { isAuthenticated } = useAuth();
+  
   return (
     <AuthProvider>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>

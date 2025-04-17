@@ -54,11 +54,14 @@ const deduplicateGroceryItems = (items: GroceryItem[]): GroceryItem[] => {
   return Array.from(uniqueItems.values());
 };
 
+// Define a default empty array for initial grocery items
+const defaultGroceryItems: GroceryItem[] = [];
+
 const GroceryListPage = () => {
   const { toast } = useToast();
   const [groceryItems, setGroceryItems] = useState<GroceryItem[]>(() => {
     const savedItems = localStorage.getItem('groceryItems');
-    const items = savedItems ? JSON.parse(savedItems) : initialGroceryItems;
+    const items = savedItems ? JSON.parse(savedItems) : defaultGroceryItems;
     // Deduplicate items when loading from localStorage
     return deduplicateGroceryItems(items);
   });
@@ -381,6 +384,7 @@ const GroceryListPage = () => {
                         onToggle={() => handleToggleItem(item.name)}
                         showUndoButton={true}
                         onUndo={() => handleUndoItem(item.name)}
+                        onScan={() => {}}
                       />
                     ))}
                   </div>
