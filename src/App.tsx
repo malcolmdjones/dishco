@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import AppLayout from '@/components/layout/AppLayout';
 import { useAuth, AuthProvider, ProtectedRoute } from '@/hooks/useAuth';
-import { ThemeProvider } from './components/theme-provider';
+import { ThemeProvider } from '@/components/theme-provider';
 
 // Page imports
 import HomePage from '@/pages/HomePage';
@@ -44,7 +43,6 @@ import AdminAddRecipePage from '@/pages/admin/AdminAddRecipePage';
 import AdminEditRecipePage from '@/pages/admin/AdminEditRecipePage';
 import AdminViewRecipePage from '@/pages/admin/AdminViewRecipePage';
 import CreateMealPlanPage from '@/pages/CreateMealPlanPage';
-import { ThemeProvider } from './components/theme-provider';
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -54,13 +52,12 @@ function App() {
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <AppLayout>
           <Toaster />
-          {/* Public Routes */}
+          {/* Public and Protected Routes */}
           <Routes>
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/index" element={<Index />} />
             <Route path="*" element={<NotFound />} />
 
-            {/* Protected Routes */}
             <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
             <Route path="/planning" element={<ProtectedRoute><PlanningPage /></ProtectedRoute>} />
             <Route path="/explore" element={<ProtectedRoute><ExploreRecipesPage /></ProtectedRoute>} />
