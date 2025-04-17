@@ -355,13 +355,7 @@ const SavedPlansPage = () => {
       <GroceryListConfirmationDialog
         isOpen={showConfirmation}
         onOpenChange={setShowConfirmation}
-        onConfirm={() => {
-          handleConfirmGroceryAddition();
-          toast({
-            title: "Success",
-            description: `Ingredients from ${currentMealPlan?.name || 'your meal plan'} have been added to your grocery list.`,
-          });
-        }}
+        onConfirm={handleConfirmGroceryAddition}
         onCancel={() => setShowConfirmation(false)}
         mealPlanName={currentMealPlan?.name || 'your meal plan'}
       />

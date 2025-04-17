@@ -2,7 +2,6 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
-import { Navigate } from 'react-router-dom';
 
 type AuthContextType = {
   session: Session | null;
@@ -110,23 +109,6 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
-
-// Export the ProtectedRoute component
-export const ProtectedRoute = ({ children }: { children: ReactNode }) => {
-  const { isAuthenticated, isLoading } = useAuth();
-  
-  if (isLoading) {
-    // Show loading state while checking authentication
-    return <div>Loading...</div>;
-  }
-  
-  if (!isAuthenticated) {
-    // Redirect to auth page if not authenticated
-    return <Navigate to="/auth" />;
-  }
-  
-  return <>{children}</>;
 };
 
 export default useAuth;

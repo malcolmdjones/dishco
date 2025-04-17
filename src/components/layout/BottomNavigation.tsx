@@ -1,8 +1,7 @@
 
 import React from 'react';
-import { useLocation, Link } from 'react-router-dom';
-import { cn } from '@/lib/utils';
-import { Home, Calendar, Search, ShoppingCart, MoreHorizontal, FolderOpen } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Home, Compass, Calendar, MoreHorizontal, Plus } from 'lucide-react';
 
 const BottomNavigation = () => {
   const location = useLocation();
@@ -11,50 +10,60 @@ const BottomNavigation = () => {
   const navItems = [
     {
       name: 'Home',
+      icon: <Home size={24} />,
       path: '/',
-      icon: Home
     },
     {
       name: 'Planning',
+      icon: <Calendar size={24} />,
       path: '/planning',
-      icon: Calendar
     },
     {
-      name: 'Explore',
-      path: '/explore',
-      icon: Search
+      name: 'Log Meal',
+      icon: <Plus size={24} className="text-white" />,
+      path: '/log-meal',
+      isCenter: true,
     },
     {
-      name: 'Grocery',
-      path: '/grocery',
-      icon: ShoppingCart
+      name: 'Discover',
+      icon: <Compass size={24} />,
+      path: '/recipe-discovery',
     },
     {
       name: 'More',
+      icon: <MoreHorizontal size={24} />,
       path: '/more',
-      icon: MoreHorizontal
-    }
+    },
   ];
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 bg-white border-t border-gray-200 py-2 px-4 md:hidden">
-      <ul className="flex justify-between">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-10">
+      <div className="flex justify-around items-center h-16">
         {navItems.map((item) => (
-          <li key={item.name}>
-            <Link
-              to={item.path}
-              className={cn(
-                "flex flex-col items-center text-gray-500 hover:text-dishco-primary",
-                currentPath === item.path && "text-dishco-primary"
-              )}
-            >
-              {React.createElement(item.icon, { className: "h-6 w-6 mb-1" })}
-              <span className="text-xs">{item.name}</span>
-            </Link>
-          </li>
+          <Link
+            key={item.name}
+            to={item.path}
+            className={`flex flex-col items-center justify-center ${
+              currentPath === item.path ? 'text-dishco-primary' : 'text-gray-500'
+            }`}
+          >
+            {item.isCenter ? (
+              <div className="relative -top-5">
+                <div className="w-14 h-14 bg-green-500 hover:bg-green-600 transition-colors rounded-full flex items-center justify-center shadow-lg">
+                  {item.icon}
+                </div>
+                <span className="text-xs mt-1 text-green-500 font-medium">{item.name}</span>
+              </div>
+            ) : (
+              <>
+                {item.icon}
+                <span className="text-xs mt-1">{item.name}</span>
+              </>
+            )}
+          </Link>
         ))}
-      </ul>
-    </nav>
+      </div>
+    </div>
   );
 };
 
