@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Compass, Calendar, MoreHorizontal, Plus } from 'lucide-react';
+import { Home, Compass, Calendar, MoreHorizontal, Plus, BarChart2 } from 'lucide-react';
 
 const BottomNavigation = () => {
   const location = useLocation();
@@ -25,9 +25,9 @@ const BottomNavigation = () => {
       isCenter: true,
     },
     {
-      name: 'Discover',
-      icon: <Compass size={24} />,
-      path: '/recipe-discovery',
+      name: 'Progress',
+      icon: <BarChart2 size={24} />,
+      path: '/progress',
     },
     {
       name: 'More',

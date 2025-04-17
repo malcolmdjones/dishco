@@ -18,9 +18,14 @@ interface DailyNutritionSummaryProps {
     totalFat: number;
   };
   getMacroStatus: (type: 'calories' | 'protein' | 'carbs' | 'fat') => 'target-met' | 'too-high' | 'too-low';
+  showAdjustGoalsButton?: boolean;
 }
 
-const DailyNutritionSummary: React.FC<DailyNutritionSummaryProps> = ({ dailyNutrition, getMacroStatus }) => {
+const DailyNutritionSummary: React.FC<DailyNutritionSummaryProps> = ({ 
+  dailyNutrition, 
+  getMacroStatus,
+  showAdjustGoalsButton = true
+}) => {
   const macroColors = {
     calories: "#FFF4D7",
     protein: "#DBE9FE",
@@ -32,9 +37,11 @@ const DailyNutritionSummary: React.FC<DailyNutritionSummaryProps> = ({ dailyNutr
     <div className="bg-white rounded-xl p-4 mb-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">Today's Nutrition</h2>
-        <Link to="/nutrition-goals">
-          <Button variant="ghost" size="sm" className="text-xs">Adjust Goals</Button>
-        </Link>
+        {showAdjustGoalsButton && (
+          <Link to="/nutrition-goals">
+            <Button variant="ghost" size="sm" className="text-xs">Adjust Goals</Button>
+          </Link>
+        )}
       </div>
       
       <div className="flex justify-between items-center">

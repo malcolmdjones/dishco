@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -42,8 +41,8 @@ import AdminAddRecipePage from "./pages/admin/AdminAddRecipePage";
 import AdminEditRecipePage from "./pages/admin/AdminEditRecipePage";
 import AdminViewRecipePage from "./pages/admin/AdminViewRecipePage";
 import RecipeDiscoveryPage from "./pages/RecipeDiscoveryPage";
+import ProgressPage from "./pages/ProgressPage";
 
-// We'll create a protected route component that requires authentication
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
   
@@ -58,7 +57,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-// Admin route requires both authentication and admin status
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isAdmin, isLoading } = useAuth();
   
@@ -77,7 +75,6 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-// App root component with authentication provider
 const App = () => (
   <QueryClientProvider client={new QueryClient()}>
     <AuthProvider>
@@ -89,6 +86,7 @@ const App = () => (
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/" element={<AppLayout><HomePage /></AppLayout>} />
             <Route path="/planning" element={<ProtectedRoute><AppLayout><PlanningPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/progress" element={<ProtectedRoute><AppLayout><ProgressPage /></AppLayout></ProtectedRoute>} />
             <Route path="/create-meal-plan" element={<ProtectedRoute><AppLayout><CreateMealPlanPage /></AppLayout></ProtectedRoute>} />
             <Route path="/explore-recipes" element={<AppLayout><ExploreRecipesPage /></AppLayout>} />
             <Route path="/explore-snacks" element={<AppLayout><ExploreSnacksPage /></AppLayout>} />
@@ -97,7 +95,6 @@ const App = () => (
             <Route path="/grocery" element={<ProtectedRoute><AppLayout><GroceryListPage /></AppLayout></ProtectedRoute>} />
             <Route path="/more" element={<AppLayout><MorePage /></AppLayout>} />
             
-            {/* Meal logging routes */}
             <Route path="/log-meal" element={<LogMealPage />} />
             <Route path="/log-meal/search" element={<LogMealSearchPage />} />
             <Route path="/log-meal/scan" element={<LogMealScanPage />} />
@@ -121,13 +118,11 @@ const App = () => (
             <Route path="/privacy" element={<ProtectedRoute><AppLayout><PrivacySecurityPage /></AppLayout></ProtectedRoute>} />
             <Route path="/dietary-restrictions" element={<ProtectedRoute><AppLayout><DietaryRestrictionsPage /></AppLayout></ProtectedRoute>} />
             
-            {/* Admin routes */}
             <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
             <Route path="/admin/add-recipe" element={<AdminRoute><AdminAddRecipePage /></AdminRoute>} />
             <Route path="/admin/edit-recipe/:recipeId" element={<AdminRoute><AdminEditRecipePage /></AdminRoute>} />
             <Route path="/admin/recipe/:recipeId" element={<AdminRoute><AdminViewRecipePage /></AdminRoute>} />
             
-            {/* Catch-all route for 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
