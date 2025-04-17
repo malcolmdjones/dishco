@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import AppLayout from '@/components/layout/AppLayout';
-import { useAuth, AuthProvider, ProtectedRoute } from '@/hooks/useAuth';
+import { AuthProvider, ProtectedRoute } from '@/hooks/useAuth';
 import { ThemeProvider } from '@/components/theme-provider';
 
 // Page imports
@@ -45,8 +46,6 @@ import AdminViewRecipePage from '@/pages/admin/AdminViewRecipePage';
 import CreateMealPlanPage from '@/pages/CreateMealPlanPage';
 
 function App() {
-  const { isAuthenticated } = useAuth();
-  
   return (
     <AuthProvider>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
