@@ -112,7 +112,7 @@ export const useAuth = () => {
   return context;
 };
 
-// Add the missing ProtectedRoute component
+// Export the ProtectedRoute component
 export const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
   
