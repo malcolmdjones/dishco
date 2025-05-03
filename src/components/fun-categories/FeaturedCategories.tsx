@@ -1,11 +1,6 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Carousel, 
-  CarouselContent, 
-  CarouselItem 
-} from '@/components/ui/carousel';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import CategoryIcon from './CategoryIcon';
 
@@ -24,9 +19,9 @@ const FeaturedCategories: React.FC = () => {
   ];
   
   return (
-    <div className="px-4">
-      <ScrollArea className="w-full whitespace-nowrap">
-        <div className="flex space-x-4 py-2">
+    <div className="px-4 mb-2">
+      <ScrollArea className="w-full">
+        <div className="flex space-x-4 py-2 overflow-x-auto">
           {categories.map((category, index) => (
             <CategoryIcon 
               key={index}

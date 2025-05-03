@@ -16,7 +16,7 @@ const FunCategoriesPage: React.FC = () => {
       <PageHeader />
       
       <ScrollArea className="flex-1 overflow-y-auto">
-        <div className="py-2">
+        <div className="py-2 pb-16">
           {/* Featured Categories */}
           <FeaturedCategories />
           
@@ -33,13 +33,13 @@ const FunCategoriesPage: React.FC = () => {
             leftCategory={{
               title: categoryData.budgetBites.title,
               description: categoryData.budgetBites.description,
-              image: categoryData.budgetBites.image,
+              image={categoryData.budgetBites.image},
               viewAll: () => navigate('/explore-recipes'),
             }}
             rightCategory={{
               title: categoryData.smoothieStation.title,
               description: categoryData.smoothieStation.description,
-              image: categoryData.smoothieStation.image,
+              image={categoryData.smoothieStation.image},
               viewAll: () => navigate('/explore-recipes'),
             }}
           />
@@ -57,7 +57,7 @@ const FunCategoriesPage: React.FC = () => {
             leftCategory={{
               title: categoryData.proteinBakery.title,
               description: categoryData.proteinBakery.description,
-              image: categoryData.proteinBakery.image,
+              image={categoryData.proteinBakery.image},
               viewAll: () => navigate('/explore-recipes'),
             }}
             rightCategory={{

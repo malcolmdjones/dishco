@@ -15,7 +15,7 @@ export const categoryData: Record<string, CategoryData> = {
   },
   budgetBites: {
     title: "Budget Bites",
-    image: "https://images.unsplash.com/photo-1607877742570-4ce93c312b96?auto=format&fit=crop&q=80&w=1374&ixlib=rb-4.0.1",
+    image: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&q=80&w=1374&ixlib=rb-4.0.1",
     gradientColors: "from-green-500 to-teal-500",
     description: "Affordable, delicious recipes"
   },
