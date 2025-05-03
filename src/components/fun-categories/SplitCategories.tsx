@@ -1,15 +1,11 @@
 
 import React from 'react';
-import { Recipe } from '@/data/mockData';
-import { getRecipeImage } from '@/utils/recipeUtils';
 
 interface CategoryProps {
   title: string;
   description?: string;
-  recipes?: Recipe[];
-  placeholderImage?: string;
+  image: string;
   viewAll: () => void;
-  gradientColors: string;
 }
 
 interface SplitCategoriesProps {
@@ -26,41 +22,20 @@ const SplitCategories: React.FC<SplitCategoriesProps> = ({ leftCategory, rightCa
   );
 };
 
-const CategoryTile: React.FC<CategoryProps> = ({ title, description, recipes = [], placeholderImage, viewAll, gradientColors }) => {
-  const hasRecipes = recipes.length > 0;
-  const recipe = hasRecipes ? recipes[0] : null;
-  
+const CategoryTile: React.FC<CategoryProps> = ({ title, description, image, viewAll }) => {
   return (
     <div 
       className="rounded-xl overflow-hidden h-40 relative cursor-pointer group"
       onClick={viewAll}
     >
-      {recipe ? (
-        <>
-          <div className="w-full h-full">
-            <img 
-              src={getRecipeImage(recipe.imageSrc)} 
-              alt={recipe.name} 
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
-            />
-          </div>
-          <div className={`absolute inset-0 bg-gradient-to-t ${gradientColors} opacity-60`}></div>
-        </>
-      ) : placeholderImage ? (
-        <>
-          <div className="w-full h-full">
-            <img 
-              src={placeholderImage} 
-              alt={title} 
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
-            />
-          </div>
-          <div className={`absolute inset-0 bg-gradient-to-t ${gradientColors} opacity-60`}></div>
-        </>
-      ) : (
-        <div className={`w-full h-full bg-gradient-to-t ${gradientColors} opacity-80`}></div>
-      )}
-      <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+      <div className="w-full h-full">
+        <img 
+          src={image} 
+          alt={title} 
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+        />
+      </div>
+      <div className="absolute bottom-0 left-0 right-0 p-3 text-white bg-black bg-opacity-30">
         <h3 className="font-bold text-sm md:text-base">{title}</h3>
         {description && <p className="text-xs opacity-90 hidden md:block">{description}</p>}
       </div>
