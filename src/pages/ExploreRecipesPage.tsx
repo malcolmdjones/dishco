@@ -21,9 +21,8 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { useRecipes } from '@/hooks/useRecipes';
+import { recipes, Recipe } from '@/data/mockData';
 import RecipeViewer from '@/components/RecipeViewer';
-import { Recipe } from '@/types/Recipe';
 
 // Define filter types
 type PriceRange = '$' | '$$' | '$$$';
@@ -48,7 +47,6 @@ interface Filters {
 
 const ExploreRecipesPage = () => {
   const navigate = useNavigate();
-  const { recipes, loading: recipesLoading, isRecipeSaved, toggleSaveRecipe } = useRecipes();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
@@ -75,10 +73,8 @@ const ExploreRecipesPage = () => {
   
   // Effect to load initial recipes
   useEffect(() => {
-    if (recipes.length > 0) {
-      loadMoreRecipes(true);
-    }
-  }, [recipes]);
+    loadMoreRecipes(true);
+  }, []);
   
   // Effect to detect filter changes
   useEffect(() => {
@@ -100,58 +96,38 @@ const ExploreRecipesPage = () => {
   const loadMoreRecipes = (reset = false) => {
     setLoading(true);
     
-    // Filter recipes based on current filters and search query
-    const filteredRecipes = recipes.filter(recipe => {
-      // Search query filter
-      if (searchQuery && 
-          !recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-          !recipe.description?.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return false;
-      }
+    // Simulate API call delay
+    setTimeout(() => {
+      const startIndex = reset ? 0 : (page - 1) * recipesPerPage;
+      const endIndex = startIndex + recipesPerPage;
       
-      // Cook time filter
-      if (filters.cookTime.length > 0) {
-        const cookTime = recipe.cookTime || 0;
-        const isQuick = filters.cookTime.includes('quick') && cookTime <= 15;
-        const isMedium = filters.cookTime.includes('medium') && cookTime > 15 && cookTime <= 30;
-        const isLong = filters.cookTime.includes('long') && cookTime > 30;
-        
-        if (!(isQuick || isMedium || isLong)) {
+      // Filter recipes based on current filters and search query
+      const filteredRecipes = recipes.filter(recipe => {
+        // Search query filter
+        if (searchQuery && !recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+            !recipe.description.toLowerCase().includes(searchQuery.toLowerCase())) {
           return false;
         }
+        
+        // Other filters will be implemented here
+        // This is a placeholder for future implementation
+        
+        return true;
+      });
+      
+      const newRecipes = filteredRecipes.slice(startIndex, endIndex);
+      
+      if (reset) {
+        setVisibleRecipes(newRecipes);
+        setPage(1);
+      } else {
+        setVisibleRecipes(prev => [...prev, ...newRecipes]);
+        setPage(prev => prev + 1);
       }
       
-      // Meal type filter
-      if (filters.mealType.length > 0 && 
-          recipe.type && 
-          !filters.mealType.includes(recipe.type.toLowerCase() as MealType)) {
-        return false;
-      }
-      
-      // High protein filter
-      if (filters.highProtein && (!recipe.macros || recipe.macros.protein < 20)) {
-        return false;
-      }
-      
-      // Other filters would be implemented here for a complete solution
-      
-      return true;
-    });
-    
-    const startIndex = reset ? 0 : (page - 1) * recipesPerPage;
-    const endIndex = startIndex + recipesPerPage;
-    const newRecipes = filteredRecipes.slice(startIndex, endIndex);
-    
-    if (reset) {
-      setVisibleRecipes(newRecipes);
-      setPage(1);
-    } else {
-      setVisibleRecipes(prev => [...prev, ...newRecipes]);
-      setPage(prev => prev + 1);
-    }
-    
-    setHasMore(endIndex < filteredRecipes.length);
-    setLoading(false);
+      setHasMore(endIndex < filteredRecipes.length);
+      setLoading(false);
+    }, 500);
   };
   
   // Handle search input change
@@ -494,13 +470,6 @@ const ExploreRecipesPage = () => {
         </div>
       )}
       
-      {/* Loading State */}
-      {recipesLoading && (
-        <div className="text-center py-10">
-          <p className="text-gray-500">Loading recipes...</p>
-        </div>
-      )}
-      
       {/* Recipe Grid */}
       <div className="grid grid-cols-2 gap-4">
         {visibleRecipes.map(recipe => (
@@ -514,9 +483,6 @@ const ExploreRecipesPage = () => {
                 src={recipe.imageSrc} 
                 alt={recipe.name} 
                 className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = '/placeholder.svg';
-                }}
               />
             </div>
             <div className="p-3">
@@ -530,11 +496,9 @@ const ExploreRecipesPage = () => {
                 </div>
               </div>
               <div className="flex flex-wrap gap-1 mt-2">
-                {recipe.type && (
-                  <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-800 rounded">
-                    {recipe.type}
-                  </span>
-                )}
+                <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-800 rounded">
+                  {recipe.type}
+                </span>
                 {/* Additional tags would go here */}
               </div>
             </div>
@@ -557,7 +521,7 @@ const ExploreRecipesPage = () => {
       )}
       
       {/* No Results Message */}
-      {visibleRecipes.length === 0 && !recipesLoading && (
+      {visibleRecipes.length === 0 && !loading && (
         <div className="text-center py-10">
           <p className="text-gray-500">No recipes found matching your criteria.</p>
           <Button 
@@ -576,10 +540,6 @@ const ExploreRecipesPage = () => {
           recipe={selectedRecipe}
           isOpen={isRecipeViewerOpen}
           onClose={() => setIsRecipeViewerOpen(false)}
-          isSaved={isRecipeSaved(selectedRecipe.id)}
-          onToggleSave={() => toggleSaveRecipe(selectedRecipe.id)}
-          isConsumed={false}
-          onToggleConsumed={() => {}}
         />
       )}
     </div>

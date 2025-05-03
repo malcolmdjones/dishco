@@ -1,6 +1,7 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Recipe } from '@/types/Recipe';
-import { FoodDatabaseItem, SearchResult, LoggedMeal } from '@/types/food';
+import { FoodDatabaseItem, LoggedMeal } from '@/types/food';
 
 // In-memory storage for recent foods
 let recentFoods: FoodDatabaseItem[] = [];
@@ -43,37 +44,34 @@ export const searchFoods = async (query: string): Promise<FoodDatabaseItem[]> =>
 };
 
 // Convert a food item to a recipe format
-export const foodItemToRecipe = (foodItem: FoodDatabaseItem | SearchResult): Recipe => {
+export const foodItemToRecipe = (food: FoodDatabaseItem, quantity: number = 1): Recipe => {
   return {
-    id: foodItem.id,
-    name: foodItem.name,
+    id: food.id,
+    name: food.name,
+    description: food.brand ? `${food.brand} - ${food.servingSize || ''}` : (food.servingSize || ''),
     type: 'food',
-    description: `${foodItem.brand || 'Common food'} - ${foodItem.servingSize || '1'} ${foodItem.servingUnit || 'serving'}`,
-    imageSrc: foodItem.imageSrc || null,
-    macros: foodItem.macros,
-    externalSource: true,
+    imageSrc: food.imageSrc,
+    macros: {
+      calories: Math.round(food.macros.calories * quantity),
+      protein: Math.round(food.macros.protein * quantity),
+      carbs: Math.round(food.macros.carbs * quantity),
+      fat: Math.round(food.macros.fat * quantity),
+      fiber: food.macros.fiber ? Math.round(food.macros.fiber * quantity) : 0
+    },
     storeBought: true
   };
 };
 
 // Add to recent foods
-export const addToRecentFoods = (food: FoodDatabaseItem) => {
-  try {
-    const recentFoods = getRecentFoods();
-    // Check if this food is already in the recent foods
-    const existingIndex = recentFoods.findIndex(item => item.id === food.id);
-    if (existingIndex !== -1) {
-      // Remove it from its current position
-      recentFoods.splice(existingIndex, 1);
-    }
-    // Add it to the beginning
-    recentFoods.unshift(food);
-    // Keep only the most recent 10 items
-    const trimmedList = recentFoods.slice(0, 10);
-    localStorage.setItem('recentFoods', JSON.stringify(trimmedList));
-  } catch (error) {
-    console.error('Error adding to recent foods:', error);
-  }
+export const addToRecentFoods = (food: FoodDatabaseItem): void => {
+  // Remove if already exists (to avoid duplicates)
+  recentFoods = recentFoods.filter(item => item.id !== food.id);
+  
+  // Add to beginning of array
+  recentFoods.unshift(food);
+  
+  // Limit to 10 items
+  recentFoods = recentFoods.slice(0, 10);
 };
 
 // Get recent foods
@@ -82,28 +80,33 @@ export const getRecentFoods = (): FoodDatabaseItem[] => {
 };
 
 // Mock barcode scanning functionality
-export const scanBarcode = async (code: string): Promise<FoodDatabaseItem | null> => {
+export const scanBarcode = async (barcode: string): Promise<FoodDatabaseItem | null> => {
   try {
-    // In a real app, we'd call an API to get product info from the barcode
-    // For now, return mock data
-    console.log(`Scanning barcode: ${code}`);
+    // In a real app, this would call an actual barcode API
+    console.log(`Scanning barcode: ${barcode}`);
+    
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Return a dummy food item based on barcode
     return {
-      id: `barcode-${code}`,
-      name: `Product ${code}`,
-      brand: 'Unknown Brand',
-      servingSize: '100',
-      servingUnit: 'g',
+      id: `barcode-${barcode}`,
+      name: `Food Item (Barcode: ${barcode.substring(0, 4)})`,
+      brand: 'Generic Brand',
+      servingSize: '1 serving',
+      servingUnit: 'serving',
       isCommon: false,
       imageSrc: null,
       macros: {
         calories: 200,
         protein: 10,
-        carbs: 20,
-        fat: 5
+        carbs: 25,
+        fat: 8,
+        fiber: 2
       }
     };
   } catch (error) {
-    console.error('Error scanning barcode:', error);
+    console.error("Error scanning barcode:", error);
     return null;
   }
 };

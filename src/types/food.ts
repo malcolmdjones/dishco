@@ -30,8 +30,6 @@ export interface LoggedMeal {
   type: string;
   date: string;
   consumed: boolean;
-  loggedAt?: string; 
-  loggedFromScreen?: string;
 }
 
 export interface SearchResult {
@@ -55,45 +53,4 @@ export interface FoodDatabaseService {
   getRecentFoods: () => FoodDatabaseItem[];
   addToRecentFoods: (food: FoodDatabaseItem) => void;
   scanBarcode: (code: string) => Promise<FoodDatabaseItem | null>;
-}
-
-export interface QuickAddData {
-  name: string;
-  calories: number;
-  protein?: number;
-  carbs?: number;
-  fat?: number;
-  fiber?: number;
-}
-
-export interface CustomFood {
-  name: string;
-  brand?: string;
-  servingSize?: string;
-  servingUnit?: string;
-  macros: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-    fiber?: number;
-  };
-}
-
-export interface NutritionLabelData {
-  calories: number;
-  totalFat: number;
-  saturatedFat?: number;
-  transFat?: number;
-  cholesterol?: number;
-  sodium?: number;
-  totalCarbs: number;
-  dietaryFiber?: number;
-  sugars?: number;
-  addedSugars?: number;
-  protein: number;
-  vitaminD?: number;
-  calcium?: number;
-  iron?: number;
-  potassium?: number;
 }
