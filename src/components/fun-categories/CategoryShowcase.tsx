@@ -28,7 +28,7 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
       </div>
       
       <div 
-        className="overflow-hidden rounded-lg h-24 relative cursor-pointer"
+        className="overflow-hidden rounded-lg h-36 relative cursor-pointer"
         onClick={viewAll}
       >
         <img 

@@ -25,7 +25,7 @@ const SplitCategories: React.FC<SplitCategoriesProps> = ({ leftCategory, rightCa
 const CategoryTile: React.FC<CategoryProps> = ({ title, description, image, viewAll }) => {
   return (
     <div 
-      className="relative overflow-hidden h-20 rounded-lg cursor-pointer"
+      className="relative overflow-hidden h-32 rounded-lg cursor-pointer"
       onClick={viewAll}
     >
       <img 

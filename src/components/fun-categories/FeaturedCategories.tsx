@@ -19,7 +19,7 @@ const FeaturedCategories: React.FC = () => {
   
   return (
     <div className="px-4 mb-4">
-      <div className="flex overflow-x-auto py-3 gap-4 no-scrollbar">
+      <div className="grid grid-cols-5 py-3 gap-2">
         {categories.map((category, index) => (
           <CategoryIcon 
             key={index}
