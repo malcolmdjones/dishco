@@ -59,10 +59,41 @@ export const standardToCustomRecipe = (recipe: Recipe): Omit<CustomRecipe, 'id' 
 };
 
 /**
+ * Check if a URL is a Google Drive sharing link and convert it to a direct image URL
+ * @param url The URL to check and potentially convert
+ * @returns A direct image URL
+ */
+export const convertGoogleDriveLink = (url: string | null | undefined): string | null => {
+  if (!url) return null;
+  
+  // Check if it's a Google Drive link
+  if (url.includes('drive.google.com/file/d/')) {
+    try {
+      // Extract the file ID from the Google Drive URL
+      const fileIdMatch = url.match(/\/d\/(.*?)\/view/);
+      if (fileIdMatch && fileIdMatch[1]) {
+        const fileId = fileIdMatch[1];
+        // Convert to a direct image URL
+        return `https://drive.google.com/uc?export=view&id=${fileId}`;
+      }
+    } catch (error) {
+      console.error('Error converting Google Drive URL:', error);
+    }
+  }
+  
+  return url;
+};
+
+/**
  * Check if a recipe has an image, if not return the default image
+ * Also handles converting Google Drive links to direct image URLs
  */
 export const getRecipeImage = (imageSrc: string | null | undefined): string => {
-  return imageSrc || DEFAULT_IMAGE_URL;
+  if (!imageSrc) return DEFAULT_IMAGE_URL;
+  
+  // Convert Google Drive links if necessary
+  const convertedUrl = convertGoogleDriveLink(imageSrc);
+  return convertedUrl || DEFAULT_IMAGE_URL;
 };
 
 // Add compatibility for recipehub
