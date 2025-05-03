@@ -28,6 +28,7 @@ import { Recipe } from '@/data/mockData';
 import { getRecipeImage } from '@/utils/recipeUtils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 
 // Define filter types
 type PriceRange = '$' | '$$' | '$$$';
@@ -99,7 +100,7 @@ const ExploreSnacksPage = () => {
         setShowEmptyState(true);
       } else {
         // Convert db recipes to frontend format
-        const frontendRecipes = dbRecipes.map((recipe) => ({
+        const frontendRecipes: Recipe[] = dbRecipes.map((recipe) => ({
           id: recipe.user_id,
           name: recipe.title || '',
           description: recipe.short_description || '',
@@ -117,8 +118,8 @@ const ExploreSnacksPage = () => {
             fat: recipe.nutrition_fat ? Number(recipe.nutrition_fat) : 0,
             fiber: recipe.nutrition_fiber ? Number(recipe.nutrition_fiber) : 0
           },
-          ingredients: recipe.ingredients_json || [],
-          instructions: recipe.instructions_json || [],
+          ingredients: Array.isArray(recipe.ingredients_json) ? recipe.ingredients_json : [],
+          instructions: Array.isArray(recipe.instructions_json) ? recipe.instructions_json : [],
           externalSource: recipe.store_bought || false,
           storeBought: recipe.store_bought || false
         }));

@@ -8,13 +8,14 @@ import {
   sanitizeRecipeForInsert,
   getUserDietaryRestrictions
 } from '@/utils/recipeHubUtils';
+import { Recipe } from '@/data/mockData';
 
 export const useFetchRecipes = () => {
-  const [recipes, setRecipes] = useState([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
-  const [dietaryRestrictions, setDietaryRestrictions] = useState([]);
+  const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>([]);
 
   // Check authentication status
   useEffect(() => {
@@ -128,7 +129,7 @@ export const useFetchRecipes = () => {
   };
 
   // Get recipes by type (e.g., 'snack', 'breakfast', etc.)
-  const getRecipesByType = (type) => {
+  const getRecipesByType = (type: string) => {
     let filteredRecipes = recipes.filter(recipe => recipe.type?.toLowerCase() === type.toLowerCase());
     
     // Apply dietary restrictions

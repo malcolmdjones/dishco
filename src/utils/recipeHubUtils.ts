@@ -1,3 +1,4 @@
+
 import { Recipe } from '@/data/mockData';
 import { getRecipeImage } from '@/utils/recipeUtils';
 import { Json } from '@/integrations/supabase/types';
@@ -75,14 +76,40 @@ export const sanitizeRecipeForInsert = (recipeData: Partial<RecipeHubDb>): Parti
 
 // Convert database recipe to frontend recipe format
 export const recipeHubDbToFrontendRecipe = (dbRecipe: RecipeHubDb): Recipe => {
-  // Parse ingredients and instructions from JSON if available
-  const ingredients = dbRecipe.ingredients_json ? 
-    Array.isArray(dbRecipe.ingredients_json) ? 
-    dbRecipe.ingredients_json : [] : [];
-  
-  const instructions = dbRecipe.instructions_json ? 
-    Array.isArray(dbRecipe.instructions_json) ? 
-    dbRecipe.instructions_json : [] : [];
+  // Ensure ingredients and instructions are properly handled as arrays
+  let ingredients: any[] = [];
+  if (dbRecipe.ingredients_json) {
+    if (Array.isArray(dbRecipe.ingredients_json)) {
+      ingredients = dbRecipe.ingredients_json;
+    } else {
+      // Try to convert to array if possible, otherwise use empty array
+      try {
+        const parsedIngredients = typeof dbRecipe.ingredients_json === 'string' 
+          ? JSON.parse(dbRecipe.ingredients_json as string) 
+          : dbRecipe.ingredients_json;
+        ingredients = Array.isArray(parsedIngredients) ? parsedIngredients : [];
+      } catch (e) {
+        ingredients = [];
+      }
+    }
+  }
+
+  let instructions: any[] = [];
+  if (dbRecipe.instructions_json) {
+    if (Array.isArray(dbRecipe.instructions_json)) {
+      instructions = dbRecipe.instructions_json;
+    } else {
+      // Try to convert to array if possible, otherwise use empty array
+      try {
+        const parsedInstructions = typeof dbRecipe.instructions_json === 'string'
+          ? JSON.parse(dbRecipe.instructions_json as string)
+          : dbRecipe.instructions_json;
+        instructions = Array.isArray(parsedInstructions) ? parsedInstructions : [];
+      } catch (e) {
+        instructions = [];
+      }
+    }
+  }
 
   // Calculate cooking time in minutes
   const cookTimeNum = dbRecipe.cook_time ? Number(dbRecipe.cook_time) : 0;
