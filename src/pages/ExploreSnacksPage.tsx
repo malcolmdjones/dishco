@@ -27,6 +27,7 @@ import { useRecipes } from '@/hooks/useRecipes';
 import { Recipe } from '@/data/mockData';
 import { getRecipeImage } from '@/utils/recipeUtils';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 // Define filter types
 type PriceRange = '$' | '$$' | '$$$';
@@ -47,7 +48,7 @@ interface Filters {
 const ExploreSnacksPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { recipes, loading, isRecipeSaved, toggleSaveRecipe, fetchRecipes } = useRecipes();
+  const { isRecipeSaved, toggleSaveRecipe } = useRecipes();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
@@ -57,6 +58,8 @@ const ExploreSnacksPage = () => {
   const [hasMore, setHasMore] = useState(true);
   const snacksPerPage = 8;
   const [showEmptyState, setShowEmptyState] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
   
   // Filter state
   const [filters, setFilters] = useState<Filters>({
@@ -70,24 +73,82 @@ const ExploreSnacksPage = () => {
   const [filtersApplied, setFiltersApplied] = useState(false);
   const [activeFilterCount, setActiveFilterCount] = useState(0);
   
-  // Ensure we're only using recipes that are explicitly marked as snacks
-  const snackRecipes = recipes.filter(recipe => 
-    recipe.type === 'snack'
-  );
-  
-  // Effect to load initial snacks when recipes are loaded
-  useEffect(() => {
-    // Force a fresh fetch from the recipehub database
-    fetchRecipes();
-  }, []);
+  // Fetch recipes directly from the recipehub table
+  const fetchRecipesFromDb = async () => {
+    setLoading(true);
+    try {
+      console.log("Fetching recipes directly from recipehub...");
+      
+      // Clear existing recipes first
+      setRecipes([]);
+      
+      // Fetch recipes only from the recipehub table where type is 'snack'
+      const { data: dbRecipes, error } = await supabase
+        .from('recipehub')
+        .select('*')
+        .eq('type', 'snack');
 
-  // Effect to load snacks when recipes array changes
-  useEffect(() => {
-    if (recipes.length > 0) {
-      loadMoreSnacks(true);
-      setShowEmptyState(snackRecipes.length === 0);
+      if (error) {
+        throw error;
+      }
+
+      if (!dbRecipes || dbRecipes.length === 0) {
+        console.log('No snack recipes found in recipehub database');
+        setRecipes([]);
+        setVisibleSnacks([]);
+        setShowEmptyState(true);
+      } else {
+        // Convert db recipes to frontend format
+        const frontendRecipes = dbRecipes.map((recipe) => ({
+          id: recipe.user_id,
+          name: recipe.title || '',
+          description: recipe.short_description || '',
+          type: recipe.type || 'snack',
+          imageSrc: recipe.image_url,
+          requiresBlender: recipe.blender || false,
+          requiresCooking: !(recipe.store_bought || false),
+          cookTime: recipe.cook_time ? Number(recipe.cook_time) : 0,
+          prepTime: recipe.prep_time ? Number(recipe.prep_time) : 0,
+          servings: 1,
+          macros: {
+            calories: recipe.nutrition_calories ? Number(recipe.nutrition_calories) : 0,
+            protein: recipe.nutrition_protein ? Number(recipe.nutrition_protein) : 0,
+            carbs: recipe.nutrition_carbs ? Number(recipe.nutrition_carbs) : 0,
+            fat: recipe.nutrition_fat ? Number(recipe.nutrition_fat) : 0,
+            fiber: recipe.nutrition_fiber ? Number(recipe.nutrition_fiber) : 0
+          },
+          ingredients: recipe.ingredients_json || [],
+          instructions: recipe.instructions_json || [],
+          externalSource: recipe.store_bought || false,
+          storeBought: recipe.store_bought || false
+        }));
+        
+        console.log(`Fetched ${frontendRecipes.length} snack recipes from recipehub database`);
+        setRecipes(frontendRecipes);
+        
+        // Initialize visible snacks
+        loadMoreSnacks(true, frontendRecipes);
+        setShowEmptyState(frontendRecipes.length === 0);
+      }
+    } catch (error) {
+      console.error('Error fetching snack recipes from recipehub:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load snack recipes.",
+        variant: "destructive"
+      });
+      setRecipes([]);
+      setVisibleSnacks([]);
+      setShowEmptyState(true);
+    } finally {
+      setLoading(false);
     }
-  }, [recipes]);
+  };
+  
+  // Effect to load initial snacks when the component mounts
+  useEffect(() => {
+    fetchRecipesFromDb();
+  }, []);
   
   // Effect to detect filter changes
   useEffect(() => {
@@ -108,7 +169,7 @@ const ExploreSnacksPage = () => {
   }, [filters]);
   
   // Load more snacks with pagination
-  const loadMoreSnacks = (reset = false) => {
+  const loadMoreSnacks = (reset = false, recipesData = recipes) => {
     setLoadingMore(true);
     
     // Simulate API call delay
@@ -117,7 +178,7 @@ const ExploreSnacksPage = () => {
       const endIndex = startIndex + snacksPerPage;
       
       // Filter snacks based on current filters and search query
-      const filteredSnacks = snackRecipes.filter(snack => {
+      const filteredSnacks = recipesData.filter(snack => {
         // Search query filter
         if (searchQuery && !snack.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
             !snack.description?.toLowerCase().includes(searchQuery.toLowerCase())) {
@@ -139,9 +200,6 @@ const ExploreSnacksPage = () => {
           
           if (!inRange) return false;
         }
-        
-        // Other filters would be implemented similarly
-        // This is a simplified implementation
         
         return true;
       });
@@ -218,6 +276,11 @@ const ExploreSnacksPage = () => {
           : [...current, value]
       };
     });
+  };
+
+  // Function to retry loading data
+  const retryLoadData = () => {
+    fetchRecipesFromDb();
   };
 
   return (
@@ -500,13 +563,23 @@ const ExploreSnacksPage = () => {
       {(visibleSnacks.length === 0 && !loading) || showEmptyState ? (
         <div className="text-center py-10">
           <p className="text-gray-500">No snacks found matching your criteria.</p>
-          <Button 
-            variant="link" 
-            onClick={resetFilters}
-            className="mt-2"
-          >
-            Clear filters and try again
-          </Button>
+          {recipes.length === 0 ? (
+            <Button 
+              variant="link" 
+              onClick={retryLoadData}
+              className="mt-2"
+            >
+              Retry loading snacks
+            </Button>
+          ) : (
+            <Button 
+              variant="link" 
+              onClick={resetFilters}
+              className="mt-2"
+            >
+              Clear filters and try again
+            </Button>
+          )}
         </div>
       ) : null}
       

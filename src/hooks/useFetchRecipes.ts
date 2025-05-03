@@ -5,7 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { 
   RecipeHubDb, 
   recipeHubDbToFrontendRecipe, 
-  sanitizeRecipeForInsert
+  sanitizeRecipeForInsert,
+  getUserDietaryRestrictions
 } from '@/utils/recipeHubUtils';
 
 export const useFetchRecipes = () => {
@@ -159,6 +160,3 @@ export const useFetchRecipes = () => {
     dietaryRestrictions
   };
 };
-
-// Helper function from recipeHubUtils
-import { getUserDietaryRestrictions } from '@/utils/recipeHubUtils';
