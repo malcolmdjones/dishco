@@ -1,10 +1,5 @@
 
 import React from 'react';
-import { 
-  Carousel, 
-  CarouselContent, 
-  CarouselItem 
-} from '@/components/ui/carousel';
 import { ArrowRight } from 'lucide-react';
 
 interface CategoryShowcaseProps {
@@ -21,9 +16,9 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
   viewAll
 }) => {
   return (
-    <div className="px-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+    <div className="px-4 space-y-2 mb-3">
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-lg font-bold text-gray-900">{title}</h2>
         <button 
           className="flex items-center text-sm font-medium text-blue-600"
           onClick={viewAll}
@@ -32,25 +27,21 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
         </button>
       </div>
       
-      <Carousel>
-        <CarouselContent className="-ml-2 md:-ml-4">
-          <CarouselItem className="pl-2 md:pl-4 basis-full">
-            <div className="overflow-hidden rounded-xl h-48 relative cursor-pointer group" onClick={viewAll}>
-              <div className="w-full h-full">
-                <img 
-                  src={image} 
-                  alt={title} 
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-4 text-white bg-black bg-opacity-30">
-                <h3 className="font-bold line-clamp-1">{title}</h3>
-                {description && <p className="text-sm opacity-90">{description}</p>}
-              </div>
-            </div>
-          </CarouselItem>
-        </CarouselContent>
-      </Carousel>
+      <div 
+        className="overflow-hidden rounded-xl h-32 relative cursor-pointer"
+        onClick={viewAll}
+      >
+        <div className="w-full h-full">
+          <img 
+            src={image} 
+            alt={title} 
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="absolute bottom-0 left-0 p-2 bg-white bg-opacity-90 rounded-tr-lg">
+          <div className="font-bold text-sm">{title}</div>
+        </div>
+      </div>
     </div>
   );
 };

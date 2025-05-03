@@ -12,15 +12,15 @@ const FunCategoriesPage: React.FC = () => {
   const navigate = useNavigate();
   
   return (
-    <div className="pb-16 h-full">
+    <div className="h-full flex flex-col">
       <PageHeader />
       
-      <ScrollArea className="h-[calc(100vh-8rem)] overflow-y-auto">
-        <div className="space-y-6 py-4">
+      <ScrollArea className="flex-1 overflow-y-auto">
+        <div className="py-2">
           {/* Featured Categories */}
           <FeaturedCategories />
           
-          {/* Full Width Category - Meal Prep MVPs */}
+          {/* Full Width Category */}
           <CategoryShowcase 
             title={categoryData.mealPrep.title} 
             description={categoryData.mealPrep.description}
@@ -28,7 +28,7 @@ const FunCategoriesPage: React.FC = () => {
             viewAll={() => navigate('/explore-recipes')}
           />
           
-          {/* Split Categories - Budget Bites & Smoothie Station */}
+          {/* Split Categories */}
           <SplitCategories 
             leftCategory={{
               title: categoryData.budgetBites.title,
@@ -44,7 +44,7 @@ const FunCategoriesPage: React.FC = () => {
             }}
           />
           
-          {/* Full Width Category - 5 Minute Breakfast Club */}
+          {/* Full Width Category */}
           <CategoryShowcase 
             title={categoryData.breakfastClub.title} 
             description={categoryData.breakfastClub.description}
@@ -52,7 +52,7 @@ const FunCategoriesPage: React.FC = () => {
             viewAll={() => navigate('/explore-recipes')}
           />
           
-          {/* Split Categories - Protein Bakery & Brunch Vibes */}
+          {/* Split Categories */}
           <SplitCategories 
             leftCategory={{
               title: categoryData.proteinBakery.title,
@@ -68,13 +68,16 @@ const FunCategoriesPage: React.FC = () => {
             }}
           />
           
-          {/* Full Width Category - Snack Savvy */}
+          {/* Full Width Category */}
           <CategoryShowcase 
             title={categoryData.snackSavvy.title} 
             description={categoryData.snackSavvy.description}
             image={categoryData.snackSavvy.image}
-            viewAll={() => navigate('/explore-snacks')}
+            viewAll: () => navigate('/explore-snacks'),
           />
+          
+          {/* Add some padding at the bottom for better scrolling experience */}
+          <div className="h-16"></div>
         </div>
       </ScrollArea>
     </div>
