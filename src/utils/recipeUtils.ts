@@ -1,3 +1,4 @@
+
 import { CustomRecipe } from '@/hooks/useCustomRecipes';
 import { Recipe } from '@/data/mockData';
 
@@ -73,7 +74,7 @@ export const convertGoogleDriveLink = (url: string | null | undefined): string |
       const fileIdMatch = url.match(/\/d\/(.*?)\/view/);
       if (fileIdMatch && fileIdMatch[1]) {
         const fileId = fileIdMatch[1];
-        // Convert to a direct image URL
+        // Return a direct image URL using the export=view format
         return `https://drive.google.com/uc?export=view&id=${fileId}`;
       }
     } catch (error) {

@@ -26,6 +26,7 @@ import RecipeViewer from '@/components/RecipeViewer';
 import { useRecipes } from '@/hooks/useRecipes';
 import { Recipe } from '@/data/mockData';
 import { getRecipeImage } from '@/utils/recipeUtils';
+import { useToast } from '@/hooks/use-toast';
 
 // Define filter types
 type PriceRange = '$' | '$$' | '$$$';
@@ -45,7 +46,8 @@ interface Filters {
 
 const ExploreSnacksPage = () => {
   const navigate = useNavigate();
-  const { recipes, loading, isRecipeSaved, toggleSaveRecipe } = useRecipes();
+  const { toast } = useToast();
+  const { recipes, loading, isRecipeSaved, toggleSaveRecipe, fetchRecipes } = useRecipes();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
@@ -54,6 +56,7 @@ const ExploreSnacksPage = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const snacksPerPage = 8;
+  const [showEmptyState, setShowEmptyState] = useState(false);
   
   // Filter state
   const [filters, setFilters] = useState<Filters>({
@@ -67,18 +70,22 @@ const ExploreSnacksPage = () => {
   const [filtersApplied, setFiltersApplied] = useState(false);
   const [activeFilterCount, setActiveFilterCount] = useState(0);
   
-  // Filter snacks to only include items that would be considered snacks
+  // Ensure we're only using recipes that are explicitly marked as snacks
   const snackRecipes = recipes.filter(recipe => 
-    recipe.type === 'snack' || 
-    recipe.macros.calories < 400 ||
-    recipe.name.toLowerCase().includes('snack') ||
-    (recipe.description && recipe.description.toLowerCase().includes('snack'))
+    recipe.type === 'snack'
   );
   
-  // Effect to load initial snacks
+  // Effect to load initial snacks when recipes are loaded
+  useEffect(() => {
+    // Force a fresh fetch from the recipehub database
+    fetchRecipes();
+  }, []);
+
+  // Effect to load snacks when recipes array changes
   useEffect(() => {
     if (recipes.length > 0) {
       loadMoreSnacks(true);
+      setShowEmptyState(snackRecipes.length === 0);
     }
   }, [recipes]);
   
@@ -93,6 +100,11 @@ const ExploreSnacksPage = () => {
     count += filters.calories.length;
     
     setActiveFilterCount(count);
+    
+    // Reapply filters when they change
+    if (recipes.length > 0) {
+      loadMoreSnacks(true);
+    }
   }, [filters]);
   
   // Load more snacks with pagination
@@ -146,7 +158,14 @@ const ExploreSnacksPage = () => {
       
       setHasMore(endIndex < filteredSnacks.length);
       setLoadingMore(false);
-    }, 500);
+      
+      // Update empty state
+      if (reset && newSnacks.length === 0) {
+        setShowEmptyState(true);
+      } else if (reset) {
+        setShowEmptyState(false);
+      }
+    }, 300);
   };
   
   // Handle search input change
@@ -180,6 +199,7 @@ const ExploreSnacksPage = () => {
       dietary: [],
       calories: []
     });
+    setSearchQuery('');
     setFiltersApplied(false);
     loadMoreSnacks(true);
   };
@@ -254,7 +274,7 @@ const ExploreSnacksPage = () => {
                 <h3 className="font-medium mb-2">Price Range</h3>
                 <div className="flex gap-4">
                   {['$', '$$', '$$$'].map((price) => (
-                    <div key={price} className="flex items-center gap-2">
+                    <div key={`price-${price}`} className="flex items-center gap-2">
                       <Checkbox 
                         id={`price-${price}`} 
                         checked={filters.price.includes(price as PriceRange)}
@@ -273,7 +293,7 @@ const ExploreSnacksPage = () => {
                 <h3 className="font-medium mb-2">Flavor Profile</h3>
                 <div className="grid grid-cols-2 gap-2">
                   {['sweet', 'savory', 'spicy', 'salty', 'sour'].map((flavor) => (
-                    <div key={flavor} className="flex items-center gap-2">
+                    <div key={`flavor-${flavor}`} className="flex items-center gap-2">
                       <Checkbox 
                         id={`flavor-${flavor}`} 
                         checked={filters.flavorProfile.includes(flavor as FlavorProfile)}
@@ -295,7 +315,7 @@ const ExploreSnacksPage = () => {
                     'protein-bars', 'granola', 'nuts-seeds', 'crackers', 'trail-mix', 
                     'chips', 'cookies', 'candy', 'chocolate', 'meat'
                   ].map((type) => (
-                    <div key={type} className="flex items-center gap-2">
+                    <div key={`type-${type}`} className="flex items-center gap-2">
                       <Checkbox 
                         id={`type-${type}`} 
                         checked={filters.snackType.includes(type as SnackType)}
@@ -319,7 +339,7 @@ const ExploreSnacksPage = () => {
                     'keto', 'vegan', 'vegetarian', 'gluten-free', 'dairy-free', 
                     'low-carb', 'low-sugar', 'paleo', 'high-protein', 'high-fiber', 'organic'
                   ].map((diet) => (
-                    <div key={diet} className="flex items-center gap-2">
+                    <div key={`diet-${diet}`} className="flex items-center gap-2">
                       <Checkbox 
                         id={`diet-${diet}`} 
                         checked={filters.dietary.includes(diet as DietaryPreference)}
@@ -340,7 +360,7 @@ const ExploreSnacksPage = () => {
                 <h3 className="font-medium mb-2">Calories</h3>
                 <div className="grid grid-cols-1 gap-2">
                   {['0-100', '100-200', '200-300', '300-400', '400+'].map((range) => (
-                    <div key={range} className="flex items-center gap-2">
+                    <div key={`calories-${range}`} className="flex items-center gap-2">
                       <Checkbox 
                         id={`calories-${range}`} 
                         checked={filters.calories.includes(range as CalorieRange)}
@@ -372,7 +392,7 @@ const ExploreSnacksPage = () => {
         <div className="flex flex-wrap gap-2 mb-4">
           {filters.price.map(price => (
             <Button 
-              key={`filter-price-${price}`}
+              key={`active-price-${price}`}
               variant="outline" 
               size="sm" 
               className="flex items-center gap-1 bg-gray-100"
@@ -384,7 +404,7 @@ const ExploreSnacksPage = () => {
           
           {filters.flavorProfile.map(flavor => (
             <Button 
-              key={`filter-flavor-${flavor}`}
+              key={`active-flavor-${flavor}`}
               variant="outline" 
               size="sm" 
               className="flex items-center gap-1 bg-gray-100"
@@ -429,9 +449,9 @@ const ExploreSnacksPage = () => {
       
       {/* Snack Grid */}
       <div className="grid grid-cols-2 gap-4">
-        {visibleSnacks.map(snack => (
+        {visibleSnacks.map((snack, index) => (
           <div 
-            key={snack.id} 
+            key={`snack-${snack.id}-${index}`}
             className="bg-white rounded-lg overflow-hidden shadow-sm cursor-pointer"
             onClick={() => handleSnackClick(snack)}
           >
@@ -463,7 +483,7 @@ const ExploreSnacksPage = () => {
       </div>
       
       {/* Load More Button */}
-      {hasMore && (
+      {hasMore && visibleSnacks.length > 0 && (
         <div className="mt-6 text-center">
           <Button 
             variant="outline" 
@@ -477,7 +497,7 @@ const ExploreSnacksPage = () => {
       )}
       
       {/* No Results Message */}
-      {visibleSnacks.length === 0 && !loading && (
+      {(visibleSnacks.length === 0 && !loading) || showEmptyState ? (
         <div className="text-center py-10">
           <p className="text-gray-500">No snacks found matching your criteria.</p>
           <Button 
@@ -488,7 +508,7 @@ const ExploreSnacksPage = () => {
             Clear filters and try again
           </Button>
         </div>
-      )}
+      ) : null}
       
       {/* Recipe Viewer Dialog */}
       {selectedRecipe && (

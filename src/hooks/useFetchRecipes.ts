@@ -46,6 +46,9 @@ export const useFetchRecipes = () => {
     try {
       console.log("Fetching recipes exclusively from recipehub table...");
       
+      // Clear existing recipes first to avoid showing old data
+      setRecipes([]);
+      
       // Fetch recipes only from the recipehub table
       const { data: dbRecipes, error } = await supabase
         .from('recipehub')
@@ -72,7 +75,7 @@ export const useFetchRecipes = () => {
         description: "Failed to load recipes.",
         variant: "destructive"
       });
-      // Don't fallback to mock recipes anymore
+      // Set recipes to empty array to ensure no old data is shown
       setRecipes([]);
     } finally {
       setLoading(false);
