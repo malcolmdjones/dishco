@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
@@ -6,41 +5,34 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import RecipeDetail from './RecipeDetail';
 import { Progress } from '@/components/ui/progress';
+import { MealPlan } from '@/hooks/useSavedMealPlans';
 import { Recipe } from '@/types/Recipe';
 
-interface MealPlanDayMeals {
-  breakfast?: Recipe | Recipe[] | null;
-  lunch?: Recipe | Recipe[] | null;
-  dinner?: Recipe | Recipe[] | null;
-  snacks?: Recipe[] | null;
-}
-
-interface MealPlanDay {
-  date: string;
-  meals: MealPlanDayMeals;
-}
-
-interface MealPlanData {
-  days: MealPlanDay[];
-  description?: string;
-}
-
-interface MealPlanType {
+interface MealPlan {
   id: string;
   name: string;
-  created_at: string;
-  user_id?: string;
-  plan_data: MealPlanData;
+  plan_data: {
+    days: {
+      date: string;
+      meals: {
+        breakfast: Recipe | Recipe[] | null;
+        lunch: Recipe | Recipe[] | null;
+        dinner: Recipe | Recipe[] | null;
+        snacks: Recipe | Recipe[] | null;
+      };
+    }[];
+    description?: string;
+  };
 }
 
 interface MealPlanDetailViewProps {
-  plan: MealPlanType | null;
+  plan: MealPlan | null;
   isOpen: boolean;
   onClose: () => void;
 }
 
 // Helper function to safely calculate daily macros
-const safeCalculateDailyMacros = (meals: MealPlanDayMeals = {}) => {
+const safeCalculateDailyMacros = (meals: any = {}) => {
   let calories = 0;
   let protein = 0;
   let carbs = 0;

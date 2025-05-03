@@ -1,108 +1,151 @@
 
 import { useState, useEffect } from 'react';
-import { addDays, format, startOfDay } from 'date-fns';
+import { useLocation } from 'react-router-dom';
+import { MealPlanDay, NutritionGoals, defaultGoals, fetchNutritionGoals } from '@/types/MealPlanTypes';
 import { Recipe } from '@/types/Recipe';
-import { MealPlanDay } from '@/types/MealPlanTypes';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useRecipes } from '@/hooks/useRecipes';
 
-export const useMealPlanState = (initialDays = 7) => {
-  // Initialize meal plan with specified number of days
-  const initializeMealPlan = (days: number): MealPlanDay[] => {
-    const currentDate = startOfDay(new Date());
-    
-    return Array.from({ length: days }).map((_, index) => ({
-      date: format(addDays(currentDate, index), 'yyyy-MM-dd'),
-      meals: {
-        breakfast: null,
-        lunch: null,
-        dinner: null,
-        snacks: []
-      }
-    }));
+/**
+ * Hook to manage the basic state of the meal plan
+ */
+export const useMealPlanState = () => {
+  const { toast } = useToast();
+  const { recipes, getRecipesByType } = useRecipes();
+  const location = useLocation();
+  const preferences = location.state?.preferences || {
+    days: 7,
+    mealMood: [],
+    proteinFocus: [],
+    cravings: [],
+    cuisineVibes: []
   };
-
-  const [mealPlan, setMealPlan] = useState<MealPlanDay[]>(initializeMealPlan(initialDays));
+  
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [currentDay, setCurrentDay] = useState(0);
-  
-  // Locked meals state (to prevent regeneration)
-  const [lockedMeals, setLockedMeals] = useState<{[key: string]: boolean}>({
-    breakfast: false,
-    lunch: false,
-    dinner: false
-  });
-  
-  const [lockedSnacks, setLockedSnacks] = useState<boolean[]>([]);
+  const [mealPlan, setMealPlan] = useState<MealPlanDay[]>([]);
+  const [userGoals, setUserGoals] = useState<NutritionGoals>(defaultGoals);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [lockedMeals, setLockedMeals] = useState<{[key: string]: boolean}>({});
+  const [aiReasoning, setAiReasoning] = useState<string>("");
 
-  // Initialize locked snacks array when meal plan changes
+  // Get user's nutrition goals from Supabase
   useEffect(() => {
-    if (mealPlan && mealPlan[currentDay] && mealPlan[currentDay].meals.snacks) {
-      const snacks = Array.isArray(mealPlan[currentDay].meals.snacks) ? 
-        mealPlan[currentDay].meals.snacks : 
-        [mealPlan[currentDay].meals.snacks];
-      
-      // Initialize with false values for each snack
-      setLockedSnacks(Array(snacks.length).fill(false));
-    }
-  }, [mealPlan, currentDay]);
-
-  // Methods for locking/unlocking meals
-  const toggleLockMeal = (mealType: string, index?: number) => {
-    if (mealType === 'snacks' && typeof index === 'number') {
-      setLockedSnacks(prev => {
-        const newLocks = [...prev];
-        newLocks[index] = !newLocks[index];
-        return newLocks;
-      });
-    } else {
-      setLockedMeals(prev => ({
-        ...prev,
-        [mealType]: !prev[mealType]
-      }));
-    }
-  };
-
-  // Update a specific meal in the plan
-  const updateMeal = (mealType: string, recipe: Recipe | null, index?: number) => {
-    setMealPlan(prevPlan => {
-      const newPlan = [...prevPlan];
-      const currentDayMeals = { ...newPlan[currentDay].meals };
-
-      if (mealType === 'snacks' && typeof index === 'number') {
-        // Handle snacks array
-        let snacks = Array.isArray(currentDayMeals.snacks) ? 
-          [...currentDayMeals.snacks as Recipe[]] : 
-          currentDayMeals.snacks ? [currentDayMeals.snacks as Recipe] : [];
-        
-        if (index >= 0) {
-          // Replace specific snack
-          snacks = snacks.map((snack, i) => (i === index ? recipe : snack));
-        } else {
-          // Add new snack
-          snacks.push(recipe as Recipe);
+    const fetchUserNutritionGoals = async () => {
+      try {
+        // Try to fetch user's goals from Supabase
+        const { data, error } = await supabase
+          .from('nutrition_goals')
+          .select('*')
+          .limit(1)
+          .single();
+          
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching nutrition goals:', error);
+          // Fall back to local goals if error
+          const localGoals = await fetchNutritionGoals();
+          setUserGoals(localGoals);
+          return;
         }
         
-        currentDayMeals.snacks = snacks.filter(Boolean);
-      } else {
-        // Handle other meal types
-        currentDayMeals[mealType as keyof typeof currentDayMeals] = recipe;
+        if (data) {
+          // Use Supabase nutrition goals
+          setUserGoals({
+            calories: data.calories,
+            protein: data.protein,
+            carbs: data.carbs,
+            fat: data.fat
+          });
+        } else {
+          // Fall back to local goals if no data
+          const localGoals = await fetchNutritionGoals();
+          setUserGoals(localGoals);
+        }
+      } catch (error) {
+        console.error('Error fetching nutrition goals:', error);
+        // Fall back to local goals on catch
+        const localGoals = await fetchNutritionGoals();
+        setUserGoals(localGoals);
       }
+    };
+    
+    fetchUserNutritionGoals();
+  }, []);
 
-      newPlan[currentDay] = {
-        ...newPlan[currentDay],
-        meals: currentDayMeals
-      };
+  // Initialize or generate meal plan
+  useEffect(() => {
+    if (mealPlan.length === 0) {
+      generateFullMealPlan();
+    }
+  }, [userGoals]);
+
+  // Filter recipes by meal type
+  const getRandomRecipeByType = (type: string) => {
+    const filteredRecipes = getRecipesByType(type);
+    if (filteredRecipes.length > 0) {
+      return filteredRecipes[Math.floor(Math.random() * filteredRecipes.length)];
+    }
+    return null;
+  };
+
+  // Function to generate a meal plan for the entire week
+  const generateFullMealPlan = () => {
+    setIsGenerating(true);
+    // Create a meal plan with the number of days from preferences (default 7)
+    const days = preferences.days || 7;
+    
+    const newPlan: MealPlanDay[] = Array.from({ length: days }).map((_, i) => {
+      const date = new Date(currentDate);
+      date.setDate(currentDate.getDate() + i - currentDay); // Adjust to keep current day in sync
       
-      return newPlan;
+      // Generate initial recipes for each meal type
+      const breakfastRecipe = getRandomRecipeByType('breakfast');
+      const lunchRecipe = getRandomRecipeByType('lunch');
+      const dinnerRecipe = getRandomRecipeByType('dinner');
+      const snackRecipe = getRandomRecipeByType('snack');
+
+      return {
+        date: date.toISOString(),
+        meals: {
+          breakfast: breakfastRecipe ? [breakfastRecipe] : [],
+          lunch: lunchRecipe ? [lunchRecipe] : [],
+          dinner: dinnerRecipe ? [dinnerRecipe] : [],
+          snacks: snackRecipe ? [snackRecipe] : []
+        }
+      };
     });
+    
+    setMealPlan(newPlan);
+    setIsGenerating(false);
+    
+    // Apply preferences here when you integrate with an actual meal generation algorithm
+    console.log('Generating meal plan with preferences:', preferences);
+    
+    // For development, you might want to see the preferences in a toast
+    if (Object.keys(preferences).length > 1) {
+      toast({
+        title: `Created a ${days}-day meal plan`,
+        description: `Based on your selected preferences`
+      });
+    }
   };
 
   return {
-    mealPlan,
-    setMealPlan,
+    currentDate,
+    setCurrentDate,
     currentDay,
     setCurrentDay,
+    mealPlan,
+    setMealPlan,
+    userGoals,
+    isGenerating,
+    setIsGenerating,
     lockedMeals,
-    lockedSnacks,
-    toggleLockMeal,
-    updateMeal
+    setLockedMeals,
+    aiReasoning,
+    setAiReasoning,
+    generateFullMealPlan,
+    preferences
   };
 };

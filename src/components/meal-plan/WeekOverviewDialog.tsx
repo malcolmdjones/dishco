@@ -3,8 +3,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { format, parseISO, startOfDay } from 'date-fns';
-import { MealPlanDay } from '@/types/MealPlanTypes';
-import { Recipe } from '@/types/Recipe';
+import { MealPlanDay, Recipe } from '@/data/mockData';
 
 interface WeekOverviewDialogProps {
   isOpen: boolean;
@@ -60,13 +59,7 @@ const WeekOverviewDialog: React.FC<WeekOverviewDialogProps> = ({
   );
 };
 
-interface MealTypeOverviewProps {
-  title: string;
-  meals: Recipe | Recipe[] | null;
-  isSnack?: boolean;
-}
-
-const MealTypeOverview: React.FC<MealTypeOverviewProps> = ({ title, meals, isSnack = false }) => {
+const MealTypeOverview = ({ title, meals, isSnack = false }) => {
   if (!meals || (Array.isArray(meals) && meals.length === 0)) {
     return (
       <div className="py-1 border-b last:border-b-0">

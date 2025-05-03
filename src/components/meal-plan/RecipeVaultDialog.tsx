@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CookingPot, Zap, Blend, Search, Plus } from 'lucide-react';
-import { Recipe } from '@/types/Recipe';
+import { Recipe } from '@/data/mockData';
 import { useRecipes } from '@/hooks/useRecipes';
 import { getRecipeImage } from '@/utils/recipeUtils';
 
@@ -62,7 +62,7 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(recipe => 
         recipe.name.toLowerCase().includes(term) || 
-        (recipe.description && recipe.description.toLowerCase().includes(term))
+        recipe.description.toLowerCase().includes(term)
       );
     }
     
@@ -70,7 +70,7 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
   }, [searchTerm, selectedType, recipes]);
 
   // Get unique recipe types
-  const recipeTypes = [...new Set(recipes.map(recipe => recipe.type).filter(Boolean))];
+  const recipeTypes = [...new Set(recipes.map(recipe => recipe.type))];
 
   // Handle recipe selection
   const handleSelectRecipe = (recipe: Recipe) => {
@@ -106,7 +106,7 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
               >
                 All
               </Button>
-              {recipeTypes.map(type => type && (
+              {recipeTypes.map(type => (
                 <Button 
                   key={type} 
                   variant={selectedType === type ? "default" : "outline"} 
@@ -163,7 +163,7 @@ const RecipeVaultDialog: React.FC<RecipeVaultDialogProps> = ({
                     <p className="text-sm text-gray-500 line-clamp-2 mt-2 mb-2">{recipe.description}</p>
                     <div className="flex items-center justify-between">
                       <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded">
-                        {recipe.type && recipe.type.charAt(0).toUpperCase() + recipe.type.slice(1)}
+                        {recipe.type.charAt(0).toUpperCase() + recipe.type.slice(1)}
                       </span>
                       <span className="text-xs bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded">
                         {recipe.macros.calories} kcal

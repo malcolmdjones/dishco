@@ -1,18 +1,17 @@
 
 import React, { useState } from 'react';
+import { Recipe } from '@/data/mockData';
 import DailyNavigationCalendar from '@/components/meal-plan/DailyNavigationCalendar';
 import DailyNutritionCard from '@/components/meal-plan/DailyNutritionCard';
 import BottomActionBar from '@/components/meal-plan/BottomActionBar';
 import MealSections from '@/components/meal-plan/meal-sections/MealSections';
 import SavePlanDialog from '@/components/SavePlanDialog';
 import { Loader2 } from 'lucide-react';
-import { Recipe } from '@/types/Recipe';
-import { MealPlanDay } from '@/types/MealPlanTypes';
 
 interface CreateMealPlanContentProps {
   currentDay: number;
   setCurrentDay: (day: number) => void;
-  mealPlan: MealPlanDay[];
+  mealPlan: any[];
   isGenerating: boolean;
   lockedMeals: {[key: string]: boolean};
   toggleLockMeal: (mealType: string, index?: number) => void;

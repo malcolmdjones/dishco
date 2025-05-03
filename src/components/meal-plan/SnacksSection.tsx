@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Lock, Unlock, Info } from 'lucide-react';
-import { Recipe } from '@/types/Recipe';
+import { Recipe } from '@/data/mockData';
 import { Draggable } from '@hello-pangea/dnd';
 import { getRecipeImage } from '@/utils/recipeUtils';
 

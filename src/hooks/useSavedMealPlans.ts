@@ -16,7 +16,7 @@ export interface MealPlan {
         breakfast?: Recipe | Recipe[] | null;
         lunch?: Recipe | Recipe[] | null;
         dinner?: Recipe | Recipe[] | null;
-        snacks?: Recipe[] | null;
+        snacks?: Recipe | Recipe[] | null;
       };
     }[];
     description?: string;
@@ -41,17 +41,7 @@ export const useSavedMealPlans = () => {
 
       if (data) {
         console.log(`Fetched ${data.length} meal plans`);
-        // Convert JSON data to proper typed structure
-        const typedPlans: MealPlan[] = data.map(item => ({
-          id: item.id,
-          name: item.name,
-          created_at: item.created_at,
-          user_id: item.user_id,
-          plan_data: typeof item.plan_data === 'string' 
-            ? JSON.parse(item.plan_data) 
-            : item.plan_data
-        }));
-        setMealPlans(typedPlans);
+        setMealPlans(data);
       }
     } catch (error) {
       console.error('Error fetching meal plans:', error);
@@ -78,18 +68,7 @@ export const useSavedMealPlans = () => {
       if (error) throw error;
 
       if (data) {
-        // Convert the newly saved plan to the right format
-        const newPlan: MealPlan = {
-          id: data[0].id,
-          name: data[0].name,
-          created_at: data[0].created_at,
-          user_id: data[0].user_id,
-          plan_data: typeof data[0].plan_data === 'string'
-            ? JSON.parse(data[0].plan_data)
-            : data[0].plan_data
-        };
-        
-        setMealPlans(prevPlans => [newPlan, ...prevPlans]);
+        setMealPlans([...data, ...mealPlans]);
         toast({
           title: "Plan Saved",
           description: `"${name}" has been saved to your meal plans.`

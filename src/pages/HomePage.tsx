@@ -8,7 +8,6 @@ import DailyNutritionSummary from '@/components/home/DailyNutritionSummary';
 import MealsList from '@/components/home/MealsList';
 import { useCaloricBalance } from '@/hooks/useCaloricBalance';
 import { useStreakData } from '@/hooks/useStreakData';
-import { LoggedMeal } from '@/types/food';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -25,7 +24,7 @@ const HomePage = () => {
     handleOpenRecipe,
     handleToggleSave,
     handleToggleConsumed,
-    handleRecipeConsumed: originalHandleRecipeConsumed,
+    handleRecipeConsumed,
     getMacroStatus,
     formatMealType,
     setIsRecipeViewerOpen,
@@ -34,19 +33,6 @@ const HomePage = () => {
   
   const caloricBalance = useCaloricBalance(selectedDate);
   const { streak, todayLogged } = useStreakData();
-
-  // Adapter function to match expected types
-  const handleRecipeConsumed = (mealId: string, consumed: boolean) => {
-    // Find the meal by id and pass the whole meal object
-    const meal = todaysMeals.find(meal => {
-      const mealRecipe = Array.isArray(meal.recipe) ? meal.recipe[0] : meal.recipe;
-      return mealRecipe?.id === mealId;
-    });
-    
-    if (meal) {
-      handleToggleConsumed(meal.id, consumed);
-    }
-  };
 
   return (
     <div className="animate-fade-in">

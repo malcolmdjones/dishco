@@ -1,153 +1,376 @@
-
 import { useState, useEffect } from 'react';
-import { startOfDay, format, addDays, subDays, isPast, isSameDay } from 'date-fns';
-import { Recipe } from '@/types/Recipe';
+import { format, addDays, subDays, isToday, isEqual, parseISO, startOfDay } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
+import { Recipe, defaultGoals } from '@/data/mockData';
+import { useSavedMealPlans } from '@/hooks/useSavedMealPlans';
 import { supabase } from '@/integrations/supabase/client';
-import { LoggedMeal } from '@/types/food';
-import { useSavedMealPlans } from './useSavedMealPlans';
+
+interface Meal {
+  id: string;
+  name: string;
+  type: string;
+  recipe: Recipe;
+  consumed: boolean;
+  loggedAt?: string;
+  planned?: boolean;
+}
 
 export const useHomePageUtils = () => {
+  const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
-  const [todaysMeals, setTodaysMeals] = useState<LoggedMeal[]>([]);
-  const { mealPlans } = useSavedMealPlans();
+  const { activePlans, getMealsForDate } = useSavedMealPlans();
   
-  // Mock data for development - replace with actual API calls
-  const dailyNutrition = {
-    calories: { target: 2000, current: 1650 },
-    protein: { target: 120, current: 95 },
-    carbs: { target: 200, current: 180 },
-    fat: { target: 65, current: 55 }
-  };
+  const [dailyNutrition, setDailyNutrition] = useState({
+    calories: 0,
+    totalCalories: defaultGoals.calories,
+    protein: 0,
+    totalProtein: defaultGoals.protein,
+    carbs: 0,
+    totalCarbs: defaultGoals.carbs,
+    fat: 0,
+    totalFat: defaultGoals.fat
+  });
   
-  // Fetch meals for the selected date
+  const [todaysMeals, setTodaysMeals] = useState<Meal[]>([]);
+
   useEffect(() => {
-    // This would normally be an API call to get meals for the selected date
-    const fetchMealsForDate = async () => {
-      // In a real app, this would fetch from API based on selectedDate
-      // For now, generate some mock meals
-      const mockMeals: LoggedMeal[] = [
-        {
-          id: '1',
-          name: 'Breakfast Bowl',
-          recipe: {
-            id: '101',
-            name: 'Breakfast Bowl',
-            description: 'Nutritious breakfast bowl',
-            imageSrc: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe',
-            macros: { calories: 350, protein: 20, carbs: 40, fat: 10 }
-          },
-          calories: 350,
-          protein: '20g',
-          servingInfo: '1 bowl',
-          type: 'breakfast',
-          date: format(selectedDate, 'yyyy-MM-dd'),
-          consumed: true
-        },
-        {
-          id: '2',
-          name: 'Grilled Chicken Salad',
-          recipe: {
-            id: '102',
-            name: 'Grilled Chicken Salad',
-            description: 'Fresh salad with grilled chicken',
-            imageSrc: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd',
-            macros: { calories: 420, protein: 35, carbs: 15, fat: 20 }
-          },
-          calories: 420,
-          protein: '35g',
-          servingInfo: '1 plate',
-          type: 'lunch',
-          date: format(selectedDate, 'yyyy-MM-dd'),
-          consumed: isPast(selectedDate) && !isSameDay(selectedDate, new Date())
-        },
-        {
-          id: '3',
-          name: 'Salmon with Vegetables',
-          recipe: {
-            id: '103',
-            name: 'Salmon with Vegetables',
-            description: 'Baked salmon with roasted vegetables',
-            imageSrc: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288',
-            macros: { calories: 550, protein: 40, carbs: 20, fat: 25 }
-          },
-          calories: 550,
-          protein: '40g',
-          servingInfo: '1 fillet',
-          type: 'dinner',
-          date: format(selectedDate, 'yyyy-MM-dd'),
-          consumed: false
-        },
-        {
-          id: '4',
-          name: 'Greek Yogurt',
-          recipe: {
-            id: '104',
-            name: 'Greek Yogurt',
-            description: 'Plain Greek yogurt with honey',
-            imageSrc: 'https://images.unsplash.com/photo-1488477181946-6428a0291777',
-            macros: { calories: 180, protein: 15, carbs: 10, fat: 5 }
-          },
-          calories: 180,
-          protein: '15g',
-          servingInfo: '1 cup',
-          type: 'snack',
-          date: format(selectedDate, 'yyyy-MM-dd'),
-          consumed: false
+    const fetchUserNutritionGoals = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('nutrition_goals')
+          .select('*')
+          .limit(1)
+          .single();
+        
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching nutrition goals:', error);
+          return;
         }
-      ];
-      
-      // Filter based on date - in a real app, this would be done by API
-      const formattedSelectedDate = format(selectedDate, 'yyyy-MM-dd');
-      const filteredMeals = mockMeals.filter(meal => meal.date === formattedSelectedDate);
-      
-      setTodaysMeals(filteredMeals);
+        
+        if (data) {
+          setDailyNutrition(prev => ({
+            ...prev,
+            totalCalories: data.calories,
+            totalProtein: data.protein,
+            totalCarbs: data.carbs,
+            totalFat: data.fat
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching nutrition goals:', error);
+      }
     };
     
-    fetchMealsForDate();
+    fetchUserNutritionGoals();
   }, [selectedDate]);
-  
-  // Navigation functions
-  const goToPreviousDay = () => setSelectedDate(prevDate => subDays(prevDate, 1));
-  const goToNextDay = () => setSelectedDate(prevDate => addDays(prevDate, 1));
-  const goToToday = () => setSelectedDate(new Date());
-  
-  // Recipe handling functions
-  const handleOpenRecipe = (recipe: Recipe) => {
-    setSelectedRecipe(recipe);
-    setIsRecipeViewerOpen(true);
-    setIsSaved(false); // This would be determined by API in real app
-  };
-  
-  const handleToggleSave = async (recipeId: string, isSavedNow: boolean) => {
-    setIsSaved(isSavedNow);
-    // In real app, would call API to save/unsave recipe
-  };
-  
-  const handleToggleConsumed = (mealId: string, consumed: boolean) => {
-    setTodaysMeals(prevMeals =>
-      prevMeals.map(meal =>
-        meal.id === mealId ? { ...meal, consumed } : meal
-      )
-    );
-    // In real app, would call API to update meal consumed status
+
+  useEffect(() => {
+    const loadMealsForSelectedDate = () => {
+      // Get manually logged meals from localStorage
+      const storedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
+      
+      const selectedDateStart = startOfDay(selectedDate);
+      const filteredMeals = storedMeals.filter((meal: Meal) => {
+        if (!meal.loggedAt) return false;
+        const mealDate = startOfDay(parseISO(meal.loggedAt));
+        return isEqual(mealDate, selectedDateStart);
+      });
+      
+      // Format date to yyyy-MM-dd for consistent lookup
+      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      console.log('HomePage - Loading meals for date:', formattedDate);
+      
+      // Get planned meals for the date from active meal plans
+      const planMeals = getMealsForDate(formattedDate);
+      console.log('HomePage - Plan meals retrieved:', planMeals);
+      
+      const plannedMealArray: Meal[] = [];
+      
+      // Process plan meals if they exist
+      if (planMeals) {
+        // Process breakfast meal
+        if (planMeals.breakfast) {
+          const breakfastRecipe = Array.isArray(planMeals.breakfast) 
+            ? planMeals.breakfast[0] 
+            : planMeals.breakfast;
+            
+          if (breakfastRecipe) {
+            // Check if this meal is already logged
+            const existingBreakfast = filteredMeals.find((meal: Meal) => 
+              meal.type === 'breakfast' && meal.recipe?.id === breakfastRecipe.id
+            );
+            
+            if (!existingBreakfast) {
+              plannedMealArray.push({
+                id: `breakfast-planned-${formattedDate}`,
+                name: breakfastRecipe.name || 'Breakfast',
+                type: 'breakfast',
+                recipe: breakfastRecipe,
+                consumed: false,
+                loggedAt: formattedDate,
+                planned: true
+              });
+            }
+          }
+        }
+        
+        // Process lunch meal
+        if (planMeals.lunch) {
+          const lunchRecipe = Array.isArray(planMeals.lunch) 
+            ? planMeals.lunch[0] 
+            : planMeals.lunch;
+            
+          if (lunchRecipe) {
+            // Check if this meal is already logged
+            const existingLunch = filteredMeals.find((meal: Meal) => 
+              meal.type === 'lunch' && meal.recipe?.id === lunchRecipe.id
+            );
+            
+            if (!existingLunch) {
+              plannedMealArray.push({
+                id: `lunch-planned-${formattedDate}`,
+                name: lunchRecipe.name || 'Lunch',
+                type: 'lunch',
+                recipe: lunchRecipe,
+                consumed: false,
+                loggedAt: formattedDate,
+                planned: true
+              });
+            }
+          }
+        }
+        
+        // Process dinner meal
+        if (planMeals.dinner) {
+          const dinnerRecipe = Array.isArray(planMeals.dinner) 
+            ? planMeals.dinner[0] 
+            : planMeals.dinner;
+            
+          if (dinnerRecipe) {
+            // Check if this meal is already logged
+            const existingDinner = filteredMeals.find((meal: Meal) => 
+              meal.type === 'dinner' && meal.recipe?.id === dinnerRecipe.id
+            );
+            
+            if (!existingDinner) {
+              plannedMealArray.push({
+                id: `dinner-planned-${formattedDate}`,
+                name: dinnerRecipe.name || 'Dinner',
+                type: 'dinner',
+                recipe: dinnerRecipe,
+                consumed: false,
+                loggedAt: formattedDate,
+                planned: true
+              });
+            }
+          }
+        }
+        
+        // Process snacks
+        if (planMeals.snacks && Array.isArray(planMeals.snacks) && planMeals.snacks.length > 0) {
+          planMeals.snacks.forEach((snack, index) => {
+            if (snack) {
+              // Check if this snack is already logged
+              const existingSnack = filteredMeals.find((meal: Meal) => 
+                meal.type === 'snack' && meal.recipe?.id === snack.id
+              );
+              
+              if (!existingSnack) {
+                plannedMealArray.push({
+                  id: `snack-planned-${index}-${formattedDate}`,
+                  name: snack.name || `Snack ${index + 1}`,
+                  type: 'snack',
+                  recipe: snack,
+                  consumed: false,
+                  loggedAt: formattedDate,
+                  planned: true
+                });
+              }
+            }
+          });
+        }
+      }
+      
+      // Update planned meals with consumed status from manually logged meals
+      const updatedPlannedMeals = plannedMealArray.map(plannedMeal => {
+        const matchingLoggedMeal = filteredMeals.find((loggedMeal: Meal) => 
+          loggedMeal.recipe?.id === plannedMeal.recipe?.id && 
+          loggedMeal.type === plannedMeal.type
+        );
+        
+        return matchingLoggedMeal ? { ...plannedMeal, consumed: true } : plannedMeal;
+      });
+      
+      // Filter out manually logged meals that would duplicate planned meals
+      const uniqueLoggedMeals = filteredMeals.filter((loggedMeal: Meal) => 
+        !updatedPlannedMeals.some(plannedMeal => 
+          plannedMeal.recipe?.id === loggedMeal.recipe?.id && 
+          plannedMeal.type === loggedMeal.type
+        )
+      );
+      
+      console.log('HomePage - Setting today\'s meals:', [...uniqueLoggedMeals, ...updatedPlannedMeals]);
+      setTodaysMeals([...uniqueLoggedMeals, ...updatedPlannedMeals]);
+      
+      // Calculate nutrition only from consumed meals
+      calculateNutritionForDate([...uniqueLoggedMeals, ...updatedPlannedMeals.filter(meal => meal.consumed)]);
+    };
+    
+    loadMealsForSelectedDate();
+  }, [selectedDate, getMealsForDate, activePlans]);
+
+  const calculateNutritionForDate = (meals: Meal[]) => {
+    const consumedMeals = meals.filter(meal => meal.consumed);
+    
+    const calculatedNutrition = {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0
+    };
+    
+    consumedMeals.forEach(meal => {
+      if (meal.recipe && meal.recipe.macros) {
+        calculatedNutrition.calories += meal.recipe.macros.calories || 0;
+        calculatedNutrition.protein += meal.recipe.macros.protein || 0;
+        calculatedNutrition.carbs += meal.recipe.macros.carbs || 0;
+        calculatedNutrition.fat += meal.recipe.macros.fat || 0;
+      }
+    });
+    
+    setDailyNutrition(prev => ({
+      ...prev,
+      calories: calculatedNutrition.calories,
+      protein: calculatedNutrition.protein,
+      carbs: calculatedNutrition.carbs,
+      fat: calculatedNutrition.fat
+    }));
   };
 
-  // Handle recipe consumed toggle from recipe viewer
-  const handleRecipeConsumed = (mealId: string, consumed: boolean) => {
-    handleToggleConsumed(mealId, consumed);
+  useEffect(() => {
+    const lastResetDate = localStorage.getItem('lastNutritionResetDate');
+    const today = new Date().toDateString();
+    
+    if (lastResetDate !== today) {
+      localStorage.setItem('lastNutritionResetDate', today);
+    }
+    
+    const checkForNewDay = () => {
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      
+      if (hours === 0 && minutes === 0) {
+        localStorage.setItem('lastNutritionResetDate', now.toDateString());
+      }
+    };
+    
+    const interval = setInterval(checkForNewDay, 60000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  const goToPreviousDay = () => {
+    setSelectedDate(prevDate => subDays(prevDate, 1));
   };
-  
-  // Helper functions
-  const getMacroStatus = (current: number, target: number) => {
-    const percentage = (current / target) * 100;
-    if (percentage < 70) return 'under';
-    if (percentage > 110) return 'over';
-    return 'good';
+
+  const goToNextDay = () => {
+    setSelectedDate(prevDate => addDays(prevDate, 1));
   };
-  
+
+  const goToToday = () => {
+    setSelectedDate(new Date());
+  };
+
+  const handleOpenRecipe = (recipe: Recipe) => {
+    if (recipe) {
+      setSelectedRecipe(recipe);
+      setIsRecipeViewerOpen(true);
+    } else {
+      console.error("Attempted to open undefined recipe");
+      toast({
+        title: "Error",
+        description: "Recipe details couldn't be loaded.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleToggleSave = async (recipeId: string, currentlySaved: boolean) => {
+    setIsSaved(!currentlySaved);
+    return Promise.resolve();
+  };
+
+  const handleToggleConsumed = (meal: Meal) => {
+    const updatedTodaysMeals = todaysMeals.map(m => 
+      m.id === meal.id ? { ...m, consumed: !m.consumed } : m
+    );
+    setTodaysMeals(updatedTodaysMeals);
+    
+    const storedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
+    
+    const mealExists = storedMeals.some((m: Meal) => m.id === meal.id);
+    
+    let updatedStoredMeals;
+    if (mealExists) {
+      updatedStoredMeals = storedMeals.map((m: Meal) => 
+        m.id === meal.id ? { ...m, consumed: !m.consumed } : m
+      );
+    } else {
+      updatedStoredMeals = [...storedMeals, { ...meal, consumed: true }];
+    }
+    
+    localStorage.setItem('loggedMeals', JSON.stringify(updatedStoredMeals));
+    
+    calculateNutritionForDate(updatedTodaysMeals.filter(m => m.consumed));
+    
+    if (!meal.consumed) {
+      toast({
+        title: "Meal logged",
+        description: `${meal.name} has been marked as consumed.`
+      });
+    } else {
+      toast({
+        title: "Meal unlogged",
+        description: `${meal.name} has been unmarked as consumed.`
+      });
+    }
+  };
+
+  const handleRecipeConsumed = (recipe: Recipe, isConsumed: boolean) => {
+    const mealWithRecipe = todaysMeals.find(meal => 
+      meal.recipe?.id === recipe.id || 
+      (Array.isArray(meal.recipe) && meal.recipe.some(r => r.id === recipe.id))
+    );
+    
+    if (mealWithRecipe) {
+      handleToggleConsumed(mealWithRecipe);
+    }
+  };
+
+  const getMacroStatus = (type: 'calories' | 'protein' | 'carbs' | 'fat') => {
+    const value = dailyNutrition[type];
+    const target = dailyNutrition[`total${type.charAt(0).toUpperCase() + type.slice(1)}`];
+    
+    const thresholds = {
+      calories: { lower: 10, upper: 60 },
+      protein: { lower: 5, upper: 5 },
+      carbs: { lower: 10, upper: 10 },
+      fat: { lower: 5, upper: 5 }
+    };
+    
+    if (value >= target - thresholds[type].lower && value <= target + thresholds[type].upper) {
+      return 'target-met';
+    } else if (value > target + thresholds[type].upper) {
+      return 'too-high';
+    } else {
+      return 'too-low';
+    }
+  };
+
   const formatMealType = (type: string) => {
     return type.charAt(0).toUpperCase() + type.slice(1);
   };
