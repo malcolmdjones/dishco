@@ -1,24 +1,18 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Recipe } from '@/data/mockData';
-
-interface Meal {
-  id: string;
-  name: string;
-  type: string;
-  recipe: Recipe;
-  consumed: boolean;
-  loggedAt?: string;
-  planned?: boolean;
-}
+import { ChevronsRight, Circle, Plus } from 'lucide-react';
+import { Recipe } from '@/types/Recipe';
 
 interface MealsListProps {
-  todaysMeals: Meal[];
+  todaysMeals: Array<{
+    id: string;
+    recipe: Recipe | Recipe[];
+    type: string;
+    consumed: boolean;
+  }>;
   navigate: (path: string) => void;
   handleOpenRecipe: (recipe: Recipe) => void;
-  handleToggleConsumed: (meal: Meal) => void;
+  handleToggleConsumed: (mealId: string, consumed: boolean) => void;
   formatMealType: (type: string) => string;
 }
 
@@ -29,97 +23,105 @@ const MealsList: React.FC<MealsListProps> = ({
   handleToggleConsumed,
   formatMealType
 }) => {
-  const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
-
-  return (
-    <div className="mb-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">Today's Meals</h2>
-        <Link to="/log-meal">
-          <Button variant="outline" size="sm" className="text-xs">
-            Log More Food
-          </Button>
-        </Link>
+  // Group by meal type
+  const mealsByType: Record<string, any[]> = {};
+  
+  todaysMeals.forEach(meal => {
+    const type = meal.type;
+    if (!mealsByType[type]) {
+      mealsByType[type] = [];
+    }
+    mealsByType[type].push(meal);
+  });
+  
+  // Sort meal types in logical order
+  const mealTypes = Object.keys(mealsByType).sort((a, b) => {
+    const order = { breakfast: 1, lunch: 2, dinner: 3 };
+    // @ts-ignore
+    return (order[a] || 99) - (order[b] || 99);
+  });
+  
+  if (todaysMeals.length === 0) {
+    return (
+      <div className="bg-white p-4 rounded-xl text-center space-y-3">
+        <p className="text-gray-500">No meals logged for today</p>
+        <button
+          className="text-blue-500 text-sm flex items-center justify-center mx-auto"
+          onClick={() => navigate('/log-meal')}
+        >
+          <Plus size={16} className="mr-1" /> Add a meal
+        </button>
       </div>
-      
-      <div className="space-y-4">
-        {todaysMeals.length === 0 ? (
-          <div className="bg-white rounded-xl p-6 shadow-sm text-center">
-            <p className="text-gray-500">No meals logged today.</p>
-            <Button 
-              variant="outline" 
-              className="mt-3"
-              onClick={() => navigate('/log-meal')}
-            >
-              Log your first meal
-            </Button>
+    );
+  }
+  
+  return (
+    <div className="space-y-6">
+      {mealTypes.map(type => (
+        <div key={type} className="bg-white rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b">
+            <h3 className="font-medium">{formatMealType(type)}</h3>
           </div>
-        ) : (
-          todaysMeals.map((meal) => {
-            const mealRecipe = Array.isArray(meal.recipe) ? meal.recipe[0] : meal.recipe;
-            
-            return (
-              <div key={meal.id} className={`bg-white rounded-xl p-4 shadow-sm ${meal.planned && !meal.consumed ? 'border-l-4 border-green-400' : ''}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center">
-                    <span className="text-sm text-gray-500">{formatMealType(meal.type)}</span>
-                    {meal.planned && !meal.consumed && (
-                      <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
-                        Planned
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-sm bg-amber-50 text-amber-800 px-2 py-1 rounded-full">
-                    {mealRecipe?.macros?.calories || 0} kcal
-                  </span>
-                </div>
-                
-                <div className="flex gap-3">
-                  <div 
-                    className="w-20 h-20 rounded-lg overflow-hidden cursor-pointer"
-                    onClick={() => mealRecipe && handleOpenRecipe(mealRecipe)}
+          
+          <div className="divide-y">
+            {mealsByType[type].map(meal => {
+              // Extract the recipe (handle both single recipe and array)
+              const recipe = Array.isArray(meal.recipe) ? meal.recipe[0] : meal.recipe;
+              if (!recipe) return null;
+              
+              return (
+                <div key={meal.id} className="flex items-center p-3">
+                  <button
+                    className={`rounded-full w-6 h-6 flex-shrink-0 ${
+                      meal.consumed
+                        ? 'bg-green-500 text-white'
+                        : 'border-2 border-gray-300'
+                    } flex items-center justify-center`}
+                    onClick={() => handleToggleConsumed(meal.id, !meal.consumed)}
                   >
-                    <img 
-                      src={mealRecipe?.imageSrc || imageUrl} 
-                      alt={meal.name}
-                      className="w-full h-full object-cover"
-                    />
+                    {meal.consumed && <Circle size={10} fill="currentColor" />}
+                  </button>
+                  
+                  <div 
+                    className="flex-1 ml-3 cursor-pointer"
+                    onClick={() => handleOpenRecipe(recipe)}
+                  >
+                    <h4 className={`font-medium ${meal.consumed ? 'text-gray-400' : ''}`}>
+                      {recipe.name}
+                    </h4>
+                    <p className="text-xs text-gray-500">
+                      {recipe.macros?.calories || 0} calories
+                    </p>
                   </div>
                   
-                  <div className="flex-1">
-                    <h3 
-                      className="font-semibold mb-2 cursor-pointer"
-                      onClick={() => mealRecipe && handleOpenRecipe(mealRecipe)}
-                    >
-                      {meal.name}
-                    </h3>
-                    
-                    <Button
-                      variant={meal.consumed ? "outline" : "outline"}
-                      size="sm"
-                      className={`w-full ${meal.consumed ? 'text-green-600 border-green-600' : ''}`}
-                      onClick={() => handleToggleConsumed(meal)}
-                    >
-                      {meal.consumed ? 'Consumed ✓' : 'Mark as consumed'}
-                    </Button>
-                  </div>
+                  <button
+                    className="p-2 text-gray-400"
+                    onClick={() => handleOpenRecipe(recipe)}
+                  >
+                    <ChevronsRight size={18} />
+                  </button>
                 </div>
-                
-                <div className="flex gap-2 mt-3">
-                  <span className="px-3 py-1 bg-blue-100 rounded-full text-xs">
-                    P: {mealRecipe?.macros?.protein || 0}g
-                  </span>
-                  <span className="px-3 py-1 bg-yellow-100 rounded-full text-xs">
-                    C: {mealRecipe?.macros?.carbs || 0}g
-                  </span>
-                  <span className="px-3 py-1 bg-purple-100 rounded-full text-xs">
-                    F: {mealRecipe?.macros?.fat || 0}g
-                  </span>
-                </div>
-              </div>
-            );
-          })
-        )}
+              );
+            })}
+          </div>
+          
+          <button
+            className="w-full py-2 text-sm text-blue-500 flex items-center justify-center border-t"
+            onClick={() => navigate('/log-meal')}
+          >
+            <Plus size={15} className="mr-1" />
+            Add {formatMealType(type).toLowerCase()}
+          </button>
+        </div>
+      ))}
+      
+      <div>
+        <button
+          className="w-full py-3 rounded-xl border-2 border-dashed border-gray-200 text-sm text-gray-500 flex items-center justify-center"
+          onClick={() => navigate('/log-meal')}
+        >
+          <Plus size={16} className="mr-1" /> Add another meal
+        </button>
       </div>
     </div>
   );

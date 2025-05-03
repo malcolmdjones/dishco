@@ -2,18 +2,20 @@
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { recipes } from '@/data/mockData';
+import { useRecipes } from '@/hooks/useRecipes';
 import RecipeViewer from './RecipeViewer';
+import { Recipe } from '@/types/Recipe';
 
 interface HomeRecipeViewerProps {
   className?: string;
 }
 
 const HomeRecipeViewer: React.FC<HomeRecipeViewerProps> = ({ className }) => {
-  const [selectedRecipe, setSelectedRecipe] = useState<any>(null);
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeDrawerOpen, setIsRecipeDrawerOpen] = useState(false);
   const [savedRecipeIds, setSavedRecipeIds] = useState<string[]>([]);
   const { toast } = useToast();
+  const { recipes } = useRecipes();
   // Fixed image URL to avoid 404s
   const imageUrl = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
@@ -89,6 +91,15 @@ const HomeRecipeViewer: React.FC<HomeRecipeViewerProps> = ({ className }) => {
     }
   };
 
+  // Show a loading state if there are no recipes yet
+  if (recipes.length === 0) {
+    return (
+      <div className={className}>
+        <div className="text-center p-4">Loading recipes...</div>
+      </div>
+    );
+  }
+
   return (
     <div className={className}>
       <div className="grid grid-cols-2 gap-3 mb-4">
@@ -100,9 +111,12 @@ const HomeRecipeViewer: React.FC<HomeRecipeViewerProps> = ({ className }) => {
           >
             <div className="h-20 w-full">
               <img 
-                src={imageUrl} 
+                src={recipe.imageSrc || imageUrl} 
                 alt={recipe.name} 
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = imageUrl;
+                }}
               />
             </div>
             <div className="p-2">

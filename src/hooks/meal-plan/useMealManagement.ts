@@ -1,5 +1,6 @@
 
-import { MealPlanDay, Recipe } from '@/data/mockData';
+import { MealPlanDay } from '@/types/MealPlanTypes';
+import { Recipe } from '@/types/Recipe';
 import { useToast } from '@/hooks/use-toast';
 
 interface MealManagementProps {

@@ -1,5 +1,5 @@
 
-import { Recipe } from '@/data/mockData';
+import { Recipe } from '@/types/Recipe';
 
 export const handleMealPlanDragEnd = (
   result: any, 

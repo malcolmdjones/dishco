@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { isStoreBought } from '@/utils/recipeUtils';
-import { Recipe } from '@/data/mockData';
+import { Recipe } from '@/types/Recipe';
 
 interface RecipeDetailContentProps {
   recipe: Recipe;

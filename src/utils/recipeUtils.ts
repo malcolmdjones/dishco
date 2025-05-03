@@ -1,121 +1,64 @@
 
-import { CustomRecipe } from '@/hooks/useCustomRecipes';
-import { Recipe } from '@/data/mockData';
+import { Recipe } from '@/types/Recipe';
 
-// Standard image URL to use when no image is available
-export const DEFAULT_IMAGE_URL = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
+// Default image for recipes
+const DEFAULT_RECIPE_IMAGE = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Zm9vZHxlbnwwfHwwfHx8MA%3D%3D";
 
-/**
- * Convert a CustomRecipe to the standard Recipe format
- */
-export const customToStandardRecipe = (customRecipe: CustomRecipe): Recipe => {
-  return {
-    id: customRecipe.id,
-    name: customRecipe.title,
-    description: customRecipe.description || '',
-    type: 'custom',
-    imageSrc: customRecipe.imageUrl || DEFAULT_IMAGE_URL,
-    requiresBlender: false,
-    requiresCooking: true,
-    cookTime: customRecipe.cookingTime || 0,
-    prepTime: 0,
-    servings: customRecipe.servings || 1,
-    macros: customRecipe.nutrition || {
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fat: 0
-    },
-    ingredients: customRecipe.ingredients 
-      ? customRecipe.ingredients.map(ing => `${ing.quantity} ${ing.unit} ${ing.name}`.trim())
-      : [],
-    instructions: customRecipe.instructions || []
-  };
+export const getRecipeImage = (imageSrc?: string | null): string => {
+  return imageSrc || DEFAULT_RECIPE_IMAGE;
 };
 
-/**
- * Convert a standard Recipe to CustomRecipe format
- */
-export const standardToCustomRecipe = (recipe: Recipe): Omit<CustomRecipe, 'id' | 'createdAt'> => {
-  // Parse ingredients from strings to structured format
-  const ingredients = recipe.ingredients.map(ing => {
-    const parts = ing.split(' ');
-    const quantity = parts[0] || '';
-    const unit = parts[1] || '';
-    const name = parts.slice(2).join(' ');
-    
-    return { quantity, unit, name };
-  });
-  
-  return {
-    title: recipe.name,
-    description: recipe.description,
-    imageUrl: recipe.imageSrc,
-    cookingTime: recipe.cookTime || 0,
-    servings: recipe.servings || 1,
-    ingredients,
-    instructions: recipe.instructions,
-    nutrition: recipe.macros
-  };
+export const isStoreBought = (recipe: Recipe): boolean => {
+  return recipe.storeBought === true || recipe.type === 'store-bought';
 };
 
-/**
- * Check if a URL is a Google Drive sharing link and convert it to a direct image URL
- * @param url The URL to check and potentially convert
- * @returns A direct image URL
- */
-export const convertGoogleDriveLink = (url: string | null | undefined): string | null => {
-  if (!url) return null;
+export const formatCookingTime = (time?: number): string => {
+  if (!time) return 'N/A';
+  if (time < 60) return `${time} min`;
   
-  // Check if it's a Google Drive link
-  if (url.includes('drive.google.com/file/d/')) {
-    try {
-      // Extract the file ID from the Google Drive URL
-      const fileIdMatch = url.match(/\/d\/(.*?)\/view/);
-      if (fileIdMatch && fileIdMatch[1]) {
-        const fileId = fileIdMatch[1];
-        // Return a direct image URL using the export=view format
-        return `https://drive.google.com/uc?export=view&id=${fileId}`;
-      }
-    } catch (error) {
-      console.error('Error converting Google Drive URL:', error);
-    }
+  const hours = Math.floor(time / 60);
+  const minutes = time % 60;
+  
+  if (minutes === 0) return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+  return `${hours}h ${minutes}m`;
+};
+
+export const categorizeRecipe = (recipe: Recipe): string => {
+  // Categorize recipe by type, falling back to different strategies
+  if (recipe.type) return recipe.type;
+  if (recipe.storeBought) return 'Store-Bought';
+  if (recipe.requiresBlender) return 'Blender Recipe';
+  if (recipe.requiresCooking) return 'Cooking Required';
+  return 'Recipe';
+};
+
+export const getMacrosBadgeColor = (macroType: string): string => {
+  switch (macroType.toLowerCase()) {
+    case 'protein':
+      return 'bg-amber-100 text-amber-800';
+    case 'carbs':
+    case 'carbohydrates':
+      return 'bg-blue-100 text-blue-800';
+    case 'fat':
+    case 'fats':
+      return 'bg-green-100 text-green-800';
+    case 'calories':
+    case 'calorie':
+      return 'bg-purple-100 text-purple-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
   }
-  
-  return url;
 };
 
-/**
- * Check if a recipe has an image, if not return the default image
- * Also handles converting Google Drive links to direct image URLs
- */
-export const getRecipeImage = (imageSrc: string | null | undefined): string => {
-  if (!imageSrc) return DEFAULT_IMAGE_URL;
-  
-  // Convert Google Drive links if necessary
-  const convertedUrl = convertGoogleDriveLink(imageSrc);
-  return convertedUrl || DEFAULT_IMAGE_URL;
+export const getCalorieBadge = (calories: number): string => {
+  if (calories <= 200) return 'Very Low Calorie';
+  if (calories <= 400) return 'Low Calorie';
+  if (calories <= 600) return 'Moderate Calorie';
+  if (calories <= 800) return 'High Calorie';
+  return 'Very High Calorie';
 };
 
-// Add compatibility for recipehub
-export const getRecipeTypeLabel = (type: string | undefined): string => {
-  if (!type) return 'Recipe';
-  
-  const typeMap: Record<string, string> = {
-    'breakfast': 'Breakfast',
-    'lunch': 'Lunch',
-    'dinner': 'Dinner',
-    'snack': 'Snack',
-    'dessert': 'Dessert',
-    'drink': 'Drink',
-    'meal': 'Meal',
-    'store-bought': 'Store Bought',
-  };
-  
-  return typeMap[type.toLowerCase()] || type;
-};
-
-// Add a helper function to check if a recipe is store-bought
-export const isStoreBought = (recipe: any): boolean => {
-  return recipe.storeBought === true || recipe.store_bought === true;
+export const getFormattedServings = (servings?: number): string => {
+  if (!servings) return 'N/A';
+  return `${servings} ${servings === 1 ? 'serving' : 'servings'}`;
 };
