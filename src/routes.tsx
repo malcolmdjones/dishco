@@ -30,32 +30,30 @@ import NotFound from './pages/NotFound';
 export const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<AppLayout />}>
-        <Route index element={<HomePage />} />
-        <Route path="/log-meal" element={<LogMealPage />} />
-        <Route path="/log-meal/search" element={<LogMealSearchPage />} />
-        <Route path="/log-meal/scan" element={<LogMealScanPage />} />
-        <Route path="/log-meal/quick-add" element={<LogMealQuickAddPage />} />
-        <Route path="/log-meal/custom-food" element={<LogMealCustomFoodPage />} />
-        <Route path="/log-meal/custom-recipe" element={<LogMealCustomRecipePage />} />
-        <Route path="/planning" element={<PlanningPage />} />
-        <Route path="/progress" element={<ProgressPage />} />
-        <Route path="/more" element={<MorePage />} />
-        <Route path="/create-meal-plan" element={<CreateMealPlanPage />} />
-        <Route path="/saved-plans" element={<SavedPlansPage />} />
-        <Route path="/explore-recipes" element={<ExploreRecipesPage />} />
-        <Route path="/explore-desserts" element={<ExploreDesserts />} />
-        <Route path="/explore-snacks" element={<ExploreSnacksPage />} />
-        <Route path="/saved-recipes" element={<SavedRecipesPage />} />
-        <Route path="/saved-snacks" element={<SavedSnacksPage />} />
-        <Route path="/saved-desserts" element={<SavedDessertsPage />} />
-        <Route path="/nutrition-goals" element={<NutritionGoalsPage />} />
-        <Route path="/grocery-list" element={<GroceryListPage />} />
-        <Route path="/notifications" element={<NotificationsPage />} />
-        <Route path="/privacy-security" element={<PrivacySecurityPage />} />
-        <Route path="/recipe-tinder" element={<RecipeTinderPage />} />
-        <Route path="*" element={<NotFound />} />
-      </Route>
+      <Route path="/" element={<AppLayout><HomePage /></AppLayout>} />
+      <Route path="/log-meal" element={<AppLayout><LogMealPage /></AppLayout>} />
+      <Route path="/log-meal/search" element={<AppLayout><LogMealSearchPage /></AppLayout>} />
+      <Route path="/log-meal/scan" element={<AppLayout><LogMealScanPage /></AppLayout>} />
+      <Route path="/log-meal/quick-add" element={<AppLayout><LogMealQuickAddPage /></AppLayout>} />
+      <Route path="/log-meal/custom-food" element={<AppLayout><LogMealCustomFoodPage /></AppLayout>} />
+      <Route path="/log-meal/custom-recipe" element={<AppLayout><LogMealCustomRecipePage /></AppLayout>} />
+      <Route path="/planning" element={<AppLayout><PlanningPage /></AppLayout>} />
+      <Route path="/progress" element={<AppLayout><ProgressPage /></AppLayout>} />
+      <Route path="/more" element={<AppLayout><MorePage /></AppLayout>} />
+      <Route path="/create-meal-plan" element={<AppLayout><CreateMealPlanPage /></AppLayout>} />
+      <Route path="/saved-plans" element={<AppLayout><SavedPlansPage /></AppLayout>} />
+      <Route path="/explore-recipes" element={<AppLayout><ExploreRecipesPage /></AppLayout>} />
+      <Route path="/explore-desserts" element={<AppLayout><ExploreDesserts /></AppLayout>} />
+      <Route path="/explore-snacks" element={<AppLayout><ExploreSnacksPage /></AppLayout>} />
+      <Route path="/saved-recipes" element={<AppLayout><SavedRecipesPage /></AppLayout>} />
+      <Route path="/saved-snacks" element={<AppLayout><SavedSnacksPage /></AppLayout>} />
+      <Route path="/saved-desserts" element={<AppLayout><SavedDessertsPage /></AppLayout>} />
+      <Route path="/nutrition-goals" element={<AppLayout><NutritionGoalsPage /></AppLayout>} />
+      <Route path="/grocery-list" element={<AppLayout><GroceryListPage /></AppLayout>} />
+      <Route path="/notifications" element={<AppLayout><NotificationsPage /></AppLayout>} />
+      <Route path="/privacy-security" element={<AppLayout><PrivacySecurityPage /></AppLayout>} />
+      <Route path="/recipe-tinder" element={<AppLayout><RecipeTinderPage /></AppLayout>} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
