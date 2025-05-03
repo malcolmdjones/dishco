@@ -2,9 +2,10 @@
 import { Recipe } from '@/data/mockData';
 import { getRecipeImage } from '@/utils/recipeUtils';
 
-// Database recipe interface moved from useRecipes
+// Database recipe interface updated to match the actual database schema
 export interface DbRecipe {
-  id: string;
+  // Use uuid type for the primary key (matches Supabase)
+  user_id: string;
   title: string | null;
   short_description: string | null;
   type: string | null;
@@ -62,7 +63,7 @@ export const dbToFrontendRecipe = (dbRecipe: DbRecipe): Recipe => {
       parseInt(dbRecipe.prep_time, 10) || 0 : dbRecipe.prep_time) : 0;
 
   return {
-    id: dbRecipe.id,
+    id: dbRecipe.user_id, // Use user_id as the recipe ID
     name: dbRecipe.title || '',
     description: dbRecipe.short_description || '',
     type: dbRecipe.type || 'meal',

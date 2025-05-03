@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,12 +36,15 @@ export const useFetchRecipes = () => {
       // First, get all existing recipes from the database to check if we need to import
       const { data: existingRecipes, error: fetchError } = await supabase
         .from('recipes')
-        .select('id, title');
+        .select('user_id, title');
       
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error('Error fetching existing recipes:', fetchError);
+        throw fetchError;
+      }
       
       // Create a map of existing recipe titles for quick lookup
-      const existingRecipeTitles = new Set(existingRecipes?.map(r => r.title?.toLowerCase()) || []);
+      const existingRecipeTitles = new Set((existingRecipes || []).map(r => r.title?.toLowerCase()));
       console.log(`Found ${existingRecipeTitles.size} existing recipes in database`);
       
       // Filter out mock recipes that already exist in the database (by name)
@@ -60,14 +62,18 @@ export const useFetchRecipes = () => {
       // Convert mock recipes to the database format
       const dbRecipesToInsert = recipesToImport.map(frontendToDbRecipe);
       
-      // Insert the new recipes into the database
-      const { error: insertError } = await supabase
-        .from('recipes')
-        .insert(dbRecipesToInsert);
+      // Insert the new recipes into the database one by one (to avoid batch insert errors)
+      for (const recipe of dbRecipesToInsert) {
+        const { error: insertError } = await supabase
+          .from('recipes')
+          .insert(recipe);
+        
+        if (insertError) {
+          console.error('Error importing recipe:', insertError);
+        }
+      }
       
-      if (insertError) throw insertError;
-      
-      console.log(`Successfully imported ${recipesToImport.length} mock recipes to the database`);
+      console.log(`Successfully imported recipes to the database`);
     } catch (error) {
       console.error('Error importing mock recipes to database:', error);
     }

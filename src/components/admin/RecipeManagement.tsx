@@ -23,7 +23,7 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
-import { DbRecipe } from '@/hooks/useRecipes';
+import { DbRecipe } from '@/utils/recipeDbUtils';
 
 const RecipeManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -48,7 +48,7 @@ const RecipeManagement: React.FC = () => {
 
       if (error) throw error;
 
-      setRecipes(data as DbRecipe[] || []);
+      setRecipes((data || []) as DbRecipe[]);
     } catch (error) {
       console.error('Error fetching recipes:', error);
       toast({
@@ -66,13 +66,13 @@ const RecipeManagement: React.FC = () => {
       const { error } = await supabase
         .from('recipes')
         .update({ is_public: !recipe.is_public })
-        .eq('id', recipe.id);
+        .eq('user_id', recipe.user_id);
 
       if (error) throw error;
 
       // Update the local state
       setRecipes(recipes.map(r => 
-        r.id === recipe.id ? { ...r, is_public: !r.is_public } : r
+        r.user_id === recipe.user_id ? { ...r, is_public: !r.is_public } : r
       ));
 
       toast({
@@ -101,11 +101,11 @@ const RecipeManagement: React.FC = () => {
       const { error } = await supabase
         .from('recipes')
         .delete()
-        .eq('id', recipeToDelete.id);
+        .eq('user_id', recipeToDelete.user_id);
 
       if (error) throw error;
 
-      setRecipes(recipes.filter(r => r.id !== recipeToDelete.id));
+      setRecipes(recipes.filter(r => r.user_id !== recipeToDelete.user_id));
       
       toast({
         title: "Success",
@@ -166,7 +166,7 @@ const RecipeManagement: React.FC = () => {
                 </TableRow>
               ) : (
                 filteredRecipes.map((recipe) => (
-                  <TableRow key={recipe.id}>
+                  <TableRow key={recipe.user_id}>
                     <TableCell className="font-medium">{recipe.title}</TableCell>
                     <TableCell>
                       <Badge variant="outline">
@@ -186,14 +186,14 @@ const RecipeManagement: React.FC = () => {
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          onClick={() => navigate(`/admin/recipe/${recipe.id}`)}
+                          onClick={() => navigate(`/admin/recipe/${recipe.user_id}`)}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="icon"
-                          onClick={() => navigate(`/admin/edit-recipe/${recipe.id}`)}
+                          onClick={() => navigate(`/admin/edit-recipe/${recipe.user_id}`)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
