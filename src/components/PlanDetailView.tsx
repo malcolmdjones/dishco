@@ -5,8 +5,8 @@ import { format } from 'date-fns';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import RecipeDetail from './RecipeDetail';
+import { calculateDailyMacros } from '@/data/mockData';
 import { Progress } from '@/components/ui/progress';
-import { calculateDailyMacros } from '@/types/MealPlanTypes';
 
 interface PlanDetailViewProps {
   plan: any;
@@ -139,17 +139,14 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
                       >
                         <div className="w-10 h-10 rounded-md overflow-hidden mr-3 flex-shrink-0">
                           <img 
-                            src={plan.days[activeDay].meals.breakfast.imageSrc || "/placeholder.svg"} 
+                            src={plan.days[activeDay].meals.breakfast.imageSrc} 
                             alt={plan.days[activeDay].meals.breakfast.name}
                             className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/placeholder.svg";
-                            }}
                           />
                         </div>
                         <div className="flex-1">
                           <p className="font-medium text-sm">{plan.days[activeDay].meals.breakfast.name}</p>
-                          <p className="text-xs text-dishco-text-light">{plan.days[activeDay].meals.breakfast.macros?.calories || 0} cal</p>
+                          <p className="text-xs text-dishco-text-light">{plan.days[activeDay].meals.breakfast.macros?.calories} cal</p>
                         </div>
                       </div>
                     ) : (
@@ -166,17 +163,14 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
                       >
                         <div className="w-10 h-10 rounded-md overflow-hidden mr-3 flex-shrink-0">
                           <img 
-                            src={plan.days[activeDay].meals.lunch.imageSrc || "/placeholder.svg"} 
+                            src={plan.days[activeDay].meals.lunch.imageSrc} 
                             alt={plan.days[activeDay].meals.lunch.name}
                             className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/placeholder.svg";
-                            }}
                           />
                         </div>
                         <div className="flex-1">
                           <p className="font-medium text-sm">{plan.days[activeDay].meals.lunch.name}</p>
-                          <p className="text-xs text-dishco-text-light">{plan.days[activeDay].meals.lunch.macros?.calories || 0} cal</p>
+                          <p className="text-xs text-dishco-text-light">{plan.days[activeDay].meals.lunch.macros?.calories} cal</p>
                         </div>
                       </div>
                     ) : (
@@ -193,17 +187,14 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
                       >
                         <div className="w-10 h-10 rounded-md overflow-hidden mr-3 flex-shrink-0">
                           <img 
-                            src={plan.days[activeDay].meals.dinner.imageSrc || "/placeholder.svg"} 
+                            src={plan.days[activeDay].meals.dinner.imageSrc} 
                             alt={plan.days[activeDay].meals.dinner.name}
                             className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/placeholder.svg";
-                            }}
                           />
                         </div>
                         <div className="flex-1">
                           <p className="font-medium text-sm">{plan.days[activeDay].meals.dinner.name}</p>
-                          <p className="text-xs text-dishco-text-light">{plan.days[activeDay].meals.dinner.macros?.calories || 0} cal</p>
+                          <p className="text-xs text-dishco-text-light">{plan.days[activeDay].meals.dinner.macros?.calories} cal</p>
                         </div>
                       </div>
                     ) : (
@@ -224,17 +215,14 @@ const PlanDetailView: React.FC<PlanDetailViewProps> = ({ plan, isOpen, onClose }
                             >
                               <div className="w-10 h-10 rounded-md overflow-hidden mr-3 flex-shrink-0">
                                 <img 
-                                  src={snack.imageSrc || "/placeholder.svg"} 
+                                  src={snack.imageSrc} 
                                   alt={snack.name}
                                   className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).src = "/placeholder.svg";
-                                  }}
                                 />
                               </div>
                               <div className="flex-1">
                                 <p className="font-medium text-sm">{snack.name}</p>
-                                <p className="text-xs text-dishco-text-light">{snack.macros?.calories || 0} cal</p>
+                                <p className="text-xs text-dishco-text-light">{snack.macros?.calories} cal</p>
                               </div>
                             </div>
                           )

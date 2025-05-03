@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Search, CalendarPlus } from 'lucide-react';
@@ -8,7 +7,6 @@ import { useRecipes } from '@/hooks/useRecipes';
 import MealPlanOnboarding from '@/components/meal-plan/MealPlanOnboarding';
 import { useSavedMealPlans } from '@/hooks/useSavedMealPlans';
 import WeeklyOverview from '@/components/home/WeeklyOverview';
-import { Recipe } from '@/types/Recipe';
 
 const PlanningPage = () => {
   const { toast } = useToast();
@@ -32,7 +30,6 @@ const PlanningPage = () => {
     console.log('PlanningPage mounted - checking active plan');
     console.log('All recipe types:', [...new Set(recipes.map(r => r.type))]);
     console.log('Dessert recipes found:', recipes.filter(recipe => recipe.type?.toLowerCase() === 'dessert').length);
-    console.log('Recipe titles:', recipes.map(r => r.name));
   }, [recipes]);
 
   return (
@@ -73,36 +70,22 @@ const PlanningPage = () => {
             </p>
             
             <div className="grid grid-cols-2 gap-4">
-              {recipeSelection.length > 0 ? (
-                recipeSelection.map((recipe) => (
-                  <div key={recipe.id} className="cursor-pointer" onClick={() => navigate('/explore-recipes')}>
-                    <div className="bg-gray-100 rounded-lg aspect-square mb-2 flex items-center justify-center overflow-hidden">
-                      <img 
-                        src={recipe.imageSrc || imageUrl} 
-                        alt={recipe.name} 
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <h3 className="font-medium text-sm line-clamp-1">{recipe.name}</h3>
-                    <div className="flex justify-between items-center mt-1">
-                      <span className="text-sm text-gray-600">{recipe.macros.calories} cal</span>
-                      <span className="text-xs text-blue-600">{recipe.type}</span>
-                    </div>
+              {recipeSelection.map((recipe) => (
+                <div key={recipe.id} className="cursor-pointer" onClick={() => navigate('/explore-recipes')}>
+                  <div className="bg-gray-100 rounded-lg aspect-square mb-2 flex items-center justify-center overflow-hidden">
+                    <img 
+                      src={recipe.imageSrc || imageUrl} 
+                      alt={recipe.name} 
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                ))
-              ) : (
-                <div className="col-span-2 text-center py-6">
-                  <p className="text-gray-400">No recipes available. Explore recipes to discover more!</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => navigate('/explore-recipes')}
-                    className="mt-2"
-                  >
-                    Find Recipes
-                  </Button>
+                  <h3 className="font-medium text-sm line-clamp-1">{recipe.name}</h3>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-sm text-gray-600">{recipe.macros.calories} cal</span>
+                    <span className="text-xs text-blue-600">{recipe.type}</span>
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
           </div>
 

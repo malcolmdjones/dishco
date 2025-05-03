@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState } from 'react';
-import { Recipe } from '@/types/Recipe';
+import { Recipe } from '@/data/mockData';
 
 interface MealSectionsContextType {
   selectedRecipe: Recipe | null;

@@ -1,34 +1,10 @@
 
 import { useFetchRecipes } from './useFetchRecipes';
 import { useSavedRecipes } from './useSavedRecipes';
-import { Recipe } from '@/types/Recipe';
 
-/**
- * Simplified database recipe interface for admin components
- * Represents the essential fields needed from the recipehub table
- */
-export interface DbRecipe {
-  id: string;
-  title?: string;
-  short_description?: string;
-  type?: string;
-  image_url?: string;
-  is_public?: boolean;
-  nutrition_calories?: number;
-  nutrition_protein?: number;
-  nutrition_carbs?: number;
-  nutrition_fat?: number;
-  created_at?: string;
-}
-
-// Export types and utility functions from recipeHubUtils
-export type { RecipeHubDb } from '@/utils/recipeHubUtils';
-export { 
-  recipeHubDbToFrontendRecipe, 
-  filterRecipesByDietaryRestrictions, 
-  getUserDietaryRestrictions,
-  sanitizeRecipeForInsert
-} from '@/utils/recipeHubUtils';
+// Change the re-export to use 'export type' since we're re-exporting types
+export type { DbRecipe } from '@/utils/recipeDbUtils';
+export { dbToFrontendRecipe } from '@/utils/recipeDbUtils';
 
 export const useRecipes = () => {
   const { 
@@ -37,8 +13,7 @@ export const useRecipes = () => {
     isAuthenticated,
     fetchRecipes,
     filterRecipes,
-    getRecipesByType,
-    dietaryRestrictions
+    getRecipesByType
   } = useFetchRecipes();
 
   const {
@@ -65,9 +40,6 @@ export const useRecipes = () => {
     isRecipeSaved,
     toggleSaveRecipe,
     getSavedRecipes,
-    fetchSavedRecipeIds,
-    
-    // Dietary restrictions
-    dietaryRestrictions
+    fetchSavedRecipeIds
   };
 };

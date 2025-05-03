@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -42,7 +41,6 @@ import AdminAddRecipePage from "./pages/admin/AdminAddRecipePage";
 import AdminEditRecipePage from "./pages/admin/AdminEditRecipePage";
 import AdminViewRecipePage from "./pages/admin/AdminViewRecipePage";
 import RecipeDiscoveryPage from "./pages/RecipeDiscoveryPage";
-import RecipeTinderPage from "./pages/RecipeTinderPage";
 import ProgressPage from "./pages/ProgressPage";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -94,7 +92,6 @@ const App = () => (
             <Route path="/explore-snacks" element={<AppLayout><ExploreSnacksPage /></AppLayout>} />
             <Route path="/explore-desserts" element={<AppLayout><ExploreDesserts /></AppLayout>} />
             <Route path="/recipe-discovery" element={<AppLayout><RecipeDiscoveryPage /></AppLayout>} />
-            <Route path="/recipe-tinder" element={<AppLayout><RecipeTinderPage /></AppLayout>} />
             <Route path="/grocery" element={<ProtectedRoute><AppLayout><GroceryListPage /></AppLayout></ProtectedRoute>} />
             <Route path="/more" element={<AppLayout><MorePage /></AppLayout>} />
             

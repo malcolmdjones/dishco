@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
@@ -6,24 +7,7 @@ import { Button } from '@/components/ui/button';
 import RecipeDetail from './RecipeDetail';
 import { Progress } from '@/components/ui/progress';
 import { MealPlan } from '@/hooks/useSavedMealPlans';
-import { Recipe } from '@/types/Recipe';
-
-interface MealPlan {
-  id: string;
-  name: string;
-  plan_data: {
-    days: {
-      date: string;
-      meals: {
-        breakfast: Recipe | Recipe[] | null;
-        lunch: Recipe | Recipe[] | null;
-        dinner: Recipe | Recipe[] | null;
-        snacks: Recipe | Recipe[] | null;
-      };
-    }[];
-    description?: string;
-  };
-}
+import { Recipe } from '@/data/mockData';
 
 interface MealPlanDetailViewProps {
   plan: MealPlan | null;
@@ -74,7 +58,7 @@ const safeCalculateDailyMacros = (meals: any = {}) => {
 
 const MealPlanDetailView: React.FC<MealPlanDetailViewProps> = ({ plan, isOpen, onClose }) => {
   const [activeDay, setActiveDay] = useState(0);
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [selectedRecipe, setSelectedRecipe] = useState<any>(null);
   const [isRecipeDetailOpen, setIsRecipeDetailOpen] = useState(false);
 
   // Early return if no plan or no days
@@ -134,6 +118,7 @@ const MealPlanDetailView: React.FC<MealPlanDetailViewProps> = ({ plan, isOpen, o
         id: recipe.id || `temp-${Date.now()}` // Generate temporary ID if none exists
       };
       
+      // Ensure RecipeDetail component has all required fields
       setSelectedRecipe(recipeWithId);
       setIsRecipeDetailOpen(true);
     }
@@ -267,28 +252,30 @@ const MealPlanDetailView: React.FC<MealPlanDetailViewProps> = ({ plan, isOpen, o
               <div className="border rounded-md p-4 space-y-4">
                 <h3 className="font-medium">Day {activeDay + 1}: {dayNames[activeDay % 7]}</h3>
                 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div>
                     <h4 className="text-sm font-medium mb-2">Breakfast</h4>
-                    {renderMealItem(currentMeals.breakfast, 'breakfast')}
+                    {renderMealItem(currentMeals.breakfast, "breakfast")}
                   </div>
                   
                   <div>
                     <h4 className="text-sm font-medium mb-2">Lunch</h4>
-                    {renderMealItem(currentMeals.lunch, 'lunch')}
+                    {renderMealItem(currentMeals.lunch, "lunch")}
                   </div>
                   
                   <div>
                     <h4 className="text-sm font-medium mb-2">Dinner</h4>
-                    {renderMealItem(currentMeals.dinner, 'dinner')}
+                    {renderMealItem(currentMeals.dinner, "dinner")}
                   </div>
                   
                   <div>
                     <h4 className="text-sm font-medium mb-2">Snacks</h4>
                     {currentMeals.snacks && Array.isArray(currentMeals.snacks) && currentMeals.snacks.length > 0 ? (
                       <div className="space-y-2">
-                        {currentMeals.snacks.map((snack: any, index: number) => (
-                          snack && (
+                        {currentMeals.snacks.map((snack: any, index: number) => {
+                          if (!snack || !snack.name) return null;
+                          
+                          return (
                             <div 
                               key={index}
                               className="p-3 bg-muted/20 rounded-md flex items-center cursor-pointer hover:bg-muted/30 transition-colors"
@@ -300,7 +287,8 @@ const MealPlanDetailView: React.FC<MealPlanDetailViewProps> = ({ plan, isOpen, o
                                   alt={snack.name}
                                   className="w-full h-full object-cover"
                                   onError={(e) => {
-                                    (e.target as HTMLImageElement).src = "/placeholder.svg";
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = "/placeholder.svg";
                                   }}
                                 />
                               </div>
@@ -309,8 +297,8 @@ const MealPlanDetailView: React.FC<MealPlanDetailViewProps> = ({ plan, isOpen, o
                                 <p className="text-xs text-dishco-text-light">{snack.macros?.calories || 0} cal</p>
                               </div>
                             </div>
-                          )
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <p className="text-sm text-dishco-text-light">No snacks scheduled</p>
@@ -326,12 +314,8 @@ const MealPlanDetailView: React.FC<MealPlanDetailViewProps> = ({ plan, isOpen, o
       {selectedRecipe && (
         <RecipeDetail
           recipeId={selectedRecipe.id}
-          onClose={() => {
-            setIsRecipeDetailOpen(false);
-            setSelectedRecipe(null);
-          }}
+          onClose={() => setIsRecipeDetailOpen(false)}
           isOpen={isRecipeDetailOpen}
-          className={isRecipeDetailOpen ? "block" : "hidden"}
         />
       )}
     </>

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Recipe } from '@/types/Recipe';
+import { Recipe } from '@/data/mockData';
 import { DragDropContext } from '@hello-pangea/dnd';
 import { MealSectionsProvider } from './MealSectionsContext';
 import RecipeDetailHandler from './recipe-dialog/RecipeDetailHandler';

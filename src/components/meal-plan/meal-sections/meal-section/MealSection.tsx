@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Recipe } from '@/types/Recipe';
+import { Recipe } from '@/data/mockData';
 import MealCard from '@/components/meal-plan/MealCard';
 import { Droppable, Draggable } from '@hello-pangea/dnd';
 

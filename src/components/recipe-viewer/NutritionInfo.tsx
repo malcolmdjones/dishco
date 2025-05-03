@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Recipe } from '@/types/Recipe';
+import { Recipe } from '@/data/mockData';
 
 interface NutritionInfoProps {
   macros: Recipe['macros'];

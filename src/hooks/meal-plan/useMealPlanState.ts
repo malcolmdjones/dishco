@@ -1,18 +1,15 @@
 
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { MealPlanDay, NutritionGoals, defaultGoals, fetchNutritionGoals } from '@/types/MealPlanTypes';
-import { Recipe } from '@/types/Recipe';
+import { MealPlanDay, NutritionGoals, defaultGoals, fetchNutritionGoals, recipes } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useRecipes } from '@/hooks/useRecipes';
 
 /**
  * Hook to manage the basic state of the meal plan
  */
 export const useMealPlanState = () => {
   const { toast } = useToast();
-  const { recipes, getRecipesByType } = useRecipes();
   const location = useLocation();
   const preferences = location.state?.preferences || {
     days: 7,
@@ -82,7 +79,7 @@ export const useMealPlanState = () => {
 
   // Filter recipes by meal type
   const getRandomRecipeByType = (type: string) => {
-    const filteredRecipes = getRecipesByType(type);
+    const filteredRecipes = recipes.filter(r => r.type === type);
     if (filteredRecipes.length > 0) {
       return filteredRecipes[Math.floor(Math.random() * filteredRecipes.length)];
     }

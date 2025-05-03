@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, Filter, X } from 'lucide-react';
@@ -23,12 +24,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import RecipeViewer from '@/components/RecipeViewer';
 import { useRecipes } from '@/hooks/useRecipes';
-import { Recipe } from '@/types/Recipe';
+import { Recipe } from '@/data/mockData';
 import { getRecipeImage } from '@/utils/recipeUtils';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { Json } from '@/integrations/supabase/types';
-import { recipeHubDbToFrontendRecipe } from '@/utils/recipeHubUtils';
 
 // Define filter types
 type PriceRange = '$' | '$$' | '$$$';
@@ -48,8 +45,7 @@ interface Filters {
 
 const ExploreSnacksPage = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { isRecipeSaved, toggleSaveRecipe } = useRecipes();
+  const { recipes, loading, isRecipeSaved, toggleSaveRecipe } = useRecipes();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
@@ -58,9 +54,6 @@ const ExploreSnacksPage = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const snacksPerPage = 8;
-  const [showEmptyState, setShowEmptyState] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
   
   // Filter state
   const [filters, setFilters] = useState<Filters>({
@@ -74,61 +67,20 @@ const ExploreSnacksPage = () => {
   const [filtersApplied, setFiltersApplied] = useState(false);
   const [activeFilterCount, setActiveFilterCount] = useState(0);
   
-  // Fetch recipes directly from the recipehub table
-  const fetchRecipesFromDb = async () => {
-    setLoading(true);
-    try {
-      console.log("Fetching recipes directly from recipehub...");
-      
-      // Clear existing recipes first
-      setRecipes([]);
-      
-      // Fetch recipes only from the recipehub table where type is 'snack'
-      const { data: dbRecipes, error } = await supabase
-        .from('recipehub')
-        .select('*')
-        .eq('type', 'snack');
-
-      if (error) {
-        throw error;
-      }
-
-      if (!dbRecipes || dbRecipes.length === 0) {
-        console.log('No snack recipes found in recipehub database');
-        setRecipes([]);
-        setVisibleSnacks([]);
-        setShowEmptyState(true);
-      } else {
-        // Convert db recipes to frontend format
-        const frontendRecipes: Recipe[] = dbRecipes.map(recipe => recipeHubDbToFrontendRecipe(recipe));
-        
-        console.log(`Fetched ${frontendRecipes.length} snack recipes from recipehub database`);
-        console.log('Recipe titles:', frontendRecipes.map(r => r.name));
-        setRecipes(frontendRecipes);
-        
-        // Initialize visible snacks
-        loadMoreSnacks(true, frontendRecipes);
-        setShowEmptyState(frontendRecipes.length === 0);
-      }
-    } catch (error) {
-      console.error('Error fetching snack recipes from recipehub:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load snack recipes.",
-        variant: "destructive"
-      });
-      setRecipes([]);
-      setVisibleSnacks([]);
-      setShowEmptyState(true);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Filter snacks to only include items that would be considered snacks
+  const snackRecipes = recipes.filter(recipe => 
+    recipe.type === 'snack' || 
+    recipe.macros.calories < 400 ||
+    recipe.name.toLowerCase().includes('snack') ||
+    (recipe.description && recipe.description.toLowerCase().includes('snack'))
+  );
   
-  // Effect to load initial snacks when the component mounts
+  // Effect to load initial snacks
   useEffect(() => {
-    fetchRecipesFromDb();
-  }, []);
+    if (recipes.length > 0) {
+      loadMoreSnacks(true);
+    }
+  }, [recipes]);
   
   // Effect to detect filter changes
   useEffect(() => {
@@ -141,15 +93,10 @@ const ExploreSnacksPage = () => {
     count += filters.calories.length;
     
     setActiveFilterCount(count);
-    
-    // Reapply filters when they change
-    if (recipes.length > 0) {
-      loadMoreSnacks(true);
-    }
   }, [filters]);
   
   // Load more snacks with pagination
-  const loadMoreSnacks = (reset = false, recipesData = recipes) => {
+  const loadMoreSnacks = (reset = false) => {
     setLoadingMore(true);
     
     // Simulate API call delay
@@ -158,7 +105,7 @@ const ExploreSnacksPage = () => {
       const endIndex = startIndex + snacksPerPage;
       
       // Filter snacks based on current filters and search query
-      const filteredSnacks = recipesData.filter(snack => {
+      const filteredSnacks = snackRecipes.filter(snack => {
         // Search query filter
         if (searchQuery && !snack.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
             !snack.description?.toLowerCase().includes(searchQuery.toLowerCase())) {
@@ -181,6 +128,9 @@ const ExploreSnacksPage = () => {
           if (!inRange) return false;
         }
         
+        // Other filters would be implemented similarly
+        // This is a simplified implementation
+        
         return true;
       });
       
@@ -196,14 +146,7 @@ const ExploreSnacksPage = () => {
       
       setHasMore(endIndex < filteredSnacks.length);
       setLoadingMore(false);
-      
-      // Update empty state
-      if (reset && newSnacks.length === 0) {
-        setShowEmptyState(true);
-      } else if (reset) {
-        setShowEmptyState(false);
-      }
-    }, 300);
+    }, 500);
   };
   
   // Handle search input change
@@ -237,7 +180,6 @@ const ExploreSnacksPage = () => {
       dietary: [],
       calories: []
     });
-    setSearchQuery('');
     setFiltersApplied(false);
     loadMoreSnacks(true);
   };
@@ -256,11 +198,6 @@ const ExploreSnacksPage = () => {
           : [...current, value]
       };
     });
-  };
-
-  // Function to retry loading data
-  const retryLoadData = () => {
-    fetchRecipesFromDb();
   };
 
   return (
@@ -317,7 +254,7 @@ const ExploreSnacksPage = () => {
                 <h3 className="font-medium mb-2">Price Range</h3>
                 <div className="flex gap-4">
                   {['$', '$$', '$$$'].map((price) => (
-                    <div key={`price-${price}`} className="flex items-center gap-2">
+                    <div key={price} className="flex items-center gap-2">
                       <Checkbox 
                         id={`price-${price}`} 
                         checked={filters.price.includes(price as PriceRange)}
@@ -336,7 +273,7 @@ const ExploreSnacksPage = () => {
                 <h3 className="font-medium mb-2">Flavor Profile</h3>
                 <div className="grid grid-cols-2 gap-2">
                   {['sweet', 'savory', 'spicy', 'salty', 'sour'].map((flavor) => (
-                    <div key={`flavor-${flavor}`} className="flex items-center gap-2">
+                    <div key={flavor} className="flex items-center gap-2">
                       <Checkbox 
                         id={`flavor-${flavor}`} 
                         checked={filters.flavorProfile.includes(flavor as FlavorProfile)}
@@ -358,7 +295,7 @@ const ExploreSnacksPage = () => {
                     'protein-bars', 'granola', 'nuts-seeds', 'crackers', 'trail-mix', 
                     'chips', 'cookies', 'candy', 'chocolate', 'meat'
                   ].map((type) => (
-                    <div key={`type-${type}`} className="flex items-center gap-2">
+                    <div key={type} className="flex items-center gap-2">
                       <Checkbox 
                         id={`type-${type}`} 
                         checked={filters.snackType.includes(type as SnackType)}
@@ -382,7 +319,7 @@ const ExploreSnacksPage = () => {
                     'keto', 'vegan', 'vegetarian', 'gluten-free', 'dairy-free', 
                     'low-carb', 'low-sugar', 'paleo', 'high-protein', 'high-fiber', 'organic'
                   ].map((diet) => (
-                    <div key={`diet-${diet}`} className="flex items-center gap-2">
+                    <div key={diet} className="flex items-center gap-2">
                       <Checkbox 
                         id={`diet-${diet}`} 
                         checked={filters.dietary.includes(diet as DietaryPreference)}
@@ -403,7 +340,7 @@ const ExploreSnacksPage = () => {
                 <h3 className="font-medium mb-2">Calories</h3>
                 <div className="grid grid-cols-1 gap-2">
                   {['0-100', '100-200', '200-300', '300-400', '400+'].map((range) => (
-                    <div key={`calories-${range}`} className="flex items-center gap-2">
+                    <div key={range} className="flex items-center gap-2">
                       <Checkbox 
                         id={`calories-${range}`} 
                         checked={filters.calories.includes(range as CalorieRange)}
@@ -435,7 +372,7 @@ const ExploreSnacksPage = () => {
         <div className="flex flex-wrap gap-2 mb-4">
           {filters.price.map(price => (
             <Button 
-              key={`active-price-${price}`}
+              key={`filter-price-${price}`}
               variant="outline" 
               size="sm" 
               className="flex items-center gap-1 bg-gray-100"
@@ -447,7 +384,7 @@ const ExploreSnacksPage = () => {
           
           {filters.flavorProfile.map(flavor => (
             <Button 
-              key={`active-flavor-${flavor}`}
+              key={`filter-flavor-${flavor}`}
               variant="outline" 
               size="sm" 
               className="flex items-center gap-1 bg-gray-100"
@@ -492,9 +429,9 @@ const ExploreSnacksPage = () => {
       
       {/* Snack Grid */}
       <div className="grid grid-cols-2 gap-4">
-        {visibleSnacks.map((snack, index) => (
+        {visibleSnacks.map(snack => (
           <div 
-            key={`snack-${snack.id}-${index}`}
+            key={snack.id} 
             className="bg-white rounded-lg overflow-hidden shadow-sm cursor-pointer"
             onClick={() => handleSnackClick(snack)}
           >
@@ -526,7 +463,7 @@ const ExploreSnacksPage = () => {
       </div>
       
       {/* Load More Button */}
-      {hasMore && visibleSnacks.length > 0 && (
+      {hasMore && (
         <div className="mt-6 text-center">
           <Button 
             variant="outline" 
@@ -540,28 +477,18 @@ const ExploreSnacksPage = () => {
       )}
       
       {/* No Results Message */}
-      {(visibleSnacks.length === 0 && !loading) || showEmptyState ? (
+      {visibleSnacks.length === 0 && !loading && (
         <div className="text-center py-10">
           <p className="text-gray-500">No snacks found matching your criteria.</p>
-          {recipes.length === 0 ? (
-            <Button 
-              variant="link" 
-              onClick={retryLoadData}
-              className="mt-2"
-            >
-              Retry loading snacks
-            </Button>
-          ) : (
-            <Button 
-              variant="link" 
-              onClick={resetFilters}
-              className="mt-2"
-            >
-              Clear filters and try again
-            </Button>
-          )}
+          <Button 
+            variant="link" 
+            onClick={resetFilters}
+            className="mt-2"
+          >
+            Clear filters and try again
+          </Button>
         </div>
-      ) : null}
+      )}
       
       {/* Recipe Viewer Dialog */}
       {selectedRecipe && (

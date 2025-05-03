@@ -1,8 +1,8 @@
 
 import React from 'react';
+import { Recipe } from '@/data/mockData';
 import { CookingPot, Heart, Clock, Users } from 'lucide-react';
 import { getRecipeImage } from '@/utils/recipeUtils';
-import { Recipe } from '@/types/Recipe';
 
 interface RecipeCardProps {
   recipe: Recipe;

@@ -1,7 +1,5 @@
-import { MealPlanDay } from '@/types/MealPlanTypes';
-import { Recipe } from '@/types/Recipe';
+import { MealPlanDay, recipes, Recipe } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
-import { useRecipes } from '@/hooks/useRecipes';
 
 interface MealGenerationProps {
   mealPlan: MealPlanDay[];
@@ -24,7 +22,6 @@ export const useMealGeneration = ({
   setAiReasoning
 }: MealGenerationProps) => {
   const { toast } = useToast();
-  const { recipes, getRecipesByType } = useRecipes();
 
   // Function to regenerate meals for the current day
   const regenerateMeals = async () => {
@@ -68,10 +65,10 @@ export const useMealGeneration = ({
         const currentPlanDay = { ...newPlan[currentDay] };
         
         // Filter recipes by meal type
-        const breakfastRecipes = getRecipesByType('breakfast');
-        const lunchRecipes = getRecipesByType('lunch');
-        const dinnerRecipes = getRecipesByType('dinner');
-        const snackRecipes = getRecipesByType('snack');
+        const breakfastRecipes = recipes.filter(r => r.type === 'breakfast');
+        const lunchRecipes = recipes.filter(r => r.type === 'lunch');
+        const dinnerRecipes = recipes.filter(r => r.type === 'dinner');
+        const snackRecipes = recipes.filter(r => r.type === 'snack');
         
         // Only replace meals that aren't locked
         const newMeals = { ...currentPlanDay.meals };
@@ -86,11 +83,9 @@ export const useMealGeneration = ({
         if (Array.isArray(newMeals.breakfast)) {
           if (newMeals.breakfast.length === 0 || !newMeals.breakfast.some(item => item !== null)) {
             // If empty or only contains null values, add a random breakfast
-            if (breakfastRecipes.length > 0) {
-              const randomBreakfast = breakfastRecipes[Math.floor(Math.random() * breakfastRecipes.length)];
-              if (randomBreakfast) {
-                newMeals.breakfast = [randomBreakfast];
-              }
+            const randomBreakfast = breakfastRecipes[Math.floor(Math.random() * breakfastRecipes.length)];
+            if (randomBreakfast) {
+              newMeals.breakfast = [randomBreakfast];
             }
           } else {
             // Keep only locked breakfast items
@@ -100,7 +95,7 @@ export const useMealGeneration = ({
             );
             
             // Add a random breakfast if empty (all were unlocked)
-            if (updatedBreakfast.length === 0 && breakfastRecipes.length > 0) {
+            if (updatedBreakfast.length === 0) {
               const randomBreakfast = breakfastRecipes[Math.floor(Math.random() * breakfastRecipes.length)];
               if (randomBreakfast) {
                 updatedBreakfast.push(randomBreakfast);
@@ -115,11 +110,9 @@ export const useMealGeneration = ({
         if (Array.isArray(newMeals.lunch)) {
           if (newMeals.lunch.length === 0 || !newMeals.lunch.some(item => item !== null)) {
             // If empty or only contains null values, add a random lunch
-            if (lunchRecipes.length > 0) {
-              const randomLunch = lunchRecipes[Math.floor(Math.random() * lunchRecipes.length)];
-              if (randomLunch) {
-                newMeals.lunch = [randomLunch];
-              }
+            const randomLunch = lunchRecipes[Math.floor(Math.random() * lunchRecipes.length)];
+            if (randomLunch) {
+              newMeals.lunch = [randomLunch];
             }
           } else {
             // Keep only locked lunch items
@@ -129,7 +122,7 @@ export const useMealGeneration = ({
             );
             
             // Add a random lunch if empty (all were unlocked)
-            if (updatedLunch.length === 0 && lunchRecipes.length > 0) {
+            if (updatedLunch.length === 0) {
               const randomLunch = lunchRecipes[Math.floor(Math.random() * lunchRecipes.length)];
               if (randomLunch) {
                 updatedLunch.push(randomLunch);
@@ -144,11 +137,9 @@ export const useMealGeneration = ({
         if (Array.isArray(newMeals.dinner)) {
           if (newMeals.dinner.length === 0 || !newMeals.dinner.some(item => item !== null)) {
             // If empty or only contains null values, add a random dinner
-            if (dinnerRecipes.length > 0) {
-              const randomDinner = dinnerRecipes[Math.floor(Math.random() * dinnerRecipes.length)];
-              if (randomDinner) {
-                newMeals.dinner = [randomDinner];
-              }
+            const randomDinner = dinnerRecipes[Math.floor(Math.random() * dinnerRecipes.length)];
+            if (randomDinner) {
+              newMeals.dinner = [randomDinner];
             }
           } else {
             // Keep only locked dinner items
@@ -158,7 +149,7 @@ export const useMealGeneration = ({
             );
             
             // Add a random dinner if empty (all were unlocked)
-            if (updatedDinner.length === 0 && dinnerRecipes.length > 0) {
+            if (updatedDinner.length === 0) {
               const randomDinner = dinnerRecipes[Math.floor(Math.random() * dinnerRecipes.length)];
               if (randomDinner) {
                 updatedDinner.push(randomDinner);
@@ -173,11 +164,9 @@ export const useMealGeneration = ({
         if (Array.isArray(newMeals.snacks)) {
           if (newMeals.snacks.length === 0 || !newMeals.snacks.some(item => item !== null)) {
             // If empty or only contains null values, add a random snack
-            if (snackRecipes.length > 0) {
-              const randomSnack = snackRecipes[Math.floor(Math.random() * snackRecipes.length)];
-              if (randomSnack) {
-                newMeals.snacks = [randomSnack];
-              }
+            const randomSnack = snackRecipes[Math.floor(Math.random() * snackRecipes.length)];
+            if (randomSnack) {
+              newMeals.snacks = [randomSnack];
             }
           } else {
             // Keep only locked snack items
@@ -187,7 +176,7 @@ export const useMealGeneration = ({
             );
             
             // Add a random snack if empty (all were unlocked)
-            if (updatedSnacks.length === 0 && snackRecipes.length > 0) {
+            if (updatedSnacks.length === 0) {
               const randomSnack = snackRecipes[Math.floor(Math.random() * snackRecipes.length)];
               if (randomSnack) {
                 updatedSnacks.push(randomSnack);

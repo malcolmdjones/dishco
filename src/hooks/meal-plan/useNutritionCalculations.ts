@@ -1,5 +1,5 @@
 
-import { MealPlanDay, calculateDailyMacros } from '@/types/MealPlanTypes';
+import { MealPlanDay, Recipe, calculateDailyMacros } from '@/data/mockData';
 
 interface NutritionCalculationsProps {
   mealPlan: MealPlanDay[];

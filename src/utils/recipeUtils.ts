@@ -1,64 +1,67 @@
 
-import { Recipe } from '@/types/Recipe';
+import { CustomRecipe } from '@/hooks/useCustomRecipes';
+import { Recipe } from '@/data/mockData';
 
-// Default image for recipes
-const DEFAULT_RECIPE_IMAGE = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Zm9vZHxlbnwwfHwwfHx8MA%3D%3D";
+// Standard image URL to use when no image is available
+export const DEFAULT_IMAGE_URL = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
-export const getRecipeImage = (imageSrc?: string | null): string => {
-  return imageSrc || DEFAULT_RECIPE_IMAGE;
+/**
+ * Convert a CustomRecipe to the standard Recipe format
+ */
+export const customToStandardRecipe = (customRecipe: CustomRecipe): Recipe => {
+  return {
+    id: customRecipe.id,
+    name: customRecipe.title,
+    description: customRecipe.description || '',
+    type: 'custom',
+    imageSrc: customRecipe.imageUrl || DEFAULT_IMAGE_URL,
+    requiresBlender: false,
+    requiresCooking: true,
+    cookTime: customRecipe.cookingTime || 0,
+    prepTime: 0,
+    servings: customRecipe.servings || 1,
+    macros: customRecipe.nutrition || {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0
+    },
+    ingredients: customRecipe.ingredients 
+      ? customRecipe.ingredients.map(ing => `${ing.quantity} ${ing.unit} ${ing.name}`.trim())
+      : [],
+    instructions: customRecipe.instructions || []
+  };
 };
 
-export const isStoreBought = (recipe: Recipe): boolean => {
-  return recipe.storeBought === true || recipe.type === 'store-bought';
-};
-
-export const formatCookingTime = (time?: number): string => {
-  if (!time) return 'N/A';
-  if (time < 60) return `${time} min`;
+/**
+ * Convert a standard Recipe to CustomRecipe format
+ */
+export const standardToCustomRecipe = (recipe: Recipe): Omit<CustomRecipe, 'id' | 'createdAt'> => {
+  // Parse ingredients from strings to structured format
+  const ingredients = recipe.ingredients.map(ing => {
+    const parts = ing.split(' ');
+    const quantity = parts[0] || '';
+    const unit = parts[1] || '';
+    const name = parts.slice(2).join(' ');
+    
+    return { quantity, unit, name };
+  });
   
-  const hours = Math.floor(time / 60);
-  const minutes = time % 60;
-  
-  if (minutes === 0) return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
-  return `${hours}h ${minutes}m`;
+  return {
+    title: recipe.name,
+    description: recipe.description,
+    imageUrl: recipe.imageSrc,
+    cookingTime: recipe.cookTime || 0,
+    servings: recipe.servings || 1,
+    ingredients,
+    instructions: recipe.instructions,
+    nutrition: recipe.macros
+  };
 };
 
-export const categorizeRecipe = (recipe: Recipe): string => {
-  // Categorize recipe by type, falling back to different strategies
-  if (recipe.type) return recipe.type;
-  if (recipe.storeBought) return 'Store-Bought';
-  if (recipe.requiresBlender) return 'Blender Recipe';
-  if (recipe.requiresCooking) return 'Cooking Required';
-  return 'Recipe';
-};
-
-export const getMacrosBadgeColor = (macroType: string): string => {
-  switch (macroType.toLowerCase()) {
-    case 'protein':
-      return 'bg-amber-100 text-amber-800';
-    case 'carbs':
-    case 'carbohydrates':
-      return 'bg-blue-100 text-blue-800';
-    case 'fat':
-    case 'fats':
-      return 'bg-green-100 text-green-800';
-    case 'calories':
-    case 'calorie':
-      return 'bg-purple-100 text-purple-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
-};
-
-export const getCalorieBadge = (calories: number): string => {
-  if (calories <= 200) return 'Very Low Calorie';
-  if (calories <= 400) return 'Low Calorie';
-  if (calories <= 600) return 'Moderate Calorie';
-  if (calories <= 800) return 'High Calorie';
-  return 'Very High Calorie';
-};
-
-export const getFormattedServings = (servings?: number): string => {
-  if (!servings) return 'N/A';
-  return `${servings} ${servings === 1 ? 'serving' : 'servings'}`;
+/**
+ * Check if a recipe has an image, if not return the default image
+ */
+export const getRecipeImage = (imageSrc: string | null | undefined): string => {
+  return imageSrc || DEFAULT_IMAGE_URL;
 };

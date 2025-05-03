@@ -1,7 +1,7 @@
 
 import React from 'react';
+import { Recipe } from '@/data/mockData';
 import NutritionInfo from './NutritionInfo';
-import { Recipe } from '@/types/Recipe';
 
 interface RecipeContentProps {
   recipe: Recipe;
