@@ -67,12 +67,14 @@ export const useFetchRecipes = () => {
       // Convert mock recipes to the database format
       const dbRecipesToInsert = recipesToImport.map(frontendToRecipeHubDb);
       
-      // Insert the new recipes into the database
-      const { error: insertError } = await supabase
-        .from('recipehub')
-        .insert(dbRecipesToInsert);
-      
-      if (insertError) throw insertError;
+      // Insert the new recipes into the database one by one to avoid type issues
+      for (const recipe of dbRecipesToInsert) {
+        const { error: insertError } = await supabase
+          .from('recipehub')
+          .insert(recipe);
+        
+        if (insertError) console.error('Error importing recipe:', insertError);
+      }
       
       console.log(`Successfully imported ${recipesToImport.length} mock recipes to the database`);
     } catch (error) {

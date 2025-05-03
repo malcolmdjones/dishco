@@ -35,6 +35,7 @@ export interface RecipeHubDb {
   blender: boolean | null;
   grill: boolean | null;
   slow_cooker: boolean | null;
+  nutrition_serving: string | null;
 }
 
 // Convert database recipe to frontend recipe format
@@ -56,6 +57,9 @@ export const recipeHubDbToFrontendRecipe = (dbRecipe: RecipeHubDb): Recipe => {
   const prepTimeNum = dbRecipe.prep_time ? 
     Number(dbRecipe.prep_time) : 0;
 
+  // Default servings to 1 since it's not in the database schema
+  const servings = 1;
+
   return {
     id: dbRecipe.id,
     name: dbRecipe.title || '',
@@ -66,7 +70,7 @@ export const recipeHubDbToFrontendRecipe = (dbRecipe: RecipeHubDb): Recipe => {
     requiresCooking: !(dbRecipe.store_bought || false), // If store_bought is true, doesn't require cooking
     cookTime: cookTimeNum,
     prepTime: prepTimeNum,
-    servings: dbRecipe.servings ? Number(dbRecipe.servings) : 1,
+    servings: servings,
     macros: {
       calories: dbRecipe.nutrition_calories ? Number(dbRecipe.nutrition_calories) : 0,
       protein: dbRecipe.nutrition_protein ? Number(dbRecipe.nutrition_protein) : 0,
@@ -88,7 +92,6 @@ export const frontendToRecipeHubDb = (recipe: Recipe): Partial<RecipeHubDb> => {
     short_description: recipe.description || '',
     type: recipe.type || 'meal',
     meal_prep: false,
-    servings: BigInt(recipe.servings || 1),
     prep_time: BigInt(recipe.prepTime || 0),
     cook_time: BigInt(recipe.cookTime || 0),
     total_time: BigInt((recipe.prepTime || 0) + (recipe.cookTime || 0)),
