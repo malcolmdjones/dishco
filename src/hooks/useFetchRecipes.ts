@@ -2,21 +2,18 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { recipes as mockRecipes, Recipe } from '@/data/mockData';
 import { 
   RecipeHubDb, 
   recipeHubDbToFrontendRecipe, 
-  frontendToRecipeHubDb, 
-  getUserDietaryRestrictions,
   sanitizeRecipeForInsert
 } from '@/utils/recipeHubUtils';
 
 export const useFetchRecipes = () => {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
-  const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>([]);
+  const [dietaryRestrictions, setDietaryRestrictions] = useState([]);
 
   // Check authentication status
   useEffect(() => {
@@ -43,62 +40,13 @@ export const useFetchRecipes = () => {
     setDietaryRestrictions(restrictions);
   }, []);
 
-  // Import mock recipes to database if they don't exist
-  const importMockRecipesToDb = async () => {
-    try {
-      console.log("Checking for existing recipes in database...");
-      // First, get all existing recipes from the database to check if we need to import
-      const { data: existingRecipes, error: fetchError } = await supabase
-        .from('recipehub')
-        .select('title');
-      
-      if (fetchError) {
-        console.error('Error fetching existing recipes:', fetchError);
-        throw fetchError;
-      }
-      
-      // Create a map of existing recipe titles for quick lookup
-      const existingRecipeTitles = new Set(existingRecipes?.map(r => r.title?.toLowerCase()) || []);
-      console.log(`Found ${existingRecipeTitles.size} existing recipes in database`);
-      
-      // Filter out mock recipes that already exist in the database (by name)
-      const recipesToImport = mockRecipes.filter(
-        recipe => !existingRecipeTitles.has(recipe.name.toLowerCase())
-      );
-      
-      if (recipesToImport.length === 0) {
-        console.log('All mock recipes already exist in the database');
-        return;
-      }
-
-      console.log(`Importing ${recipesToImport.length} mock recipes to database...`);
-
-      // Convert mock recipes to the database format and sanitize them
-      const dbRecipesToInsert = recipesToImport.map(r => sanitizeRecipeForInsert(frontendToRecipeHubDb(r)));
-      
-      // Insert the new recipes into the database one by one to avoid type issues
-      for (const recipe of dbRecipesToInsert) {
-        const { error: insertError } = await supabase
-          .from('recipehub')
-          .insert(recipe);
-        
-        if (insertError) console.error('Error importing recipe:', insertError);
-      }
-      
-      console.log(`Successfully imported ${recipesToImport.length} mock recipes to the database`);
-    } catch (error) {
-      console.error('Error importing mock recipes to database:', error);
-    }
-  };
-
-  // Fetch all recipes
+  // Fetch all recipes exclusively from recipehub table
   const fetchRecipes = async () => {
     setLoading(true);
     try {
-      // Import mock recipes to database first (if needed)
-      await importMockRecipesToDb();
-
-      // Then fetch all recipes from the database
+      console.log("Fetching recipes exclusively from recipehub table...");
+      
+      // Fetch recipes only from the recipehub table
       const { data: dbRecipes, error } = await supabase
         .from('recipehub')
         .select('*');
@@ -108,23 +56,24 @@ export const useFetchRecipes = () => {
       }
 
       if (!dbRecipes || dbRecipes.length === 0) {
-        console.log('No recipes found in database even after import attempt, using mock recipes');
-        setRecipes(mockRecipes);
+        console.log('No recipes found in recipehub database');
+        setRecipes([]);
       } else {
         // Convert db recipes to frontend format
-        const frontendRecipes = dbRecipes.map((recipe: any) => recipeHubDbToFrontendRecipe(recipe as RecipeHubDb));
-        console.log(`Fetched ${frontendRecipes.length} recipes from database`);
+        const frontendRecipes = dbRecipes.map((recipe) => recipeHubDbToFrontendRecipe(recipe));
+        console.log(`Fetched ${frontendRecipes.length} recipes from recipehub database`);
         console.log('Recipe types in database:', [...new Set(frontendRecipes.map(r => r.type))]);
         setRecipes(frontendRecipes);
       }
     } catch (error) {
-      console.error('Error fetching recipes:', error);
+      console.error('Error fetching recipes from recipehub:', error);
       toast({
         title: "Error",
-        description: "Failed to load recipes. Using mock recipes instead.",
+        description: "Failed to load recipes.",
         variant: "destructive"
       });
-      setRecipes(mockRecipes);
+      // Don't fallback to mock recipes anymore
+      setRecipes([]);
     } finally {
       setLoading(false);
     }
@@ -132,10 +81,10 @@ export const useFetchRecipes = () => {
 
   // Filter recipes by search query and other filters
   const filterRecipes = (
-    searchQuery: string = '', 
-    type: string | null = null,
-    mealType: string | null = null,
-  ): Recipe[] => {
+    searchQuery = '', 
+    type = null,
+    mealType = null,
+  ) => {
     // First, filter by dietary restrictions
     let filteredRecipes = recipes;
 
@@ -175,7 +124,7 @@ export const useFetchRecipes = () => {
   };
 
   // Get recipes by type (e.g., 'snack', 'breakfast', etc.)
-  const getRecipesByType = (type: string): Recipe[] => {
+  const getRecipesByType = (type) => {
     let filteredRecipes = recipes.filter(recipe => recipe.type?.toLowerCase() === type.toLowerCase());
     
     // Apply dietary restrictions
@@ -207,3 +156,6 @@ export const useFetchRecipes = () => {
     dietaryRestrictions
   };
 };
+
+// Helper function from recipeHubUtils
+import { getUserDietaryRestrictions } from '@/utils/recipeHubUtils';

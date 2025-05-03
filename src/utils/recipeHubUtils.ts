@@ -1,4 +1,3 @@
-
 import { Recipe } from '@/data/mockData';
 import { getRecipeImage } from '@/utils/recipeUtils';
 import { Json } from '@/integrations/supabase/types';
@@ -71,7 +70,6 @@ export const sanitizeRecipeForInsert = (recipeData: Partial<RecipeHubDb>): Parti
     ...sanitizedData
   } = recipeData;
   
-  // Convert any BigInt values to numbers for database compatibility
   return sanitizedData;
 };
 
