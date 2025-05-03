@@ -7,7 +7,7 @@ export interface MealPlanDay {
     breakfast: Recipe[] | Recipe | null;
     lunch: Recipe[] | Recipe | null;
     dinner: Recipe[] | Recipe | null;
-    snacks: Recipe[] | Recipe | null;
+    snacks: Recipe[] | Recipe[] | null;
   };
 }
 

@@ -1,83 +1,112 @@
 
-import { Recipe } from '@/types/Recipe';
 import { supabase } from '@/integrations/supabase/client';
-import { convertDbRecipeToFrontend } from '@/utils/recipeDbUtils';
+import { Recipe } from '@/types/Recipe';
+import { FoodDatabaseItem, LoggedMeal } from '@/types/food';
 
-export interface SearchResult {
-  id: string;
-  name: string;
-  calories: number;
-  servingInfo?: string;
-  brand?: string;
-  image?: string;
-  source?: string;
-  macros?: {
-    protein?: number;
-    carbs?: number;
-    fat?: number;
-  };
-  recipeId?: string;
-}
+// In-memory storage for recent foods
+let recentFoods: FoodDatabaseItem[] = [];
 
-export const searchFoods = async (query: string): Promise<SearchResult[]> => {
-  if (!query || query.length < 2) {
-    return [];
-  }
-
+// Search food database
+export const searchFoods = async (query: string): Promise<FoodDatabaseItem[]> => {
   try {
-    // Search in the recipehub table
-    const { data: recipeData, error: recipeError } = await supabase
+    // Real implementation would call an API
+    console.log(`Searching for: ${query}`);
+    
+    // Fetch from Supabase recipehub table with a search
+    const { data, error } = await supabase
       .from('recipehub')
       .select('*')
-      .ilike('title', `%${query}%`)
-      .limit(20);
-
-    if (recipeError) throw recipeError;
-
-    // Convert to search results
-    const results: SearchResult[] = (recipeData || []).map(recipe => ({
-      id: `recipe-${recipe.id}`,
-      name: recipe.title || 'Untitled Recipe',
-      calories: recipe.nutrition_calories || 0,
-      servingInfo: recipe.nutrition_serving || '1 serving',
-      image: recipe.image_url,
-      source: 'RecipeHub',
+      .or(`title.ilike.%${query}%, short_description.ilike.%${query}%`)
+      .limit(10);
+      
+    if (error) throw error;
+    
+    return (data || []).map(item => ({
+      id: item.id || `temp-${Date.now()}`,
+      name: item.title || 'Unknown Food',
+      brand: '',
+      servingSize: item.nutrition_serving || '1 serving',
+      servingUnit: 'serving',
+      isCommon: true,
+      imageSrc: item.image_url || null,
       macros: {
-        protein: recipe.nutrition_protein,
-        carbs: recipe.nutrition_carbs,
-        fat: recipe.nutrition_fat
-      },
-      recipeId: recipe.id
+        calories: item.nutrition_calories || 0,
+        protein: item.nutrition_protein || 0,
+        carbs: item.nutrition_carbs || 0,
+        fat: item.nutrition_fat || 0,
+        fiber: item.nutrition_fiber || 0
+      }
     }));
-
-    return results;
   } catch (error) {
-    console.error('Error searching foods:', error);
+    console.error("Error searching foods:", error);
     return [];
   }
 };
 
-export const getFoodDetails = async (foodId: string): Promise<Recipe | null> => {
+// Convert a food item to a recipe format
+export const foodItemToRecipe = (food: FoodDatabaseItem, quantity: number = 1): Recipe => {
+  return {
+    id: food.id,
+    name: food.name,
+    description: food.brand ? `${food.brand} - ${food.servingSize || ''}` : (food.servingSize || ''),
+    type: 'food',
+    imageSrc: food.imageSrc,
+    macros: {
+      calories: Math.round(food.macros.calories * quantity),
+      protein: Math.round(food.macros.protein * quantity),
+      carbs: Math.round(food.macros.carbs * quantity),
+      fat: Math.round(food.macros.fat * quantity),
+      fiber: food.macros.fiber ? Math.round(food.macros.fiber * quantity) : 0
+    },
+    storeBought: true
+  };
+};
+
+// Add to recent foods
+export const addToRecentFoods = (food: FoodDatabaseItem): void => {
+  // Remove if already exists (to avoid duplicates)
+  recentFoods = recentFoods.filter(item => item.id !== food.id);
+  
+  // Add to beginning of array
+  recentFoods.unshift(food);
+  
+  // Limit to 10 items
+  recentFoods = recentFoods.slice(0, 10);
+};
+
+// Get recent foods
+export const getRecentFoods = (): FoodDatabaseItem[] => {
+  return [...recentFoods];
+};
+
+// Mock barcode scanning functionality
+export const scanBarcode = async (barcode: string): Promise<FoodDatabaseItem | null> => {
   try {
-    if (foodId.startsWith('recipe-')) {
-      const recipeId = foodId.replace('recipe-', '');
-      
-      // Fetch the recipe from recipehub
-      const { data, error } = await supabase
-        .from('recipehub')
-        .select('*')
-        .eq('id', recipeId)
-        .single();
-      
-      if (error) throw error;
-      if (!data) return null;
-      
-      return convertDbRecipeToFrontend(data);
-    }
+    // In a real app, this would call an actual barcode API
+    console.log(`Scanning barcode: ${barcode}`);
     
-    return null;
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Return a dummy food item based on barcode
+    return {
+      id: `barcode-${barcode}`,
+      name: `Food Item (Barcode: ${barcode.substring(0, 4)})`,
+      brand: 'Generic Brand',
+      servingSize: '1 serving',
+      servingUnit: 'serving',
+      isCommon: false,
+      imageSrc: null,
+      macros: {
+        calories: 200,
+        protein: 10,
+        carbs: 25,
+        fat: 8,
+        fiber: 2
+      }
+    };
   } catch (error) {
-    console.error('Error getting food details:', error);
+    console.error("Error scanning barcode:", error);
     return null;
   }
 };

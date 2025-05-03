@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -14,7 +15,7 @@ import { searchFoods, foodItemToRecipe, addToRecentFoods } from '@/services/food
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FoodDatabaseItem } from '@/types/food';
-import { Recipe } from '@/data/mockData';
+import { Recipe } from '@/types/Recipe';
 
 interface FoodSearchModalProps {
   isOpen: boolean;
@@ -256,15 +257,15 @@ const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ isOpen, onClose, onSe
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                    <p>Protein: <span className="font-medium">{Math.round(selectedFood.macros.protein * selectedQuantity)}g</span></p>
+                    <p>Protein: <span className="font-medium">{Math.round((selectedFood.macros.protein || 0) * selectedQuantity)}g</span></p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                    <p>Carbs: <span className="font-medium">{Math.round(selectedFood.macros.carbs * selectedQuantity)}g</span></p>
+                    <p>Carbs: <span className="font-medium">{Math.round((selectedFood.macros.carbs || 0) * selectedQuantity)}g</span></p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                    <p>Fat: <span className="font-medium">{Math.round(selectedFood.macros.fat * selectedQuantity)}g</span></p>
+                    <p>Fat: <span className="font-medium">{Math.round((selectedFood.macros.fat || 0) * selectedQuantity)}g</span></p>
                   </div>
                 </div>
               </div>

@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { Check, ChevronRight, Plus, Search } from 'lucide-react';
-import { calculateDailyMacros, MealPlanDay } from '@/types/MealPlanTypes';
 import { Recipe } from '@/types/Recipe';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
