@@ -5,7 +5,6 @@ import { Json } from '@/integrations/supabase/types';
 
 // Database recipe interface updated to match the actual database schema
 export interface DbRecipe {
-  // The primary key is user_id, not id
   user_id: string;
   title: string | null;
   short_description: string | null;
@@ -52,11 +51,11 @@ export const dbToFrontendRecipe = (dbRecipe: DbRecipe): Recipe => {
   // Parse ingredients and instructions from JSON if available
   const ingredients = dbRecipe.ingredients_json ? 
     Array.isArray(dbRecipe.ingredients_json) ? 
-    dbRecipe.ingredients_json : [] : [];
+    dbRecipe.ingredients_json as string[] : [] : [];
   
   const instructions = dbRecipe.instructions_json ? 
     Array.isArray(dbRecipe.instructions_json) ? 
-    dbRecipe.instructions_json : [] : [];
+    dbRecipe.instructions_json as string[] : [] : [];
 
   // Calculate cooking time in minutes (if it's a string, try to convert or default to 0)
   const cookTimeNum = dbRecipe.cook_time ? 
