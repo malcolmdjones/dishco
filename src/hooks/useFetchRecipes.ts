@@ -84,9 +84,10 @@ export const useFetchRecipes = () => {
           stovetop: true
         };
         
+        // Using type assertion to resolve the TypeScript error with cook_time
         const { error: insertError } = await supabase
           .from('recipes')
-          .insert(dbRecipe);
+          .insert(dbRecipe as any);
         
         if (insertError) {
           console.error('Error importing recipe:', insertError);
