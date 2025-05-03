@@ -73,7 +73,7 @@ const FunCategoriesPage: React.FC = () => {
             title={categoryData.snackSavvy.title} 
             description={categoryData.snackSavvy.description}
             image={categoryData.snackSavvy.image}
-            viewAll: () => navigate('/explore-snacks'),
+            viewAll={() => navigate('/explore-snacks')}
           />
           
           {/* Add some padding at the bottom for better scrolling experience */}
