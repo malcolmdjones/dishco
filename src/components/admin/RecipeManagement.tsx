@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -48,7 +47,8 @@ const RecipeManagement: React.FC = () => {
 
       if (error) throw error;
 
-      setRecipes((data || []) as DbRecipe[]);
+      // Cast the returned data to DbRecipe[] to match our interface
+      setRecipes((data || []) as unknown as DbRecipe[]);
     } catch (error) {
       console.error('Error fetching recipes:', error);
       toast({

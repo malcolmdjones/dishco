@@ -2,7 +2,7 @@
 import { useFetchRecipes } from './useFetchRecipes';
 import { useSavedRecipes } from './useSavedRecipes';
 
-// Change the re-export to use 'export type' since we're re-exporting types
+// Change the re-export to use 'export type' syntax for TypeScript
 export type { DbRecipe } from '@/utils/recipeDbUtils';
 export { dbToFrontendRecipe } from '@/utils/recipeDbUtils';
 

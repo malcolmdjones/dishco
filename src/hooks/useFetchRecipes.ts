@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { recipes as mockRecipes, Recipe } from '@/data/mockData';
-import { DbRecipe, dbToFrontendRecipe, frontendToDbRecipe } from '@/utils/recipeDbUtils';
+import { DbRecipe, dbToFrontendRecipe } from '@/utils/recipeDbUtils';
 
 export const useFetchRecipes = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -59,14 +59,33 @@ export const useFetchRecipes = () => {
 
       console.log(`Importing ${recipesToImport.length} mock recipes to database...`);
 
-      // Convert mock recipes to the database format
-      const dbRecipesToInsert = recipesToImport.map(frontendToDbRecipe);
-      
       // Insert the new recipes into the database one by one (to avoid batch insert errors)
-      for (const recipe of dbRecipesToInsert) {
+      for (const recipe of recipesToImport) {
+        // Convert frontend recipes to database format with proper types
+        const dbRecipe = {
+          title: recipe.name,
+          short_description: recipe.description || '',
+          type: recipe.type || 'meal',
+          meal_prep: false,
+          servings: recipe.servings || 1,
+          prep_time: (recipe.prepTime || 0).toString(),
+          cook_time: (recipe.cookTime || 0).toString(),
+          total_time: ((recipe.prepTime || 0) + (recipe.cookTime || 0)).toString(),
+          nutrition_calories: recipe.macros.calories || 0,
+          nutrition_protein: recipe.macros.protein || 0,
+          nutrition_carbs: recipe.macros.carbs || 0,
+          nutrition_fat: recipe.macros.fat || 0,
+          ingredients_json: recipe.ingredients || [],
+          instructions_json: recipe.instructions || [],
+          image_url: recipe.imageSrc || null,
+          is_public: true,
+          blender: recipe.requiresBlender || false,
+          stovetop: true
+        };
+        
         const { error: insertError } = await supabase
           .from('recipes')
-          .insert(recipe);
+          .insert(dbRecipe);
         
         if (insertError) {
           console.error('Error importing recipe:', insertError);

@@ -1,10 +1,11 @@
 
 import { Recipe } from '@/data/mockData';
 import { getRecipeImage } from '@/utils/recipeUtils';
+import { Json } from '@/integrations/supabase/types';
 
 // Database recipe interface updated to match the actual database schema
 export interface DbRecipe {
-  // Use uuid type for the primary key (matches Supabase)
+  // The primary key is user_id, not id
   user_id: string;
   title: string | null;
   short_description: string | null;
@@ -13,7 +14,7 @@ export interface DbRecipe {
   prep_duration_days: string | null;
   servings: number | null;
   prep_time: string | null;
-  cook_time: string | null;
+  cook_time: string | null; // Database stores this as string
   total_time: string | null;
   price_range: string | null;
   calorie_bracket: string | null;
@@ -21,13 +22,13 @@ export interface DbRecipe {
   nutrition_protein: number | null;
   nutrition_carbs: number | null;
   nutrition_fat: number | null;
-  ingredients_json: any | null;
-  instructions_json: any | null;
-  tags: string | null;
+  ingredients_json: Json | null;
+  instructions_json: Json | null;
+  tags: Json | null;
   protein_focus: string | null;
   cuisine: string | null;
   dietary_tags: string | null;
-  upc_ingredients: any | null;
+  upc_ingredients: Json | null;
   image_url: string | null;
   created_by: string | null;
   is_public: boolean | null;
@@ -39,6 +40,11 @@ export interface DbRecipe {
   blender: boolean | null;
   grill: boolean | null;
   slow_cooker: boolean | null;
+  dish_category: string | null;
+  store_bought: boolean | null;
+  nutrition_fiber: number | null;
+  nutrition_serving: string | null;
+  upc: string | null;
 }
 
 // Convert database recipe to frontend recipe format

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { format, parseISO, startOfDay, differenceInDays, isEqual, addDays } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -140,7 +139,7 @@ export const useSavedMealPlans = () => {
     }
 
     return {
-      id: data.id || '',
+      user_id: data.id || '',  // Changed from 'id' to 'user_id' to match our DbRecipe interface
       title: data.title || null,
       short_description: data.short_description || null,
       type: data.type || null,
@@ -173,7 +172,12 @@ export const useSavedMealPlans = () => {
       air_fryer: data.air_fryer || null,
       blender: data.blender || null,
       grill: data.grill || null,
-      slow_cooker: data.slow_cooker || null
+      slow_cooker: data.slow_cooker || null,
+      dish_category: data.dish_category || null,
+      store_bought: data.store_bought || null,
+      nutrition_fiber: data.nutrition_fiber || null,
+      nutrition_serving: data.nutrition_serving || null,
+      upc: data.upc || null
     };
   };
 
