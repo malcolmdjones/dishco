@@ -11,24 +11,27 @@ export interface GroceryItem {
 export interface Recipe {
   id: string;
   name: string;
-  description: string;
-  type: string;
-  imageSrc: string;
-  requiresBlender: boolean;
-  requiresCooking: boolean;
-  cookTime: number;
-  prepTime: number;
-  servings: number;
+  description?: string;
+  type?: string;
+  imageSrc?: string | null;
+  requiresBlender?: boolean;
+  requiresCooking?: boolean;
+  cookTime?: number;
+  prepTime?: number;
+  servings?: number;
   macros: {
     calories: number;
     protein: number;
     carbs: number;
     fat: number;
+    fiber?: number;
   };
-  ingredients: string[];
-  instructions: string[];
-  externalSource?: boolean; // Added this property as optional
-  externalId?: string;      // Adding this for tracking the original ID
+  ingredients?: any[];
+  instructions?: any[];
+  externalSource?: boolean;
+  externalId?: string;
+  storeBought?: boolean; // Added field for store-bought items
+  tags?: string[];
 }
 
 export interface NutritionGoals {

@@ -3,8 +3,8 @@ import { useFetchRecipes } from './useFetchRecipes';
 import { useSavedRecipes } from './useSavedRecipes';
 
 // Change the re-export to use 'export type' since we're re-exporting types
-export type { DbRecipe } from '@/utils/recipeDbUtils';
-export { dbToFrontendRecipe } from '@/utils/recipeDbUtils';
+export type { RecipeHubDb } from '@/utils/recipeHubUtils';
+export { recipeHubDbToFrontendRecipe, filterRecipesByDietaryRestrictions, getUserDietaryRestrictions } from '@/utils/recipeHubUtils';
 
 export const useRecipes = () => {
   const { 
@@ -13,7 +13,8 @@ export const useRecipes = () => {
     isAuthenticated,
     fetchRecipes,
     filterRecipes,
-    getRecipesByType
+    getRecipesByType,
+    dietaryRestrictions
   } = useFetchRecipes();
 
   const {
@@ -40,6 +41,9 @@ export const useRecipes = () => {
     isRecipeSaved,
     toggleSaveRecipe,
     getSavedRecipes,
-    fetchSavedRecipeIds
+    fetchSavedRecipeIds,
+    
+    // Dietary restrictions
+    dietaryRestrictions
   };
 };

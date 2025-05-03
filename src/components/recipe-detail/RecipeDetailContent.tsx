@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { isStoreBought } from '@/utils/recipeUtils';
 import { Recipe } from '@/data/mockData';
 
 interface RecipeDetailContentProps {
@@ -7,67 +8,110 @@ interface RecipeDetailContentProps {
 }
 
 const RecipeDetailContent: React.FC<RecipeDetailContentProps> = ({ recipe }) => {
+  const { 
+    name, 
+    description, 
+    macros, 
+    ingredients, 
+    instructions, 
+    prepTime, 
+    cookTime, 
+    servings 
+  } = recipe;
+
+  const isStoreItem = isStoreBought(recipe);
+
   return (
-    <div className="p-4 pb-6">
-      <h2 className="text-xl font-bold mb-2">{recipe.name}</h2>
-      <p className="text-dishco-text-light mb-4">{recipe.description}</p>
-      
-      <div className="flex space-x-2 mb-4 flex-wrap gap-2">
-        <span className="px-2 py-1 bg-dishco-primary bg-opacity-10 rounded-md text-xs font-medium text-dishco-primary">
-          {recipe.macros.calories} kcal
-        </span>
-        <span className="px-2 py-1 bg-amber-100 rounded-md text-xs font-medium text-amber-700">
-          {recipe.macros.protein}g protein
-        </span>
-        <span className="px-2 py-1 bg-blue-100 rounded-md text-xs font-medium text-blue-700">
-          {recipe.macros.carbs}g carbs
-        </span>
-        <span className="px-2 py-1 bg-green-100 rounded-md text-xs font-medium text-green-700">
-          {recipe.macros.fat}g fat
-        </span>
+    <div className="p-6 space-y-6">
+      <div className="space-y-4">
+        <div className="flex flex-wrap gap-3">
+          {!isStoreItem && prepTime !== undefined && (
+            <div className="bg-gray-100 p-2 rounded text-sm">
+              <div className="font-medium">Prep</div>
+              <div>{prepTime} min</div>
+            </div>
+          )}
+          
+          {!isStoreItem && cookTime !== undefined && (
+            <div className="bg-gray-100 p-2 rounded text-sm">
+              <div className="font-medium">Cook</div>
+              <div>{cookTime} min</div>
+            </div>
+          )}
+          
+          {servings !== undefined && (
+            <div className="bg-gray-100 p-2 rounded text-sm">
+              <div className="font-medium">Servings</div>
+              <div>{servings}</div>
+            </div>
+          )}
+        </div>
       </div>
       
-      <div className="mb-4">
-        <h3 className="font-semibold mb-2">Ingredients</h3>
-        <ul className="list-disc pl-5 space-y-1">
-          {recipe.ingredients && recipe.ingredients.map((ingredient, idx) => {
-            // Handle both string ingredients and object ingredients
-            if (typeof ingredient === 'string') {
-              return <li key={idx} className="text-sm">{ingredient}</li>;
-            } else if (typeof ingredient === 'object' && ingredient !== null) {
-              // Handle structured ingredient objects
-              if ('quantity' in ingredient && 'name' in ingredient) {
-                const { quantity, unit, name } = ingredient as { quantity: string, unit?: string, name: string };
-                return <li key={idx} className="text-sm">{quantity} {unit || ''} {name}</li>;
-              } else if ('quantity' in ingredient && 'ingredient' in ingredient) {
-                const { quantity, ingredient: ingredientName } = ingredient as { quantity: string, ingredient: string };
-                return <li key={idx} className="text-sm">{quantity} {ingredientName}</li>;
-              }
-            }
-            // Fallback for any other format
-            return <li key={idx} className="text-sm">{String(ingredient)}</li>;
-          })}
-        </ul>
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Nutrition</h3>
+        <div className="grid grid-cols-4 divide-x bg-gray-50 p-3 rounded-lg text-center">
+          <div>
+            <div className="text-xs text-gray-500">Calories</div>
+            <div className="font-medium">{macros?.calories || 0}</div>
+          </div>
+          <div>
+            <div className="text-xs text-gray-500">Protein</div>
+            <div className="font-medium">{macros?.protein || 0}g</div>
+          </div>
+          <div>
+            <div className="text-xs text-gray-500">Carbs</div>
+            <div className="font-medium">{macros?.carbs || 0}g</div>
+          </div>
+          <div>
+            <div className="text-xs text-gray-500">Fat</div>
+            <div className="font-medium">{macros?.fat || 0}g</div>
+          </div>
+        </div>
       </div>
       
-      <div className="mb-6">
-        <h3 className="font-semibold mb-2">Instructions</h3>
-        <ol className="list-decimal pl-5 space-y-2">
-          {recipe.instructions && recipe.instructions.map((instruction, idx) => {
-            // Handle both string instructions and potential object instructions
-            if (typeof instruction === 'string') {
-              return <li key={idx} className="text-sm">{instruction}</li>;
-            } else if (typeof instruction === 'object' && instruction !== null) {
-              // Handle structured instruction objects
-              if ('step' in instruction) {
-                return <li key={idx} className="text-sm">{(instruction as {step: string}).step}</li>;
-              }
-            }
-            // Fallback for any other format
-            return <li key={idx} className="text-sm">{String(instruction)}</li>;
-          })}
-        </ol>
-      </div>
+      {!isStoreItem && ingredients && ingredients.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Ingredients</h3>
+          <ul className="list-disc pl-5 space-y-1">
+            {ingredients.map((ingredient, index) => (
+              <li key={index} className="text-gray-700">
+                {typeof ingredient === 'string' 
+                  ? ingredient 
+                  : ingredient && typeof ingredient === 'object' && 'name' in ingredient 
+                    ? ingredient.name 
+                    : ''}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      
+      {isStoreItem && (
+        <div className="p-4 bg-blue-50 rounded-lg">
+          <h3 className="text-lg font-medium text-blue-800">Store Bought Item</h3>
+          <p className="text-sm text-blue-700 mt-1">
+            This is a pre-packaged item available for purchase at most grocery stores.
+          </p>
+        </div>
+      )}
+      
+      {!isStoreItem && instructions && instructions.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Instructions</h3>
+          <ol className="list-decimal pl-5 space-y-3">
+            {instructions.map((instruction, index) => (
+              <li key={index} className="text-gray-700">
+                {typeof instruction === 'string' 
+                  ? instruction 
+                  : instruction && typeof instruction === 'object' && 'text' in instruction 
+                    ? instruction.text 
+                    : ''}
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
     </div>
   );
 };

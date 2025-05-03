@@ -1,4 +1,3 @@
-
 import { CustomRecipe } from '@/hooks/useCustomRecipes';
 import { Recipe } from '@/data/mockData';
 
@@ -64,4 +63,27 @@ export const standardToCustomRecipe = (recipe: Recipe): Omit<CustomRecipe, 'id' 
  */
 export const getRecipeImage = (imageSrc: string | null | undefined): string => {
   return imageSrc || DEFAULT_IMAGE_URL;
+};
+
+// Add compatibility for recipehub
+export const getRecipeTypeLabel = (type: string | undefined): string => {
+  if (!type) return 'Recipe';
+  
+  const typeMap: Record<string, string> = {
+    'breakfast': 'Breakfast',
+    'lunch': 'Lunch',
+    'dinner': 'Dinner',
+    'snack': 'Snack',
+    'dessert': 'Dessert',
+    'drink': 'Drink',
+    'meal': 'Meal',
+    'store-bought': 'Store Bought',
+  };
+  
+  return typeMap[type.toLowerCase()] || type;
+};
+
+// Add a helper function to check if a recipe is store-bought
+export const isStoreBought = (recipe: any): boolean => {
+  return recipe.storeBought === true || recipe.store_bought === true;
 };

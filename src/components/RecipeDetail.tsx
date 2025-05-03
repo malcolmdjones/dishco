@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRecipes } from '@/hooks/useRecipes';
-import { getRecipeImage } from '@/utils/recipeUtils';
+import { getRecipeImage, isStoreBought } from '@/utils/recipeUtils';
 
 import RecipeDetailHeader from './recipe-detail/RecipeDetailHeader';
 import RecipeDetailContent from './recipe-detail/RecipeDetailContent';
@@ -70,7 +69,7 @@ const RecipeDetail: React.FC<RecipeDetailProps> = ({
     );
   }
 
-  const recipeType = recipe.type || 'homemade';
+  const recipeType = recipe.type || (isStoreBought(recipe) ? 'store-bought' : 'homemade');
   const imageUrl = getRecipeImage(recipe.imageSrc);
 
   return (
@@ -80,6 +79,7 @@ const RecipeDetail: React.FC<RecipeDetailProps> = ({
           imageUrl={imageUrl}
           recipeType={recipeType}
           onClose={onClose}
+          isStoreBought={isStoreBought(recipe)}
         />
         
         <div className="flex-1 overflow-y-auto">

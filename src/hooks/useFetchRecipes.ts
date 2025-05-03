@@ -3,13 +3,14 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { recipes as mockRecipes, Recipe } from '@/data/mockData';
-import { DbRecipe, dbToFrontendRecipe, frontendToDbRecipe } from '@/utils/recipeDbUtils';
+import { RecipeHubDb, recipeHubDbToFrontendRecipe, frontendToRecipeHubDb, getUserDietaryRestrictions } from '@/utils/recipeHubUtils';
 
 export const useFetchRecipes = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
+  const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>([]);
 
   // Check authentication status
   useEffect(() => {
@@ -30,13 +31,19 @@ export const useFetchRecipes = () => {
     };
   }, []);
 
+  // Load dietary restrictions
+  useEffect(() => {
+    const restrictions = getUserDietaryRestrictions();
+    setDietaryRestrictions(restrictions);
+  }, []);
+
   // Import mock recipes to database if they don't exist
   const importMockRecipesToDb = async () => {
     try {
       console.log("Checking for existing recipes in database...");
       // First, get all existing recipes from the database to check if we need to import
       const { data: existingRecipes, error: fetchError } = await supabase
-        .from('recipes')
+        .from('recipehub')
         .select('id, title');
       
       if (fetchError) throw fetchError;
@@ -58,11 +65,11 @@ export const useFetchRecipes = () => {
       console.log(`Importing ${recipesToImport.length} mock recipes to database...`);
 
       // Convert mock recipes to the database format
-      const dbRecipesToInsert = recipesToImport.map(frontendToDbRecipe);
+      const dbRecipesToInsert = recipesToImport.map(frontendToRecipeHubDb);
       
       // Insert the new recipes into the database
       const { error: insertError } = await supabase
-        .from('recipes')
+        .from('recipehub')
         .insert(dbRecipesToInsert);
       
       if (insertError) throw insertError;
@@ -82,7 +89,7 @@ export const useFetchRecipes = () => {
 
       // Then fetch all recipes from the database
       const { data: dbRecipes, error } = await supabase
-        .from('recipes')
+        .from('recipehub')
         .select('*');
 
       if (error) {
@@ -94,7 +101,7 @@ export const useFetchRecipes = () => {
         setRecipes(mockRecipes);
       } else {
         // Convert db recipes to frontend format
-        const frontendRecipes = dbRecipes.map((recipe: any) => dbToFrontendRecipe(recipe as DbRecipe));
+        const frontendRecipes = dbRecipes.map((recipe: any) => recipeHubDbToFrontendRecipe(recipe as RecipeHubDb));
         console.log(`Fetched ${frontendRecipes.length} recipes from database`);
         console.log('Recipe types in database:', [...new Set(frontendRecipes.map(r => r.type))]);
         setRecipes(frontendRecipes);
@@ -118,7 +125,29 @@ export const useFetchRecipes = () => {
     type: string | null = null,
     mealType: string | null = null,
   ): Recipe[] => {
-    return recipes.filter(recipe => {
+    // First, filter by dietary restrictions
+    let filteredRecipes = recipes;
+
+    if (dietaryRestrictions.length > 0) {
+      // Apply dietary restrictions filter
+      filteredRecipes = filteredRecipes.filter(recipe => {
+        for (const restriction of dietaryRestrictions) {
+          // Apply filtering logic based on restrictions
+          // This is a simplified version; the full implementation would analyze ingredients
+          if (restriction === 'vegetarian' && recipe.name.toLowerCase().includes('meat')) {
+            return false;
+          }
+          if (restriction === 'dairy-free' && recipe.name.toLowerCase().includes('cheese')) {
+            return false;
+          }
+          // Add more restriction checks as needed
+        }
+        return true;
+      });
+    }
+
+    // Then apply other filters
+    return filteredRecipes.filter(recipe => {
       // Match search query
       const matchesSearch = !searchQuery || 
         recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -136,7 +165,20 @@ export const useFetchRecipes = () => {
 
   // Get recipes by type (e.g., 'snack', 'breakfast', etc.)
   const getRecipesByType = (type: string): Recipe[] => {
-    return recipes.filter(recipe => recipe.type?.toLowerCase() === type.toLowerCase());
+    let filteredRecipes = recipes.filter(recipe => recipe.type?.toLowerCase() === type.toLowerCase());
+    
+    // Apply dietary restrictions
+    if (dietaryRestrictions.length > 0) {
+      filteredRecipes = filteredRecipes.filter(recipe => {
+        // Apply dietary restrictions filtering logic (simplified for now)
+        return !dietaryRestrictions.some(restriction => 
+          (restriction === 'vegetarian' && recipe.name.toLowerCase().includes('meat')) ||
+          (restriction === 'dairy-free' && recipe.name.toLowerCase().includes('cheese'))
+        );
+      });
+    }
+    
+    return filteredRecipes;
   };
 
   // Load recipes on component mount
@@ -150,6 +192,7 @@ export const useFetchRecipes = () => {
     isAuthenticated,
     fetchRecipes,
     filterRecipes,
-    getRecipesByType
+    getRecipesByType,
+    dietaryRestrictions
   };
 };

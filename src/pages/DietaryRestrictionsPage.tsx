@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
+import { getUserDietaryRestrictions } from '@/utils/recipeHubUtils';
 
 interface DietaryRestriction {
   id: string;
@@ -61,6 +62,12 @@ const DietaryRestrictionsPage = () => {
       enabled: false
     },
     {
+      id: 'pescatarian',
+      name: 'Pescatarian',
+      description: 'Excludes meat but includes fish and seafood',
+      enabled: false
+    },
+    {
       id: 'low-sodium',
       name: 'Low-Sodium',
       description: 'Restricts salt and high-sodium ingredients',
@@ -93,14 +100,13 @@ const DietaryRestrictionsPage = () => {
 
   // Load saved restrictions on initial render
   useEffect(() => {
-    const savedRestrictions = localStorage.getItem('dietaryRestrictions');
-    if (savedRestrictions) {
+    const savedRestrictionIds = getUserDietaryRestrictions();
+    if (savedRestrictionIds && savedRestrictionIds.length > 0) {
       try {
-        const savedIds = JSON.parse(savedRestrictions) as string[];
         setRestrictions(prev => 
           prev.map(r => ({
             ...r,
-            enabled: savedIds.includes(r.id)
+            enabled: savedRestrictionIds.includes(r.id)
           }))
         );
       } catch (e) {
