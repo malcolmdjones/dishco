@@ -1,6 +1,7 @@
 
 import { useFetchRecipes } from './useFetchRecipes';
 import { useSavedRecipes } from './useSavedRecipes';
+import { Recipe } from '@/types/Recipe';
 
 /**
  * Simplified database recipe interface for admin components

@@ -1,5 +1,5 @@
 
-import { Recipe } from '@/data/mockData';
+import { Recipe } from '@/types/Recipe';
 import { getRecipeImage } from '@/utils/recipeUtils';
 import { Json } from '@/integrations/supabase/types';
 
@@ -46,16 +46,6 @@ export interface RecipeHubDb {
   cuisine: string | null;
   dish_category: string | null;
   upc: string | null;
-  
-  /**
-   * @deprecated This field is no longer in the database schema
-   */
-  servings?: number | null;
-  
-  /**
-   * @deprecated This field is no longer in the database schema
-   */
-  protein_focus?: string | null;
 }
 
 /**
@@ -66,8 +56,6 @@ export interface RecipeHubDb {
 export const sanitizeRecipeForInsert = (recipeData: Partial<RecipeHubDb>): Partial<RecipeHubDb> => {
   // Create a new object without the deprecated fields
   const {
-    servings,
-    protein_focus,
     ...sanitizedData
   } = recipeData;
   

@@ -8,7 +8,7 @@ import { useRecipes } from '@/hooks/useRecipes';
 import SnackCard from '@/components/saved-snacks/SnackCard';
 import EmptySnacksState from '@/components/saved-snacks/EmptySnacksState';
 import RecipeViewer from '@/components/RecipeViewer';
-import { Recipe } from '@/data/mockData';
+import { Recipe } from '@/types/Recipe';
 import { getRecipeImage } from '@/utils/recipeUtils';
 
 const SavedSnacksPage = () => {

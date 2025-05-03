@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, Filter, X } from 'lucide-react';
@@ -24,11 +23,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import RecipeViewer from '@/components/RecipeViewer';
 import { useRecipes } from '@/hooks/useRecipes';
-import { Recipe } from '@/data/mockData';
+import { Recipe } from '@/types/Recipe';
 import { getRecipeImage } from '@/utils/recipeUtils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Json } from '@/integrations/supabase/types';
+import { recipeHubDbToFrontendRecipe } from '@/utils/recipeHubUtils';
 
 // Define filter types
 type PriceRange = '$' | '$$' | '$$$';
@@ -100,31 +100,10 @@ const ExploreSnacksPage = () => {
         setShowEmptyState(true);
       } else {
         // Convert db recipes to frontend format
-        const frontendRecipes: Recipe[] = dbRecipes.map((recipe) => ({
-          id: recipe.user_id,
-          name: recipe.title || '',
-          description: recipe.short_description || '',
-          type: recipe.type || 'snack',
-          imageSrc: recipe.image_url,
-          requiresBlender: recipe.blender || false,
-          requiresCooking: !(recipe.store_bought || false),
-          cookTime: recipe.cook_time ? Number(recipe.cook_time) : 0,
-          prepTime: recipe.prep_time ? Number(recipe.prep_time) : 0,
-          servings: 1,
-          macros: {
-            calories: recipe.nutrition_calories ? Number(recipe.nutrition_calories) : 0,
-            protein: recipe.nutrition_protein ? Number(recipe.nutrition_protein) : 0,
-            carbs: recipe.nutrition_carbs ? Number(recipe.nutrition_carbs) : 0,
-            fat: recipe.nutrition_fat ? Number(recipe.nutrition_fat) : 0,
-            fiber: recipe.nutrition_fiber ? Number(recipe.nutrition_fiber) : 0
-          },
-          ingredients: Array.isArray(recipe.ingredients_json) ? recipe.ingredients_json : [],
-          instructions: Array.isArray(recipe.instructions_json) ? recipe.instructions_json : [],
-          externalSource: recipe.store_bought || false,
-          storeBought: recipe.store_bought || false
-        }));
+        const frontendRecipes: Recipe[] = dbRecipes.map(recipe => recipeHubDbToFrontendRecipe(recipe));
         
         console.log(`Fetched ${frontendRecipes.length} snack recipes from recipehub database`);
+        console.log('Recipe titles:', frontendRecipes.map(r => r.name));
         setRecipes(frontendRecipes);
         
         // Initialize visible snacks

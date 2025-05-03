@@ -8,7 +8,7 @@ import {
   sanitizeRecipeForInsert,
   getUserDietaryRestrictions
 } from '@/utils/recipeHubUtils';
-import { Recipe } from '@/data/mockData';
+import { Recipe } from '@/types/Recipe';
 
 export const useFetchRecipes = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -67,6 +67,7 @@ export const useFetchRecipes = () => {
         // Convert db recipes to frontend format
         const frontendRecipes = dbRecipes.map((recipe) => recipeHubDbToFrontendRecipe(recipe));
         console.log(`Fetched ${frontendRecipes.length} recipes from recipehub database`);
+        console.log('Recipe titles:', frontendRecipes.map(r => r.name));
         console.log('Recipe types in database:', [...new Set(frontendRecipes.map(r => r.type))]);
         setRecipes(frontendRecipes);
       }
