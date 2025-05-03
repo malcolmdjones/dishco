@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Recipe } from '@/data/mockData';
+import { Recipe } from '@/types/Recipe';
 import RecipeDetail from '@/components/RecipeDetail';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useRecipes } from '@/hooks/useRecipes';

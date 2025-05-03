@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from '@/components/ui/drawer';
 import { Heart, Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Recipe } from '@/data/mockData';
+import { Recipe } from '@/types/Recipe';
 import { useRecipes } from '@/hooks/useRecipes';
 import { getRecipeImage } from '@/utils/recipeUtils';
 

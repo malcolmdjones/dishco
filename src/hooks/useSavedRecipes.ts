@@ -1,22 +1,24 @@
 
 import { useState, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Recipe } from '@/data/mockData';
+import { useToast } from '@/hooks/use-toast';
+import { Recipe } from '@/types/Recipe';
 
 export const useSavedRecipes = (recipes: Recipe[], isAuthenticated: boolean) => {
   const [savedRecipeIds, setSavedRecipeIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Fetch saved recipe IDs for the current user
+  // Fetch user's saved recipe IDs from Supabase
   const fetchSavedRecipeIds = async () => {
+    if (!isAuthenticated) {
+      setSavedRecipeIds([]);
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Check if user is authenticated
-      if (!isAuthenticated) {
-        setSavedRecipeIds([]);
-        return;
-      }
-      
+      setLoading(true);
       const { data, error } = await supabase
         .from('saved_recipes')
         .select('recipe_id');
@@ -26,72 +28,64 @@ export const useSavedRecipes = (recipes: Recipe[], isAuthenticated: boolean) => 
       }
 
       if (data) {
-        setSavedRecipeIds(data.map(item => item.recipe_id));
+        const ids = data.map(item => item.recipe_id);
+        console.log(`Fetched ${ids.length} saved recipe IDs`);
+        setSavedRecipeIds(ids);
+      } else {
+        setSavedRecipeIds([]);
       }
     } catch (error) {
       console.error('Error fetching saved recipes:', error);
-      setSavedRecipeIds([]);
+      toast({
+        title: "Error",
+        description: "Failed to load saved recipes.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   // Check if a recipe is saved
-  const isRecipeSaved = (recipeId: string) => {
+  const isRecipeSaved = (recipeId: string): boolean => {
     return savedRecipeIds.includes(recipeId);
   };
 
-  // Save or unsave a recipe
+  // Toggle save/unsave recipe
   const toggleSaveRecipe = async (recipeId: string) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to save recipes.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
-      // Check if user is authenticated
-      if (!isAuthenticated) {
-        toast({
-          title: "Authentication Required",
-          description: "You need to be logged in to save recipes.",
-          variant: "destructive"
-        });
-        return;
-      }
-      
       if (isRecipeSaved(recipeId)) {
-        // Unsave the recipe
+        // Remove from saved recipes
         const { error } = await supabase
           .from('saved_recipes')
           .delete()
           .eq('recipe_id', recipeId);
 
         if (error) throw error;
-        
+
         setSavedRecipeIds(prev => prev.filter(id => id !== recipeId));
-        
         toast({
-          title: "Recipe Unsaved",
+          title: "Recipe Removed",
           description: "Recipe removed from your saved recipes.",
         });
       } else {
-        // Get current user session
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          toast({
-            title: "Authentication Required",
-            description: "You need to be logged in to save recipes.",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        // Save the recipe with user_id
+        // Add to saved recipes
         const { error } = await supabase
           .from('saved_recipes')
-          .insert([{ 
-            recipe_id: recipeId,
-            user_id: session.user.id
-          }]);
+          .insert([{ recipe_id: recipeId }]);
 
         if (error) throw error;
-        
+
         setSavedRecipeIds(prev => [...prev, recipeId]);
-        
         toast({
           title: "Recipe Saved",
           description: "Recipe added to your saved recipes.",
@@ -101,27 +95,28 @@ export const useSavedRecipes = (recipes: Recipe[], isAuthenticated: boolean) => 
       console.error('Error toggling recipe save:', error);
       toast({
         title: "Error",
-        description: "Failed to save/unsave recipe.",
+        description: "Failed to update saved recipes.",
         variant: "destructive"
       });
     }
   };
 
-  // Get saved recipes
+  // Get all saved recipes
   const getSavedRecipes = (): Recipe[] => {
     return recipes.filter(recipe => isRecipeSaved(recipe.id));
   };
 
-  // Refresh saved recipes when auth state or recipes change
+  // Fetch saved recipes on component mount
   useEffect(() => {
     fetchSavedRecipeIds();
-  }, [isAuthenticated, recipes.length]);
+  }, [isAuthenticated]);
 
   return {
     savedRecipeIds,
     isRecipeSaved,
     toggleSaveRecipe,
     getSavedRecipes,
-    fetchSavedRecipeIds
+    fetchSavedRecipeIds,
+    loading
   };
 };
