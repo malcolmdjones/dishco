@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import CategoryIcon from './CategoryIcon';
 
 const FeaturedCategories: React.FC = () => {
@@ -19,21 +18,19 @@ const FeaturedCategories: React.FC = () => {
   ];
   
   return (
-    <div className="px-4 mb-2">
-      <ScrollArea className="w-full">
-        <div className="flex space-x-4 py-2 overflow-x-auto">
-          {categories.map((category, index) => (
-            <CategoryIcon 
-              key={index}
-              name={category.name}
-              icon={category.icon}
-              color={category.color}
-              textColor={category.textColor}
-              onClick={() => navigate('/explore-recipes')}
-            />
-          ))}
-        </div>
-      </ScrollArea>
+    <div className="px-4 mb-4">
+      <div className="flex overflow-x-auto py-3 gap-4 no-scrollbar">
+        {categories.map((category, index) => (
+          <CategoryIcon 
+            key={index}
+            name={category.name}
+            icon={category.icon}
+            color={category.color}
+            textColor={category.textColor}
+            onClick={() => navigate('/explore-recipes')}
+          />
+        ))}
+      </div>
     </div>
   );
 };

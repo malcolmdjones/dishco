@@ -16,7 +16,7 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
   viewAll
 }) => {
   return (
-    <div className="px-4 space-y-1.5 mb-3">
+    <div className="px-4 space-y-1 mb-4">
       <div className="flex items-center justify-between mb-1">
         <h2 className="text-base font-bold text-gray-900">{title}</h2>
         <button 
@@ -28,7 +28,7 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
       </div>
       
       <div 
-        className="overflow-hidden rounded-lg h-28 relative cursor-pointer"
+        className="overflow-hidden rounded-lg h-24 relative cursor-pointer"
         onClick={viewAll}
       >
         <img 
@@ -36,7 +36,7 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
           alt={title} 
           className="w-full h-full object-cover"
         />
-        <div className="absolute bottom-0 left-0 p-1.5 bg-white bg-opacity-90 rounded-tr-lg">
+        <div className="absolute bottom-0 left-0 p-1.5 bg-white bg-opacity-80 rounded-tr-lg">
           <div className="font-semibold text-xs">{title}</div>
         </div>
       </div>

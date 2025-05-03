@@ -33,14 +33,14 @@ const FunCategoriesPage: React.FC = () => {
             leftCategory={{
               title: categoryData.budgetBites.title,
               description: categoryData.budgetBites.description,
-              image={categoryData.budgetBites.image},
-              viewAll: () => navigate('/explore-recipes'),
+              image: categoryData.budgetBites.image,
+              viewAll: () => navigate('/explore-recipes')
             }}
             rightCategory={{
               title: categoryData.smoothieStation.title,
               description: categoryData.smoothieStation.description,
-              image={categoryData.smoothieStation.image},
-              viewAll: () => navigate('/explore-recipes'),
+              image: categoryData.smoothieStation.image,
+              viewAll: () => navigate('/explore-recipes')
             }}
           />
           
@@ -57,14 +57,14 @@ const FunCategoriesPage: React.FC = () => {
             leftCategory={{
               title: categoryData.proteinBakery.title,
               description: categoryData.proteinBakery.description,
-              image={categoryData.proteinBakery.image},
-              viewAll: () => navigate('/explore-recipes'),
+              image: categoryData.proteinBakery.image,
+              viewAll: () => navigate('/explore-recipes')
             }}
             rightCategory={{
               title: categoryData.brunchVibes.title,
               description: categoryData.brunchVibes.description,
               image: categoryData.brunchVibes.image,
-              viewAll: () => navigate('/explore-recipes'),
+              viewAll: () => navigate('/explore-recipes')
             }}
           />
           
