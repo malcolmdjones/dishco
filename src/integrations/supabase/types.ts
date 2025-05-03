@@ -95,7 +95,7 @@ export type Database = {
             columns: ["recipe_id"]
             isOneToOne: false
             referencedRelation: "recipes"
-            referencedColumns: ["id"]
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -262,14 +262,10 @@ export type Database = {
         Row: {
           air_fryer: boolean | null
           blender: boolean | null
-          calorie_bracket: string | null
-          cook_time: string | null
-          created_at: string | null
-          created_by: string | null
+          cook_time: number | null
           cuisine: string | null
-          dietary_tags: string | null
+          dish_category: string | null
           grill: boolean | null
-          id: string
           image_url: string | null
           ingredients_json: Json | null
           instructions_json: Json | null
@@ -278,34 +274,31 @@ export type Database = {
           nutrition_calories: number | null
           nutrition_carbs: number | null
           nutrition_fat: number | null
+          nutrition_fiber: number | null
           nutrition_protein: number | null
+          nutrition_serving: string | null
           oven: boolean | null
-          prep_duration_days: string | null
-          prep_time: string | null
+          prep_time: number | null
           price_range: string | null
-          protein_focus: string | null
           servings: number | null
           short_description: string | null
           slow_cooker: boolean | null
+          store_bought: boolean | null
           stovetop: boolean | null
-          tags: string | null
+          tags: Json | null
           title: string | null
-          total_time: string | null
+          total_time: number | null
           type: string | null
-          upc_ingredients: Json | null
-          updated_at: string | null
+          upc: string | null
+          user_id: string
         }
         Insert: {
           air_fryer?: boolean | null
           blender?: boolean | null
-          calorie_bracket?: string | null
-          cook_time?: string | null
-          created_at?: string | null
-          created_by?: string | null
+          cook_time?: number | null
           cuisine?: string | null
-          dietary_tags?: string | null
+          dish_category?: string | null
           grill?: boolean | null
-          id?: string
           image_url?: string | null
           ingredients_json?: Json | null
           instructions_json?: Json | null
@@ -314,34 +307,31 @@ export type Database = {
           nutrition_calories?: number | null
           nutrition_carbs?: number | null
           nutrition_fat?: number | null
+          nutrition_fiber?: number | null
           nutrition_protein?: number | null
+          nutrition_serving?: string | null
           oven?: boolean | null
-          prep_duration_days?: string | null
-          prep_time?: string | null
+          prep_time?: number | null
           price_range?: string | null
-          protein_focus?: string | null
           servings?: number | null
           short_description?: string | null
           slow_cooker?: boolean | null
+          store_bought?: boolean | null
           stovetop?: boolean | null
-          tags?: string | null
+          tags?: Json | null
           title?: string | null
-          total_time?: string | null
+          total_time?: number | null
           type?: string | null
-          upc_ingredients?: Json | null
-          updated_at?: string | null
+          upc?: string | null
+          user_id?: string
         }
         Update: {
           air_fryer?: boolean | null
           blender?: boolean | null
-          calorie_bracket?: string | null
-          cook_time?: string | null
-          created_at?: string | null
-          created_by?: string | null
+          cook_time?: number | null
           cuisine?: string | null
-          dietary_tags?: string | null
+          dish_category?: string | null
           grill?: boolean | null
-          id?: string
           image_url?: string | null
           ingredients_json?: Json | null
           instructions_json?: Json | null
@@ -350,22 +340,23 @@ export type Database = {
           nutrition_calories?: number | null
           nutrition_carbs?: number | null
           nutrition_fat?: number | null
+          nutrition_fiber?: number | null
           nutrition_protein?: number | null
+          nutrition_serving?: string | null
           oven?: boolean | null
-          prep_duration_days?: string | null
-          prep_time?: string | null
+          prep_time?: number | null
           price_range?: string | null
-          protein_focus?: string | null
           servings?: number | null
           short_description?: string | null
           slow_cooker?: boolean | null
+          store_bought?: boolean | null
           stovetop?: boolean | null
-          tags?: string | null
+          tags?: Json | null
           title?: string | null
-          total_time?: string | null
+          total_time?: number | null
           type?: string | null
-          upc_ingredients?: Json | null
-          updated_at?: string | null
+          upc?: string | null
+          user_id?: string
         }
         Relationships: []
       }

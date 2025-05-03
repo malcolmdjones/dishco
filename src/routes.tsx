@@ -25,6 +25,7 @@ import GroceryListPage from './pages/GroceryListPage';
 import NotificationsPage from './pages/NotificationsPage';
 import PrivacySecurityPage from './pages/PrivacySecurityPage';
 import RecipeTinderPage from './pages/RecipeTinderPage';
+import FunCategoriesPage from './pages/FunCategoriesPage';
 import NotFound from './pages/NotFound';
 
 export const AppRoutes = () => {
@@ -45,6 +46,7 @@ export const AppRoutes = () => {
       <Route path="/explore-recipes" element={<AppLayout><ExploreRecipesPage /></AppLayout>} />
       <Route path="/explore-desserts" element={<AppLayout><ExploreDesserts /></AppLayout>} />
       <Route path="/explore-snacks" element={<AppLayout><ExploreSnacksPage /></AppLayout>} />
+      <Route path="/fun-categories" element={<AppLayout><FunCategoriesPage /></AppLayout>} />
       <Route path="/saved-recipes" element={<AppLayout><SavedRecipesPage /></AppLayout>} />
       <Route path="/saved-snacks" element={<AppLayout><SavedSnacksPage /></AppLayout>} />
       <Route path="/saved-desserts" element={<AppLayout><SavedDessertsPage /></AppLayout>} />
