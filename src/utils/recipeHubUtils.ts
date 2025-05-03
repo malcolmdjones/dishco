@@ -1,42 +1,79 @@
 
 import { Recipe } from '@/data/mockData';
 import { getRecipeImage } from '@/utils/recipeUtils';
+import { Json } from '@/integrations/supabase/types';
 
-// Database recipe interface for the recipehub table
+// Updated RecipeHubDb interface to match the current Supabase schema
 export interface RecipeHubDb {
-  id: string;
+  // Required fields
+  user_id: string;
+  
+  // Core recipe data
   title: string | null;
   short_description: string | null;
   type: string | null;
-  meal_prep: boolean | null;
-  prep_time: bigint | null;
-  cook_time: bigint | null;
-  total_time: bigint | null;
-  price_range: string | null;
-  nutrition_calories: bigint | null;
-  nutrition_protein: bigint | null;
-  nutrition_carbs: bigint | null;
-  nutrition_fat: bigint | null;
-  nutrition_fiber: bigint | null;
-  ingredients_json: any | null;
-  instructions_json: any | null;
-  tags: any | null;
-  protein_focus: string | null;
-  cuisine: string | null;
-  store_bought: boolean | null;
-  upc: string | null;
   image_url: string | null;
-  user_id: string | null;
   is_public: boolean | null;
-  dish_category: string | null;
-  oven: boolean | null;
+  
+  // Cooking details
+  meal_prep: boolean | null;
+  prep_time: number | null;
+  cook_time: number | null;
+  total_time: number | null;
   stovetop: boolean | null;
+  oven: boolean | null;
   air_fryer: boolean | null;
   blender: boolean | null;
   grill: boolean | null;
   slow_cooker: boolean | null;
+  store_bought: boolean | null;
+  
+  // Nutrition information
+  nutrition_calories: number | null;
+  nutrition_protein: number | null;
+  nutrition_carbs: number | null;
+  nutrition_fat: number | null;
+  nutrition_fiber: number | null;
   nutrition_serving: string | null;
+  
+  // Recipe content
+  ingredients_json: Json | null;
+  instructions_json: Json | null;
+  
+  // Additional metadata
+  tags: Json | null;
+  price_range: string | null;
+  cuisine: string | null;
+  dish_category: string | null;
+  upc: string | null;
+  
+  /**
+   * @deprecated This field is no longer in the database schema
+   */
+  servings?: number | null;
+  
+  /**
+   * @deprecated This field is no longer in the database schema
+   */
+  protein_focus?: string | null;
 }
+
+/**
+ * Sanitizes a recipe object for database insert/update by removing deprecated fields
+ * @param recipeData Partial recipe data that may contain deprecated fields
+ * @returns Cleaned object ready for database operations
+ */
+export const sanitizeRecipeForInsert = (recipeData: Partial<RecipeHubDb>): Partial<RecipeHubDb> => {
+  // Create a new object without the deprecated fields
+  const {
+    servings,
+    protein_focus,
+    ...sanitizedData
+  } = recipeData;
+  
+  // Convert any BigInt values to numbers for database compatibility
+  return sanitizedData;
+};
 
 // Convert database recipe to frontend recipe format
 export const recipeHubDbToFrontendRecipe = (dbRecipe: RecipeHubDb): Recipe => {
@@ -50,18 +87,16 @@ export const recipeHubDbToFrontendRecipe = (dbRecipe: RecipeHubDb): Recipe => {
     dbRecipe.instructions_json : [] : [];
 
   // Calculate cooking time in minutes
-  const cookTimeNum = dbRecipe.cook_time ? 
-    Number(dbRecipe.cook_time) : 0;
+  const cookTimeNum = dbRecipe.cook_time ? Number(dbRecipe.cook_time) : 0;
 
   // Calculate prep time in minutes
-  const prepTimeNum = dbRecipe.prep_time ? 
-    Number(dbRecipe.prep_time) : 0;
+  const prepTimeNum = dbRecipe.prep_time ? Number(dbRecipe.prep_time) : 0;
 
   // Default servings to 1 since it's not in the database schema
   const servings = 1;
 
   return {
-    id: dbRecipe.id,
+    id: dbRecipe.user_id, // Using user_id as the recipe id since we need an id field
     name: dbRecipe.title || '',
     description: dbRecipe.short_description || '',
     type: dbRecipe.type || 'meal',
@@ -87,23 +122,22 @@ export const recipeHubDbToFrontendRecipe = (dbRecipe: RecipeHubDb): Recipe => {
 
 // Convert frontend recipe to database format for insertion
 export const frontendToRecipeHubDb = (recipe: Recipe): Partial<RecipeHubDb> => {
-  return {
+  const dbRecipe: Partial<RecipeHubDb> = {
     title: recipe.name,
     short_description: recipe.description || '',
     type: recipe.type || 'meal',
     meal_prep: false,
-    prep_time: BigInt(recipe.prepTime || 0),
-    cook_time: BigInt(recipe.cookTime || 0),
-    total_time: BigInt((recipe.prepTime || 0) + (recipe.cookTime || 0)),
-    nutrition_calories: BigInt(recipe.macros.calories || 0),
-    nutrition_protein: BigInt(recipe.macros.protein || 0),
-    nutrition_carbs: BigInt(recipe.macros.carbs || 0),
-    nutrition_fat: BigInt(recipe.macros.fat || 0),
-    nutrition_fiber: recipe.macros.fiber ? BigInt(recipe.macros.fiber) : null,
+    prep_time: recipe.prepTime || 0,
+    cook_time: recipe.cookTime || 0,
+    total_time: (recipe.prepTime || 0) + (recipe.cookTime || 0),
+    nutrition_calories: recipe.macros.calories || 0,
+    nutrition_protein: recipe.macros.protein || 0,
+    nutrition_carbs: recipe.macros.carbs || 0,
+    nutrition_fat: recipe.macros.fat || 0,
+    nutrition_fiber: recipe.macros.fiber || 0,
     ingredients_json: recipe.ingredients || [],
     instructions_json: recipe.instructions || [],
     tags: recipe.tags || null,
-    protein_focus: null,
     cuisine: null,
     image_url: recipe.imageSrc || null,
     is_public: true,
@@ -115,6 +149,9 @@ export const frontendToRecipeHubDb = (recipe: Recipe): Partial<RecipeHubDb> => {
     slow_cooker: false,
     oven: false
   };
+  
+  // Sanitize the recipe to remove deprecated fields before database operations
+  return sanitizeRecipeForInsert(dbRecipe);
 };
 
 // Helper to check if a recipe contains specific ingredients

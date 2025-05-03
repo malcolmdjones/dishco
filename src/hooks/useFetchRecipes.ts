@@ -3,7 +3,13 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { recipes as mockRecipes, Recipe } from '@/data/mockData';
-import { RecipeHubDb, recipeHubDbToFrontendRecipe, frontendToRecipeHubDb, getUserDietaryRestrictions } from '@/utils/recipeHubUtils';
+import { 
+  RecipeHubDb, 
+  recipeHubDbToFrontendRecipe, 
+  frontendToRecipeHubDb, 
+  getUserDietaryRestrictions,
+  sanitizeRecipeForInsert
+} from '@/utils/recipeHubUtils';
 
 export const useFetchRecipes = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -44,9 +50,12 @@ export const useFetchRecipes = () => {
       // First, get all existing recipes from the database to check if we need to import
       const { data: existingRecipes, error: fetchError } = await supabase
         .from('recipehub')
-        .select('id, title');
+        .select('title');
       
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error('Error fetching existing recipes:', fetchError);
+        throw fetchError;
+      }
       
       // Create a map of existing recipe titles for quick lookup
       const existingRecipeTitles = new Set(existingRecipes?.map(r => r.title?.toLowerCase()) || []);
@@ -64,8 +73,8 @@ export const useFetchRecipes = () => {
 
       console.log(`Importing ${recipesToImport.length} mock recipes to database...`);
 
-      // Convert mock recipes to the database format
-      const dbRecipesToInsert = recipesToImport.map(frontendToRecipeHubDb);
+      // Convert mock recipes to the database format and sanitize them
+      const dbRecipesToInsert = recipesToImport.map(r => sanitizeRecipeForInsert(frontendToRecipeHubDb(r)));
       
       // Insert the new recipes into the database one by one to avoid type issues
       for (const recipe of dbRecipesToInsert) {

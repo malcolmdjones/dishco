@@ -2,7 +2,10 @@
 import { useFetchRecipes } from './useFetchRecipes';
 import { useSavedRecipes } from './useSavedRecipes';
 
-// Add DbRecipe interface for the database recipe structure
+/**
+ * Simplified database recipe interface for admin components
+ * Represents the essential fields needed from the recipehub table
+ */
 export interface DbRecipe {
   id: string;
   title?: string;
@@ -17,9 +20,14 @@ export interface DbRecipe {
   created_at?: string;
 }
 
-// Change the re-export to use 'export type' since we're re-exporting types
+// Export types and utility functions from recipeHubUtils
 export type { RecipeHubDb } from '@/utils/recipeHubUtils';
-export { recipeHubDbToFrontendRecipe, filterRecipesByDietaryRestrictions, getUserDietaryRestrictions } from '@/utils/recipeHubUtils';
+export { 
+  recipeHubDbToFrontendRecipe, 
+  filterRecipesByDietaryRestrictions, 
+  getUserDietaryRestrictions,
+  sanitizeRecipeForInsert
+} from '@/utils/recipeHubUtils';
 
 export const useRecipes = () => {
   const { 
