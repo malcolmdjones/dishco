@@ -11,14 +11,18 @@ import { getRecipeImage } from '@/utils/recipeUtils';
 
 interface CategoryShowcaseProps {
   title: string;
-  recipes: Recipe[];
+  description?: string;
+  recipes?: Recipe[];
+  placeholderImage?: string;
   viewAll: () => void;
   gradientColors: string;
 }
 
 const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({ 
-  title, 
-  recipes, 
+  title,
+  description,
+  recipes = [],
+  placeholderImage,
   viewAll,
   gradientColors
 }) => {
@@ -57,10 +61,27 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
                 </div>
               </CarouselItem>
             ))
+          ) : placeholderImage ? (
+            <CarouselItem className="pl-2 md:pl-4 basis-full">
+              <div className="overflow-hidden rounded-xl h-48 relative cursor-pointer group">
+                <div className="w-full h-full">
+                  <img 
+                    src={placeholderImage} 
+                    alt={title} 
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                </div>
+                <div className={`absolute inset-0 bg-gradient-to-t ${gradientColors} opacity-60`}></div>
+                <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                  <h3 className="font-bold line-clamp-1">{title}</h3>
+                  {description && <p className="text-sm opacity-90">{description}</p>}
+                </div>
+              </div>
+            </CarouselItem>
           ) : (
             <CarouselItem className="pl-2 md:pl-4 basis-full">
               <div className="h-48 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500">
-                No recipes found
+                No image available
               </div>
             </CarouselItem>
           )}

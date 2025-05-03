@@ -7,6 +7,7 @@ import CategoryShowcase from '@/components/fun-categories/CategoryShowcase';
 import SplitCategories from '@/components/fun-categories/SplitCategories';
 import PageHeader from '@/components/fun-categories/PageHeader';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { categoryData } from '@/data/categoryData';
 
 const FunCategoriesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -38,58 +39,72 @@ const FunCategoriesPage: React.FC = () => {
           
           {/* Full Width Category - Meal Prep MVPs */}
           <CategoryShowcase 
-            title="Meal Prep MVPs" 
+            title={categoryData.mealPrep.title} 
+            description={categoryData.mealPrep.description}
             recipes={mealPrepRecipes.slice(0, 6)} 
+            placeholderImage={categoryData.mealPrep.image}
             viewAll={() => navigate('/explore-recipes')}
-            gradientColors="from-purple-500 to-blue-500"
+            gradientColors={categoryData.mealPrep.gradientColors}
           />
           
           {/* Split Categories - Budget Bites & Smoothie Station */}
           <SplitCategories 
             leftCategory={{
-              title: "Budget Bites",
+              title: categoryData.budgetBites.title,
+              description: categoryData.budgetBites.description,
               recipes: recipes.slice(0, 3),
+              placeholderImage: categoryData.budgetBites.image,
               viewAll: () => navigate('/explore-recipes'),
-              gradientColors: "from-green-500 to-teal-500",
+              gradientColors: categoryData.budgetBites.gradientColors,
             }}
             rightCategory={{
-              title: "Smoothie Station",
+              title: categoryData.smoothieStation.title,
+              description: categoryData.smoothieStation.description,
               recipes: smoothieRecipes.slice(0, 3),
+              placeholderImage: categoryData.smoothieStation.image,
               viewAll: () => navigate('/explore-recipes'),
-              gradientColors: "from-pink-500 to-red-500",
+              gradientColors: categoryData.smoothieStation.gradientColors,
             }}
           />
           
           {/* Full Width Category - 5 Minute Breakfast Club */}
           <CategoryShowcase 
-            title="5 Min Breakfast Club" 
+            title={categoryData.breakfastClub.title} 
+            description={categoryData.breakfastClub.description}
             recipes={breakfastRecipes.slice(0, 6)} 
+            placeholderImage={categoryData.breakfastClub.image}
             viewAll={() => navigate('/explore-recipes')}
-            gradientColors="from-yellow-400 to-orange-500"
+            gradientColors={categoryData.breakfastClub.gradientColors}
           />
           
           {/* Split Categories - Protein Bakery & Brunch Vibes */}
           <SplitCategories 
             leftCategory={{
-              title: "Protein Bakery",
+              title: categoryData.proteinBakery.title,
+              description: categoryData.proteinBakery.description,
               recipes: proteinRecipes.slice(0, 3),
+              placeholderImage: categoryData.proteinBakery.image,
               viewAll: () => navigate('/explore-recipes'),
-              gradientColors: "from-blue-500 to-indigo-500",
+              gradientColors: categoryData.proteinBakery.gradientColors,
             }}
             rightCategory={{
-              title: "Brunch Vibes",
+              title: categoryData.brunchVibes.title,
+              description: categoryData.brunchVibes.description,
               recipes: brunchRecipes.slice(0, 3),
+              placeholderImage: categoryData.brunchVibes.image,
               viewAll: () => navigate('/explore-recipes'),
-              gradientColors: "from-orange-500 to-red-500",
+              gradientColors: categoryData.brunchVibes.gradientColors,
             }}
           />
           
           {/* Full Width Category - Snack Savvy */}
           <CategoryShowcase 
-            title="Snack Savvy" 
+            title={categoryData.snackSavvy.title} 
+            description={categoryData.snackSavvy.description}
             recipes={snackRecipes.slice(0, 6)} 
+            placeholderImage={categoryData.snackSavvy.image}
             viewAll={() => navigate('/explore-snacks')}
-            gradientColors="from-teal-400 to-cyan-500"
+            gradientColors={categoryData.snackSavvy.gradientColors}
           />
         </div>
       </ScrollArea>
