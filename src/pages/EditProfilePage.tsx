@@ -100,7 +100,7 @@ const EditProfilePage = () => {
       
       setUploadProgress(0);
       
-      // Upload the file - removing the unsupported onUploadProgress option
+      // Upload the file without onUploadProgress since it's not supported
       const { error: uploadError } = await supabase.storage
         .from('profiles')
         .upload(filePath, avatarFile, {
@@ -109,7 +109,7 @@ const EditProfilePage = () => {
       
       if (uploadError) throw uploadError;
       
-      // Show completed progress
+      // Set progress to 100% when done
       setUploadProgress(100);
       
       // Get the public URL

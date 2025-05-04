@@ -18,11 +18,13 @@ const RecipeTinderPage = () => {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [filteredRecipes, setFilteredRecipes] = useState([]);
   
+  // Use data from the database
   useEffect(() => {
     if (recipes.length > 0) {
       // Shuffle recipes for variety
       const shuffled = [...recipes].sort(() => 0.5 - Math.random());
       setFilteredRecipes(shuffled);
+      console.log(`Loaded ${shuffled.length} recipes for Recipe Tinder`);
     }
   }, [recipes]);
 
