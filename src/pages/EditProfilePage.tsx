@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -97,20 +98,19 @@ const EditProfilePage = () => {
       const fileExt = avatarFile.name.split('.').pop();
       const filePath = `avatars/${user.id}-${Date.now()}.${fileExt}`;
       
-      // Create a progress handler
-      const progressHandler = (progress: { loaded: number; total: number }) => {
-        setUploadProgress(Math.round((progress.loaded / progress.total) * 100));
-      };
-
-      // Upload the file
+      setUploadProgress(0);
+      
+      // Upload the file - removing the unsupported onUploadProgress option
       const { error: uploadError } = await supabase.storage
         .from('profiles')
         .upload(filePath, avatarFile, {
-          upsert: true,
-          onUploadProgress: progressHandler
+          upsert: true
         });
       
       if (uploadError) throw uploadError;
+      
+      // Show completed progress
+      setUploadProgress(100);
       
       // Get the public URL
       const { data: publicURL } = supabase.storage
