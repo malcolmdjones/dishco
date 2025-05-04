@@ -2,15 +2,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useRecipes } from '@/hooks/useRecipes';
-import { RecipeDetail } from '@/components/RecipeDetail';
+import RecipeDetail from '@/components/RecipeDetail';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
-import { Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 
 const RecipeDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getRecipeById } = useRecipes();
+  const { recipes, getRecipeById } = useRecipes();
   const [recipe, setRecipe] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -23,7 +22,7 @@ const RecipeDetailPage = () => {
     const loadRecipe = async () => {
       setLoading(true);
       try {
-        const recipeData = await getRecipeById(id);
+        const recipeData = getRecipeById(id);
         
         if (!recipeData) {
           // Recipe not found
@@ -67,7 +66,10 @@ const RecipeDetailPage = () => {
 
   return (
     <div>
-      <RecipeDetail recipe={recipe} />
+      <RecipeDetail
+        recipeId={recipe.id}
+        onClose={() => navigate(-1)}
+      />
     </div>
   );
 };

@@ -1,3 +1,4 @@
+
 import { useFetchRecipes } from './useFetchRecipes';
 import { useSavedRecipes } from './useSavedRecipes';
 import { useState, useEffect, useCallback } from 'react';
@@ -45,9 +46,37 @@ export const useRecipes = () => {
   // Fetch recipe ratings
   const fetchRecipeRatings = useCallback(async () => {
     try {
-      // This is a custom PostgreSQL function that returns recipe ratings
+      setRatingsLoading(true);
+      // Fix: Use a direct query instead of RPC for now since the RPC might not be accessible via TypeScript typing
       const { data, error } = await supabase
-        .rpc('get_recipe_ratings');
+        .from('recipe_ratings')
+        .select('recipe_id, rating')
+        .then(result => {
+          if (result.error) throw result.error;
+          
+          // Process the data to calculate average ratings
+          const ratingsMap: Record<string, { total: number, count: number }> = {};
+          
+          if (result.data) {
+            result.data.forEach((rating: any) => {
+              const recipeId = rating.recipe_id;
+              if (!ratingsMap[recipeId]) {
+                ratingsMap[recipeId] = { total: 0, count: 0 };
+              }
+              ratingsMap[recipeId].total += rating.rating;
+              ratingsMap[recipeId].count += 1;
+            });
+          }
+          
+          // Convert to the expected format
+          const processedData = Object.entries(ratingsMap).map(([recipe_id, { total, count }]) => ({
+            recipe_id,
+            avg_rating: parseFloat((total / count).toFixed(1)),
+            rating_count: count
+          }));
+          
+          return { data: processedData, error: null };
+        });
         
       if (error) {
         console.error('Error fetching recipe ratings:', error);
@@ -57,8 +86,16 @@ export const useRecipes = () => {
       setRecipeRatings(data || []);
     } catch (error) {
       console.error('Error in fetchRecipeRatings:', error);
+      setRecipeRatings([]);
+    } finally {
+      setRatingsLoading(false);
     }
-  }, [supabase]);
+  }, []);
+
+  // Get recipe by ID
+  const getRecipeById = useCallback((id: string) => {
+    return recipes.find(recipe => recipe.id === id);
+  }, [recipes]);
 
   // Get average rating for a recipe
   const getRecipeRating = (recipeId: string): { rating: number, count: number } => {
@@ -131,7 +168,7 @@ export const useRecipes = () => {
     if (recipes.length > 0) {
       fetchRecipeRatings();
     }
-  }, [recipes.length]);
+  }, [recipes.length, fetchRecipeRatings]);
 
   return {
     // Recipe data and state
@@ -143,6 +180,7 @@ export const useRecipes = () => {
     fetchRecipes,
     filterRecipes,
     getRecipesByType,
+    getRecipeById,
     
     // Saved recipes functionality
     savedRecipeIds,

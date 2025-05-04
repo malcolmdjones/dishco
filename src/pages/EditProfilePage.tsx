@@ -97,14 +97,17 @@ const EditProfilePage = () => {
       const fileExt = avatarFile.name.split('.').pop();
       const filePath = `avatars/${user.id}-${Date.now()}.${fileExt}`;
       
+      // Create a progress handler
+      const progressHandler = (progress: { loaded: number; total: number }) => {
+        setUploadProgress(Math.round((progress.loaded / progress.total) * 100));
+      };
+
       // Upload the file
       const { error: uploadError } = await supabase.storage
         .from('profiles')
         .upload(filePath, avatarFile, {
           upsert: true,
-          onUploadProgress: (progress) => {
-            setUploadProgress(Math.round((progress.loaded / progress.total) * 100));
-          }
+          onUploadProgress: progressHandler
         });
       
       if (uploadError) throw uploadError;
