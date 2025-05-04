@@ -21,8 +21,8 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { recipes, Recipe } from '@/data/mockData';
-import RecipeViewer from '@/components/RecipeViewer';
+import { useRecipes } from '@/hooks/useRecipes';
+import { Recipe } from '@/data/mockData';
 
 // Define filter types
 type PriceRange = '$' | '$$' | '$$$';
@@ -47,6 +47,7 @@ interface Filters {
 
 const ExploreRecipesPage = () => {
   const navigate = useNavigate();
+  const { recipes, loading: initialLoading, isRecipeSaved, toggleSaveRecipe } = useRecipes();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeViewerOpen, setIsRecipeViewerOpen] = useState(false);
@@ -73,8 +74,10 @@ const ExploreRecipesPage = () => {
   
   // Effect to load initial recipes
   useEffect(() => {
-    loadMoreRecipes(true);
-  }, []);
+    if (recipes.length > 0) {
+      loadMoreRecipes(true);
+    }
+  }, [recipes]);
   
   // Effect to detect filter changes
   useEffect(() => {
@@ -105,12 +108,12 @@ const ExploreRecipesPage = () => {
       const filteredRecipes = recipes.filter(recipe => {
         // Search query filter
         if (searchQuery && !recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-            !recipe.description.toLowerCase().includes(searchQuery.toLowerCase())) {
+            !recipe.description?.toLowerCase().includes(searchQuery.toLowerCase())) {
           return false;
         }
         
         // Other filters will be implemented here
-        // This is a placeholder for future implementation
+        // Implement proper filtering based on selected filters
         
         return true;
       });
@@ -497,7 +500,7 @@ const ExploreRecipesPage = () => {
               </div>
               <div className="flex flex-wrap gap-1 mt-2">
                 <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-800 rounded">
-                  {recipe.type}
+                  {recipe.type || 'Recipe'}
                 </span>
                 {/* Additional tags would go here */}
               </div>
@@ -505,6 +508,13 @@ const ExploreRecipesPage = () => {
           </div>
         ))}
       </div>
+      
+      {/* Loading state */}
+      {initialLoading && !loading && (
+        <div className="text-center py-10">
+          <p>Loading recipes...</p>
+        </div>
+      )}
       
       {/* Load More Button */}
       {hasMore && (
@@ -540,6 +550,10 @@ const ExploreRecipesPage = () => {
           recipe={selectedRecipe}
           isOpen={isRecipeViewerOpen}
           onClose={() => setIsRecipeViewerOpen(false)}
+          onToggleSave={async (recipeId) => {
+            await toggleSaveRecipe(recipeId);
+          }}
+          isSaved={selectedRecipe ? isRecipeSaved(selectedRecipe.id) : false}
         />
       )}
     </div>

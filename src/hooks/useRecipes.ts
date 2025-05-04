@@ -4,7 +4,7 @@ import { useSavedRecipes } from './useSavedRecipes';
 
 // Change the re-export to use 'export type' syntax for TypeScript
 export type { DbRecipe } from '@/utils/recipeDbUtils';
-export { dbToFrontendRecipe } from '@/utils/recipeDbUtils';
+export { dbToFrontendRecipe, getRecipeImageFallback } from '@/utils/recipeDbUtils';
 
 export const useRecipes = () => {
   const { 

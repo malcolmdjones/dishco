@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, Filter, X } from 'lucide-react';
@@ -69,7 +68,7 @@ const ExploreSnacksPage = () => {
   
   // Filter snacks to only include items that would be considered snacks
   const snackRecipes = recipes.filter(recipe => 
-    recipe.type === 'snack' || 
+    recipe.type?.toLowerCase() === 'snack' || 
     recipe.macros.calories < 400 ||
     recipe.name.toLowerCase().includes('snack') ||
     (recipe.description && recipe.description.toLowerCase().includes('snack'))

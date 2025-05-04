@@ -74,7 +74,7 @@ export const dbToFrontendRecipe = (dbRecipe: DbRecipe): Recipe => {
     type: dbRecipe.type || 'meal',
     imageSrc: getRecipeImage(dbRecipe.image_url),
     requiresBlender: dbRecipe.blender || false,
-    requiresCooking: true, // Default to true as most recipes require cooking
+    requiresCooking: dbRecipe.stovetop || dbRecipe.oven || true, // If any cooking method is true, or default to true
     cookTime: cookTimeNum,
     prepTime: prepTimeNum,
     servings: dbRecipe.servings || 1,
@@ -89,33 +89,19 @@ export const dbToFrontendRecipe = (dbRecipe: DbRecipe): Recipe => {
   };
 };
 
-// Convert frontend recipe to database format for insertion
-export const frontendToDbRecipe = (recipe: Recipe): Partial<DbRecipe> => {
-  return {
-    title: recipe.name,
-    short_description: recipe.description || '',
-    type: recipe.type || 'meal',
-    meal_prep: false,
-    prep_duration_days: null,
-    servings: recipe.servings || 1,
-    prep_time: recipe.prepTime?.toString() || '0',
-    cook_time: recipe.cookTime?.toString() || '0',
-    total_time: ((recipe.prepTime || 0) + (recipe.cookTime || 0)).toString(),
-    nutrition_calories: recipe.macros.calories || 0,
-    nutrition_protein: recipe.macros.protein || 0,
-    nutrition_carbs: recipe.macros.carbs || 0,
-    nutrition_fat: recipe.macros.fat || 0,
-    ingredients_json: recipe.ingredients || [],
-    instructions_json: recipe.instructions || [],
-    tags: null,
-    protein_focus: null,
-    cuisine: null,
-    dietary_tags: null,
-    upc_ingredients: null,
-    image_url: recipe.imageSrc || null,
-    created_by: null,
-    is_public: true,
-    blender: recipe.requiresBlender || false,
-    stovetop: true // Assuming most recipes use stovetop by default
+// Helper function to ensure we have default images for recipes
+export const getRecipeImageFallback = (type: string | null | undefined): string => {
+  const defaultImages = {
+    breakfast: "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666",
+    lunch: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd",
+    dinner: "https://images.unsplash.com/photo-1564834733143-6701a4b8fec9", 
+    snack: "https://images.unsplash.com/photo-1599642080669-0db91ed448fc",
+    dessert: "https://images.unsplash.com/photo-1563805042-7684c019e1cb",
+    default: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c"
   };
+  
+  if (!type) return defaultImages.default;
+  
+  const normalizedType = type.toLowerCase();
+  return defaultImages[normalizedType as keyof typeof defaultImages] || defaultImages.default;
 };

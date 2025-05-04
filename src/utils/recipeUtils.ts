@@ -1,67 +1,29 @@
 
-import { CustomRecipe } from '@/hooks/useCustomRecipes';
-import { Recipe } from '@/data/mockData';
-
-// Standard image URL to use when no image is available
-export const DEFAULT_IMAGE_URL = "https://images.unsplash.com/photo-1551326844-4df70f78d0e9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
-
 /**
- * Convert a CustomRecipe to the standard Recipe format
+ * Gets the image URL for a recipe, with fallback to a type-based default image
  */
-export const customToStandardRecipe = (customRecipe: CustomRecipe): Recipe => {
-  return {
-    id: customRecipe.id,
-    name: customRecipe.title,
-    description: customRecipe.description || '',
-    type: 'custom',
-    imageSrc: customRecipe.imageUrl || DEFAULT_IMAGE_URL,
-    requiresBlender: false,
-    requiresCooking: true,
-    cookTime: customRecipe.cookingTime || 0,
-    prepTime: 0,
-    servings: customRecipe.servings || 1,
-    macros: customRecipe.nutrition || {
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fat: 0
-    },
-    ingredients: customRecipe.ingredients 
-      ? customRecipe.ingredients.map(ing => `${ing.quantity} ${ing.unit} ${ing.name}`.trim())
-      : [],
-    instructions: customRecipe.instructions || []
-  };
-};
-
-/**
- * Convert a standard Recipe to CustomRecipe format
- */
-export const standardToCustomRecipe = (recipe: Recipe): Omit<CustomRecipe, 'id' | 'createdAt'> => {
-  // Parse ingredients from strings to structured format
-  const ingredients = recipe.ingredients.map(ing => {
-    const parts = ing.split(' ');
-    const quantity = parts[0] || '';
-    const unit = parts[1] || '';
-    const name = parts.slice(2).join(' ');
-    
-    return { quantity, unit, name };
-  });
+export const getRecipeImage = (imageUrl: string | null | undefined): string => {
+  if (imageUrl && imageUrl.trim() !== '') {
+    return imageUrl;
+  }
   
-  return {
-    title: recipe.name,
-    description: recipe.description,
-    imageUrl: recipe.imageSrc,
-    cookingTime: recipe.cookTime || 0,
-    servings: recipe.servings || 1,
-    ingredients,
-    instructions: recipe.instructions,
-    nutrition: recipe.macros
-  };
+  // Default image based on recipe type
+  return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
 };
 
 /**
- * Check if a recipe has an image, if not return the default image
+ * Get the appropriate image for a recipe type
  */
-export const getRecipeImage = (imageSrc: string | null | undefined): string => {
-  return imageSrc || DEFAULT_IMAGE_URL;
+export const getTypeBasedImage = (type: string | null | undefined): string => {
+  if (!type) return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
+  
+  const typeMap: Record<string, string> = {
+    'breakfast': 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666',
+    'lunch': 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd',
+    'dinner': 'https://images.unsplash.com/photo-1564834733143-6701a4b8fec9',
+    'snack': 'https://images.unsplash.com/photo-1599642080669-0db91ed448fc',
+    'dessert': 'https://images.unsplash.com/photo-1563805042-7684c019e1cb'
+  };
+  
+  return typeMap[type.toLowerCase()] || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
 };
