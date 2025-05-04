@@ -48,38 +48,25 @@ export const useFetchRecipes = () => {
         console.log('No recipes found in database');
         setRecipes([]);
       } else {
-        // Convert db recipes to frontend format
-        const frontendRecipes = dbRecipes.map((recipe: DbRecipe) => ({
-          id: recipe.id || Math.random().toString(),
-          name: recipe.title || 'Untitled Recipe',
-          description: recipe.short_description || '',
-          imageSrc: recipe.image_url || '',
-          type: recipe.type?.toLowerCase() || 'recipe',
-          prepTime: recipe.prep_time || 0,
-          cookTime: recipe.cook_time || 0,
-          servings: recipe.servings || 0,
-          macros: {
-            calories: recipe.nutrition_calories || 0,
-            protein: recipe.nutrition_protein || 0,
-            carbs: recipe.nutrition_carbs || 0,
-            fat: recipe.nutrition_fat || 0,
-            fiber: recipe.nutrition_fiber || 0,
-          },
-          ingredients: recipe.ingredients_json || [],
-          instructions: recipe.instructions_json || [],
-          tags: recipe.tags || [],
-          cuisine: recipe.cuisine || '',
-          equipment: {
-            oven: recipe.oven || false,
-            stovetop: recipe.stovetop || false,
-            blender: recipe.blender || false,
-            airFryer: recipe.air_fryer || false,
-            slowCooker: recipe.slow_cooker || false,
-            grill: recipe.grill || false,
-          },
-          requiresBlender: recipe.blender || false,
-          requiresCooking: recipe.stovetop || recipe.oven || false,
-        } as Recipe));
+        // Convert db recipes to frontend format - fixed type safety issue
+        // We need to ensure each recipe has an id field
+        const frontendRecipes = dbRecipes
+          .filter((recipe: any) => recipe && recipe.id) // Filter out any recipes without an id
+          .map((recipe: any) => {
+            // First make sure it has the required fields according to DbRecipe type 
+            const typedRecipe: DbRecipe = {
+              id: recipe.id,
+              title: recipe.title || 'Untitled Recipe',
+              short_description: recipe.short_description,
+              image_url: recipe.image_url,
+              type: recipe.type,
+              prep_time: recipe.prep_time,
+              cook_time: recipe.cook_time,
+              // ... all required fields from DbRecipe
+              user_id: recipe.user_id
+            };
+            return dbToFrontendRecipe(typedRecipe);
+          });
         
         console.log(`Fetched ${frontendRecipes.length} recipes from database`);
         console.log('Recipe types in database:', [...new Set(frontendRecipes.map(r => r.type))]);

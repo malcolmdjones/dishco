@@ -4,7 +4,8 @@ import { format } from 'date-fns';
 import { Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useGroceryListUtils } from '@/hooks/useGroceryListUtils';
-import { useSavedMealPlans, MealPlan } from '@/hooks/useSavedMealPlans';
+import { useSavedMealPlans } from '@/hooks/useSavedMealPlans';
+import { MealPlanType } from '@/types/mealPlan';
 
 import SavedPlansHeader from '@/components/saved-plans/SavedPlansHeader';
 import PlanCard from '@/components/saved-plans/PlanCard';
@@ -25,7 +26,7 @@ const SavedPlansPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isStartDateDialogOpen, setIsStartDateDialogOpen] = useState(false);
   
-  const [editPlan, setEditPlan] = useState<MealPlan | null>(null);
+  const [editPlan, setEditPlan] = useState<MealPlanType | null>(null);
   const [newPlanName, setNewPlanName] = useState('');
   const [newPlanDescription, setNewPlanDescription] = useState('');
   const [deletePlanId, setDeletePlanId] = useState<string | null>(null);
@@ -68,7 +69,7 @@ const SavedPlansPage = () => {
     fetchPlans();
   }, []);
 
-  const handleEditPlan = (plan: MealPlan) => {
+  const handleEditPlan = (plan: MealPlanType) => {
     setEditPlan(plan);
     setNewPlanName(plan.name);
     setNewPlanDescription(plan.plan_data?.description || '');
@@ -134,12 +135,12 @@ const SavedPlansPage = () => {
     }
   };
 
-  const handleCopyAndEdit = (plan: MealPlan) => {
+  const handleCopyAndEdit = (plan: MealPlanType) => {
     sessionStorage.setItem('planToCopy', JSON.stringify(plan.plan_data));
     navigate('/planning');
   };
   
-  const handleUsePlan = (plan: MealPlan) => {
+  const handleUsePlan = (plan: MealPlanType) => {
     console.log("handleUsePlan called with plan:", plan.name);
     setSelectedPlan(plan);
     setIsStartDateDialogOpen(true);

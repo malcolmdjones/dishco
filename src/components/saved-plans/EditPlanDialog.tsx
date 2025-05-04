@@ -4,12 +4,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { MealPlan } from '@/hooks/useSavedMealPlans';
+import { MealPlanType } from '@/types/mealPlan';
 
 interface EditPlanDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  plan: MealPlan | null;
+  plan: MealPlanType | null;
   planName: string;
   planDescription: string;
   onPlanNameChange: (name: string) => void;
