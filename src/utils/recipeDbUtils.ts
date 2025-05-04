@@ -1,6 +1,6 @@
 
 import { Recipe } from '@/data/mockData';
-import { getRecipeImage } from '@/utils/recipeUtils';
+import { getTypeBasedImage } from '@/utils/recipeUtils';
 import { Json } from '@/integrations/supabase/types';
 
 // Database recipe interface updated to match the actual database schema
@@ -72,7 +72,7 @@ export const dbToFrontendRecipe = (dbRecipe: DbRecipe): Recipe => {
     name: dbRecipe.title || '',
     description: dbRecipe.short_description || '',
     type: dbRecipe.type || 'meal',
-    imageSrc: getRecipeImage(dbRecipe.image_url),
+    imageSrc: dbRecipe.image_url || getTypeBasedImage(dbRecipe.type),
     requiresBlender: dbRecipe.blender || false,
     requiresCooking: dbRecipe.stovetop || dbRecipe.oven || true, // If any cooking method is true, or default to true
     cookTime: cookTimeNum,

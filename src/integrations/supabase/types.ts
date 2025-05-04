@@ -135,24 +135,69 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           created_at: string
+          display_name: string | null
+          followers_count: number | null
+          following_count: number | null
           id: string
+          member_since: string | null
+          rank_number: number | null
           updated_at: string
           username: string | null
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
+          display_name?: string | null
+          followers_count?: number | null
+          following_count?: number | null
           id: string
+          member_since?: string | null
+          rank_number?: number | null
           updated_at?: string
           username?: string | null
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
+          display_name?: string | null
+          followers_count?: number | null
+          following_count?: number | null
           id?: string
+          member_since?: string | null
+          rank_number?: number | null
           updated_at?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      recipe_ratings: {
+        Row: {
+          created_at: string | null
+          id: string
+          rating: number
+          recipe_id: string
+          review: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          rating: number
+          recipe_id: string
+          review?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          rating?: number
+          recipe_id?: string
+          review?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -303,6 +348,57 @@ export type Database = {
           recipe_id?: string
           saved_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_activities: {
+        Row: {
+          activity_type: string
+          content: string | null
+          created_at: string | null
+          id: string
+          recipe_id: string | null
+          related_user_id: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          recipe_id?: string | null
+          related_user_id?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          recipe_id?: string | null
+          related_user_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_follows: {
+        Row: {
+          created_at: string | null
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          follower_id?: string
+          following_id?: string
+          id?: string
         }
         Relationships: []
       }

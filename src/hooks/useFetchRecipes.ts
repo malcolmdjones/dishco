@@ -40,6 +40,7 @@ export const useFetchRecipes = () => {
         .select('*');
 
       if (error) {
+        console.error('Error fetching recipes:', error);
         throw error;
       }
 
@@ -96,7 +97,7 @@ export const useFetchRecipes = () => {
   // Load recipes on component mount
   useEffect(() => {
     fetchRecipes();
-  }, [isAuthenticated]);
+  }, []);
 
   return {
     recipes,

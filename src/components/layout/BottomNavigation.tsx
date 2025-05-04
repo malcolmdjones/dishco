@@ -1,12 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Compass, Calendar, MoreHorizontal, Plus } from 'lucide-react';
+import { Home, Compass, Calendar, MoreHorizontal, Plus, User } from 'lucide-react';
 
 const BottomNavigation = () => {
   const location = useLocation();
   const currentPath = location.pathname;
 
-  const navItems = [
+  const navigationItems = [
     {
       name: 'Home',
       icon: <Home size={24} />,
@@ -29,16 +29,17 @@ const BottomNavigation = () => {
       path: '/recipe-discovery',
     },
     {
-      name: 'More',
-      icon: <MoreHorizontal size={24} />,
+      label: 'More',
+      icon: <User size={18} />, // Changed to User icon to emphasize profile
       path: '/more',
+      activeIcon: <User size={18} className="fill-current" /> // Changed to User
     },
   ];
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-10">
       <div className="flex justify-around items-center h-16">
-        {navItems.map((item) => (
+        {navigationItems.map((item) => (
           <Link
             key={item.name}
             to={item.path}
