@@ -1,7 +1,6 @@
-
 import { useFetchRecipes } from './useFetchRecipes';
 import { useSavedRecipes } from './useSavedRecipes';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -34,27 +33,32 @@ export const useRecipes = () => {
     fetchSavedRecipeIds
   } = useSavedRecipes(recipes, isAuthenticated);
 
-  const [recipeRatings, setRecipeRatings] = useState<RecipeRating[]>([]);
+  const [recipeRatings, setRecipeRatings] = useState<{
+    recipe_id: string;
+    avg_rating: number;
+    rating_count: number;
+  }[]>([]);
+
   const [ratingsLoading, setRatingsLoading] = useState(false);
   const { user } = useAuth();
 
   // Fetch recipe ratings
-  const fetchRecipeRatings = async () => {
-    setRatingsLoading(true);
+  const fetchRecipeRatings = useCallback(async () => {
     try {
+      // This is a custom PostgreSQL function that returns recipe ratings
       const { data, error } = await supabase
         .rpc('get_recipe_ratings');
-
-      if (error) throw error;
-
+        
+      if (error) {
+        console.error('Error fetching recipe ratings:', error);
+        return;
+      }
+      
       setRecipeRatings(data || []);
     } catch (error) {
-      console.error('Error fetching recipe ratings:', error);
-      setRecipeRatings([]);
-    } finally {
-      setRatingsLoading(false);
+      console.error('Error in fetchRecipeRatings:', error);
     }
-  };
+  }, [supabase]);
 
   // Get average rating for a recipe
   const getRecipeRating = (recipeId: string): { rating: number, count: number } => {
@@ -152,6 +156,7 @@ export const useRecipes = () => {
     ratingsLoading,
     getRecipeRating,
     rateRecipe,
-    getUserRecipeRating
+    getUserRecipeRating,
+    fetchRecipeRatings
   };
 };

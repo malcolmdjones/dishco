@@ -1,24 +1,24 @@
-
 import React from 'react';
-import BottomNavigation from './BottomNavigation';
 import TopNavigation from './TopNavigation';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import BottomNavigation from './BottomNavigation';
+import { Outlet } from 'react-router-dom';
 
 interface AppLayoutProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
-const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+const AppLayout = ({ children }: AppLayoutProps) => {
   return (
-    <TooltipProvider delayDuration={300}>
-      <div className="flex flex-col min-h-screen bg-dishco-background">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+      <div className="max-w-md mx-auto bg-white min-h-screen relative">
         <TopNavigation />
-        <main className="flex-1 pb-20 pt-4 px-4 max-w-md mx-auto w-full">
+        <div className="pb-20 px-4">
+          <Outlet />
           {children}
-        </main>
+        </div>
         <BottomNavigation />
       </div>
-    </TooltipProvider>
+    </div>
   );
 };
 

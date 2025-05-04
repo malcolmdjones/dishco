@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -74,11 +73,86 @@ export const useUserProfile = () => {
     }
   };
 
-  // Update user profile
+  // Check if username exists
+  const checkUsernameExists = async (username: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', username.toLowerCase())
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') { // Not found error
+          return false;
+        }
+        throw error;
+      }
+
+      return !!data;
+    } catch (error) {
+      console.error('Error checking username:', error);
+      return false;
+    }
+  };
+
+  // Validate username format
+  const validateUsername = (username: string): { isValid: boolean; message?: string } => {
+    // Must be between 3 and 25 characters
+    if (username.length < 3 || username.length > 25) {
+      return { isValid: false, message: 'Username must be between 3 and 25 characters' };
+    }
+    
+    // Can't start with underscore
+    if (username.startsWith('_')) {
+      return { isValid: false, message: 'Username cannot start with an underscore' };
+    }
+    
+    // Only lowercase letters, numbers, and underscores allowed
+    const validUsernameRegex = /^[a-z0-9_]+$/;
+    if (!validUsernameRegex.test(username)) {
+      return { isValid: false, message: 'Username can only contain lowercase letters, numbers, and underscores' };
+    }
+    
+    return { isValid: true };
+  };
+
+  // Update user profile with username transformation
   const updateUserProfile = async (updates: Partial<UserProfile>) => {
     try {
       if (!user?.id) {
         throw new Error("Not authenticated");
+      }
+
+      // Make sure username is always lowercase
+      if (updates.username) {
+        const lowercaseUsername = updates.username.toLowerCase();
+        
+        // Validate username format
+        const validation = validateUsername(lowercaseUsername);
+        if (!validation.isValid) {
+          toast({
+            title: "Invalid username",
+            description: validation.message,
+            variant: "destructive"
+          });
+          return false;
+        }
+        
+        // Check if username is taken (only if it's changed)
+        if (lowercaseUsername !== profile?.username) {
+          const exists = await checkUsernameExists(lowercaseUsername);
+          if (exists) {
+            toast({
+              title: "Username unavailable",
+              description: "This username is already taken",
+              variant: "destructive"
+            });
+            return false;
+          }
+        }
+        
+        updates.username = lowercaseUsername;
       }
 
       const { error } = await supabase
@@ -103,29 +177,6 @@ export const useUserProfile = () => {
         description: "Failed to update your profile.",
         variant: "destructive"
       });
-      return false;
-    }
-  };
-
-  // Check if username exists
-  const checkUsernameExists = async (username: string): Promise<boolean> => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('username', username)
-        .single();
-
-      if (error) {
-        if (error.code === 'PGRST116') { // Not found error
-          return false;
-        }
-        throw error;
-      }
-
-      return !!data;
-    } catch (error) {
-      console.error('Error checking username:', error);
       return false;
     }
   };
@@ -443,6 +494,7 @@ export const useUserProfile = () => {
     fetchUserProfile,
     updateUserProfile,
     checkUsernameExists,
+    validateUsername,
     fetchUserActivities,
     recordActivity,
     followUser,

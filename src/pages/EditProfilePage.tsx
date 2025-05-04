@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { ArrowLeft, Upload, Trash2, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -14,7 +14,7 @@ const EditProfilePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { profile, loading: profileLoading, updateUserProfile, checkUsernameExists } = useUserProfile();
+  const { profile, loading: profileLoading, updateUserProfile, validateUsername } = useUserProfile();
   
   const [formData, setFormData] = useState({
     display_name: '',
@@ -43,8 +43,16 @@ const EditProfilePage = () => {
     const { name, value } = e.target;
     
     // Clear username error when typing
-    if (name === 'username' && usernameError) {
+    if (name === 'username') {
       setUsernameError('');
+      
+      // Validate username format as the user types
+      if (value) {
+        const validation = validateUsername(value.toLowerCase());
+        if (!validation.isValid) {
+          setUsernameError(validation.message || 'Invalid username format');
+        }
+      }
     }
     
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -118,23 +126,18 @@ const EditProfilePage = () => {
     }
   };
 
-  const validateUsername = async (username: string): Promise<boolean> => {
-    if (!username) return true;
-    
-    // Username format validation
-    const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
-    if (!usernameRegex.test(username)) {
-      setUsernameError('Username must be 3-30 characters and can only contain letters, numbers, and underscores');
+  const validateForm = async (): Promise<boolean> => {
+    // Username is required
+    if (!formData.username) {
+      setUsernameError('Username is required');
       return false;
     }
     
-    // Check if username is taken
-    if (username !== profile?.username) {
-      const exists = await checkUsernameExists(username);
-      if (exists) {
-        setUsernameError('This username is already taken');
-        return false;
-      }
+    // Validate username format
+    const validation = validateUsername(formData.username.toLowerCase());
+    if (!validation.isValid) {
+      setUsernameError(validation.message || 'Invalid username format');
+      return false;
     }
     
     return true;
@@ -145,9 +148,9 @@ const EditProfilePage = () => {
     setIsLoading(true);
     
     try {
-      // Validate username
-      const isUsernameValid = await validateUsername(formData.username);
-      if (!isUsernameValid) {
+      // Validate form
+      const isValid = await validateForm();
+      if (!isValid) {
         setIsLoading(false);
         return;
       }
@@ -252,7 +255,7 @@ const EditProfilePage = () => {
 
         <div className="space-y-4">
           <div>
-            <label htmlFor="display_name" className="block text-sm font-medium mb-1">Display Name</label>
+            <Label htmlFor="display_name" className="block mb-1">Display Name</Label>
             <Input 
               id="display_name" 
               name="display_name" 
@@ -261,10 +264,13 @@ const EditProfilePage = () => {
               placeholder="Your name"
               className="w-full"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              This is the name that will be displayed to other users
+            </p>
           </div>
           
           <div>
-            <label htmlFor="username" className="block text-sm font-medium mb-1">Username</label>
+            <Label htmlFor="username" className="block mb-1">Username</Label>
             <Input 
               id="username" 
               name="username" 
@@ -277,12 +283,12 @@ const EditProfilePage = () => {
               <p className="text-red-500 text-xs mt-1">{usernameError}</p>
             )}
             <p className="text-xs text-gray-500 mt-1">
-              Only letters, numbers, and underscores. 3-30 characters.
+              3-25 characters, lowercase letters, numbers, and underscores only. Cannot start with underscore.
             </p>
           </div>
           
           <div>
-            <label htmlFor="bio" className="block text-sm font-medium mb-1">Bio</label>
+            <Label htmlFor="bio" className="block mb-1">Bio</Label>
             <textarea 
               id="bio" 
               name="bio" 

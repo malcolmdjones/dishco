@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Settings, Calendar, Heart, Plus, UserPlus, UserMinus, Star, Clock } from 'lucide-react';
@@ -11,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRecipes } from '@/hooks/useRecipes';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { supabase } from '@/integrations/supabase/client';
 
 const ProfilePage = () => {
   const { username } = useParams<{ username: string }>();
