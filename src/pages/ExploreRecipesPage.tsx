@@ -23,6 +23,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useRecipes } from '@/hooks/useRecipes';
 import { Recipe } from '@/data/mockData';
+import RecipeViewer from '@/components/RecipeViewer';
 
 // Define filter types
 type PriceRange = '$' | '$$' | '$$$';
