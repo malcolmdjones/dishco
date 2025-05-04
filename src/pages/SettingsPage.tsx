@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Bell, Lock, HelpCircle, Info, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -32,34 +32,34 @@ const SettingsPage = () => {
 
   const menuItems = [
     {
-      name: 'Edit Profile',
+      name: "Edit Profile",
+      description: "Manage your personal information",
       icon: <User size={20} className="text-blue-500" />,
-      path: '/settings/edit-profile',
-      description: 'Manage your personal information'
+      path: "/edit-profile"
     },
     {
-      name: 'Notifications',
+      name: "Notifications",
+      description: "Configure your notification preferences",
       icon: <Bell size={20} className="text-purple-500" />,
-      path: '/notifications',
-      description: 'Configure your notification preferences'
+      path: "/notifications"
     },
     {
-      name: 'Privacy & Security',
+      name: "Privacy & Security",
+      description: "Manage your account security settings",
       icon: <Lock size={20} className="text-green-500" />,
-      path: '/privacy-security',
-      description: 'Manage your account security settings'
+      path: "/privacy-security"
     },
     {
-      name: 'Help & Support',
+      name: "Help & Support",
+      description: "Get help and contact support",
       icon: <HelpCircle size={20} className="text-amber-500" />,
-      path: '/help',
-      description: 'Get help and contact support'
+      path: "/help"
     },
     {
-      name: 'About',
+      name: "About",
+      description: "Learn more about our app",
       icon: <Info size={20} className="text-gray-500" />,
-      path: '/about',
-      description: 'Learn more about our app'
+      path: "/about"
     },
   ];
 

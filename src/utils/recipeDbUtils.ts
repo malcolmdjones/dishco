@@ -23,6 +23,8 @@ export interface DbRecipe {
   air_fryer?: boolean;
   slow_cooker?: boolean;
   grill?: boolean;
+  user_id?: string;
+  is_public?: boolean;
 }
 
 export const dbToFrontendRecipe = (dbRecipe: DbRecipe): any => {

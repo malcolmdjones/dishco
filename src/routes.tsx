@@ -1,3 +1,4 @@
+
 import {
   createBrowserRouter,
 } from "react-router-dom";
@@ -17,6 +18,7 @@ import CustomRecipesPage from '@/pages/CustomRecipesPage';
 import RecipeTinderPage from '@/pages/RecipeTinderPage';
 import NutritionGoalsPage from "./pages/NutritionGoalsPage";
 import ProfilePage from './pages/ProfilePage';
+import AccountSettingsPage from './pages/AccountSettingsPage';
 
 const routes = createBrowserRouter([
   {
@@ -42,6 +44,10 @@ const routes = createBrowserRouter([
       },
       {
         path: '/settings/edit-profile',
+        element: <EditProfilePage />
+      },
+      {
+        path: '/edit-profile',
         element: <EditProfilePage />
       },
       {

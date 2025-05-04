@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -63,16 +64,20 @@ const RecipeManagement: React.FC = () => {
 
   const handleTogglePublic = async (recipe: DbRecipe) => {
     try {
+      if (recipe.id === undefined || recipe.is_public === undefined) {
+        throw new Error("Recipe missing required properties");
+      }
+      
       const { error } = await supabase
         .from('recipes')
         .update({ is_public: !recipe.is_public })
-        .eq('user_id', recipe.user_id);
+        .eq('id', recipe.id);
 
       if (error) throw error;
 
       // Update the local state
       setRecipes(recipes.map(r => 
-        r.user_id === recipe.user_id ? { ...r, is_public: !r.is_public } : r
+        r.id === recipe.id ? { ...r, is_public: !recipe.is_public } : r
       ));
 
       toast({
@@ -95,17 +100,17 @@ const RecipeManagement: React.FC = () => {
   };
 
   const handleDeleteRecipe = async () => {
-    if (!recipeToDelete) return;
+    if (!recipeToDelete || !recipeToDelete.id) return;
     
     try {
       const { error } = await supabase
         .from('recipes')
         .delete()
-        .eq('user_id', recipeToDelete.user_id);
+        .eq('id', recipeToDelete.id);
 
       if (error) throw error;
 
-      setRecipes(recipes.filter(r => r.user_id !== recipeToDelete.user_id));
+      setRecipes(recipes.filter(r => r.id !== recipeToDelete.id));
       
       toast({
         title: "Success",
@@ -166,7 +171,7 @@ const RecipeManagement: React.FC = () => {
                 </TableRow>
               ) : (
                 filteredRecipes.map((recipe) => (
-                  <TableRow key={recipe.user_id}>
+                  <TableRow key={recipe.id}>
                     <TableCell className="font-medium">{recipe.title}</TableCell>
                     <TableCell>
                       <Badge variant="outline">
@@ -186,14 +191,14 @@ const RecipeManagement: React.FC = () => {
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          onClick={() => navigate(`/admin/recipe/${recipe.user_id}`)}
+                          onClick={() => navigate(`/admin/recipe/${recipe.id}`)}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="icon"
-                          onClick={() => navigate(`/admin/edit-recipe/${recipe.user_id}`)}
+                          onClick={() => navigate(`/admin/edit-recipe/${recipe.id}`)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
