@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ChartIcon } from 'lucide-react';
+import { BarChart2 } from 'lucide-react';
 import { useHomePageUtils } from '@/hooks/useHomePageUtils';
 import CaloricBalanceOverview from '@/components/home/CaloricBalanceOverview';
 import WeeklyTargets from '@/components/home/WeeklyTargets';
@@ -35,7 +35,7 @@ const ProgressPage = () => {
           onClick={() => navigate('/nutrition-goals')}
           className="w-full py-6"
         >
-          <ChartIcon className="mr-2 h-4 w-4" />
+          <BarChart2 className="mr-2 h-4 w-4" />
           Adjust Nutrition Goals
         </Button>
       </div>
