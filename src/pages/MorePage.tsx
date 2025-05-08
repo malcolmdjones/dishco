@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, Heart, Settings, User, Utensils, LogOut, Calendar, AlertTriangle, Cookie, ShieldCheck, ShoppingCart, Cake } from 'lucide-react';
@@ -71,12 +72,6 @@ const MorePage = () => {
   };
   
   const menuItems = [
-    {
-      name: 'Profile',
-      icon: <User size={20} className="text-blue-500" />,
-      path: '/profile',
-      description: 'View and edit your profile'
-    },
     {
       name: 'Saved Recipes',
       icon: <Heart size={20} className="text-pink-500" />,

@@ -2,18 +2,18 @@
 import React from 'react';
 import { format } from 'date-fns';
 import { Pencil, Trash, Calendar } from 'lucide-react';
-import { MealPlanType } from '@/types/mealPlan';
+import { MealPlan } from '@/hooks/useSavedMealPlans';
 import { Button } from '@/components/ui/button';
 
 interface PlanCardProps {
-  plan: MealPlanType;
+  plan: MealPlan;
   selectedDate?: Date | undefined;
-  onEdit: (plan: MealPlanType) => void;
+  onEdit: (plan: MealPlan) => void;
   onDelete: (id: string) => void;
-  onViewDetails: (plan: MealPlanType) => void;
-  onCopyAndEdit: (plan: MealPlanType) => void;
-  onAddToGrocery: (plan: MealPlanType) => void;
-  onUsePlan: (plan: MealPlanType) => void;
+  onViewDetails: (plan: MealPlan) => void;
+  onCopyAndEdit: (plan: MealPlan) => void;
+  onAddToGrocery: (plan: MealPlan) => void;
+  onUsePlan: (plan: MealPlan) => void;
 }
 
 const PlanCard: React.FC<PlanCardProps> = ({

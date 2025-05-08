@@ -1,9 +1,9 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { DbRecipe, dbToFrontendRecipe } from '@/utils/recipeDbUtils';
-import { Recipe } from '@/data/mockData';
+import { recipes as mockRecipes, Recipe } from '@/data/mockData';
+import { DbRecipe, dbToFrontendRecipe, frontendToDbRecipe } from '@/utils/recipeDbUtils';
 
 export const useFetchRecipes = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -30,60 +30,87 @@ export const useFetchRecipes = () => {
     };
   }, []);
 
+  // Import mock recipes to database if they don't exist
+  const importMockRecipesToDb = async () => {
+    try {
+      console.log("Checking for existing recipes in database...");
+      // First, get all existing recipes from the database to check if we need to import
+      const { data: existingRecipes, error: fetchError } = await supabase
+        .from('recipes')
+        .select('id, title');
+      
+      if (fetchError) throw fetchError;
+      
+      // Create a map of existing recipe titles for quick lookup
+      const existingRecipeTitles = new Set(existingRecipes?.map(r => r.title?.toLowerCase()) || []);
+      console.log(`Found ${existingRecipeTitles.size} existing recipes in database`);
+      
+      // Filter out mock recipes that already exist in the database (by name)
+      const recipesToImport = mockRecipes.filter(
+        recipe => !existingRecipeTitles.has(recipe.name.toLowerCase())
+      );
+      
+      if (recipesToImport.length === 0) {
+        console.log('All mock recipes already exist in the database');
+        return;
+      }
+
+      console.log(`Importing ${recipesToImport.length} mock recipes to database...`);
+
+      // Convert mock recipes to the database format
+      const dbRecipesToInsert = recipesToImport.map(frontendToDbRecipe);
+      
+      // Insert the new recipes into the database
+      const { error: insertError } = await supabase
+        .from('recipes')
+        .insert(dbRecipesToInsert);
+      
+      if (insertError) throw insertError;
+      
+      console.log(`Successfully imported ${recipesToImport.length} mock recipes to the database`);
+    } catch (error) {
+      console.error('Error importing mock recipes to database:', error);
+    }
+  };
+
   // Fetch all recipes
-  const fetchRecipes = useCallback(async () => {
+  const fetchRecipes = async () => {
     setLoading(true);
     try {
-      // Get all recipes from the database
+      // Import mock recipes to database first (if needed)
+      await importMockRecipesToDb();
+
+      // Then fetch all recipes from the database
       const { data: dbRecipes, error } = await supabase
         .from('recipes')
         .select('*');
 
       if (error) {
-        console.error('Error fetching recipes:', error);
         throw error;
       }
 
       if (!dbRecipes || dbRecipes.length === 0) {
-        console.log('No recipes found in database');
-        setRecipes([]);
+        console.log('No recipes found in database even after import attempt, using mock recipes');
+        setRecipes(mockRecipes);
       } else {
-        // Convert db recipes to frontend format - fixed type safety issue
-        // We need to ensure each recipe has an id field
-        const frontendRecipes = dbRecipes
-          .filter((recipe: any) => recipe && recipe.id) // Filter out any recipes without an id
-          .map((recipe: any) => {
-            // First make sure it has the required fields according to DbRecipe type 
-            const typedRecipe: DbRecipe = {
-              id: recipe.id,
-              title: recipe.title || 'Untitled Recipe',
-              short_description: recipe.short_description,
-              image_url: recipe.image_url,
-              type: recipe.type,
-              prep_time: recipe.prep_time,
-              cook_time: recipe.cook_time,
-              // ... all required fields from DbRecipe
-              user_id: recipe.user_id
-            };
-            return dbToFrontendRecipe(typedRecipe);
-          });
-        
+        // Convert db recipes to frontend format
+        const frontendRecipes = dbRecipes.map((recipe: any) => dbToFrontendRecipe(recipe as DbRecipe));
         console.log(`Fetched ${frontendRecipes.length} recipes from database`);
         console.log('Recipe types in database:', [...new Set(frontendRecipes.map(r => r.type))]);
-        setRecipes(frontendRecipes as Recipe[]);
+        setRecipes(frontendRecipes);
       }
     } catch (error) {
       console.error('Error fetching recipes:', error);
       toast({
         title: "Error",
-        description: "Failed to load recipes.",
+        description: "Failed to load recipes. Using mock recipes instead.",
         variant: "destructive"
       });
-      setRecipes([]);
+      setRecipes(mockRecipes);
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  };
 
   // Filter recipes by search query and other filters
   const filterRecipes = (
@@ -115,7 +142,7 @@ export const useFetchRecipes = () => {
   // Load recipes on component mount
   useEffect(() => {
     fetchRecipes();
-  }, [fetchRecipes]);
+  }, [isAuthenticated]);
 
   return {
     recipes,

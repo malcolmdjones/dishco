@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { format, addDays, startOfDay } from 'date-fns';
-import { Calendar as CalendarIcon, X } from 'lucide-react';
-import { Calendar } from '@/components/ui/calendar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { MealPlanType } from '@/types/mealPlan';
+import { format, addDays, parseISO } from 'date-fns';
+import { CalendarIcon, ChevronRight, AlertTriangle, Trash2 } from 'lucide-react';
+import { MealPlan } from '@/hooks/useSavedMealPlans';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface PlanStartDateDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (date: Date) => void;
-  plan: MealPlanType | null;
-  activeDates: string[];
-  onOverlap: (date: Date) => void;
-  onClearDate: (date: Date) => void;
+  plan: MealPlan | null;
+  activeDates: {[key: string]: string};
+  onOverlap?: (date: Date) => void;
+  onClearDate?: (date: Date) => void;
 }
 
 const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
@@ -21,72 +21,282 @@ const PlanStartDateDialog: React.FC<PlanStartDateDialogProps> = ({
   onOpenChange,
   onConfirm,
   plan,
-  activeDates,
+  activeDates = {},
   onOverlap,
   onClearDate
 }) => {
-  const [date, setDate] = React.useState<Date | undefined>(new Date());
-  const [isDateActive, setIsDateActive] = useState(false);
-
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [hasOverlap, setHasOverlap] = useState<boolean>(false);
+  const [canClearSelectedDate, setCanClearSelectedDate] = useState<boolean>(false);
+  
   useEffect(() => {
-    if (date) {
-      const formattedDate = format(date, 'yyyy-MM-dd');
-      setIsDateActive(activeDates.includes(formattedDate));
+    if (isOpen) {
+      const newDate = new Date();
+      setSelectedDate(newDate);
+      setCurrentMonth(newDate);
+      checkForOverlap(newDate);
+      checkIfDateCanBeCleared(newDate);
     }
-  }, [date, activeDates]);
-
+  }, [isOpen, activeDates]);
+  
+  if (!plan) return null;
+  
+  const checkForOverlap = (date: Date): boolean => {
+    if (!plan) return false;
+    
+    const planDuration = plan.plan_data?.days?.length || 7;
+    let hasConflict = false;
+    
+    for (let i = 0; i < planDuration; i++) {
+      const checkDate = addDays(date, i);
+      const dateKey = format(checkDate, 'yyyy-MM-dd');
+      
+      if (activeDates[dateKey]) {
+        console.log(`Overlap detected for date: ${dateKey} with plan: ${activeDates[dateKey]}`);
+        hasConflict = true;
+        break;
+      }
+    }
+    
+    console.log(`Overlap check result for ${format(date, 'yyyy-MM-dd')}: ${hasConflict ? 'Has overlap' : 'No overlap'}`);
+    setHasOverlap(hasConflict);
+    return hasConflict;
+  };
+  
+  const checkIfDateCanBeCleared = (date: Date): boolean => {
+    const dateKey = format(date, 'yyyy-MM-dd');
+    const canClear = !!activeDates[dateKey];
+    setCanClearSelectedDate(canClear);
+    return canClear;
+  };
+  
+  const handleDateChange = (date: Date) => {
+    setSelectedDate(date);
+    checkForOverlap(date);
+    checkIfDateCanBeCleared(date);
+  };
+  
   const handleConfirm = () => {
-    if (!date) return;
-
-    const formattedDate = format(date, 'yyyy-MM-dd');
-    if (activeDates.includes(formattedDate)) {
-      onOverlap(date);
+    if (hasOverlap && onOverlap) {
+      console.log("Overlap detected, calling onOverlap with date:", selectedDate);
+      onOverlap(selectedDate);
     } else {
-      onConfirm(date);
+      console.log("No overlap detected, calling onConfirm with date:", selectedDate);
+      onConfirm(selectedDate);
     }
   };
 
-  const handleClearDate = () => {
-    if (!date) return;
-    onClearDate(date);
+  const handleClear = () => {
+    if (onClearDate) {
+      console.log("Clearing date:", selectedDate);
+      onClearDate(selectedDate);
+    }
   };
-
+  
+  const planDuration = plan.plan_data?.days?.length || 7;
+  
+  const generateCalendar = (month: Date) => {
+    const firstDayOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
+    const lastDayOfMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+    
+    let firstDayOfWeek = firstDayOfMonth.getDay();
+    firstDayOfWeek = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+    
+    const daysFromPreviousMonth = firstDayOfWeek;
+    
+    const totalDaysInGrid = 6 * 7;
+    const daysFromNextMonth = totalDaysInGrid - daysFromPreviousMonth - lastDayOfMonth.getDate();
+    
+    const calendarDays: Date[] = [];
+    
+    const previousMonth = new Date(month.getFullYear(), month.getMonth() - 1, 1);
+    const daysInPreviousMonth = new Date(previousMonth.getFullYear(), previousMonth.getMonth() + 1, 0).getDate();
+    
+    for (let i = daysInPreviousMonth - daysFromPreviousMonth + 1; i <= daysInPreviousMonth; i++) {
+      calendarDays.push(new Date(previousMonth.getFullYear(), previousMonth.getMonth(), i));
+    }
+    
+    for (let i = 1; i <= lastDayOfMonth.getDate(); i++) {
+      calendarDays.push(new Date(month.getFullYear(), month.getMonth(), i));
+    }
+    
+    const nextMonth = new Date(month.getFullYear(), month.getMonth() + 1, 1);
+    for (let i = 1; i <= daysFromNextMonth; i++) {
+      calendarDays.push(new Date(nextMonth.getFullYear(), nextMonth.getMonth(), i));
+    }
+    
+    const weeks: Date[][] = [];
+    for (let i = 0; i < calendarDays.length; i += 7) {
+      weeks.push(calendarDays.slice(i, i + 7));
+    }
+    
+    return weeks;
+  };
+  
+  const weeks = generateCalendar(currentMonth);
+  
+  const isDateInPlanRange = (date: Date) => {
+    if (!selectedDate) return false;
+    
+    const planEndDate = addDays(selectedDate, planDuration - 1);
+    return date >= selectedDate && date <= planEndDate;
+  };
+  
+  const hasActivePlan = (date: Date) => {
+    const dateKey = format(date, 'yyyy-MM-dd');
+    return !!activeDates[dateKey];
+  };
+  
+  const getActivePlanName = (date: Date) => {
+    const dateKey = format(date, 'yyyy-MM-dd');
+    return activeDates[dateKey] || '';
+  };
+  
+  const goToNextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  };
+  
+  const goToPreviousMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  };
+  
+  const formatDay = (date: Date) => {
+    return date.getDate().toString();
+  };
+  
+  const isSameMonth = (date: Date) => {
+    return date.getMonth() === currentMonth.getMonth();
+  };
+  
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Choose a Start Date</DialogTitle>
-          <DialogDescription>
-            Select the date you'd like to start this meal plan.
-          </DialogDescription>
+          <DialogTitle>When should this plan start?</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={setDate}
-            disabled={(date) =>
-              date < startOfDay(new Date())
-            }
-            className="rounded-md border"
-          />
+        
+        <div className="flex flex-col items-center py-4">
+          <div className="flex items-center mb-4">
+            <CalendarIcon className="mr-2 text-green-500" />
+            <span>Plan: <strong>{plan.name}</strong></span>
+            <span className="ml-2 text-sm text-muted-foreground">({planDuration} days)</span>
+          </div>
+          
+          {hasOverlap && (
+            <Alert variant="default" className="mb-4 border-amber-600 bg-amber-50">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <AlertTitle className="text-amber-600">Date Overlap Detected</AlertTitle>
+              <AlertDescription className="text-amber-700 text-sm">
+                Some dates in your selected range already have active meal plans.
+                Activating this plan will replace existing plans on those dates.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          <div className="w-full max-w-xs">
+            <div className="flex items-center justify-between mb-4">
+              <button 
+                onClick={goToPreviousMonth}
+                className="p-1 rounded-full hover:bg-gray-100"
+              >
+                <ChevronRight className="h-5 w-5 transform rotate-180" />
+              </button>
+              <h2 className="text-xl font-bold">
+                {format(currentMonth, 'MMMM yyyy')}
+              </h2>
+              <button 
+                onClick={goToNextMonth}
+                className="p-1 rounded-full hover:bg-gray-100"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="mb-2">
+              <div className="grid grid-cols-7 mb-2">
+                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                  <div key={day} className="text-center text-xs font-medium text-gray-500">
+                    {day}
+                  </div>
+                ))}
+              </div>
+              
+              {weeks.map((week, weekIndex) => (
+                <div key={`week-${weekIndex}`} className="grid grid-cols-7">
+                  {week.map((day, dayIndex) => {
+                    const isSelected = day.toDateString() === selectedDate?.toDateString();
+                    const inPlanRange = isDateInPlanRange(day);
+                    const isCurrentMonth = isSameMonth(day);
+                    const hasExistingPlan = hasActivePlan(day);
+                    const activePlanName = getActivePlanName(day);
+                    
+                    return (
+                      <div key={`day-${dayIndex}`} className="relative">
+                        <button
+                          className={`h-10 w-10 mx-auto flex items-center justify-center text-sm rounded-full relative
+                            ${!isCurrentMonth ? 'text-gray-400' : 'text-gray-900'}
+                            ${isSelected ? 'bg-blue-500 text-white' : ''}
+                            ${inPlanRange && !isSelected ? 'bg-blue-200' : ''}
+                            ${hasExistingPlan && !isSelected && !inPlanRange ? 'bg-amber-100' : ''}
+                            ${hasExistingPlan && inPlanRange && !isSelected ? 'bg-amber-200' : ''}
+                            ${!isSelected && !inPlanRange ? 'hover:bg-gray-100' : ''}
+                          `}
+                          onClick={() => handleDateChange(day)}
+                          disabled={!isCurrentMonth}
+                        >
+                          {formatDay(day)}
+                        </button>
+                        {hasExistingPlan && isCurrentMonth && (
+                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-amber-500" 
+                            title={`Active plan: ${activePlanName}`}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            Selected date: <strong>{format(selectedDate, 'EEEE, MMMM d, yyyy')}</strong>
+          </p>
+          
+          {canClearSelectedDate && (
+            <p className="text-center text-sm text-amber-600">
+              This date already has the plan: <strong>{activeDates[format(selectedDate, 'yyyy-MM-dd')]}</strong>
+            </p>
+          )}
+          
+          {planDuration > 1 && (
+            <p className="text-center text-sm text-green-600">
+              Will run until: <strong>{format(addDays(selectedDate, planDuration - 1), 'MMMM d, yyyy')}</strong>
+            </p>
+          )}
         </div>
-        <div className="flex justify-between">
-          {isDateActive && (
-            <Button variant="destructive" onClick={handleClearDate}>
-              <X className="w-4 h-4 mr-2" />
-              Clear Date
+        
+        <DialogFooter className="flex items-center justify-end space-x-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          
+          {canClearSelectedDate && onClearDate && (
+            <Button 
+              variant="destructive"
+              onClick={handleClear}
+              className="flex items-center gap-1"
+            >
+              <Trash2 className="h-4 w-4" />
+              Clear Selected Date
             </Button>
           )}
-          <div className="space-x-2">
-            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" onClick={handleConfirm}>
-              Confirm Date
-            </Button>
-          </div>
-        </div>
+          
+          <Button onClick={handleConfirm} className="bg-green-500 hover:bg-green-600">
+            {hasOverlap ? "Continue with Overlaps" : "Confirm & Continue"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

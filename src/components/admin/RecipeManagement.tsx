@@ -23,7 +23,7 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
-import { DbRecipe } from '@/utils/recipeDbUtils';
+import { DbRecipe } from '@/hooks/useRecipes';
 
 const RecipeManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -48,8 +48,7 @@ const RecipeManagement: React.FC = () => {
 
       if (error) throw error;
 
-      // Cast the returned data to DbRecipe[] to match our interface
-      setRecipes((data || []) as unknown as DbRecipe[]);
+      setRecipes(data as DbRecipe[] || []);
     } catch (error) {
       console.error('Error fetching recipes:', error);
       toast({
@@ -64,10 +63,6 @@ const RecipeManagement: React.FC = () => {
 
   const handleTogglePublic = async (recipe: DbRecipe) => {
     try {
-      if (recipe.id === undefined || recipe.is_public === undefined) {
-        throw new Error("Recipe missing required properties");
-      }
-      
       const { error } = await supabase
         .from('recipes')
         .update({ is_public: !recipe.is_public })
@@ -77,7 +72,7 @@ const RecipeManagement: React.FC = () => {
 
       // Update the local state
       setRecipes(recipes.map(r => 
-        r.id === recipe.id ? { ...r, is_public: !recipe.is_public } : r
+        r.id === recipe.id ? { ...r, is_public: !r.is_public } : r
       ));
 
       toast({
@@ -100,7 +95,7 @@ const RecipeManagement: React.FC = () => {
   };
 
   const handleDeleteRecipe = async () => {
-    if (!recipeToDelete || !recipeToDelete.id) return;
+    if (!recipeToDelete) return;
     
     try {
       const { error } = await supabase

@@ -1,17 +1,16 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import RecipeDetail from './RecipeDetail';
 import { Progress } from '@/components/ui/progress';
 import { MealPlan } from '@/hooks/useSavedMealPlans';
 import { Recipe } from '@/data/mockData';
-import { Drawer } from 'vaul';
-import { MealPlanType } from '@/types/mealPlan';
 
 interface MealPlanDetailViewProps {
-  plan: MealPlanType | null;
+  plan: MealPlan | null;
   isOpen: boolean;
   onClose: () => void;
 }

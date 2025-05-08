@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format, addDays, isToday, parseISO } from 'date-fns';
-import { ActiveMealPlan } from '@/types/mealPlan';
+import { ActiveMealPlan } from '@/hooks/useSavedMealPlans';
 
 interface WeeklyOverviewProps {
   activePlans: ActiveMealPlan[] | null;

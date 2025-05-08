@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Flame, BarChart2, PieChart } from 'lucide-react';
+import { Flame, Calendar, PieChart } from 'lucide-react';
 import { useStreakData } from '@/hooks/useStreakData';
 import { motion } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -40,17 +41,17 @@ const TopNavigation = () => {
             </Tooltip>
           </TooltipProvider>
 
-          {/* Progress Overview */}
+          {/* Weekly Overview */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Link to="/progress" className="flex items-center px-3 py-1.5 rounded-lg hover:bg-gray-100">
-                  <BarChart2 className="h-5 w-5 text-red-400" />
+                <Link to="/planning" className="flex items-center px-3 py-1.5 rounded-lg hover:bg-gray-100">
+                  <Calendar className="h-5 w-5 text-red-400" />
                 </Link>
               </TooltipTrigger>
               <TooltipContent side="bottom">
-                <p>Progress overview</p>
-                <p className="text-xs">View your nutrition progress</p>
+                <p>Weekly meal planning</p>
+                <p className="text-xs">View your meal plan for the week</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

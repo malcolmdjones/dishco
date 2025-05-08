@@ -95,7 +95,7 @@ export type Database = {
             columns: ["recipe_id"]
             isOneToOne: false
             referencedRelation: "recipes"
-            referencedColumns: ["user_id"]
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -135,69 +135,24 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
-          bio: string | null
           created_at: string
-          display_name: string | null
-          followers_count: number | null
-          following_count: number | null
           id: string
-          member_since: string | null
-          rank_number: number | null
           updated_at: string
           username: string | null
         }
         Insert: {
           avatar_url?: string | null
-          bio?: string | null
           created_at?: string
-          display_name?: string | null
-          followers_count?: number | null
-          following_count?: number | null
           id: string
-          member_since?: string | null
-          rank_number?: number | null
           updated_at?: string
           username?: string | null
         }
         Update: {
           avatar_url?: string | null
-          bio?: string | null
           created_at?: string
-          display_name?: string | null
-          followers_count?: number | null
-          following_count?: number | null
           id?: string
-          member_since?: string | null
-          rank_number?: number | null
           updated_at?: string
           username?: string | null
-        }
-        Relationships: []
-      }
-      recipe_ratings: {
-        Row: {
-          created_at: string | null
-          id: string
-          rating: number
-          recipe_id: string
-          review: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          rating: number
-          recipe_id: string
-          review?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          rating?: number
-          recipe_id?: string
-          review?: string | null
-          user_id?: string
         }
         Relationships: []
       }
@@ -205,10 +160,14 @@ export type Database = {
         Row: {
           air_fryer: boolean | null
           blender: boolean | null
-          cook_time: number | null
+          calorie_bracket: string | null
+          cook_time: string | null
+          created_at: string | null
+          created_by: string | null
           cuisine: string | null
-          dish_category: string | null
+          dietary_tags: string | null
           grill: boolean | null
+          id: string
           image_url: string | null
           ingredients_json: Json | null
           instructions_json: Json | null
@@ -217,31 +176,34 @@ export type Database = {
           nutrition_calories: number | null
           nutrition_carbs: number | null
           nutrition_fat: number | null
-          nutrition_fiber: number | null
           nutrition_protein: number | null
-          nutrition_serving: string | null
           oven: boolean | null
-          prep_time: number | null
+          prep_duration_days: string | null
+          prep_time: string | null
           price_range: string | null
+          protein_focus: string | null
           servings: number | null
           short_description: string | null
           slow_cooker: boolean | null
-          store_bought: boolean | null
           stovetop: boolean | null
-          tags: Json | null
+          tags: string | null
           title: string | null
-          total_time: number | null
+          total_time: string | null
           type: string | null
-          upc: string | null
-          user_id: string
+          upc_ingredients: Json | null
+          updated_at: string | null
         }
         Insert: {
           air_fryer?: boolean | null
           blender?: boolean | null
-          cook_time?: number | null
+          calorie_bracket?: string | null
+          cook_time?: string | null
+          created_at?: string | null
+          created_by?: string | null
           cuisine?: string | null
-          dish_category?: string | null
+          dietary_tags?: string | null
           grill?: boolean | null
+          id?: string
           image_url?: string | null
           ingredients_json?: Json | null
           instructions_json?: Json | null
@@ -250,31 +212,34 @@ export type Database = {
           nutrition_calories?: number | null
           nutrition_carbs?: number | null
           nutrition_fat?: number | null
-          nutrition_fiber?: number | null
           nutrition_protein?: number | null
-          nutrition_serving?: string | null
           oven?: boolean | null
-          prep_time?: number | null
+          prep_duration_days?: string | null
+          prep_time?: string | null
           price_range?: string | null
+          protein_focus?: string | null
           servings?: number | null
           short_description?: string | null
           slow_cooker?: boolean | null
-          store_bought?: boolean | null
           stovetop?: boolean | null
-          tags?: Json | null
+          tags?: string | null
           title?: string | null
-          total_time?: number | null
+          total_time?: string | null
           type?: string | null
-          upc?: string | null
-          user_id?: string
+          upc_ingredients?: Json | null
+          updated_at?: string | null
         }
         Update: {
           air_fryer?: boolean | null
           blender?: boolean | null
-          cook_time?: number | null
+          calorie_bracket?: string | null
+          cook_time?: string | null
+          created_at?: string | null
+          created_by?: string | null
           cuisine?: string | null
-          dish_category?: string | null
+          dietary_tags?: string | null
           grill?: boolean | null
+          id?: string
           image_url?: string | null
           ingredients_json?: Json | null
           instructions_json?: Json | null
@@ -283,23 +248,22 @@ export type Database = {
           nutrition_calories?: number | null
           nutrition_carbs?: number | null
           nutrition_fat?: number | null
-          nutrition_fiber?: number | null
           nutrition_protein?: number | null
-          nutrition_serving?: string | null
           oven?: boolean | null
-          prep_time?: number | null
+          prep_duration_days?: string | null
+          prep_time?: string | null
           price_range?: string | null
+          protein_focus?: string | null
           servings?: number | null
           short_description?: string | null
           slow_cooker?: boolean | null
-          store_bought?: boolean | null
           stovetop?: boolean | null
-          tags?: Json | null
+          tags?: string | null
           title?: string | null
-          total_time?: number | null
+          total_time?: string | null
           type?: string | null
-          upc?: string | null
-          user_id?: string
+          upc_ingredients?: Json | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -348,57 +312,6 @@ export type Database = {
           recipe_id?: string
           saved_at?: string | null
           user_id?: string | null
-        }
-        Relationships: []
-      }
-      user_activities: {
-        Row: {
-          activity_type: string
-          content: string | null
-          created_at: string | null
-          id: string
-          recipe_id: string | null
-          related_user_id: string | null
-          user_id: string
-        }
-        Insert: {
-          activity_type: string
-          content?: string | null
-          created_at?: string | null
-          id?: string
-          recipe_id?: string | null
-          related_user_id?: string | null
-          user_id: string
-        }
-        Update: {
-          activity_type?: string
-          content?: string | null
-          created_at?: string | null
-          id?: string
-          recipe_id?: string | null
-          related_user_id?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_follows: {
-        Row: {
-          created_at: string | null
-          follower_id: string
-          following_id: string
-          id: string
-        }
-        Insert: {
-          created_at?: string | null
-          follower_id: string
-          following_id: string
-          id?: string
-        }
-        Update: {
-          created_at?: string | null
-          follower_id?: string
-          following_id?: string
-          id?: string
         }
         Relationships: []
       }

@@ -95,14 +95,13 @@ const LogMealCustomFoodPage = () => {
         ...formData,
         macros: {
           ...formData.macros,
-          [name]: value === "" ? 0 : parseFloat(value) || 0
+          [name]: parseFloat(value) || 0
         }
       });
     } else if (name === 'servingSize') {
-      // Allow decimal inputs for serving size
       setFormData({
         ...formData,
-        [name]: value === "" ? 0 : parseFloat(value) || 0
+        [name]: parseFloat(value) || 1
       });
     } else {
       setFormData({
@@ -121,10 +120,9 @@ const LogMealCustomFoodPage = () => {
   
   const increment = (field: 'calories' | 'protein' | 'carbs' | 'fat' | 'servingSize') => {
     if (field === 'servingSize') {
-      const increment = formData.servingSize < 1 ? 0.1 : 1;
       setFormData({
         ...formData,
-        servingSize: Math.round((formData.servingSize + increment) * 10) / 10
+        servingSize: (formData.servingSize || 0) + 1
       });
     } else {
       setFormData({
@@ -139,11 +137,9 @@ const LogMealCustomFoodPage = () => {
   
   const decrement = (field: 'calories' | 'protein' | 'carbs' | 'fat' | 'servingSize') => {
     if (field === 'servingSize') {
-      const decrement = formData.servingSize <= 1 ? 0.1 : 1;
-      const newValue = Math.max((formData.servingSize || 0) - decrement, 0.1);
       setFormData({
         ...formData,
-        servingSize: Math.round(newValue * 10) / 10
+        servingSize: Math.max((formData.servingSize || 0) - 1, 0.1)
       });
     } else {
       setFormData({
@@ -205,58 +201,41 @@ const LogMealCustomFoodPage = () => {
     
     setIsSaving(true);
     
-    try {
-      // Save to custom foods
-      const customFoodToSave = {
-        ...formData,
-        imageSrc: imageSource,
-        servingSize: formData.servingSize || 1 // Ensure we have a valid servingSize
-      };
-      
-      const existingCustomFoods = JSON.parse(localStorage.getItem('customFoods') || '[]');
-      localStorage.setItem('customFoods', JSON.stringify([customFoodToSave, ...existingCustomFoods]));
-      
-      // Log the meal
-      const newMeal: LoggedMeal = {
-        id: `${formData.id}-${Date.now()}`,
-        name: formData.name,
-        type: 'custom',
-        recipe: {
-          id: formData.id,
-          name: formData.name,
-          macros: formData.macros,
-          servings: 1,
-          type: 'custom'
-        },
-        consumed: true,
-        loggedAt: new Date().toISOString(),
-        loggedFromScreen: 'custom-food',
-        calories: formData.macros.calories,
-        servingInfo: `${formData.servingSize} ${formData.servingUnit}`,
-        source: 'Custom Food',
-        imageSrc: imageSource
-      };
-      
-      const existingLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
-      localStorage.setItem('loggedMeals', JSON.stringify([newMeal, ...existingLoggedMeals]));
-      
-      setTimeout(() => {
-        setIsSaving(false);
-        toast({
-          title: "Food Added",
-          description: `${formData.name} has been added to your log.`
-        });
-        navigate('/');
-      }, 600);
-    } catch (error) {
-      console.error("Error saving custom food:", error);
+    // Save to custom foods
+    const customFoodToSave = {
+      ...formData,
+      imageSrc: imageSource
+    };
+    
+    const existingCustomFoods = JSON.parse(localStorage.getItem('customFoods') || '[]');
+    localStorage.setItem('customFoods', JSON.stringify([customFoodToSave, ...existingCustomFoods]));
+    
+    // Log the meal
+    const newMeal: LoggedMeal = {
+      id: `${formData.id}-${Date.now()}`,
+      name: formData.name,
+      type: 'custom',
+      recipe: null,
+      consumed: true,
+      loggedAt: new Date().toISOString(),
+      loggedFromScreen: 'custom-food',
+      calories: formData.macros.calories,
+      servingInfo: `${formData.servingSize} ${formData.servingUnit}`,
+      source: 'Custom Food',
+      imageSrc: imageSource
+    };
+    
+    const existingLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
+    localStorage.setItem('loggedMeals', JSON.stringify([newMeal, ...existingLoggedMeals]));
+    
+    setTimeout(() => {
       setIsSaving(false);
       toast({
-        title: "Error",
-        description: "Failed to save food. Please try again.",
-        variant: "destructive"
+        title: "Food Added",
+        description: `${formData.name} has been added to your log.`
       });
-    }
+      navigate('/log-meal');
+    }, 600);
   };
 
   return (
@@ -356,11 +335,12 @@ const LogMealCustomFoodPage = () => {
                 <Input
                   id="serving-size"
                   name="servingSize"
-                  type="text"
-                  inputMode="decimal"
-                  value={formData.servingSize === 0 ? "" : formData.servingSize}
+                  type="number"
+                  step="0.1"
+                  min="0.1"
+                  value={formData.servingSize}
                   onChange={handleInputChange}
-                  className="rounded-none text-center w-full"
+                  className="rounded-none text-center w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
                 <Button
                   type="button"
@@ -419,11 +399,12 @@ const LogMealCustomFoodPage = () => {
                 <Input
                   id="calories"
                   name="calories"
-                  type="text"
-                  inputMode="numeric"
-                  value={formData.macros.calories === 0 ? "" : formData.macros.calories}
+                  type="number"
+                  min="0"
+                  step="10"
+                  value={formData.macros.calories}
                   onChange={handleInputChange}
-                  className="rounded-none text-center w-full"
+                  className="rounded-none text-center w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
                 <Button
                   type="button"
@@ -453,11 +434,12 @@ const LogMealCustomFoodPage = () => {
                   <Input
                     id="protein"
                     name="protein"
-                    type="text"
-                    inputMode="numeric"
-                    value={formData.macros.protein === 0 ? "" : formData.macros.protein}
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={formData.macros.protein}
                     onChange={handleInputChange}
-                    className="rounded-none text-center w-full"
+                    className="rounded-none text-center w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <Button
                     type="button"
@@ -486,11 +468,12 @@ const LogMealCustomFoodPage = () => {
                   <Input
                     id="carbs"
                     name="carbs"
-                    type="text"
-                    inputMode="numeric"
-                    value={formData.macros.carbs === 0 ? "" : formData.macros.carbs}
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={formData.macros.carbs}
                     onChange={handleInputChange}
-                    className="rounded-none text-center w-full"
+                    className="rounded-none text-center w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <Button
                     type="button"
@@ -519,11 +502,12 @@ const LogMealCustomFoodPage = () => {
                   <Input
                     id="fat"
                     name="fat"
-                    type="text"
-                    inputMode="numeric"
-                    value={formData.macros.fat === 0 ? "" : formData.macros.fat}
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={formData.macros.fat}
                     onChange={handleInputChange}
-                    className="rounded-none text-center w-full"
+                    className="rounded-none text-center w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <Button
                     type="button"

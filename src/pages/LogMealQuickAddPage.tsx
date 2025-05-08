@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -51,7 +50,7 @@ const LogMealQuickAddPage = () => {
     
     setFormData(prev => ({
       ...prev,
-      [name]: numberFields.includes(name) ? (value === "" ? 0 : parseFloat(value) || 0) : value
+      [name]: numberFields.includes(name) ? Number(value) : value
     }));
   };
   
@@ -120,64 +119,65 @@ const LogMealQuickAddPage = () => {
     
     setIsSaving(true);
     
-    try {
-      // Create a recipe object from the form data
-      const recipe = {
-        id: `quick-add-${Date.now()}`,
-        name: formData.name,
-        macros: {
-          calories: formData.calories,
-          protein: formData.protein,
-          carbs: formData.carbs,
-          fat: formData.fat
-        },
-        type: formData.mealType,
-        servings: 1,
-        ingredients: [],
-        prep_time_minutes: 0,
-        externalSource: false,
-        instructions: [],
-        imageSrc: imageSource
-      };
-      
-      // Log the meal
-      const existingLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
-      
-      const newMeal: LoggedMeal = {
-        id: recipe.id,
-        name: formData.name,
-        type: formData.mealType,
-        recipe: recipe,
-        consumed: true,
-        loggedAt: new Date().toISOString(),
-        loggedFromScreen: 'quick-add',
+    // Create a recipe object from the form data
+    const recipe = {
+      id: `quick-add-${Date.now()}`,
+      name: formData.name,
+      macros: {
         calories: formData.calories,
-        protein: formData.protein > 0 ? `${formData.protein}g protein` : '',
-        servingInfo: '1 serving',
-        source: 'Quick Add',
-        imageSrc: imageSource
-      };
-      
-      const updatedLoggedMeals = [newMeal, ...existingLoggedMeals];
-      localStorage.setItem('loggedMeals', JSON.stringify(updatedLoggedMeals));
-      
-      setTimeout(() => {
-        setIsSaving(false);
-        toast({
-          title: "Food Logged",
-          description: `${formData.name} has been added to your log.`
-        });
-        navigate('/');
-      }, 600);
-    } catch (error) {
-      console.error("Error logging meal:", error);
+        protein: formData.protein,
+        carbs: formData.carbs,
+        fat: formData.fat
+      },
+      type: formData.mealType,
+      servings: 1,
+      ingredients: [],
+      prep_time_minutes: 0,
+      externalSource: false,
+      instructions: [],
+      imageSrc: imageSource
+    };
+    
+    // Log the meal
+    const existingLoggedMeals = JSON.parse(localStorage.getItem('loggedMeals') || '[]');
+    
+    const newMeal: LoggedMeal = {
+      id: recipe.id,
+      name: formData.name,
+      type: formData.mealType,
+      recipe: recipe,
+      consumed: true,
+      loggedAt: new Date().toISOString(),
+      loggedFromScreen: 'quick-add',
+      calories: formData.calories,
+      protein: formData.protein > 0 ? `${formData.protein}g protein` : '',
+      servingInfo: '1 serving',
+      source: 'Quick Add',
+      imageSrc: imageSource
+    };
+    
+    const updatedLoggedMeals = [newMeal, ...existingLoggedMeals];
+    localStorage.setItem('loggedMeals', JSON.stringify(updatedLoggedMeals));
+    
+    // Update daily nutrition
+    const currentNutrition = JSON.parse(localStorage.getItem('dailyNutrition') || '{}');
+    const updatedNutrition = {
+      calories: (currentNutrition.calories || 0) + formData.calories,
+      protein: (currentNutrition.protein || 0) + formData.protein,
+      carbs: (currentNutrition.carbs || 0) + formData.carbs,
+      fat: (currentNutrition.fat || 0) + formData.fat
+    };
+    
+    localStorage.setItem('dailyNutrition', JSON.stringify(updatedNutrition));
+    
+    setTimeout(() => {
       setIsSaving(false);
       toast({
-        title: "Error",
-        description: "Failed to log meal. Please try again.",
-        variant: "destructive"
+        title: "Food Logged",
+        description: `${formData.name} has been added to your log.`
       });
-    }
+      navigate('/log-meal');
+    }, 600);
   };
 
   return (
@@ -273,10 +273,10 @@ const LogMealQuickAddPage = () => {
           <label className="text-sm font-medium">Calories</label>
           <Input
             name="calories"
-            type="text"
-            inputMode="numeric"
-            value={formData.calories === 0 ? "" : formData.calories}
+            type="number"
+            value={formData.calories || ''}
             onChange={handleInputChange}
+            min="0"
             placeholder="0"
             className="border-gray-300"
             required
@@ -293,10 +293,11 @@ const LogMealQuickAddPage = () => {
             <label className="text-sm font-medium">Protein (g)</label>
             <Input
               name="protein"
-              type="text"
-              inputMode="numeric"
-              value={formData.protein === 0 ? "" : formData.protein}
+              type="number"
+              value={formData.protein || ''}
               onChange={handleInputChange}
+              min="0"
+              step="0.1"
               placeholder="0"
               className="border-gray-300"
             />
@@ -311,10 +312,11 @@ const LogMealQuickAddPage = () => {
             <label className="text-sm font-medium">Carbs (g)</label>
             <Input
               name="carbs"
-              type="text"
-              inputMode="numeric"
-              value={formData.carbs === 0 ? "" : formData.carbs}
+              type="number"
+              value={formData.carbs || ''}
               onChange={handleInputChange}
+              min="0"
+              step="0.1"
               placeholder="0"
               className="border-gray-300"
             />
@@ -329,10 +331,11 @@ const LogMealQuickAddPage = () => {
             <label className="text-sm font-medium">Fat (g)</label>
             <Input
               name="fat"
-              type="text"
-              inputMode="numeric"
-              value={formData.fat === 0 ? "" : formData.fat}
+              type="number"
+              value={formData.fat || ''}
               onChange={handleInputChange}
+              min="0"
+              step="0.1"
               placeholder="0"
               className="border-gray-300"
             />
